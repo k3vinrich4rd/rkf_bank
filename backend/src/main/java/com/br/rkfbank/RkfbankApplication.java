@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class RkfbankApplication {
 
 	public static void main(String[] args) {
+		// Ponto de entrada da JVM para subir toda a aplicacao.
 		SpringApplication.run(RkfbankApplication.class, args);
 	}
 

@@ -7,6 +7,6 @@ import java.util.List;
 import java.util.UUID;
 
 public interface LancamentoRepository extends JpaRepository<Lancamento, UUID> {
-    // query para buscar todos os lançamentos de uma conta, seja ela de origem ou destino, ordenados pela data e hora do lançamento em ordem decrescente
+    // Consulta usada no extrato: origem OU destino, ordenado do mais novo para o mais antigo.
     List<Lancamento> findByContaOrigemIdOrContaDestinoIdOrderByDataHoraDesc(UUID contaOrigemId, UUID contaDestinoId);
 }

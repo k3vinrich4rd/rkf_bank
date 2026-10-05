@@ -8,5 +8,5 @@ public record ClienteResponseDto(
     String cpf,
     String email,
     String telefone,
-    EnderecoResponseDto enderecoResponseDto
+    EnderecoResponseDto endereco
 ) {}
