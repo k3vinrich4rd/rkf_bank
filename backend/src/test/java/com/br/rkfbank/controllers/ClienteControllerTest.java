@@ -2,11 +2,13 @@ package com.br.rkfbank.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.br.rkfbank.dto.request.cliente.CadastroClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.dto.response.cliente.EnderecoResponseDto;
+import com.br.rkfbank.exceptions.PaginacaoInvalidaException;
 import com.br.rkfbank.services.ClienteService;
 import java.util.List;
 import java.util.UUID;
@@ -68,6 +70,16 @@ class ClienteControllerTest {
 
         assertEquals(200, response.getStatusCode().value());
         assertInstanceOf(Page.class, response.getBody());
+    }
+
+    @Test
+    void deveRejeitarPaginacaoComPageNegativo() {
+        assertThrows(PaginacaoInvalidaException.class, () -> clienteController.listarClientes(true, -1, 10));
+    }
+
+    @Test
+    void deveRejeitarPaginacaoComSizeForaDoLimite() {
+        assertThrows(PaginacaoInvalidaException.class, () -> clienteController.listarClientes(true, 0, 101));
     }
 
     private ClienteResponseDto clienteResponse() {

@@ -1,6 +1,7 @@
 package com.br.rkfbank.controllers.handlers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import com.br.rkfbank.dto.comum.ErroResponse;
@@ -8,6 +9,7 @@ import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
 import com.br.rkfbank.exceptions.NaoProcessavelException;
 import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.PaginacaoInvalidaException;
 import com.br.rkfbank.exceptions.ServicoExternoException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
@@ -15,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
@@ -65,6 +69,17 @@ class ControllerExceptionHandlerTest {
 
         assertEquals(400, response.status());
         assertEquals("id", response.campos().getFirst().campo());
+        assertEquals("id deve ser do tipo UUID", response.campos().getFirst().mensagem());
+    }
+
+    @Test
+    void deveMapearPaginacaoInvalidaPara400() {
+        ErroResponse response = handler.paginacaoInvalida(
+                new PaginacaoInvalidaException("size deve estar entre 1 e 100"), request("/api/contas"));
+
+        assertEquals(400, response.status());
+        assertEquals("paginacao", response.campos().getFirst().campo());
+        assertTrue(response.campos().getFirst().mensagem().contains("size"));
     }
 
     @Test
@@ -82,6 +97,22 @@ class ControllerExceptionHandlerTest {
     @Test
     void deveMapearConflitoPara409() {
         ErroResponse response = handler.conflito(new NegocioException("conflito"), request("/api/clientes"));
+        assertEquals(409, response.status());
+    }
+
+    @Test
+    void deveMapearViolacaoDeIntegridadePara409() {
+        ErroResponse response = handler.conflitoPersistencia(
+                new DataIntegrityViolationException("duplicado"), request("/api/clientes"));
+
+        assertEquals(409, response.status());
+    }
+
+    @Test
+    void deveMapearConflitoConcorrentePara409() {
+        ErroResponse response = handler.conflitoConcorrencia(
+                new ObjectOptimisticLockingFailureException("Conta", "id"), request("/api/contas"));
+
         assertEquals(409, response.status());
     }
 

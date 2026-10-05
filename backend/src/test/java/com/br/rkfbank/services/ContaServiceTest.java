@@ -38,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 class ContaServiceTest {
@@ -64,7 +65,7 @@ class ContaServiceTest {
 
         when(clienteService.buscar(clienteId)).thenReturn(cliente);
         when(contaRepository.existsByNumeroConta("12345678")).thenReturn(false);
-        when(contaRepository.save(any(Conta.class))).thenAnswer(invocation -> {
+        when(contaRepository.saveAndFlush(any(Conta.class))).thenAnswer(invocation -> {
             Conta conta = invocation.getArgument(0);
             ReflectionTestUtils.setField(conta, "id", UUID.randomUUID());
             return conta;
@@ -84,6 +85,19 @@ class ContaServiceTest {
 
         when(clienteService.buscar(clienteId)).thenReturn(new Cliente());
         when(contaRepository.existsByNumeroConta("12345678")).thenReturn(true);
+
+        assertThrows(NegocioException.class, () -> contaService.abrir(clienteId, request));
+    }
+
+    @Test
+    void deveTraduzirCorridaDeNumeroDeContaDuplicadoEmConflito() {
+        UUID clienteId = UUID.randomUUID();
+        AbrirContaRequestDto request = new AbrirContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
+
+        when(clienteService.buscar(clienteId)).thenReturn(new Cliente());
+        when(contaRepository.existsByNumeroConta("12345678")).thenReturn(false);
+        when(contaRepository.saveAndFlush(any(Conta.class)))
+                .thenThrow(new DataIntegrityViolationException("numero duplicado"));
 
         assertThrows(NegocioException.class, () -> contaService.abrir(clienteId, request));
     }

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.br.rkfbank.entities.enums.TipoContaEnum;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
+import com.br.rkfbank.entities.converters.TipoLancamentoEnumConverter;
 import java.math.BigDecimal;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -95,5 +96,14 @@ class EntitiesAndEnumsTest {
         assertEquals("Depósito", TipoLancamentoEnum.DEPOSITO.getDescricao());
         assertEquals("Saque", TipoLancamentoEnum.SAQUE.getDescricao());
         assertEquals("Transferência", TipoLancamentoEnum.TRANSFERENCIA.getDescricao());
+    }
+
+    @Test
+    void deveConverterValoresLegadosDeLancamento() {
+        TipoLancamentoEnumConverter converter = new TipoLancamentoEnumConverter();
+
+        assertEquals(TipoLancamentoEnum.DEPOSITO, converter.convertToEntityAttribute("CREDITO"));
+        assertEquals(TipoLancamentoEnum.SAQUE, converter.convertToEntityAttribute("DEBITO"));
+        assertEquals("DEPOSITO", converter.convertToDatabaseColumn(TipoLancamentoEnum.DEPOSITO));
     }
 }

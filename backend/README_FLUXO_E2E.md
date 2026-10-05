@@ -4,6 +4,7 @@
 
 ```powershell
 Set-Location "C:\Users\Estudo$\Documents\rkfbank"
+Copy-Item .env.example .env
 docker compose up -d
 .\mvnw.cmd spring-boot:run
 ```
@@ -211,4 +212,3 @@ SELECT BIN_TO_UUID(id) AS id,
 FROM tb_lancamento
 ORDER BY data_hora DESC;
 ```
-
