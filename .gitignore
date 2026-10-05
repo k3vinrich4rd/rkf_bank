@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+
+# readme files
+.README_IMPLEMENTACAO.md
