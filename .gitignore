@@ -40,3 +40,6 @@ build/
 
 # readme files
 .README_IMPLEMENTACAO.md
+
+### Credenciais
+.env
