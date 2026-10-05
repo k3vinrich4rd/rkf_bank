@@ -18,8 +18,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "tb_cliente", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_cliente_cpf", columnNames = "cpf"), // Define o campo "cpf" como único na tabela "tb_cliente"
-        @UniqueConstraint(name = "uk_cliente_email", columnNames = "email") // Define o campo "email" como único na tabela "tb_cliente"
+        @UniqueConstraint(name = "uk_cliente_cpf", columnNames = "cpf"),
+        @UniqueConstraint(name = "uk_cliente_email", columnNames = "email")
 })
 public class Cliente {
 
@@ -39,10 +39,12 @@ public class Cliente {
     @Column(nullable = false)
     private String telefone;
 
+    // Endereco obrigatorio do cliente; cascade salva/atualiza junto.
     @OneToOne(cascade = CascadeType.ALL, optional = false)
     @JoinColumn(name = "endereco_id", nullable = false)
     private Endereco endereco;
 
+    // Lista de contas do cliente; orphanRemoval remove registros desvinculados.
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Conta> contas = new ArrayList<>();
 

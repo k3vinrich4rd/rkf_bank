@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
-public record ContaRequestDto(
+public record AbrirContaRequestDto(
     @NotBlank(message = "agencia e obrigatoria")
     @Pattern(regexp = "\\d{4}", message = "agencia deve ter 4 digitos")
     String agencia,

@@ -1,94 +1,91 @@
-Perfeito — vou alinhar o contrato com o que já está definido no guia de implementação (rotas reais, status de erro e formato de `ErroResponse` com `campos`).
+# RKF Bank - Contrato de API (implementado)
 
-- [x] Validar rotas e DTOs usados no guia
-- [x] Ajustar seção de erros (`400/404/409/422/503`) com exemplos consistentes
-- [x] Atualizar o contrato para refletir abertura de conta em `/clientes/{clienteId}/contas`
-- [x] Entregar versão pronta para substituir o conteúdo de `backend/README_CONTRATO_API.md`
+## 1) Tecnologias e arquitetura
 
-Use este conteúdo no `backend/README_CONTRATO_API.md`:
+Tecnologias em uso:
 
-```markdown
-# RKF Bank - Contrato de API (MVP atual)
+- Java 21 (LTS)
+- Spring Boot 4.1.1
+- Spring Web MVC
+- Spring Data JPA + Hibernate
+- Jakarta Validation
+- MySQL 8.4 (Docker Compose)
+- RestClient para integracao ViaCEP
 
-> Este arquivo e o contrato oficial entre backend e frontend ate o momento.
->
-> Sempre que um endpoint mudar, atualize este documento para manter os dois lados alinhados.
+Arquitetura adotada: **camadas (Layered Architecture)**.
 
-## 1) Convencoes gerais
+- `controllers`: expoe HTTP e status (`ResponseEntity`)
+- `services`: centraliza regra de negocio e transacao
+- `repositories`: acesso ao banco via JPA
+- `entities`: modelo persistente
+- `dto`: contrato de entrada/saida
+- `clients/viacep`: integracao externa isolada
+- `controllers/handlers`: padrao de erro
+- `validation`: validacoes customizadas (CPF)
 
-- Base local: `http://localhost:8080/api`
+Por que encaixa no projeto:
+
+- baixo acoplamento entre HTTP, regra e persistencia
+- facil evolucao de regras bancarias
+- melhor testabilidade por camada
+
+## 2) Convencoes gerais
+
+- Base URL: `http://localhost:8080/api`
 - Conteudo: `application/json`
-- Moeda: decimal com `BigDecimal` (2 casas)
-- DTOs:
-  - entrada: `...Request`
-  - saida: `...Response`
+- Valores monetarios: `BigDecimal` (2 casas)
+- UUID na API: texto
 
-Padrao de envio recomendado no JSON:
+### UUID no MySQL
 
-- enviar como string decimal para evitar problemas de precisao no frontend JavaScript.
-- exemplo: `"valor": "50.00"`
+- Persistencia: `binary(16)`
+- API: continua texto
 
-Padrao de recepcao no backend:
+Workbench:
 
-- DTOs Java usam `BigDecimal` no campo `valor`.
-- Exemplo: `public record DepositarRequest(BigDecimal valor, String descricao) {}`
+- leitura: `BIN_TO_UUID(id)`
+- filtro: `UUID_TO_BIN('550e8400-e29b-41d4-a716-446655440000')`
 
-## 2) Entidades e responsabilidade de cada uma
+## 3) Integracao ViaCEP
 
-- `Cliente`: guarda dados pessoais.
-- `Endereco`: guarda endereco oficial + numero/complemento.
-- `Conta`: guarda saldo atual da conta.
-- `Lancamento`: guarda historico das movimentacoes.
+Fluxo implementado:
 
-Relacoes:
+1. `ClienteService` normaliza CEP (somente digitos)
+2. chama `ClienteViaCep.buscarPorCep(cep)`
+3. `ClienteViaCep` usa `RestClient` com timeout configuravel
+4. `erro=true` da API ViaCEP -> `NaoProcessavelException` (`422`)
+5. falha 5xx/timeout -> `ServicoExternoException` (`503`)
+6. endereco oficial e combinado com `numero`/`complemento` da request
 
-```text
-Cliente (1) ----- (1) Endereco
-Cliente (1) ----- (N) Conta
-Conta (1) ------- (N) Lancamento
-```
+## 4) Endpoints implementados
 
-### Ponto mais importante sobre `Lancamento`
+## 4.1 Clientes
 
-`Lancamento` e criado internamente pelo backend no `ServicoConta`.
+### `POST /api/clientes`
 
-- Deposito gera `DEPOSITO`
-- Saque gera `SAQUE`
-- Transferencia gera `TRANSFERENCIA`
-
-Sem `Lancamento`, nao existe extrato confiavel para frontend.
-
-## 3) Endpoints e contratos
-
-## 3.1 Criar cliente
-
-Endpoint:
-
-`POST /clientes`
-
-### Request - `CadastroClienteRequest`
+Request (`CadastroClienteRequestDto`):
 
 ```json
 {
   "nomeCompleto": "Joao Silva",
-  "cpf": "12345678901",
-  "email": "joao@email.com",
-  "telefone": "11999999999",
+  "cpf": "52998224725",
+  "email": "joao.silva@rkfbank.com",
+  "telefone": "11999998888",
   "cep": "01001000",
   "numero": "123",
   "complemento": "Apto 45"
 }
 ```
 
-### Response 201 - `ClienteResponse`
+Response `201` (`ClienteResponseDto`):
 
 ```json
 {
-  "id": "a7fd1fa2-7d8f-4f89-bf89-c4e4fc8ce6e3",
+  "id": "d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e",
   "nomeCompleto": "Joao Silva",
-  "cpf": "12345678901",
-  "email": "joao@email.com",
-  "telefone": "11999999999",
+  "cpf": "52998224725",
+  "email": "joao.silva@rkfbank.com",
+  "telefone": "11999998888",
   "endereco": {
     "cep": "01001-000",
     "logradouro": "Praca da Se",
@@ -102,21 +99,19 @@ Endpoint:
 }
 ```
 
-Regras de negocio:
+### `GET /api/clientes?paginado=false`
 
-- CPF e email devem ser unicos.
-- CEP deve ter 8 digitos numericos.
-- Endereco e montado por composicao:
-    - ViaCEP fornece dados oficiais.
-    - usuario fornece `numero` e `complemento`.
+Response `200`: `List<ClienteResponseDto>`
 
-## 3.2 Abrir conta para cliente
+### `GET /api/clientes?paginado=true&page=0&size=10`
 
-Endpoint:
+Response `200`: `Page<ClienteResponseDto>`
 
-`POST /clientes/{clienteId}/contas`
+## 4.2 Contas e movimentacoes
 
-### Request - `AbrirContaRequest`
+### `POST /api/clientes/{clienteId}/contas`
+
+Request (`AbrirContaRequestDto`):
 
 ```json
 {
@@ -126,215 +121,122 @@ Endpoint:
 }
 ```
 
-### Response 201 - `ContaResponse`
+Response `201` (`ContaResponseDto`):
 
 ```json
 {
-  "id": "0f77d728-e8f8-4449-b8ac-2cb95a66c3a6",
-  "clienteId": "a7fd1fa2-7d8f-4f89-bf89-c4e4fc8ce6e3",
+  "id": "a4fbcfa4-f93f-4f0e-83ca-0db7bf2fe9f9",
+  "clienteId": "d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e",
   "agencia": "0001",
   "numeroConta": "12345678",
   "tipoContaEnum": "CORRENTE",
-  "saldo": "0.00",
+  "saldo": 0.00,
   "ativa": true
 }
 ```
 
-Regras de negocio:
+### `GET /api/contas?paginado=false`
 
-- `clienteId` deve existir.
-- `numeroConta` deve ser unico.
-- `tipoContaEnum` deve ser `CORRENTE` ou `POUPANCA`.
+Response `200`: `List<ContaResponseDto>`
 
-## 3.3 Deposito
+### `GET /api/contas?paginado=true&page=0&size=10`
 
-Endpoint:
+Response `200`: `Page<ContaResponseDto>`
 
-`POST /contas/{contaId}/deposito`
+### `POST /api/contas/{contaId}/deposito`
 
-### Request - `DepositarRequest`
+Request (`DepositarRequestDto`):
 
 ```json
 {
-  "valor": "50.00",
+  "valor": 150.00,
   "descricao": "Deposito inicial"
 }
 ```
 
-### Response 204
+Response `204` (sem corpo)
 
-Sem corpo.
+### `POST /api/contas/{contaId}/saque`
 
-Efeito interno:
-
-- soma `valor` no saldo;
-- cria `Lancamento` com tipo `DEPOSITO`.
-
-## 3.4 Saque
-
-Endpoint:
-
-`POST /contas/{contaId}/saque`
-
-### Request - `SacarRequest`
+Request (`SaqueRequestDto`):
 
 ```json
 {
-  "valor": "15.00",
-  "descricao": "Saque caixa 24h"
+  "valor": 20.00,
+  "descricao": "Saque teste"
 }
 ```
 
-### Response 204
+Response `204` (sem corpo)
 
-Sem corpo.
+### `POST /api/transferencias`
 
-Efeito interno:
-
-- valida saldo suficiente;
-- subtrai valor do saldo;
-- cria `Lancamento` com tipo `SAQUE`.
-
-## 3.5 Transferencia
-
-Endpoint:
-
-`POST /transferencias`
-
-### Request - `TransferirRequest`
+Request (`TransferirRequestDto`):
 
 ```json
 {
-  "contaOrigemId": "0f77d728-e8f8-4449-b8ac-2cb95a66c3a6",
-  "contaDestinoId": "8fdf7fa3-9965-40ca-a7e1-f8d2f9d96f4d",
-  "valor": "25.00",
+  "contaOrigemId": "a4fbcfa4-f93f-4f0e-83ca-0db7bf2fe9f9",
+  "contaDestinoId": "13c2690e-ef87-4f5b-b0fe-c98c006edc1e",
+  "valor": 50.00,
   "descricao": "Transferencia aluguel"
 }
 ```
 
-### Response 204
+Response `204` (sem corpo)
 
-Sem corpo.
+### `GET /api/contas/{contaId}/lancamentos`
 
-Efeito interno:
-
-- valida contas diferentes;
-- valida contas ativas;
-- valida saldo da origem;
-- debita origem, credita destino;
-- cria `Lancamento` com tipo `TRANSFERENCIA`.
-
-## 3.6 Extrato da conta
-
-Endpoint:
-
-`GET /contas/{contaId}/lancamentos`
-
-### Response 200 - `List<LancamentoResponse>`
+Response `200` (`List<LancamentoResponseDto>`):
 
 ```json
 [
   {
-    "id": "8f3f1f83-577a-4d5a-8d22-d10f4312bfe0",
-    "tipoLancamento": "DEPOSITO",
-    "valor": "50.00",
-    "contaOrigemId": null,
-    "contaDestinoId": "0f77d728-e8f8-4449-b8ac-2cb95a66c3a6",
-    "descricao": "Deposito inicial",
-    "dataHora": "2026-10-02T12:30:00Z"
+    "id": "a4cc0d3e-13ac-4778-a577-60efd4fd92eb",
+    "tipoLancamento": "TRANSFERENCIA",
+    "valor": 50.00,
+    "contaOrigemId": "a4fbcfa4-f93f-4f0e-83ca-0db7bf2fe9f9",
+    "contaDestinoId": "13c2690e-ef87-4f5b-b0fe-c98c006edc1e",
+    "descricao": "Transferencia aluguel",
+    "dataHora": "2026-10-05T15:32:14Z"
   }
 ]
 ```
 
-## 4) Fluxo completo ViaCEP (entrada -> resposta)
+## 5) Regras de negocio implementadas
 
-1. Usuario digita CEP no frontend.
-2. Front envia `CadastroClienteRequest` para `POST /api/clientes`.
-3. Backend valida campos (`@Valid`).
-4. Backend normaliza CEP (`replaceAll("\\D", "")`).
-5. Backend valida regex `^\\d{8}$`.
-6. Backend chama `GET https://viacep.com.br/ws/{cep}/json/`.
-7. ViaCEP responde com endereco ou `{"erro": true}`.
-8. Backend compoe o endereco:
-    - ViaCEP: `logradouro`, `bairro`, `localidade`, `uf`, `ibge`
-    - usuario: `numero`, `complemento`
-9. Backend salva `Cliente` com `Endereco`.
-10. Backend devolve `ClienteResponse` com endereco completo.
+- CPF unico
+- email unico
+- numeroConta unico
+- conta deve estar ativa para movimentar
+- valor deve ser maior que zero
+- saque e transferencia exigem saldo
+- transferencia exige contas diferentes
+- tipo de lancamento:
+  - `DEPOSITO`
+  - `SAQUE`
+  - `TRANSFERENCIA`
 
-Observacao de status para CEP:
+## 6) Erros HTTP padrao
 
-- CEP mal formatado no request (`cep` fora de `\\d{8}`) => `400`.
-- CEP bem formatado, mas inexistente no ViaCEP (`"erro": true`) => `422`.
-
-## 5) Erros padronizados
-
-### Response - `ErroResponse`
+Payload (`ErroResponse`):
 
 ```json
 {
-  "timestamp": "2026-10-02T10:15:30Z",
+  "timestamp": "2026-10-05T15:40:00Z",
   "status": 400,
   "error": "Bad Request",
   "message": "Requisicao invalida",
   "path": "/api/clientes",
   "campos": [
-    { "campo": "cpf", "mensagem": "cpf deve ter 11 digitos numericos" },
-    { "campo": "cep", "mensagem": "cep deve ter 8 digitos numericos" }
+    { "campo": "cpf", "mensagem": "cpf invalido" }
   ]
 }
 ```
 
-Mapeamento atual:
+Mapeamento:
 
-- `400`:
-    - validacao de payload (`@Valid`, campo ausente, formato invalido);
-    - JSON invalido/tipo incompativel;
-    - parametro de URL invalido (ex.: UUID mal formatado).
-- `404`:
-    - cliente nao encontrado;
-    - conta nao encontrada.
-- `409`:
-    - conflito de unicidade (CPF/email/numeroConta ja existente).
-- `422`:
-    - regra de negocio com payload valido (saldo insuficiente, conta inativa, transferencia para mesma conta, CEP inexistente no ViaCEP).
-- `503`:
-    - servico externo indisponivel (ViaCEP fora do ar/timeout).
-
-### Exemplo 404
-
-```json
-{
-  "timestamp": "2026-10-02T10:15:30Z",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Conta nao encontrada",
-  "path": "/api/contas/0f77d728-e8f8-4449-b8ac-2cb95a66c3a6/deposito",
-  "campos": []
-}
-```
-
-### Exemplo 422
-
-```json
-{
-  "timestamp": "2026-10-02T10:15:30Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "message": "Saldo insuficiente",
-  "path": "/api/contas/0f77d728-e8f8-4449-b8ac-2cb95a66c3a6/saque",
-  "campos": []
-}
-```
-
-## 6) Checklist de alinhamento com frontend
-
-- [ ] Front envia valores monetarios no campo `valor` (ex.: `"50.00"`)
-- [ ] Front trata `204` sem corpo em deposito/saque/transferencia
-- [ ] Front trata `201` com corpo em criacao de cliente e abertura de conta
-- [ ] Front mostra `message` de `ErroResponse` para o usuario
-- [ ] Front, em caso de `400`, mapeia `campos[]` para mensagens por input
-- [ ] Front usa `ClienteResponse.endereco` para renderizar confirmacao do cadastro
-- [ ] Time mantem nomes `Request`/`Response` sem misturar com entidades
-```
-
-Se quiser, no próximo passo eu também te devolvo uma versão **“diff por seção”** (o que mudou em cada item do contrato), para facilitar explicar ao seu amigo do frontend.
+- `400`: validacao/request invalida
+- `404`: cliente ou conta nao encontrado
+- `409`: conflito de negocio (duplicidade)
+- `422`: regra nao processavel
+- `503`: indisponibilidade/falha ViaCEP
