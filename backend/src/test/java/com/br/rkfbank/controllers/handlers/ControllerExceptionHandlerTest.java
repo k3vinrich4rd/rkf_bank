@@ -8,11 +8,14 @@ import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
 import com.br.rkfbank.exceptions.NaoProcessavelException;
 import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.exceptions.ServicoExternoException;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -65,6 +68,53 @@ class ControllerExceptionHandlerTest {
 
         assertEquals(400, response.status());
         assertEquals("id", response.campos().getFirst().campo());
+        assertEquals("Tipo invalido para o parametro id", response.campos().getFirst().mensagem());
+    }
+
+    @Test
+    void deveUsarMensagemDeTipoCorretaParaParametroNumerico() {
+        MethodArgumentTypeMismatchException ex = new MethodArgumentTypeMismatchException(
+                "invalido",
+                Integer.class,
+                "size",
+                null,
+                new IllegalArgumentException("numero invalido")
+        );
+
+        ErroResponse response = handler.parametroInvalido(ex, request("/api/contas"));
+
+        assertEquals("Tipo invalido para o parametro size", response.campos().getFirst().mensagem());
+    }
+
+    @Test
+    void deveMapearPaginacaoInvalidaPara400Estruturado() {
+        ErroResponse response = handler.requisicaoInvalida(
+                new RequisicaoInvalidaException("size", "deve estar entre 1 e 100"),
+                request("/api/contas")
+        );
+
+        assertEquals(400, response.status());
+        assertEquals("size", response.campos().getFirst().campo());
+    }
+
+    @Test
+    void deveMapearConflitoOtimistaPara409() {
+        ErroResponse response = handler.conflitoConcorrencia(
+                new OptimisticLockingFailureException("stale account"),
+                request("/api/contas")
+        );
+
+        assertEquals(409, response.status());
+    }
+
+    @Test
+    void deveMapearConflitoJpaOtimistaPara409() {
+        ErroResponse response = handler.conflitoConcorrencia(
+                new OptimisticLockException("stale account"),
+                request("/api/contas")
+        );
+
+        assertEquals(409, response.status());
     }
 
     @Test

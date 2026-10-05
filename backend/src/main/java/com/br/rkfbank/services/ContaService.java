@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -60,7 +61,11 @@ public class ContaService {
         conta.setAtiva(true);
 
         // Retorna DTO para não expor entidade JPA diretamente na API.
-        return paraContaResponse(contaRepository.save(conta));
+        try {
+            return paraContaResponse(contaRepository.saveAndFlush(conta));
+        } catch (DataIntegrityViolationException ex) {
+            throw new NegocioException("Numero de conta ja existe");
+        }
     }
 
     @Transactional

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -64,7 +65,7 @@ class ClienteServiceTest {
                 false
         ));
 
-        when(clienteRepository.save(any(Cliente.class))).thenAnswer(invocation -> {
+        when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> {
             Cliente salvo = invocation.getArgument(0);
             ReflectionTestUtils.setField(salvo, "id", UUID.fromString("d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e"));
             return salvo;
@@ -185,10 +186,26 @@ class ClienteServiceTest {
         when(clienteViaCep.buscarPorCep("01001000")).thenReturn(new ResponseViaCepDto(
                 "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
         ));
-        when(clienteRepository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         clienteService.cadastrar(request);
 
         verify(clienteViaCep).buscarPorCep("01001000");
+    }
+
+    @Test
+    void deveConverterConflitoDeUnicidadeNoInsertEm409() {
+        CadastroClienteRequestDto request = new CadastroClienteRequestDto(
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45"
+        );
+        when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
+        when(clienteRepository.existsByEmail(request.email())).thenReturn(false);
+        when(clienteViaCep.buscarPorCep("01001000")).thenReturn(new ResponseViaCepDto(
+                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
+        ));
+        when(clienteRepository.saveAndFlush(any(Cliente.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate CPF"));
+
+        assertThrows(NegocioException.class, () -> clienteService.cadastrar(request));
     }
 }

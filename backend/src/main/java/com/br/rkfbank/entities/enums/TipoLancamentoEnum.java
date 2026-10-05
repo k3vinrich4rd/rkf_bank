@@ -4,7 +4,9 @@ public enum TipoLancamentoEnum {
 
     DEPOSITO("Depósito"),
     SAQUE("Saque"),
-    TRANSFERENCIA("Transferência");
+    TRANSFERENCIA("Transferência"),
+    CREDITO("Crédito"),
+    DEBITO("Débito");
 
     private final String descricao;
 

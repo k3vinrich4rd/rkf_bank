@@ -6,10 +6,13 @@ import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
 import com.br.rkfbank.exceptions.NaoProcessavelException;
 import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.exceptions.ServicoExternoException;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -42,7 +45,14 @@ public class ControllerExceptionHandler {
     public ErroResponse parametroInvalido(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         // Nome do parametro invalido da URL para orientar quem consome a API.
         String campo = ex.getName();
-        return montar(HttpStatus.BAD_REQUEST, "Parametro de URL invalido", request.getRequestURI(), List.of(new ErroCampoResponse(campo, campo + " deve ser um UUID valido")));
+        return montar(HttpStatus.BAD_REQUEST, "Parametro de URL invalido", request.getRequestURI(), List.of(new ErroCampoResponse(campo, "Tipo invalido para o parametro " + campo)));
+    }
+
+    @ExceptionHandler(RequisicaoInvalidaException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErroResponse requisicaoInvalida(RequisicaoInvalidaException ex, HttpServletRequest request) {
+        return montar(HttpStatus.BAD_REQUEST, "Requisicao invalida", request.getRequestURI(),
+                List.of(new ErroCampoResponse(ex.getCampo(), ex.getMessage())));
     }
 
     @ExceptionHandler(ClienteNaoEncontradoException.class)
@@ -61,6 +71,13 @@ public class ControllerExceptionHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErroResponse conflito(NegocioException ex, HttpServletRequest request) {
         return montar(HttpStatus.CONFLICT, ex.getMessage(), request.getRequestURI(), List.of());
+    }
+
+    @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErroResponse conflitoConcorrencia(RuntimeException ex, HttpServletRequest request) {
+        return montar(HttpStatus.CONFLICT, "A conta foi alterada por outra operacao; tente novamente",
+                request.getRequestURI(), List.of());
     }
 
     @ExceptionHandler(NaoProcessavelException.class)

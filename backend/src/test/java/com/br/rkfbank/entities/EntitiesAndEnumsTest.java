@@ -95,5 +95,7 @@ class EntitiesAndEnumsTest {
         assertEquals("Depósito", TipoLancamentoEnum.DEPOSITO.getDescricao());
         assertEquals("Saque", TipoLancamentoEnum.SAQUE.getDescricao());
         assertEquals("Transferência", TipoLancamentoEnum.TRANSFERENCIA.getDescricao());
+        assertEquals(TipoLancamentoEnum.CREDITO, TipoLancamentoEnum.valueOf("CREDITO"));
+        assertEquals(TipoLancamentoEnum.DEBITO, TipoLancamentoEnum.valueOf("DEBITO"));
     }
 }

@@ -6,6 +6,7 @@ import com.br.rkfbank.dto.request.conta.SaqueRequestDto;
 import com.br.rkfbank.dto.request.conta.TransferirRequestDto;
 import com.br.rkfbank.dto.response.conta.ContaResponseDto;
 import com.br.rkfbank.dto.response.conta.LancamentoResponseDto;
+import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.services.ContaService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api")
 public class ContaController {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final ContaService contaService;
 
@@ -73,6 +76,7 @@ public class ContaController {
     ) {
         // Quando paginado=true, retorna Page com metadados de paginação.
         if (paginado) {
+            validarPaginacao(page, size);
             Page<ContaResponseDto> resposta = contaService.listarPaginado(PageRequest.of(page, size));
             return ResponseEntity.ok(resposta);
         }
@@ -80,5 +84,14 @@ public class ContaController {
         // Caso contrário, retorna lista completa.
         List<ContaResponseDto> resposta = contaService.listarTodas();
         return ResponseEntity.ok(resposta);
+    }
+
+    private void validarPaginacao(int page, int size) {
+        if (page < 0) {
+            throw new RequisicaoInvalidaException("page", "deve ser maior ou igual a zero");
+        }
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new RequisicaoInvalidaException("size", "deve estar entre 1 e " + MAX_PAGE_SIZE);
+        }
     }
 }

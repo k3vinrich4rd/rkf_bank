@@ -2,6 +2,7 @@ package com.br.rkfbank.controllers;
 
 import com.br.rkfbank.dto.request.cliente.CadastroClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
+import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.services.ClienteService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -19,6 +20,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/clientes")
 public class ClienteController {
+
+    private static final int MAX_PAGE_SIZE = 100;
 
     private final ClienteService clienteService;
 
@@ -40,6 +43,7 @@ public class ClienteController {
     ) {
         // Quando paginado=true, retorna Page com metadados de paginação.
         if (paginado) {
+            validarPaginacao(page, size);
             Page<ClienteResponseDto> resposta = clienteService.listarPaginado(PageRequest.of(page, size));
             return ResponseEntity.ok(resposta);
         }
@@ -47,5 +51,14 @@ public class ClienteController {
         // Caso contrário, retorna lista completa para consumo simples.
         List<ClienteResponseDto> resposta = clienteService.listarTodos();
         return ResponseEntity.ok(resposta);
+    }
+
+    private void validarPaginacao(int page, int size) {
+        if (page < 0) {
+            throw new RequisicaoInvalidaException("page", "deve ser maior ou igual a zero");
+        }
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new RequisicaoInvalidaException("size", "deve estar entre 1 e " + MAX_PAGE_SIZE);
+        }
     }
 }

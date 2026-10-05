@@ -4,6 +4,7 @@
 
 ```powershell
 Set-Location "C:\Users\Estudo$\Documents\rkfbank"
+Copy-Item .env.example .env
 docker compose up -d
 .\mvnw.cmd spring-boot:run
 ```

@@ -2,6 +2,7 @@ package com.br.rkfbank.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -13,6 +14,7 @@ import com.br.rkfbank.dto.response.conta.ContaResponseDto;
 import com.br.rkfbank.dto.response.conta.LancamentoResponseDto;
 import com.br.rkfbank.entities.enums.TipoContaEnum;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
+import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.services.ContaService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -116,6 +118,26 @@ class ContaControllerTest {
 
         assertEquals(200, response.getStatusCode().value());
         assertInstanceOf(Page.class, response.getBody());
+    }
+
+    @Test
+    void deveRejeitarPaginacaoComPaginaNegativa() {
+        RequisicaoInvalidaException exception = assertThrows(
+                RequisicaoInvalidaException.class,
+                () -> contaController.listarContas(true, -1, 10)
+        );
+
+        assertEquals("page", exception.getCampo());
+    }
+
+    @Test
+    void deveRejeitarPaginacaoComTamanhoNaoPositivo() {
+        RequisicaoInvalidaException exception = assertThrows(
+                RequisicaoInvalidaException.class,
+                () -> contaController.listarContas(true, 0, 0)
+        );
+
+        assertEquals("size", exception.getCampo());
     }
 
     private ContaResponseDto contaResponse() {

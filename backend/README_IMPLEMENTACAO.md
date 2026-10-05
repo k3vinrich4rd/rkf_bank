@@ -200,6 +200,7 @@ SELECT * FROM tb_conta WHERE id = UUID_TO_BIN('550e8400-e29b-41d4-a716-446655440
 
 ```powershell
 Set-Location "C:\Users\Estudo$\Documents\rkfbank"
+Copy-Item .env.example .env
 docker compose up -d
 .\mvnw.cmd clean test
 .\mvnw.cmd verify
