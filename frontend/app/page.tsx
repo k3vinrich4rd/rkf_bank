@@ -1,33 +1,30 @@
-import { BalanceSummary } from "@/components/balance-summary";
-import type { Account } from "@/types";
+import { CardSection } from "@/components/marketing/card-section";
+import { CtaSection } from "@/components/marketing/cta-section";
+import { FaqSection } from "@/components/marketing/faq-section";
+import { FeaturesSection } from "@/components/marketing/features-section";
+import { Hero } from "@/components/marketing/hero";
+import { Highlights } from "@/components/marketing/highlights";
+import { HowItWorksSection } from "@/components/marketing/how-it-works-section";
+import { SecuritySection } from "@/components/marketing/security-section";
+import { SiteFooter } from "@/components/marketing/site-footer";
+import { SiteHeader } from "@/components/marketing/site-header";
 
-// Placeholder até a integração com a API do backend.
-const demoAccount: Account = {
-  id: "demo",
-  ownerName: "Conta corrente",
-  balance: 123456, // centavos → R$ 1.234,56
-};
-
-export default function Home() {
+/** Landing page institucional (estática, renderizada no build). */
+export default function HomePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="flex flex-col items-center text-center">
-        <span className="text-sm font-medium text-muted-foreground">
-          RKF Bank
-        </span>
-
-        <h1 className="mt-2 text-4xl font-bold tracking-tight">
-          Banco digital RKF
-        </h1>
-
-        <p className="mt-3 max-w-md text-muted-foreground">
-          Uma experiência financeira simples, segura e inteligente.
-        </p>
-
-        <div className="mt-10">
-          <BalanceSummary account={demoAccount} />
-        </div>
-      </div>
-    </main>
+    <>
+      <SiteHeader />
+      <main className="flex-1">
+        <Hero />
+        <Highlights />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <CardSection />
+        <SecuritySection />
+        <FaqSection />
+        <CtaSection />
+      </main>
+      <SiteFooter />
+    </>
   );
 }
