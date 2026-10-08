@@ -31,8 +31,11 @@ public class ClienteService {
 
   @Transactional
   public ClienteResponseDto cadastrar(CadastroClienteRequestDto request) {
+    // Normaliza o CPF para manter somente dígitos antes das validações de banco.
+    String cpfSanitizado = request.cpf().replaceAll("\\D", "");
+
     // Regra de unicidade de CPF antes de consultar qualquer serviço externo.
-    if (clienteRepository.existsByCpf(request.cpf())) {
+    if (clienteRepository.existsByCpf(cpfSanitizado)) {
       throw new NegocioException("CPF ja cadastrado");
     }
 
@@ -50,6 +53,13 @@ public class ClienteService {
     // Montagem da entidade de domínio com dados da request + resposta do ViaCEP.
     Cliente cliente = getCliente(request, viaCep);
 
+    // Altera o CPF da entidade para salvar a versão puramente numérica no banco de dados.
+    cliente.setCpf(cpfSanitizado);
+
+    // Normaliza o telefone para manter apenas dígitos antes de salvar no banco.
+    String telefoneSanitizado = request.telefone().replaceAll("\\D", "");
+    cliente.setTelefone(telefoneSanitizado);
+
     // Persistência transacional: salva cliente/endereço e retorna no formato de API.
     Cliente salvo;
     try {
@@ -57,12 +67,34 @@ public class ClienteService {
     } catch (DataIntegrityViolationException ex) {
       throw new NegocioException("CPF ou email ja cadastrado");
     }
-    return paraResponse(salvo);
+    return toResponse(salvo);
+  }
+
+  public Cliente buscar(UUID id) {
+    // Busca centralizada para reutilizar a mesma exceção de 404 em outras camadas.
+    return clienteRepository.findById(id).orElseThrow(ClienteNaoEncontradoException::new);
+  }
+
+  @Transactional(readOnly = true)
+  public List<ClienteResponseDto> listarTodos() {
+    // Leitura sem paginação para telas simples.
+    return clienteRepository.findAll().stream().map(this::toResponse).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public Page<ClienteResponseDto> listarPaginado(Pageable pageable) {
+    // Leitura paginada para reduzir payload em listas grandes.
+    return clienteRepository.findAll(pageable).map(this::toResponse);
   }
 
   private static Cliente getCliente(CadastroClienteRequestDto request, ResponseViaCepDto viaCep) {
     Endereco endereco = new Endereco();
-    endereco.setCep(viaCep.cep());
+    // Garante que o CEP salvo no banco de dados esteja com hífen conforme o padrão do ViaCEP/README
+    String cepComHifen = viaCep.cep() != null && !viaCep.cep().contains("-") && viaCep.cep().length() == 8
+            ? viaCep.cep().replaceAll("(\\d{5})(\\d{3})", "$1-$2")
+            : viaCep.cep();
+
+    endereco.setCep(cepComHifen);
     endereco.setLogradouro(viaCep.logradouro());
     endereco.setBairro(viaCep.bairro());
     endereco.setCidade(viaCep.localidade());
@@ -80,24 +112,7 @@ public class ClienteService {
     return cliente;
   }
 
-  public Cliente buscar(UUID id) {
-    // Busca centralizada para reutilizar a mesma exceção de 404 em outras camadas.
-    return clienteRepository.findById(id).orElseThrow(ClienteNaoEncontradoException::new);
-  }
-
-  @Transactional(readOnly = true)
-  public List<ClienteResponseDto> listarTodos() {
-    // Leitura sem paginação para telas simples.
-    return clienteRepository.findAll().stream().map(this::paraResponse).toList();
-  }
-
-  @Transactional(readOnly = true)
-  public Page<ClienteResponseDto> listarPaginado(Pageable pageable) {
-    // Leitura paginada para reduzir payload em listas grandes.
-    return clienteRepository.findAll(pageable).map(this::paraResponse);
-  }
-
-  private ClienteResponseDto paraResponse(Cliente cliente) {
+  private ClienteResponseDto toResponse(Cliente cliente) {
     Endereco endereco = cliente.getEndereco();
     EnderecoResponseDto enderecoResponse = new EnderecoResponseDto(
             endereco.getCep(),
@@ -110,13 +125,38 @@ public class ClienteService {
             endereco.getComplemento()
     );
 
+    String cpfFormatado = getCpfFormatado(cliente);
+    String telefoneFormatado = getTelefoneFormatado(cliente);
+
     return new ClienteResponseDto(
             cliente.getId(),
             cliente.getNomeCompleto(),
-            cliente.getCpf(),
+            cpfFormatado,
             cliente.getEmail(),
-            cliente.getTelefone(),
+            telefoneFormatado,
             enderecoResponse
     );
+  }
+
+  private static String getCpfFormatado(Cliente cliente) {
+    String cpfFormatado = cliente.getCpf();
+    if (cpfFormatado != null && cpfFormatado.length() == 11) {
+      cpfFormatado = cpfFormatado.replaceAll("(\\d{3})(\\d{3})(\\d{3})(\\d{2})", "$1.$2.$3-$4");
+    }
+    return cpfFormatado;
+  }
+
+  private static String getTelefoneFormatado(Cliente cliente) {
+    String tel = cliente.getTelefone();
+    if (tel != null) {
+      if (tel.length() == 11) {
+        // Celulares: (XX) XXXXX-XXXX
+        return tel.replaceAll("(\\d{2})(\\d{5})(\\d{4})", "($1) $2-$3");
+      } else if (tel.length() == 10) {
+        // Fixos: (XX) XXXX-XXXX
+        return tel.replaceAll("(\\d{2})(\\d{4})(\\d{4})", "($1) $2-$3");
+      }
+    }
+    return tel;
   }
 }

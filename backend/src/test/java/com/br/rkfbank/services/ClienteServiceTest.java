@@ -75,7 +75,7 @@ class ClienteServiceTest {
 
         assertNotNull(response);
         assertEquals("Joao Silva", response.nomeCompleto());
-        assertEquals("52998224725", response.cpf());
+        assertEquals("529.982.247-25", response.cpf());
         assertEquals("Praca da Se", response.endereco().logradouro());
     }
 

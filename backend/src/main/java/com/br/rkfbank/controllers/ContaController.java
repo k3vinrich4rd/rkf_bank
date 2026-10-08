@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/contas")
 public class ContaController {
 
     private static final int MAX_PAGE_SIZE = 100;
@@ -35,40 +35,40 @@ public class ContaController {
         this.contaService = contaService;
     }
 
-    @PostMapping("/clientes/{clienteId}/contas")
+    @PostMapping("/clientes/{clienteId}")
     public ResponseEntity<ContaResponseDto> abrir(@PathVariable UUID clienteId, @Valid @RequestBody AbrirContaRequestDto request) {
         // Criação de conta vinculada ao cliente com retorno 201.
         return ResponseEntity.status(201).body(contaService.abrir(clienteId, request));
     }
 
-    @PostMapping("/contas/{contaId}/deposito")
+    @PostMapping("/{contaId}/deposito")
     public ResponseEntity<Void> depositar(@PathVariable UUID contaId, @Valid @RequestBody DepositarRequestDto request) {
         // Operação sem payload de saída: apenas confirma 204.
         contaService.depositar(contaId, request);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/contas/{contaId}/saque")
+    @PostMapping("/{contaId}/saque")
     public ResponseEntity<Void> sacar(@PathVariable UUID contaId, @Valid @RequestBody SaqueRequestDto request) {
         // Operação sem payload de saída: apenas confirma 204.
         contaService.sacar(contaId, request);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/transferencias")
+    @PostMapping("/transferencia")
     public ResponseEntity<Void> transferir(@Valid @RequestBody TransferirRequestDto request) {
         // Operação sem payload de saída: apenas confirma 204.
         contaService.transferir(request);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/contas/{contaId}/lancamentos")
+    @GetMapping("/{contaId}/lancamentos")
     public ResponseEntity<List<LancamentoResponseDto>> listar(@PathVariable UUID contaId) {
         // Retorna extrato da conta em ordem decrescente por data.
         return ResponseEntity.ok(contaService.listarLancamentos(contaId));
     }
 
-    @GetMapping("/contas")
+    @GetMapping
     public ResponseEntity<?> listarContas(
             @RequestParam(defaultValue = "false") boolean paginado,
             @RequestParam(defaultValue = "0") int page,

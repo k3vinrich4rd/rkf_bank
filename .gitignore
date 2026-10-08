@@ -37,3 +37,6 @@ build/
 .env
 .env.local
 .env.*.local
+
+# properties files (local secrets)
+.application.properties
