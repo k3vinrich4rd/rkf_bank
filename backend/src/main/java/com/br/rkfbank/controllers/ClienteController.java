@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/clientes")
+@RequestMapping("/clientes")
 public class ClienteController {
 
     private static final int MAX_PAGE_SIZE = 100;
