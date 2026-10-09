@@ -23,3 +23,17 @@ export function formatCurrency(cents: Cents): string {
 
   return brlFormatter.format(cents / 100);
 }
+
+/**
+ * Converte um valor decimal em reais (formato atual da API) para centavos.
+ * `Math.round` absorve o erro de ponto flutuante (ex.: 0.1 + 0.2).
+ *
+ * @example decimalToCents(150.5) // 15050
+ */
+export function decimalToCents(value: number): Cents {
+  if (!Number.isFinite(value)) {
+    throw new TypeError(`decimalToCents espera um número finito, recebeu: ${value}`);
+  }
+
+  return Math.round(value * 100);
+}
