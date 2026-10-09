@@ -15,10 +15,12 @@ import jakarta.persistence.UniqueConstraint;
 import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "tb_conta", uniqueConstraints = {
-    @UniqueConstraint(name = "uk_conta_numero", columnNames = "numero_conta") // Define o campo "numero_conta" como único na tabela "contas"
+    @UniqueConstraint(name = "uk_conta_numero", columnNames = "numero_conta")
 })
 public class Conta {
 
@@ -32,8 +34,10 @@ public class Conta {
     @Column(nullable = false, length = 4)
     private String agencia;
 
+    // Persistido como VARCHAR para facilitar evolucao sem depender de ENUM nativo do MySQL.
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 20)
     private TipoContaEnum tipoContaEnum;
 
     @Column(nullable = false, precision = 19, scale = 2)
@@ -42,9 +46,11 @@ public class Conta {
     @Column(nullable = false)
     private boolean ativa;
 
+    // Controle de concorrencia otimista em atualizacoes da conta.
     @Version
     private Long versao;
 
+    // Dono da conta.
     @ManyToOne(optional = false)
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;

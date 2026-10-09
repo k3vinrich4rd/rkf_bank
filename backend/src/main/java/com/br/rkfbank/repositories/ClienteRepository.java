@@ -6,7 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface ClienteRepository extends JpaRepository<Cliente, UUID> {
-    // queries para verificar se o CPF ou email já existem no banco de dados
+    // Verifica se CPF ja existe para regra de unicidade.
     boolean existsByCpf(String cpf);
+    // Verifica se email ja existe para regra de unicidade.
     boolean existsByEmail(String email);
 }

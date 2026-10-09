@@ -2,6 +2,9 @@ package com.br.rkfbank.entities.enums;
 
 public enum TipoLancamentoEnum {
 
+    DEPOSITO("Depósito"),
+    SAQUE("Saque"),
+    TRANSFERENCIA("Transferência"),
     CREDITO("Crédito"),
     DEBITO("Débito");
 
