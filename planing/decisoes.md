@@ -23,6 +23,11 @@ Data: 02/10
 Decisão: o arquivo `backend/README_CONTRATO_API.md` é a regra entre o backend e o frontend.
 Por quê: assim um lado não fica adivinhando o que o outro faz. Se mudar um endpoint, atualize o arquivo.
 
+## Rotas da API seguem o backend atual
+Data: 11/10
+Decisão: o contrato passa a usar as rotas que o backend já expõe — sem prefixo `/api`, abertura de conta em `POST /contas/clientes/{clienteId}` e transferência em `POST /contas/transferencia`.
+Por quê: o backend já estava pronto e testado assim; ajustar o frontend e o contrato é mais barato perto do prazo do MVP.
+
 ---
 
 ## Ainda falta decidir

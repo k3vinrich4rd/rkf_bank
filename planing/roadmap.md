@@ -14,15 +14,15 @@ O cliente consegue:
 
 ## Semana 1 (05/10 a 11/10) — Arrumar a base
 
-- [ ] Backend compilando e rodando
+- [x] Backend compilando e rodando
 - [x] Tirar o `.env` do git
-- [ ] Responder as dúvidas do `decisoes.md`
+- [x] Responder as dúvidas do `decisoes.md`
 
 ## Semana 2 (12/10 a 18/10) — Cliente e conta
 
-- [ ] Backend: cadastrar cliente + ViaCEP
-- [ ] Backend: abrir conta
-- [ ] Frontend: tela de cadastro
+- [x] Backend: cadastrar cliente + ViaCEP
+- [x] Backend: abrir conta
+- [x] Frontend: tela de cadastro
 - [ ] Frontend: tela da conta (saldo)
 
 ## Semana 3 (19/10 a 25/10) — Movimentações
