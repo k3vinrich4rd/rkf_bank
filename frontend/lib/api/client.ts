@@ -1,7 +1,15 @@
 import { env } from "@/lib/env";
 import type { ErroCampo, ErroResponse } from "./types";
 
-const API_PREFIX = "/api";
+/**
+ * De onde as chamadas partem:
+ * - navegador → proxy `/api` do próprio Next (mesma origem, sem CORS);
+ * - servidor → direto no backend.
+ */
+function baseUrl(): string {
+  const isBrowser = typeof window !== "undefined";
+  return isBrowser ? `${window.location.origin}/api` : env.apiUrl;
+}
 
 /** Erro tipado da API: carrega status HTTP e os erros por campo. */
 export class ApiError extends Error {
@@ -30,7 +38,7 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
 }
 
 function buildUrl(path: string, query?: Record<string, QueryValue>): string {
-  const url = new URL(`${API_PREFIX}${path}`, env.apiUrl);
+  const url = new URL(`${baseUrl()}${path}`);
   for (const [key, value] of Object.entries(query ?? {})) {
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
