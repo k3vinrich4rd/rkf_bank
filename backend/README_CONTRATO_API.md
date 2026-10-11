@@ -31,7 +31,7 @@ Por que encaixa no projeto:
 
 ## 2) Convencoes gerais
 
-- Base URL: `http://localhost:8080/api`
+- Base URL: `http://localhost:8080` (sem prefixo `/api`)
 - Conteudo: `application/json`
 - Valores monetarios: `BigDecimal` (2 casas)
 - UUID na API: texto
@@ -61,7 +61,7 @@ Fluxo implementado:
 
 ## 4.1 Clientes
 
-### `POST /api/clientes`
+### `POST /clientes`
 
 Request (`CadastroClienteRequestDto`):
 
@@ -99,17 +99,17 @@ Response `201` (`ClienteResponseDto`):
 }
 ```
 
-### `GET /api/clientes?paginado=false`
+### `GET /clientes?paginado=false`
 
 Response `200`: `List<ClienteResponseDto>`
 
-### `GET /api/clientes?paginado=true&page=0&size=10`
+### `GET /clientes?paginado=true&page=0&size=10`
 
 Response `200`: `Page<ClienteResponseDto>`
 
 ## 4.2 Contas e movimentacoes
 
-### `POST /api/clientes/{clienteId}/contas`
+### `POST /contas/clientes/{clienteId}`
 
 Request (`AbrirContaRequestDto`):
 
@@ -135,15 +135,15 @@ Response `201` (`ContaResponseDto`):
 }
 ```
 
-### `GET /api/contas?paginado=false`
+### `GET /contas?paginado=false`
 
 Response `200`: `List<ContaResponseDto>`
 
-### `GET /api/contas?paginado=true&page=0&size=10`
+### `GET /contas?paginado=true&page=0&size=10`
 
 Response `200`: `Page<ContaResponseDto>`
 
-### `POST /api/contas/{contaId}/deposito`
+### `POST /contas/{contaId}/deposito`
 
 Request (`DepositarRequestDto`):
 
@@ -156,7 +156,7 @@ Request (`DepositarRequestDto`):
 
 Response `204` (sem corpo)
 
-### `POST /api/contas/{contaId}/saque`
+### `POST /contas/{contaId}/saque`
 
 Request (`SaqueRequestDto`):
 
@@ -169,7 +169,7 @@ Request (`SaqueRequestDto`):
 
 Response `204` (sem corpo)
 
-### `POST /api/transferencias`
+### `POST /contas/transferencia`
 
 Request (`TransferirRequestDto`):
 
@@ -184,7 +184,7 @@ Request (`TransferirRequestDto`):
 
 Response `204` (sem corpo)
 
-### `GET /api/contas/{contaId}/lancamentos`
+### `GET /contas/{contaId}/lancamentos`
 
 Response `200` (`List<LancamentoResponseDto>`):
 
@@ -226,7 +226,7 @@ Payload (`ErroResponse`):
   "status": 400,
   "error": "Bad Request",
   "message": "Requisicao invalida",
-  "path": "/api/clientes",
+  "path": "/clientes",
   "campos": [
     { "campo": "cpf", "mensagem": "cpf invalido" }
   ]
