@@ -12,7 +12,7 @@ import type {
 
 export const contasApi = {
   abrir: (clienteId: Uuid, data: AbrirContaRequest) =>
-    apiRequest<ContaResponse>(`/clientes/${clienteId}/contas`, {
+    apiRequest<ContaResponse>(`/contas/clientes/${clienteId}`, {
       method: "POST",
       body: data,
     }),
@@ -29,7 +29,7 @@ export const contasApi = {
     apiRequest<void>(`/contas/${contaId}/saque`, { method: "POST", body: data }),
 
   transferir: (data: TransferenciaRequest) =>
-    apiRequest<void>("/transferencias", { method: "POST", body: data }),
+    apiRequest<void>("/contas/transferencia", { method: "POST", body: data }),
 
   extrato: (contaId: Uuid) =>
     apiRequest<LancamentoResponse[]>(`/contas/${contaId}/lancamentos`),
