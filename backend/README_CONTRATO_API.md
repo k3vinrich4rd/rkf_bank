@@ -1,69 +1,59 @@
-# RKF Bank - Contrato de API (implementado)
+# RKF Bank - Contrato de API
 
-## 1) Tecnologias e arquitetura
+Este arquivo é o acordo entre backend e frontend. Se um endpoint mudar, ele muda aqui no mesmo PR,
+junto com os tipos em `frontend/lib/api/types.ts`.
 
-Tecnologias em uso:
+- Backend: Kevin
+- Frontend: Renan
+- Versão: 1.1 (12/10/2026)
 
-- Java 21 (LTS)
-- Spring Boot 4.1.1
-- Spring Web MVC
-- Spring Data JPA + Hibernate
-- Jakarta Validation
-- MySQL 8.4 (Docker Compose)
-- RestClient para integracao ViaCEP
+## 1) Stack e arquitetura
 
-Arquitetura adotada: **camadas (Layered Architecture)**.
+**Backend:** Java 21, Spring Boot 4, Spring Data JPA, Jakarta Validation, MySQL 8.4 (Docker), RestClient para o ViaCEP.
 
-- `controllers`: expoe HTTP e status (`ResponseEntity`)
-- `services`: centraliza regra de negocio e transacao
-- `repositories`: acesso ao banco via JPA
-- `entities`: modelo persistente
-- `dto`: contrato de entrada/saida
-- `clients/viacep`: integracao externa isolada
-- `controllers/handlers`: padrao de erro
-- `validation`: validacoes customizadas (CPF)
+**Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS 4.
 
-Por que encaixa no projeto:
+O backend segue arquitetura em camadas:
 
-- baixo acoplamento entre HTTP, regra e persistencia
-- facil evolucao de regras bancarias
-- melhor testabilidade por camada
+| Pacote | Responsabilidade |
+|---|---|
+| `controllers` | recebe a requisição HTTP e devolve o status |
+| `services` | regras de negócio e transações |
+| `repositories` | acesso ao banco (Spring Data JPA) |
+| `entities` | modelo persistido |
+| `dto` | formato de entrada e saída da API |
+| `clients/viacep` | integração com o ViaCEP |
+| `controllers/handlers` | padroniza as respostas de erro |
+| `validation` | validações customizadas (CPF) |
 
-## 2) Convencoes gerais
+## 2) Convenções
 
 - Base URL: `http://localhost:8080` (sem prefixo `/api`)
-- Conteudo: `application/json`
-- Valores monetarios: `BigDecimal` (2 casas)
-- UUID na API: texto
+- Corpo sempre em `application/json`
+- IDs são UUID em texto
+- Dinheiro é número com 2 casas decimais: `150.00`
+- Data/hora em ISO-8601 UTC: `2026-10-12T11:19:53.038985Z`
+- Enums em maiúsculas: `CORRENTE`, `POUPANCA`
 
-### UUID no MySQL
+**Como o frontend chama:** o navegador acessa `/api/...` no próprio Next, que repassa para o backend
+(`next.config.ts`). Por isso o `/api` só existe no front. No Postman ou Insomnia, chame o backend direto.
 
-- Persistencia: `binary(16)`
-- API: continua texto
+## 3) Endpoints
 
-Workbench:
+| Método | Rota | O que faz | Sucesso |
+|---|---|---|---|
+| `POST` | `/clientes` | cadastra cliente | `201` |
+| `GET` | `/clientes` | lista clientes | `200` |
+| `POST` | `/contas/clientes/{clienteId}` | abre conta para o cliente | `201` |
+| `GET` | `/contas` | lista contas | `200` |
+| `POST` | `/contas/{contaId}/deposito` | deposita | `204` |
+| `POST` | `/contas/{contaId}/saque` | saca | `204` |
+| `POST` | `/contas/transferencia` | transfere entre contas | `204` |
+| `GET` | `/contas/{contaId}/lancamentos` | extrato da conta | `200` |
 
-- leitura: `BIN_TO_UUID(id)`
-- filtro: `UUID_TO_BIN('550e8400-e29b-41d4-a716-446655440000')`
+### 3.1 Cadastrar cliente
 
-## 3) Integracao ViaCEP
-
-Fluxo implementado:
-
-1. `ClienteService` normaliza CEP (somente digitos)
-2. chama `ClienteViaCep.buscarPorCep(cep)`
-3. `ClienteViaCep` usa `RestClient` com timeout configuravel
-4. `erro=true` da API ViaCEP -> `NaoProcessavelException` (`422`)
-5. falha 5xx/timeout -> `ServicoExternoException` (`503`)
-6. endereco oficial e combinado com `numero`/`complemento` da request
-
-## 4) Endpoints implementados
-
-## 4.1 Clientes
-
-### `POST /clientes`
-
-Request (`CadastroClienteRequestDto`):
+`POST /clientes`
 
 ```json
 {
@@ -77,20 +67,35 @@ Request (`CadastroClienteRequestDto`):
 }
 ```
 
-Response `201` (`ClienteResponseDto`):
+| Campo | Regra |
+|---|---|
+| `nomeCompleto` | obrigatório, até 120 caracteres |
+| `cpf` | obrigatório, válido e único |
+| `email` | obrigatório, válido e único |
+| `telefone` | obrigatório |
+| `cep` | obrigatório, precisa existir no ViaCEP |
+| `numero` | obrigatório |
+| `complemento` | opcional, até 80 caracteres |
+
+O front envia CPF, telefone e CEP só com números. O backend também aceita com máscara.
+
+O endereço (logradouro, bairro, cidade, UF e IBGE) vem do ViaCEP. A consulta tem timeout de 3 segundos,
+então vale mostrar um loading no cadastro.
+
+Resposta `201`:
 
 ```json
 {
-  "id": "d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e",
+  "id": "1a89861c-70a0-4b7c-947a-d16cdfe2dd08",
   "nomeCompleto": "Joao Silva",
-  "cpf": "52998224725",
+  "cpf": "529.982.247-25",
   "email": "joao.silva@rkfbank.com",
-  "telefone": "11999998888",
+  "telefone": "(11) 99999-8888",
   "endereco": {
     "cep": "01001-000",
-    "logradouro": "Praca da Se",
-    "bairro": "Se",
-    "cidade": "Sao Paulo",
+    "logradouro": "Praça da Sé",
+    "bairro": "Sé",
+    "cidade": "São Paulo",
     "uf": "SP",
     "ibge": "3550308",
     "numero": "123",
@@ -99,19 +104,31 @@ Response `201` (`ClienteResponseDto`):
 }
 ```
 
-### `GET /clientes?paginado=false`
+Na resposta, CPF, telefone e CEP já vêm formatados. `complemento` pode vir `null`.
 
-Response `200`: `List<ClienteResponseDto>`
+### 3.2 Listar clientes
 
-### `GET /clientes?paginado=true&page=0&size=10`
+`GET /clientes` devolve a lista completa.
 
-Response `200`: `Page<ClienteResponseDto>`
+`GET /clientes?paginado=true&page=0&size=10` devolve paginado. `page` começa em 0 e `size` vai de 1 a 100.
 
-## 4.2 Contas e movimentacoes
+Campos da página que usamos:
 
-### `POST /contas/clientes/{clienteId}`
+```json
+{
+  "content": [],
+  "totalElements": 2,
+  "totalPages": 1,
+  "number": 0,
+  "size": 10,
+  "first": true,
+  "last": true
+}
+```
 
-Request (`AbrirContaRequestDto`):
+### 3.3 Abrir conta
+
+`POST /contas/clientes/{clienteId}`
 
 ```json
 {
@@ -121,12 +138,18 @@ Request (`AbrirContaRequestDto`):
 }
 ```
 
-Response `201` (`ContaResponseDto`):
+| Campo | Regra |
+|---|---|
+| `agencia` | 4 dígitos |
+| `numeroConta` | 5 a 12 dígitos, único |
+| `tipoContaEnum` | `CORRENTE` ou `POUPANCA` |
+
+Resposta `201`:
 
 ```json
 {
-  "id": "a4fbcfa4-f93f-4f0e-83ca-0db7bf2fe9f9",
-  "clienteId": "d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e",
+  "id": "407d727e-4e43-4c93-b01c-331cbaba42fb",
+  "clienteId": "1a89861c-70a0-4b7c-947a-d16cdfe2dd08",
   "agencia": "0001",
   "numeroConta": "12345678",
   "tipoContaEnum": "CORRENTE",
@@ -135,17 +158,15 @@ Response `201` (`ContaResponseDto`):
 }
 ```
 
-### `GET /contas?paginado=false`
+Toda conta começa com saldo zero e ativa. Um cliente pode ter mais de uma conta.
 
-Response `200`: `List<ContaResponseDto>`
+### 3.4 Listar contas
 
-### `GET /contas?paginado=true&page=0&size=10`
+Igual à listagem de clientes: `GET /contas` ou `GET /contas?paginado=true&page=0&size=10`.
 
-Response `200`: `Page<ContaResponseDto>`
+### 3.5 Depositar e sacar
 
-### `POST /contas/{contaId}/deposito`
-
-Request (`DepositarRequestDto`):
+`POST /contas/{contaId}/deposito` e `POST /contas/{contaId}/saque`
 
 ```json
 {
@@ -154,89 +175,182 @@ Request (`DepositarRequestDto`):
 }
 ```
 
-Response `204` (sem corpo)
+- `valor`: obrigatório, maior que zero, até 2 casas decimais
+- `descricao`: opcional, até 140 caracteres
 
-### `POST /contas/{contaId}/saque`
+Resposta `204` sem corpo. O saque precisa de saldo suficiente.
 
-Request (`SaqueRequestDto`):
+### 3.6 Transferir
 
-```json
-{
-  "valor": 20.00,
-  "descricao": "Saque teste"
-}
-```
-
-Response `204` (sem corpo)
-
-### `POST /contas/transferencia`
-
-Request (`TransferirRequestDto`):
+`POST /contas/transferencia`
 
 ```json
 {
-  "contaOrigemId": "a4fbcfa4-f93f-4f0e-83ca-0db7bf2fe9f9",
-  "contaDestinoId": "13c2690e-ef87-4f5b-b0fe-c98c006edc1e",
+  "contaOrigemId": "407d727e-4e43-4c93-b01c-331cbaba42fb",
+  "contaDestinoId": "566dd28f-b08f-41e4-ac55-cc69ecfea4cd",
   "valor": 50.00,
   "descricao": "Transferencia aluguel"
 }
 ```
 
-Response `204` (sem corpo)
+Resposta `204` sem corpo. Débito e crédito acontecem na mesma transação.
 
-### `GET /contas/{contaId}/lancamentos`
+### 3.7 Extrato
 
-Response `200` (`List<LancamentoResponseDto>`):
+`GET /contas/{contaId}/lancamentos`
+
+Resposta `200`, do mais recente para o mais antigo:
 
 ```json
 [
   {
-    "id": "a4cc0d3e-13ac-4778-a577-60efd4fd92eb",
+    "id": "59798941-269a-406c-8783-9be456bf1f5c",
     "tipoLancamento": "TRANSFERENCIA",
     "valor": 50.00,
-    "contaOrigemId": "a4fbcfa4-f93f-4f0e-83ca-0db7bf2fe9f9",
-    "contaDestinoId": "13c2690e-ef87-4f5b-b0fe-c98c006edc1e",
+    "contaOrigemId": "407d727e-4e43-4c93-b01c-331cbaba42fb",
+    "contaDestinoId": "566dd28f-b08f-41e4-ac55-cc69ecfea4cd",
     "descricao": "Transferencia aluguel",
-    "dataHora": "2026-10-05T15:32:14Z"
+    "dataHora": "2026-10-12T11:19:53.038985Z"
+  },
+  {
+    "id": "cc56735d-6a5d-4246-8f7b-da161e3a10e4",
+    "tipoLancamento": "DEPOSITO",
+    "valor": 150.00,
+    "contaOrigemId": null,
+    "contaDestinoId": "407d727e-4e43-4c93-b01c-331cbaba42fb",
+    "descricao": "Deposito inicial",
+    "dataHora": "2026-10-12T11:19:52.338068Z"
   }
 ]
 ```
 
-## 5) Regras de negocio implementadas
+| Tipo | `contaOrigemId` | `contaDestinoId` |
+|---|---|---|
+| `DEPOSITO` | `null` | conta que recebeu |
+| `SAQUE` | conta que sacou | `null` |
+| `TRANSFERENCIA` | quem enviou | quem recebeu |
 
-- CPF unico
-- email unico
-- numeroConta unico
-- conta deve estar ativa para movimentar
-- valor deve ser maior que zero
-- saque e transferencia exigem saldo
-- transferencia exige contas diferentes
-- tipo de lancamento:
-  - `DEPOSITO`
-  - `SAQUE`
-  - `TRANSFERENCIA`
+O `valor` é sempre positivo. Para saber se é entrada ou saída, compare com a conta da tela:
+se ela é o `contaDestinoId`, é entrada.
 
-## 6) Erros HTTP padrao
+## 4) Regras de negócio
 
-Payload (`ErroResponse`):
+- CPF e e-mail não se repetem
+- CEP precisa existir no ViaCEP
+- Toda conta pertence a um cliente
+- Número da conta não se repete
+- Só conta ativa movimenta e tem extrato
+- Valor sempre maior que zero
+- Saque e transferência precisam de saldo
+- Não dá para transferir para a mesma conta
+- Operações simultâneas na mesma conta não se sobrescrevem (lock otimista)
+
+## 5) Respostas de erro
+
+Todo erro tratado volta no mesmo formato:
 
 ```json
 {
-  "timestamp": "2026-10-05T15:40:00Z",
+  "timestamp": "2026-10-12T11:19:54.090042Z",
   "status": 400,
   "error": "Bad Request",
   "message": "Requisicao invalida",
   "path": "/clientes",
   "campos": [
-    { "campo": "cpf", "mensagem": "cpf invalido" }
+    { "campo": "cpf", "mensagem": "cpf inválido" }
   ]
 }
 ```
 
-Mapeamento:
+`campos` só vem preenchido em erro de validação, e o nome do campo é o mesmo do JSON.
+O front usa isso para marcar o input certo no formulário.
 
-- `400`: validacao/request invalida
-- `404`: cliente ou conta nao encontrado
-- `409`: conflito de negocio (duplicidade)
-- `422`: regra nao processavel
-- `503`: indisponibilidade/falha ViaCEP
+| Status | Quando |
+|---|---|
+| `400` | dados inválidos, JSON mal formado ou parâmetro de URL inválido |
+| `404` | cliente ou conta não encontrado |
+| `409` | CPF, e-mail ou número de conta já existe, ou a conta foi alterada ao mesmo tempo |
+| `422` | regra de negócio: CEP inexistente, saldo insuficiente, mesma conta na transferência |
+| `503` | ViaCEP fora do ar |
+
+No front, a decisão é sempre pelo `status`. O `message` serve para mostrar ao usuário.
+
+## 6) Testando o fluxo completo
+
+```bash
+API=http://localhost:8080
+
+# cliente
+curl -X POST $API/clientes -H "Content-Type: application/json" -d '{
+  "nomeCompleto":"Joao Silva","cpf":"52998224725","email":"joao@rkfbank.com",
+  "telefone":"11999998888","cep":"01001000","numero":"123"}'
+
+# conta (use o id do cliente)
+curl -X POST $API/contas/clientes/$CLIENTE_ID -H "Content-Type: application/json" \
+  -d '{"agencia":"0001","numeroConta":"12345678","tipoContaEnum":"CORRENTE"}'
+
+# movimentações (use o id da conta)
+curl -X POST $API/contas/$CONTA_ID/deposito -H "Content-Type: application/json" -d '{"valor":150.00}'
+curl -X POST $API/contas/$CONTA_ID/saque    -H "Content-Type: application/json" -d '{"valor":20.00}'
+
+# extrato
+curl $API/contas/$CONTA_ID/lancamentos
+```
+
+CPFs válidos para teste: `52998224725`, `16899535009`, `39053344705`, `11144477735`.
+
+## 7) Próximos endpoints
+
+Para fechar o MVP, a tela de conta precisa buscar uma conta específica. A ideia é seguir este formato:
+
+| Método | Rota | Para quê |
+|---|---|---|
+| `GET` | `/contas/{contaId}` | tela de saldo |
+| `GET` | `/clientes/{clienteId}/contas` | listar as contas do cliente |
+| `POST` | `/auth/login` | login (junto com o Spring Security) |
+
+Quando um deles for implementado, ele sai daqui e entra na seção 3.
+
+## 8) Como vamos construir
+
+A ideia é que o projeto funcione e também mostre como um time trabalha de verdade.
+Isto é o que seguimos (ou vamos adotar):
+
+### Fluxo de trabalho
+
+- **Branches:** `main` é o que está no ar, `develop` é a integração. Cada tarefa vira uma branch
+  `feature/...`, `fix/...` ou `docs/...` saindo de `develop`.
+- **Commits:** padrão [Conventional Commits](https://www.conventionalcommits.org/pt-br) (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
+- **Pull Requests:** todo código entra por PR, com descrição do que mudou e revisão do outro.
+- **Contrato primeiro:** endpoint novo é combinado aqui antes de virar código, assim front e back trabalham em paralelo.
+- **Decisões:** escolhas importantes ficam registradas em `planing/decisoes.md`.
+
+### Qualidade
+
+- **Testes no backend:** unitários com JUnit 5 e Mockito em cada camada, cobertura com JaCoCo.
+- **Testes de integração:** Testcontainers com MySQL real, para testar repository e fluxo HTTP de ponta a ponta.
+- **Frontend:** ESLint e `tsc` sem erros; testes de componente com Vitest e Testing Library; fluxo principal com Playwright.
+- **CI:** GitHub Actions rodando `mvnw verify` e `pnpm lint`, `pnpm typecheck` e `pnpm build` em todo PR. PR com CI vermelho não entra.
+
+### Backend
+
+- **Migrations:** trocar o `ddl-auto=update` por Flyway, com o histórico do banco versionado no Git.
+- **Documentação viva:** Swagger UI com springdoc-openapi, gerado a partir dos controllers.
+- **Segurança:** Spring Security com JWT para o login; senha com BCrypt; nenhum segredo no repositório.
+- **Logs:** logs estruturados com um id por requisição, para seguir uma operação do início ao fim.
+- **Configuração:** tudo que muda por ambiente vem de variável de ambiente (`.env.example` mostra quais são).
+
+### Frontend
+
+- **Camada de API isolada:** componentes não chamam `fetch`; usam `clientesApi` e `contasApi` em `lib/api`.
+- **Tipos espelhando o contrato:** `lib/api/types.ts` é a versão TypeScript deste arquivo.
+- **Lógica fora do JSX:** cada tela tem um hook (`use-cadastro-form.ts`) e os componentes só desenham.
+- **Logs por camada:** `lib/logger` para a API e `useLogDeTela` / `<LogDeTela />` para as telas.
+- **Acessibilidade:** labels em todos os inputs, navegação por teclado e contraste conferido.
+
+### Entrega
+
+- **Ambiente local:** `docker compose up` sobe o banco; backend e frontend rodam com um comando cada.
+- **Deploy:** frontend na Vercel e backend com banco em um serviço com plano gratuito (Render ou Railway).
+- **README do projeto:** descrição, prints das telas, link do deploy, stack e como rodar.
+  É a primeira coisa que um recrutador abre.
