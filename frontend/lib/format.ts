@@ -8,8 +8,9 @@ const brlFormatter = new Intl.NumberFormat("pt-BR", {
 /**
  * Formata um valor monetário em BRL.
  *
- * O backend trafega dinheiro em centavos (inteiro) para evitar erro de
- * ponto flutuante; a conversão para reais acontece só na borda de exibição.
+ * O frontend faz contas em centavos (inteiro) para evitar erro de ponto
+ * flutuante; a API trafega decimal em reais (ver `decimalToCents`) e a
+ * conversão para texto acontece só na borda de exibição.
  *
  * @param cents valor em centavos, ex.: 123456
  * @returns string formatada, ex.: "R$ 1.234,56"

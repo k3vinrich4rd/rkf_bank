@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, clientesApi, type CadastroClienteRequest, type ClienteResponse } from "@/lib/api";
+import { useLogDeTela } from "@/components/logs";
 import { maskCep, maskCpf, maskTelefone, onlyDigits } from "@/lib/masks";
 
 export type Campo = keyof CadastroClienteRequest;
@@ -68,6 +69,7 @@ function mensagemDeErro(error: unknown): string {
  * Os componentes só desenham — não sabem nada de API.
  */
 export function useCadastroForm() {
+  const logTela = useLogDeTela("cadastro");
   const [valores, setValores] = useState<Valores>(VALORES_INICIAIS);
   const [erros, setErros] = useState<ErrosPorCampo>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
@@ -91,11 +93,23 @@ export function useCadastroForm() {
     setErros({});
     setErroGeral(null);
 
+    logTela.acao("Formulário enviado");
+
     try {
-      setCliente(await clientesApi.cadastrar(toRequest(valores)));
+      const novoCliente = await clientesApi.cadastrar(toRequest(valores));
+      logTela.sucesso("Cadastro concluído", { clienteId: novoCliente.id });
+      setCliente(novoCliente);
     } catch (error) {
+      // O detalhe técnico já foi logado na camada HTTP; aqui registramos o que o usuário viu.
+      const mensagem = mensagemDeErro(error);
+      const camposComErro = error instanceof ApiError ? Object.keys(error.fieldErrors) : [];
+      logTela.falha("Cadastro não concluído", error, {
+        mensagemExibida: mensagem,
+        ...(camposComErro.length > 0 && { camposComErro }),
+      });
+
       if (error instanceof ApiError) setErros(error.fieldErrors);
-      setErroGeral(mensagemDeErro(error));
+      setErroGeral(mensagem);
     } finally {
       setEnviando(false);
     }
