@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { logHttp, type LogContext } from "@/lib/logger";
 import type { ErroCampo, ErroResponse } from "./types";
 
 /**
@@ -68,18 +69,57 @@ export async function apiRequest<T>(
   path: `/${string}`,
   { body, query, headers, ...init }: RequestOptions = {},
 ): Promise<T> {
-  const response = await fetch(buildUrl(path, query), {
-    ...init,
-    headers: {
-      Accept: "application/json",
-      ...(body !== undefined && { "Content-Type": "application/json" }),
-      ...headers,
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  const method = init.method ?? "GET";
+  const requestId = gerarRequestId();
+  const inicio = performance.now();
+  logHttp.debug(`${method} ${path} →`, { requestId, query, body });
 
-  if (!response.ok) throw await toApiError(response);
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path, query), {
+      ...init,
+      headers: {
+        Accept: "application/json",
+        ...(body !== undefined && { "Content-Type": "application/json" }),
+        ...headers,
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (error) {
+    // Sem resposta HTTP: backend fora do ar, proxy do Next falhou ou a rede caiu.
+    logHttp.error(`${method} ${path} falhou sem resposta (${duracaoMs(inicio)} ms)`, {
+      requestId,
+      erro: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
+
+  if (!response.ok) {
+    const apiError = await toApiError(response);
+    registrarErro(method, path, apiError, { requestId, duracaoMs: duracaoMs(inicio) });
+    throw apiError;
+  }
+
+  logHttp.info(`${method} ${path} → ${response.status} (${duracaoMs(inicio)} ms)`, { requestId });
   if (response.status === 204) return undefined as T;
 
   return (await response.json()) as T;
+}
+
+/** 4xx é falha esperada (validação/regra de negócio) → warn; 5xx é falha do servidor → error. */
+function registrarErro(method: string, path: string, apiError: ApiError, contexto: LogContext) {
+  const nivel = apiError.status >= 500 ? "error" : "warn";
+  logHttp[nivel](`${method} ${path} → ${apiError.status}: ${apiError.message}`, {
+    ...contexto,
+    ...(apiError.campos.length > 0 && { campos: apiError.campos }),
+  });
+}
+
+/** Identificador local da chamada, para casar as linhas de log de uma mesma requisição. */
+function gerarRequestId(): string {
+  return globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2, 10);
+}
+
+function duracaoMs(inicio: number): number {
+  return Math.round(performance.now() - inicio);
 }
