@@ -57,7 +57,7 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 | `/cadastro` | [`app/cadastro/page.tsx`](app/cadastro/page.tsx) | ✅ cadastro de cliente integrado à API |
 | `/login` | [`app/login/page.tsx`](app/login/page.tsx) | 🟡 placeholder ("em breve") |
 | `/conta/abrir` | [`app/conta/abrir/page.tsx`](app/conta/abrir/page.tsx) | ✅ abertura de conta (passo seguinte ao cadastro) |
-| `/conta` *(sugestão)* | — | ⏳ saldo |
+| `/conta` | [`app/conta/page.tsx`](app/conta/page.tsx) | ✅ saldo, dados da conta e ID para receber transferências |
 | `/conta/extrato` *(sugestão)* | — | ⏳ extrato |
 | `/conta/depositar`, `/sacar`, `/transferir` *(sugestão)* | — | ⏳ movimentações |
 
@@ -164,7 +164,7 @@ frontend/
 │   ├── marketing/              # seções da landing page
 │   ├── cadastro/               # tela de cadastro: screen, form, showcase, sucesso e o hook
 │   ├── abrir-conta/            # tela de abertura de conta: screen, form, aviso, sucesso e o hook
-│   ├── conta/                  # peças compartilhadas da conta (useContaAtual)
+│   ├── conta/                  # tela da conta + peças compartilhadas (useContaAtual, ContaShell, ContaAviso)
 │   └── logs/                   # useLogDeTela e <LogDeTela />
 ├── config/
 │   ├── site.ts                 # nome, slogan, descrição, menu
@@ -178,7 +178,7 @@ frontend/
 │   ├── masks.ts                # máscaras de CPF, CEP, telefone + onlyDigits
 │   ├── routes.ts               # rotas e âncoras da landing
 │   └── utils.ts                # cn() para juntar classes
-├── types/index.ts              # tipos legados (Cents, Account) — ver débitos técnicos
+├── types/index.ts              # tipos do front que não vêm da API (Cents)
 └── next.config.ts              # proxy /api → backend
 ```
 

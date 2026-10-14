@@ -36,10 +36,9 @@ export function AbrirContaSucesso({ conta }: AbrirContaSucessoProps) {
         ))}
       </dl>
 
-      {/* TODO(tela-conta): levar para a tela da conta quando ela existir. */}
       <Button asChild variant="brand" size="xl" className="mt-10 h-[3.25rem] w-full">
-        <Link href={ROUTES.home}>
-          Continuar
+        <Link href={ROUTES.conta}>
+          Ir para minha conta
           <ArrowRight data-icon="inline-end" aria-hidden="true" />
         </Link>
       </Button>

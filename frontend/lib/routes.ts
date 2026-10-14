@@ -6,6 +6,7 @@ export const ROUTES = {
   home: "/",
   login: "/login",
   signUp: "/cadastro",
+  conta: "/conta",
   abrirConta: "/conta/abrir",
 } as const;
 

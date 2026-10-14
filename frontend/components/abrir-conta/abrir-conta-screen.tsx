@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { LoaderCircle, Lock, UserRound, WalletCards } from "lucide-react";
-import { Logo } from "@/components/brand/logo";
+import { LoaderCircle, UserRound, WalletCards } from "lucide-react";
+import { ContaAviso } from "@/components/conta/conta-aviso";
+import { ContaShell } from "@/components/conta/conta-shell";
 import { ROUTES } from "@/lib/routes";
-import { AbrirContaAviso } from "./abrir-conta-aviso";
 import { AbrirContaForm } from "./abrir-conta-form";
 import { AbrirContaSucesso } from "./abrir-conta-sucesso";
 import { useAbrirConta, type AbrirContaState } from "./use-abrir-conta";
@@ -14,22 +13,9 @@ export function AbrirContaScreen() {
   const estado = useAbrirConta();
 
   return (
-    <div className="flex flex-1 flex-col px-5 py-6 sm:px-10 lg:py-8">
-      <header>
-        <Link href={ROUTES.home} aria-label="Voltar para o início" className="inline-flex rounded-lg">
-          <Logo />
-        </Link>
-      </header>
-
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-14">
-        <Conteudo {...estado} />
-      </main>
-
-      <footer className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
-        <Lock className="size-3" aria-hidden="true" />
-        Seus dados trafegam com criptografia
-      </footer>
-    </div>
+    <ContaShell>
+      <Conteudo {...estado} />
+    </ContaShell>
   );
 }
 
@@ -42,7 +28,7 @@ function Conteudo(estado: AbrirContaState) {
 
     case "sem-cadastro":
       return (
-        <AbrirContaAviso
+        <ContaAviso
           icone={UserRound}
           titulo="Primeiro, seu cadastro"
           descricao="Não encontramos seu cadastro neste navegador. Leva menos de 2 minutos."
@@ -51,13 +37,12 @@ function Conteudo(estado: AbrirContaState) {
       );
 
     case "ja-tem-conta":
-      // TODO(tela-conta): levar para a tela da conta quando ela existir.
       return (
-        <AbrirContaAviso
+        <ContaAviso
           icone={WalletCards}
           titulo="Você já tem uma conta"
           descricao="Sua conta já foi aberta neste navegador."
-          acao={{ rotulo: "Voltar para o início", href: ROUTES.home }}
+          acao={{ rotulo: "Ir para minha conta", href: ROUTES.conta }}
         />
       );
 
