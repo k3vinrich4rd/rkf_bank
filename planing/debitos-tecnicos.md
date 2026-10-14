@@ -40,5 +40,5 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
-| 🟡 | Nada roda automaticamente nos PRs. | GitHub Actions rodando os testes do backend e `lint`, `typecheck` e `build` do frontend. |
+| 🟡 | O frontend não tem CI (o backend já tem: build, testes, CodeQL e revisão de dependências). | Workflow rodando `lint`, `typecheck` e `build` do frontend nos PRs. |
 | 🟢 | A pasta `planing` está escrita errado (o certo é `planning`). | Renomear quando ninguém estiver mexendo nela. |
