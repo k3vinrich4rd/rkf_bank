@@ -28,7 +28,7 @@ concurrency:
 
 jobs:
   build-e-testes:
-    name: Build e testes (Java 21)
+    name: Build e testes (Java 25)
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -41,11 +41,11 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Configurar JDK 21
+      - name: Configurar JDK 25
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
           cache: maven
 
       - name: Compilar, testar e gerar cobertura (JaCoCo)

@@ -9,7 +9,7 @@ junto com os tipos em `frontend/lib/api/types.ts`.
 
 ## 1) Stack e arquitetura
 
-**Backend:** Java 21, Spring Boot 4, Spring Data JPA, Jakarta Validation, MySQL 8.4 (Docker), RestClient para o ViaCEP.
+**Backend:** Java 25, Spring Boot 4, Spring Data JPA, Jakarta Validation, MySQL 8.4 (Docker), RestClient para o ViaCEP.
 
 **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS 4.
 

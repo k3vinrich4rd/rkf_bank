@@ -2,7 +2,7 @@
 
 ## 1) Tecnologias usadas
 
-- Java 21 (LTS)
+- Java 25 (LTS)
 - Spring Boot 4.1.1
 - Spring Web MVC
 - Spring Data JPA + Hibernate
