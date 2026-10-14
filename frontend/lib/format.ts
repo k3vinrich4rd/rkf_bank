@@ -1,4 +1,15 @@
+import type { TipoConta } from "@/lib/api";
 import type { Cents } from "@/types";
+
+const NOMES_TIPO_CONTA: Record<TipoConta, string> = {
+  CORRENTE: "Conta corrente",
+  POUPANCA: "Poupança",
+};
+
+/** CORRENTE → "Conta corrente" · POUPANCA → "Poupança" */
+export function formatTipoConta(tipo: TipoConta): string {
+  return NOMES_TIPO_CONTA[tipo];
+}
 
 const brlFormatter = new Intl.NumberFormat("pt-BR", {
   style: "currency",

@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { ApiError, clientesApi, type CadastroClienteRequest, type ClienteResponse } from "@/lib/api";
+import { ApiError, clientesApi, isFalhaDeServidor, type CadastroClienteRequest, type ClienteResponse } from "@/lib/api";
 import { useLogDeTela } from "@/components/logs";
+import { salvarContaAtual } from "@/lib/conta-atual";
 import { maskCep, maskCpf, maskTelefone, onlyDigits } from "@/lib/masks";
 
 export type Campo = keyof CadastroClienteRequest;
@@ -47,7 +48,11 @@ function toRequest(valores: Valores): CadastroClienteRequest {
 
 /** Traduz qualquer falha do envio numa mensagem para o usuário. */
 function mensagemDeErro(error: unknown): string {
-  if (!(error instanceof ApiError)) {
+  // 503 é o ViaCEP fora do ar (vem do backend); qualquer outra falha de servidor é conexão.
+  if (error instanceof ApiError && error.status === 503) {
+    return "Não conseguimos consultar o seu CEP agora. Tente novamente em instantes.";
+  }
+  if (!(error instanceof ApiError) || isFalhaDeServidor(error)) {
     return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
@@ -57,8 +62,6 @@ function mensagemDeErro(error: unknown): string {
     case 409: // CPF ou e-mail já cadastrado
     case 422: // CEP inexistente
       return error.message;
-    case 503:
-      return "Não conseguimos consultar o seu CEP agora. Tente novamente em instantes.";
     default:
       return "Algo deu errado. Tente novamente.";
   }
@@ -98,6 +101,8 @@ export function useCadastroForm() {
     try {
       const novoCliente = await clientesApi.cadastrar(toRequest(valores));
       logTela.sucesso("Cadastro concluído", { clienteId: novoCliente.id });
+      // Lembra o cliente no navegador para a abertura de conta (ainda não há login).
+      salvarContaAtual({ clienteId: novoCliente.id });
       setCliente(novoCliente);
     } catch (error) {
       // O detalhe técnico já foi logado na camada HTTP; aqui registramos o que o usuário viu.

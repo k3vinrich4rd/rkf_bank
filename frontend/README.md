@@ -56,7 +56,8 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 | `/` | [`app/page.tsx`](app/page.tsx) | ✅ landing page (estática) |
 | `/cadastro` | [`app/cadastro/page.tsx`](app/cadastro/page.tsx) | ✅ cadastro de cliente integrado à API |
 | `/login` | [`app/login/page.tsx`](app/login/page.tsx) | 🟡 placeholder ("em breve") |
-| `/conta` *(sugestão)* | — | ⏳ saldo + abrir conta |
+| `/conta/abrir` | [`app/conta/abrir/page.tsx`](app/conta/abrir/page.tsx) | ✅ abertura de conta (passo seguinte ao cadastro) |
+| `/conta` *(sugestão)* | — | ⏳ saldo |
 | `/conta/extrato` *(sugestão)* | — | ⏳ extrato |
 | `/conta/depositar`, `/sacar`, `/transferir` *(sugestão)* | — | ⏳ movimentações |
 
@@ -127,6 +128,15 @@ try {
 **Decida pelo `status`, nunca pelo texto da mensagem.** Exemplo real: `mensagemDeErro` em
 [`components/cadastro/use-cadastro-form.ts`](components/cadastro/use-cadastro-form.ts).
 
+### "Minha conta" sem login
+
+Enquanto não existe login, o navegador guarda quem é o usuário em `localStorage`
+([`lib/conta-atual.ts`](lib/conta-atual.ts)): o cadastro grava o `clienteId` e a abertura de conta grava o
+`contaId`. Nas telas, leia com o hook `useContaAtual()` (`components/conta`), que avisa quando o valor muda e
+expõe `carregando` — espere ele virar `false` antes de concluir que não há cadastro.
+
+> Trocar de navegador ou limpar os dados do site "perde" a conta. É uma limitação aceita para o MVP.
+
 ### Dinheiro
 
 A API envia valores como número decimal em reais (`150.00`). Para **fazer conta** no front, converta para
@@ -146,12 +156,15 @@ frontend/
 │   ├── globals.css             # Tailwind 4 + tokens de cor da marca
 │   ├── page.tsx                # landing page
 │   ├── cadastro/page.tsx
+│   ├── conta/abrir/page.tsx
 │   └── login/page.tsx
 ├── components/
 │   ├── ui/                     # peças genéricas (Button, Input, FormField) — base shadcn
 │   ├── brand/                  # logo
 │   ├── marketing/              # seções da landing page
 │   ├── cadastro/               # tela de cadastro: screen, form, showcase, sucesso e o hook
+│   ├── abrir-conta/            # tela de abertura de conta: screen, form, aviso, sucesso e o hook
+│   ├── conta/                  # peças compartilhadas da conta (useContaAtual)
 │   └── logs/                   # useLogDeTela e <LogDeTela />
 ├── config/
 │   ├── site.ts                 # nome, slogan, descrição, menu
@@ -159,8 +172,9 @@ frontend/
 ├── lib/
 │   ├── api/                    # client HTTP, tipos do contrato, clientesApi, contasApi
 │   ├── logger/                 # logger com mascaramento LGPD (ver README próprio)
+│   ├── conta-atual.ts          # "minha conta" guardada no navegador (enquanto não há login)
 │   ├── env.ts                  # variáveis de ambiente
-│   ├── format.ts               # moeda (formatCurrency, decimalToCents)
+│   ├── format.ts               # moeda (formatCurrency, decimalToCents) e tipo de conta
 │   ├── masks.ts                # máscaras de CPF, CEP, telefone + onlyDigits
 │   ├── routes.ts               # rotas e âncoras da landing
 │   └── utils.ts                # cn() para juntar classes

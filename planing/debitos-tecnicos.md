@@ -32,6 +32,7 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
+| 🔴 | A abertura de conta sorteia agência (`0001`) e número no navegador e tenta de novo se vier `409` (`components/abrir-conta/use-abrir-conta.ts`). | Apagar quando o backend gerar esses números (ver item do backend). |
 | 🟡 | Não há testes automáticos no frontend. | Vitest + Testing Library. |
 | 🟢 | `components/balance-summary.tsx` e `types/index.ts` (`Account`) não são usados. | Apagar ou reaproveitar na tela de saldo. |
 

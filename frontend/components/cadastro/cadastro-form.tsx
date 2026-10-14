@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { ArrowRight, CircleAlert, LoaderCircle } from "lucide-react";
+import { ArrowRight, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FormAlert } from "@/components/ui/form-alert";
 import { FormField } from "@/components/ui/form-field";
 import type { CadastroFormState } from "./use-cadastro-form";
 
@@ -69,15 +70,7 @@ export function CadastroForm({ campo, handleSubmit, enviando, erroGeral }: Cadas
       </FormSection>
 
       <div className="flex flex-col gap-4">
-        {erroGeral && (
-          <p
-            role="alert"
-            className="flex items-start gap-2.5 rounded-xl border border-destructive/25 bg-destructive/[0.07] px-4 py-3 text-sm text-destructive animate-in fade-in slide-in-from-top-1 duration-200"
-          >
-            <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            {erroGeral}
-          </p>
-        )}
+        {erroGeral && <FormAlert>{erroGeral}</FormAlert>}
 
         <Button type="submit" variant="brand" size="xl" disabled={enviando} className="h-[3.25rem] w-full">
           {enviando ? (
