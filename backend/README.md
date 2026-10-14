@@ -17,6 +17,7 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 | [README_CONTRATO_API.md](README_CONTRATO_API.md) | **fonte da verdade** de rotas, payloads, regras e erros |
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
 | [README_TESTES_E2E.md](README_TESTES_E2E.md) | roteiro de teste manual do fluxo completo (Postman/Insomnia/curl) |
+| [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md) | checklist de validação do MVP com o resultado da última execução |
 
 ---
 
@@ -68,7 +69,7 @@ Arquivo: [`src/main/resources/application.properties`](src/main/resources/applic
 | Propriedade | Valor | Observação |
 |---|---|---|
 | `spring.jpa.hibernate.ddl-auto` | `update` | o Hibernate cria/altera tabelas sozinho (trocar por Flyway — débito técnico) |
-| `spring.jpa.show-sql` | `true` | mostra o SQL no console; útil para estudar, ruim em produção |
+| `spring.jpa.show-sql` | `false` | o SQL sai pelo logger `org.hibernate.SQL` do `log4j2-spring.xml`, com o `requestId` da chamada |
 | `viacep.base-url` | `https://viacep.com.br/ws` | |
 | `viacep.timeout-ms` | `3000` | tempo máximo de conexão e de leitura do ViaCEP |
 
@@ -76,12 +77,25 @@ Arquivo: [`src/main/resources/application.properties`](src/main/resources/applic
 
 ## 🧪 Testes
 
+Três jeitos, do mais simples ao mais completo:
+
 ```bash
-./mvnw test             # roda os testes
-./mvnw clean verify     # testes + relatório de cobertura
+# 1. Sem Docker: perfil "test" usa H2 em memória (recomendado no dia a dia)
+./mvnw clean verify -Dspring.profiles.active=test     # PowerShell: .\mvnw.cmd clean verify "-Dspring.profiles.active=test"
+
+# 2. Com o MySQL do Docker já no ar e o .env carregado no terminal (ver "Como rodar")
+./mvnw clean verify
+
+# 3. Script: derruba e recria o MySQL (APAGA os dados) e roda os testes com o perfil "test"
+./run-test.sh                      # todos
+./run-test.sh ContaServiceTest     # uma classe
 ```
 
 Relatório de cobertura: abra `target/site/jacoco/index.html` no navegador.
+
+> O `run-test.sh` roda os testes com `-Dspring.profiles.active=test`, ou seja, **em H2**: o MySQL recriado fica
+> limpo para o teste manual E2E, mas os testes automatizados não o usam. Ele também fixa o `JAVA_HOME` no JDK 25 de `~/.jdks/ms-25.0.4`. Se o seu JDK 25 estiver em outro lugar,
+> ajuste a linha `export JAVA_HOME=...` antes de rodar.
 
 | Classe de teste | O que cobre | Estilo |
 |---|---|---|
@@ -93,8 +107,12 @@ Relatório de cobertura: abra `target/site/jacoco/index.html` no navegador.
 | `EntitiesAndEnumsTest` | getters/setters, enums, `@PrePersist` | unitário |
 | `RkfbankApplicationTests` | o contexto Spring sobe | `@SpringBootTest` |
 
-> ⚠️ `RkfbankApplicationTests` sobe o Spring inteiro com o perfil padrão, então **precisa do MySQL no ar
-> e das variáveis de ambiente carregadas** — senão `./mvnw test` falha nesse teste. Os demais rodam sem banco.
+> ⚠️ `RkfbankApplicationTests` sobe o Spring inteiro. Com o perfil padrão ele **precisa do MySQL no ar e das
+> variáveis de ambiente carregadas**; com `-Dspring.profiles.active=test` ele usa H2 e roda sem banco.
+> Os demais testes nunca dependem de banco.
+
+Teste manual ponta a ponta: [README_TESTES_E2E.md](README_TESTES_E2E.md) ·
+resultado da última execução: [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md).
 
 **Padrão de nome:** `deve<Resultado>[Quando<Condição>]` — ex.: `deveRetornarEnderecoQuandoViaCepResponderComSucesso`,
 `deveRejeitarPaginacaoComPaginaNegativa`.

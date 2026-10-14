@@ -26,7 +26,6 @@ Resolveu um item? Apague a linha no mesmo PR.
 | 🟢 | E-mail repetido com letras maiúsculas diferentes passa como novo (`Joao@x.com` × `joao@x.com`). | Salvar o e-mail em minúsculas. |
 | 🟢 | O enum de lançamento tem `CREDITO` e `DEBITO`, que não são usados. | Remover ou usar. |
 | 🟢 | Mensagens de erro misturam texto com e sem acento ("nao", "não"). | Padronizar. |
-| 🟢 | `show-sql=true` deixa o console poluído. | Ligar só em desenvolvimento. |
 | 🟢 | Os testes de controller chamam o método direto, sem testar o JSON de verdade. | Usar `MockMvc`. |
 
 ## Frontend
