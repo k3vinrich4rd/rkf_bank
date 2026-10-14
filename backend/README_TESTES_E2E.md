@@ -13,9 +13,12 @@ Roteiro para testar a API inteira na mão, com Postman, Insomnia ou curl. Serve 
 
 ## 0. Preparação
 
-1. Suba banco e API (seção "Como rodar" do [backend/README.md](README.md)).
-2. Opcional, para começar do zero: `docker compose down -v && docker compose up -d` (**apaga todos os dados**).
-3. No Postman/Insomnia, crie um ambiente com estas variáveis:
+1. Confira o JDK: `java -version` deve mostrar **25.x** (o Maven recusa outra versão).
+2. Suba banco e API (seção "Como rodar" do [backend/README.md](README.md)).
+   Sem Docker, dá para rodar com H2 em memória: `./mvnw spring-boot:run -Dspring-boot.run.profiles=test`
+   (os dados somem ao parar a API; a seção 5 não se aplica).
+3. Opcional, para começar do zero: `docker compose down -v && docker compose up -d` (**apaga todos os dados**).
+4. No Postman/Insomnia, crie um ambiente com estas variáveis:
 
 | Variável | Valor inicial |
 |---|---|
@@ -232,19 +235,46 @@ curl -s $API/contas/$CONTA_ID/lancamentos
 
 ---
 
-## 4. Conferindo no banco
+## 4. Acompanhando pelos logs
+
+Cada requisição recebe um id, devolvido no header `X-Request-Id` da resposta e impresso entre colchetes em
+**todas** as linhas de log daquela chamada (inclusive o SQL do Hibernate). Para achar uma chamada específica no
+console, envie o seu próprio id (letras, números e `-`, até 64 caracteres):
+
+```bash
+curl -i -X POST $API/contas/transferencia -H "$H" -H "X-Request-Id: e2e-transf-001" -d '{ ... }'
+```
+
+```text
+INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.s.ContaService : Transferencia de 50.00 da conta 672e4ddf-... para 83af15fb-...
+INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.c.FiltroLogRequisicao : POST /contas/transferencia -> 204 (15 ms)
+```
+
+O que conferir durante o roteiro:
+
+- toda chamada gera uma linha `FiltroLogRequisicao` com método, rota, status e duração;
+- operações concluídas (cadastro, abertura, depósito, saque, transferência) aparecem em `INFO`;
+- recusas de regra de negócio (E3–E7, E12–E15) e erros de entrada (E1, E2, E8–E11, E16–E18) aparecem em `WARN`;
+- **CPF e e-mail nunca aparecem no log.**
+
+Configuração: [log4j2-spring.xml](src/main/resources/log4j2-spring.xml).
+
+---
+
+## 5. Conferindo no banco
 
 Depois do caminho feliz, rode as consultas da seção **Banco de dados** do [backend/README.md](README.md)
 e confira: 2 clientes, 2 endereços, 2 contas (80.00 e 50.00) e 4 lançamentos.
 
 ---
 
-## 5. Checklist de validação do MVP (QA)
+## 6. Checklist de validação do MVP (QA)
 
 | ✔ | Item |
 |:---:|---|
 | ☐ | Passos 1 a 9 do caminho feliz com o resultado esperado |
 | ☐ | Cenários E1 a E18 com o status esperado |
 | ☐ | Saldos finais batem (origem 80.00, destino 50.00) |
+| ☐ | Logs com `X-Request-Id` em cada linha e sem CPF/e-mail (seção 4) |
 | ☐ | Mensagens de erro fazem sentido para um usuário final |
 | ☐ | Cadastro pela tela (`http://localhost:3000/cadastro`) com sucesso e com erro de CPF repetido |

@@ -4,7 +4,7 @@
 
 **Banco digital de estudo, construído ponta a ponta por um time pequeno — com processo de time de verdade.**
 
-![Java](https://img.shields.io/badge/Java-21-EC7000?logo=openjdk&logoColor=white)
+![Java](https://img.shields.io/badge/Java-25-EC7000?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-003D74?logo=springboot&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-003D74?logo=mysql&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-EC7000?logo=nextdotjs&logoColor=white)
@@ -90,7 +90,7 @@ flowchart LR
 
 | Ferramenta | Versão | Para quê |
 |---|---|---|
-| [JDK](https://adoptium.net/) | **21** (exatamente — o Maven bloqueia outras versões) | backend |
+| [JDK](https://adoptium.net/) | **25** (exatamente — o Maven bloqueia outras versões) | backend |
 | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | recente | banco MySQL |
 | [Node.js](https://nodejs.org/) | 20 ou superior | frontend |
 | [pnpm](https://pnpm.io/installation) | 10 (`corepack enable` já resolve) | frontend |
