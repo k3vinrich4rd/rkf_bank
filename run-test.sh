@@ -1,9 +1,9 @@
 #!/bin/bash
 # Executa os testes funcionais e E2E do RKF Bank com ambiente limpo.
-# Uso: ./run-tests.sh [NomeDaClasse]
+# Uso: ./run-test.sh [NomeDaClasse]  (APAGA os dados do MySQL local: docker compose down -v)
 # Exemplos:
-# ./run-tests.sh # roda todos os testes
-# ./run-tests.sh RkfBankApplicationTests # roda so essa classe de teste
+# ./run-test.sh # roda todos os testes
+# ./run-test.sh RkfbankApplicationTests # roda so essa classe de teste
 
 set -e
 cd "$(dirname "$0")"
