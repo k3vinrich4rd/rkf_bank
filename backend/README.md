@@ -5,7 +5,7 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 | | |
 |---|---|
 | **Responsável** | Kevin ([@k3vinrich4rd](https://github.com/k3vinrich4rd)) |
-| **Stack** | Java 21 · Spring Boot 4.1 · Spring Web MVC · Spring Data JPA (Hibernate) · Jakarta Validation · RestClient |
+| **Stack** | Java 25 · Spring Boot 4.1 · Spring Web MVC · Spring Data JPA (Hibernate) · Jakarta Validation · RestClient |
 | **Banco** | MySQL 8.4 (Docker) — H2 em memória disponível para testes |
 | **Build** | Maven Wrapper (`pom.xml` na raiz do repositório) · JaCoCo para cobertura |
 | **Porta** | `8080` |
@@ -178,7 +178,7 @@ Conexão: `localhost:5441`, usuário e senha do seu `.env`.
 |---|---|---|
 | `Access denied for user 'rkfbank'` | variáveis do `.env` não carregadas no terminal | carregue o `.env` (seção "Como rodar") |
 | `Communications link failure` | MySQL não está no ar ou ainda subindo | `docker compose ps` — espere `healthy` |
-| `Rule 0 ... RequireJavaVersion failed` | JDK diferente de 21 | instale o JDK 21 e ajuste `JAVA_HOME` |
+| `Rule 0 ... RequireJavaVersion failed` | JDK diferente de 25 | instale o JDK 25 e ajuste `JAVA_HOME` |
 | `Port 8080 was already in use` | outra instância rodando | feche a outra ou mate o processo da porta |
 | Cadastro devolve `503` | ViaCEP fora do ar ou sem internet | tente de novo; confira `https://viacep.com.br/ws/01001000/json/` |
 | Cadastro devolve `422 CEP não encontrado` | CEP não existe no ViaCEP | use um CEP real, ex.: `01001000` |
