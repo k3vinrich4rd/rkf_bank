@@ -17,7 +17,7 @@
 	<description>Projeto RKF Bank</description>
 
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
 	</properties>
 
 	<dependencies>
@@ -105,14 +105,14 @@
 				<version>3.6.2</version>
 				<executions>
 					<execution>
-						<id>enforce-java-21</id>
+						<id>enforce-java-25</id>
 						<goals>
 							<goal>enforce</goal>
 						</goals>
 						<configuration>
 							<rules>
 								<requireJavaVersion>
-									<version>[21,22)</version>
+									<version>[25,26)</version>
 								</requireJavaVersion>
 							</rules>
 						</configuration>
@@ -129,7 +129,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.12</version>
+				<version>0.8.14</version>
 				<executions>
 					<execution>
 						<goals>

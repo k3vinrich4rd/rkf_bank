@@ -1,36 +1,241 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RKF Bank — Frontend
 
-## Getting Started
+Site do RKF Bank: landing page institucional e as telas do banco digital (cadastro, conta, movimentações).
 
-First, run the development server:
+| | |
+|---|---|
+| **Responsável** | Renan ([@renanbarrostech-cmd](https://github.com/renanbarrostech-cmd)) |
+| **Stack** | Next.js 16 (App Router) · React 19 · TypeScript 5 (strict) · Tailwind CSS 4 · shadcn/ui (Radix) · lucide-react |
+| **Gerenciador** | pnpm 10 |
+| **Porta** | `3000` |
+
+> ⚠️ **Next.js 16 é recente** e muda APIs em relação a tutoriais antigos (ex.: `LayoutProps` gerado por
+> `next typegen`). Na dúvida, consulte a doc instalada em `node_modules/next/dist/docs/` ou
+> <https://nextjs.org/docs>, não respostas antigas da internet.
+
+---
+
+## ▶ Como rodar
+
+Pré-requisitos: Node 20+, pnpm 10 (`corepack enable`) e o **backend rodando** na porta 8080
+(ver [README da raiz](../README.md#-rodando-o-projeto-do-zero)).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd frontend
+cp .env.example .env.local
+pnpm install
+pnpm dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Script | O que faz | Quando rodar |
+|---|---|---|
+| `pnpm dev` | servidor de desenvolvimento com hot reload | sempre que estiver codando |
+| `pnpm lint` | ESLint (regras do Next + TypeScript) | antes de todo PR |
+| `pnpm typecheck` | gera os tipos de rota e roda `tsc --noEmit` | antes de todo PR |
+| `pnpm build` | build de produção (pega erros que o `dev` deixa passar) | antes de todo PR |
+| `pnpm start` | sobe o build de produção | para testar o build |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Variáveis de ambiente
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variável | Padrão | Para quê |
+|---|---|---|
+| `API_URL` | `http://localhost:8080` | endereço do backend. Lida **só no servidor** (proxy e Server Components) |
+| `NEXT_PUBLIC_LOG_LEVEL` | `debug` em dev, `warn` em produção | nível mínimo dos logs (`debug`, `info`, `warn`, `error`) |
 
-## Learn More
+Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `process.env` espalhado pelo código.
 
-To learn more about Next.js, take a look at the following resources:
+> `NEXT_PUBLIC_*` é embutida no JavaScript do navegador **no build** — nunca coloque segredo numa variável
+> com esse prefixo.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🗺️ Telas
 
-## Deploy on Vercel
+| Rota | Arquivo | Status |
+|---|---|---|
+| `/` | [`app/page.tsx`](app/page.tsx) | ✅ landing page (estática) |
+| `/cadastro` | [`app/cadastro/page.tsx`](app/cadastro/page.tsx) | ✅ cadastro de cliente integrado à API |
+| `/login` | [`app/login/page.tsx`](app/login/page.tsx) | 🟡 placeholder ("em breve") |
+| `/conta` *(sugestão)* | — | ⏳ saldo + abrir conta |
+| `/conta/extrato` *(sugestão)* | — | ⏳ extrato |
+| `/conta/depositar`, `/sacar`, `/transferir` *(sugestão)* | — | ⏳ movimentações |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Rotas ficam centralizadas em [`lib/routes.ts`](lib/routes.ts) (`ROUTES.signUp`, `ROUTES.login`…). Ao criar uma
+tela nova, **adicione a rota lá** e use a constante nos links.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🏗️ Arquitetura
+
+```mermaid
+flowchart TB
+    PAGE["app/**/page.tsx<br/>(Server Component: metadata + monta a tela)"]
+    SCREEN["components/&lt;tela&gt;/*-screen.tsx<br/>(Client Component: layout)"]
+    HOOK["components/&lt;tela&gt;/use-*.ts<br/>(estado, validação, chamadas, erros)"]
+    UI["components/ui/*<br/>(Button, Input, FormField)"]
+    API["lib/api<br/>(clientesApi, contasApi)"]
+    CLIENT["lib/api/client.ts<br/>(apiRequest: fetch + erros + logs)"]
+    PROXY["next.config.ts<br/>rewrite /api/* → API_URL"]
+
+    PAGE --> SCREEN
+    SCREEN --> HOOK
+    SCREEN --> UI
+    HOOK --> API
+    API --> CLIENT
+    CLIENT -->|navegador: /api/...| PROXY
+    PROXY --> BE[(Backend :8080)]
+    CLIENT -->|servidor: direto| BE
+```
+
+### As 4 regras da casa
+
+1. **Componente não chama `fetch`.** Toda chamada passa por `clientesApi` / `contasApi` (em `lib/api`).
+2. **Lógica fora do JSX.** Cada tela tem um hook (`use-cadastro-form.ts`) com estado, envio e tratamento de
+   erro. O componente só desenha o que o hook devolve.
+3. **Tipos espelham o contrato.** [`lib/api/types.ts`](lib/api/types.ts) é a versão TypeScript do
+   [contrato de API](../backend/README_CONTRATO_API.md). Mudou o contrato? Mude o tipo primeiro — o
+   TypeScript aponta tudo que quebrou.
+4. **Server Component por padrão.** Só use `"use client"` quando precisar de estado, efeito ou evento
+   (formulários, botões interativos). A landing page inteira é estática.
+
+### Por que existe um proxy `/api`?
+
+O navegador chama `http://localhost:3000/api/clientes`; o Next repassa para `http://localhost:8080/clientes`.
+
+- **Sem CORS:** para o navegador, é a mesma origem.
+- **URL do backend escondida:** `API_URL` não vai para o bundle do cliente.
+- **Troca de ambiente sem mudar código:** em produção, só muda `API_URL`.
+
+### Tratamento de erros da API
+
+`apiRequest` transforma qualquer resposta de erro em `ApiError`:
+
+```ts
+try {
+  await contasApi.sacar(contaId, { valor: 50 });
+} catch (error) {
+  if (error instanceof ApiError) {
+    error.status;       // 400, 404, 409, 422, 503...
+    error.message;      // mensagem do backend
+    error.fieldErrors;  // { valor: "valor deve ser maior que zero" } → direto no formulário
+  } else {
+    // sem resposta: backend fora do ar ou rede caiu
+  }
+}
+```
+
+**Decida pelo `status`, nunca pelo texto da mensagem.** Exemplo real: `mensagemDeErro` em
+[`components/cadastro/use-cadastro-form.ts`](components/cadastro/use-cadastro-form.ts).
+
+### Dinheiro
+
+A API envia valores como número decimal em reais (`150.00`). Para **fazer conta** no front, converta para
+centavos com `decimalToCents` e formate com `formatCurrency` (ambos em [`lib/format.ts`](lib/format.ts)).
+Nunca some `number` em reais direto (`0.1 + 0.2 = 0.30000000000000004`).
+
+> Decisão pendente: a API passar a usar centavos? Ver [planing/decisoes.md](../planing/decisoes.md).
+
+---
+
+## 📁 Estrutura de pastas
+
+```text
+frontend/
+├── app/                        # rotas (App Router): cada pasta com page.tsx vira uma URL
+│   ├── layout.tsx              # HTML base, fonte, metadata global, tema escuro
+│   ├── globals.css             # Tailwind 4 + tokens de cor da marca
+│   ├── page.tsx                # landing page
+│   ├── cadastro/page.tsx
+│   └── login/page.tsx
+├── components/
+│   ├── ui/                     # peças genéricas (Button, Input, FormField) — base shadcn
+│   ├── brand/                  # logo
+│   ├── marketing/              # seções da landing page
+│   ├── cadastro/               # tela de cadastro: screen, form, showcase, sucesso e o hook
+│   └── logs/                   # useLogDeTela e <LogDeTela />
+├── config/
+│   ├── site.ts                 # nome, slogan, descrição, menu
+│   └── marketing.ts            # textos e dados da landing page
+├── lib/
+│   ├── api/                    # client HTTP, tipos do contrato, clientesApi, contasApi
+│   ├── logger/                 # logger com mascaramento LGPD (ver README próprio)
+│   ├── env.ts                  # variáveis de ambiente
+│   ├── format.ts               # moeda (formatCurrency, decimalToCents)
+│   ├── masks.ts                # máscaras de CPF, CEP, telefone + onlyDigits
+│   ├── routes.ts               # rotas e âncoras da landing
+│   └── utils.ts                # cn() para juntar classes
+├── types/index.ts              # tipos legados (Cents, Account) — ver débitos técnicos
+└── next.config.ts              # proxy /api → backend
+```
+
+**Convenções de nomes**
+
+| Coisa | Padrão | Exemplo |
+|---|---|---|
+| Arquivo de componente/hook | `kebab-case` | `cadastro-form.tsx`, `use-cadastro-form.ts` |
+| Componente | `PascalCase` | `CadastroForm` |
+| Hook | `useAlgo` | `useCadastroForm` |
+| Constante de módulo | `UPPER_SNAKE_CASE` | `CAMPOS_OBRIGATORIOS` |
+| Import interno | alias `@/` | `import { ROUTES } from "@/lib/routes"` |
+
+---
+
+## 🧱 Passo a passo: criando uma tela nova
+
+Exemplo do roadmap: **extrato** (`GET /contas/{contaId}/lancamentos`, já disponível em `contasApi.extrato`).
+
+1. **Rota** — adicione em `lib/routes.ts`: `extrato: "/conta/extrato"`.
+2. **Página** — `app/conta/extrato/page.tsx` (Server Component), com `metadata` e renderizando a tela:
+
+   ```tsx
+   export const metadata: Metadata = { title: "Extrato" };
+
+   export default function ExtratoPage() {
+     return <ExtratoScreen />;
+   }
+   ```
+
+3. **Hook** — `components/extrato/use-extrato.ts`: chama `contasApi.extrato(contaId)`, guarda
+   `lancamentos`, `carregando` e `erro`, e registra os logs com `useLogDeTela("extrato")`.
+4. **Tela** — `components/extrato/extrato-screen.tsx` (`"use client"`): usa o hook e desenha os
+   **três estados**: carregando (skeleton), erro (mensagem + "tentar de novo") e sucesso (lista; lista vazia
+   tem mensagem própria).
+5. **Regras de exibição** — entrada/saída pelo `contaDestinoId` (ver contrato 4.5), valor com
+   `formatCurrency(decimalToCents(valor))`, data com `Intl.DateTimeFormat("pt-BR")`.
+6. **Acessibilidade** — `label` em todo input, foco visível, botão com texto (não só ícone), contraste ok.
+7. **Checklist** — `pnpm lint && pnpm typecheck && pnpm build` e teste manual com o backend rodando.
+
+> Endpoint ainda não existe (ex.: `GET /contas/{id}`)? Combine o formato no contrato, adicione a função em
+> `lib/api/contas.ts` e o tipo em `types.ts`. Você já consegue construir a tela enquanto o backend implementa.
+
+---
+
+## 🎨 Estilo e design
+
+- **Tailwind 4** configurado direto no CSS ([`app/globals.css`](app/globals.css)) — não existe `tailwind.config.js`.
+- **Tokens da marca:** `brand-blue`, `brand-cyan`, `surface` e os gradientes `bg-gradient-brand` /
+  `text-gradient-brand`. Use os tokens (`bg-brand-blue`), não cores soltas (`bg-[#3b82f6]`).
+- **Tema escuro** fixo (classe `dark` no `<html>`).
+- **Componentes base** vêm do shadcn/ui (`components.json`). Para adicionar um novo:
+  `pnpm dlx shadcn@latest add <componente>` — ele cai em `components/ui/`.
+- **Classes condicionais:** use `cn()` de `lib/utils.ts`.
+
+---
+
+## 📝 Logs
+
+Todo log sai como `[rkf][escopo] mensagem { contexto }`, com CPF, e-mail, telefone e nome **mascarados
+automaticamente**. Guia completo: [lib/logger/README.md](lib/logger/README.md).
+
+---
+
+## 🧯 Problemas comuns
+
+| Sintoma | Causa provável | Solução |
+|---|---|---|
+| Cadastro mostra "Não foi possível conectar ao servidor" | backend não está rodando | suba o backend e teste `curl http://localhost:8080/clientes` |
+| Console mostra `[rkf][api:http] ... falhou sem resposta` | idem, ou `API_URL` errada | confira `.env.local` e **reinicie** o `pnpm dev` |
+| Mudei `.env.local` e nada mudou | variáveis são lidas na inicialização | reinicie o `pnpm dev` (e refaça o build em produção) |
+| "Tela aberta" aparece duas vezes no console | React StrictMode em desenvolvimento | normal; em produção aparece uma vez |
+| Erro de tipo em `LayoutProps` / `PageProps` | tipos de rota não gerados | rode `pnpm typecheck` (ele executa `next typegen`) |
+| `pnpm: command not found` | pnpm não instalado | `corepack enable` |

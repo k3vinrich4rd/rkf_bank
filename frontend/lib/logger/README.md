@@ -1,7 +1,24 @@
 # Logs do frontend
 
+> Voltar para o [README do frontend](../../README.md).
+
+**Por que ter um logger e não usar `console.log`?** Para que todo log tenha o mesmo formato (fácil de filtrar),
+respeite um nível mínimo por ambiente (menos ruído em produção) e **nunca vaze dado pessoal** (LGPD) —
+sem que cada dev precise lembrar disso.
+
 Todo log sai no console no formato `[rkf][escopo] mensagem { contexto }`.
 No navegador aparece no DevTools; em Server Components, no terminal do `pnpm dev`.
+
+Exemplo real de um cadastro com CPF repetido:
+
+```text
+[rkf][tela:cadastro] Formulário enviado
+[rkf][api:clientes] Cadastrando cliente { cpf: "***.***.247-25", email: "j***@rkfbank.com" }
+[rkf][api:http] POST /clientes → 409: CPF ja cadastrado { requestId: "…", duracaoMs: 212 }
+[rkf][tela:cadastro] Cadastro não concluído { status: 409, erro: "CPF ja cadastrado", mensagemExibida: "CPF ja cadastrado" }
+```
+
+**Dica:** no DevTools, filtre por `[rkf]` para ver só os logs do app, ou por `requestId` para seguir uma chamada.
 
 ## Qual usar?
 

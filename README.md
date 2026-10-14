@@ -677,6 +677,8 @@ gitGraph
 - **Contrato primeiro:** endpoint novo é combinado no [contrato](backend/README_CONTRATO_API.md) antes de virar código.
 - **Decisões:** escolhas importantes ficam em [planing/decisoes.md](planing/decisoes.md).
 
+O passo a passo completo está no [CONTRIBUTING.md](CONTRIBUTING.md).
+
 <img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
 
 ## 🗺️ Roadmap
@@ -735,11 +737,12 @@ rkf_bank/
 │   ├── app/                     # rotas: /, /cadastro, /login
 │   ├── components/              # marketing, cadastro, ui, logs
 │   └── lib/                     # api, logger (com máscara LGPD), formatação e máscaras
-├── planing/                     # roadmap, decisões e recados do time
+├── planing/                     # roadmap, decisões, recados e débitos técnicos do time
 ├── pom.xml                      # build do backend
 ├── mvnw, mvnw.cmd, .mvn/        # Maven Wrapper
 ├── docker-compose.yml           # MySQL local
-└── .env.example                 # variáveis do banco (copie para .env)
+├── .env.example                 # variáveis do banco (copie para .env)
+└── CONTRIBUTING.md              # como trabalhamos: branches, commits, PRs e revisão
 ```
 
 </details>
@@ -748,12 +751,15 @@ rkf_bank/
 
 | Área | Documento | O que tem |
 |---|---|---|
+| Time | [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, Pull Requests e revisão |
 | API | [Contrato da API](backend/README_CONTRATO_API.md) | rotas, exemplos de JSON, regras e erros |
+| Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco de dados e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais de cada uma |
 | Backend | [Testes manuais](backend/README_TESTES_E2E.md) | roteiro completo para Postman/Insomnia |
 | Frontend | [frontend/README.md](frontend/README.md) | como rodar e estrutura do frontend |
 | Frontend | [Logs](frontend/lib/logger/README.md) | como registrar logs com dados mascarados |
 | Planejamento | [planing/](planing/README.md) | roadmap, decisões e recados |
+| Planejamento | [Débitos técnicos](planing/debitos-tecnicos.md) | o que funciona hoje, mas precisa melhorar |
 
 <img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
 
