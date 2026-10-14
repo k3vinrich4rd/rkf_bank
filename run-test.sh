@@ -22,8 +22,8 @@ while [ "$(docker inspect --format='{{.State.Health.Status}}' rkfbank-mysql 2>/d
 done
 echo ">>> Banco MySQL healthy!"
 
-# CORRIGIDO: Apontando exatamente para o JDK 21 da sua máquina
-export JAVA_HOME='/c/Users/Estudo$/.jdks/ms-21.0.8'
+# JDK 25 da maquina (mesmo exigido pelo maven-enforcer-plugin no pom.xml)
+export JAVA_HOME='/c/Users/Estudo$/.jdks/ms-25.0.4'
 export PATH="$JAVA_HOME/bin:$PATH"
 
 if [ -n "$TEST_CLASS" ]; then
