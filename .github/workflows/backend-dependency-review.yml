@@ -1,0 +1,30 @@
+name: Backend Dependency Review
+
+# Em todo PR, compara as dependências do pom.xml antes e depois da mudança
+# e bloqueia o PR se entrar uma biblioteca com vulnerabilidade alta ou crítica.
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "pom.xml"
+      - ".github/workflows/backend-dependency-review.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  revisar-dependencias:
+    name: Revisar dependências do Maven
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Verificar vulnerabilidades e licenças
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: AGPL-3.0-only, AGPL-3.0-or-later

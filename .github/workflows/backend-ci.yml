@@ -1,0 +1,70 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "backend/**"
+      - "pom.xml"
+      - "mvnw"
+      - ".mvn/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "backend/**"
+      - "pom.xml"
+      - "mvnw"
+      - ".mvn/**"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-e-testes:
+    name: Build e testes (Java 25)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # Os testes usam o banco H2 em memória (application-test.properties),
+      # então o pipeline não depende do MySQL do docker-compose.
+      SPRING_PROFILES_ACTIVE: test
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Compilar, testar e gerar cobertura (JaCoCo)
+        run: sh mvnw -B -ntp verify
+
+      - name: Publicar relatórios dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-testes-backend
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Publicar relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cobertura-jacoco-backend
+          path: target/site/jacoco/
+          if-no-files-found: ignore
+          retention-days: 7
