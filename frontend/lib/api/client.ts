@@ -30,7 +30,15 @@ export class ApiError extends Error {
   }
 }
 
-type QueryValue = string | number | boolean | undefined;
+/**
+ * A falha foi do servidor, não do pedido: sem resposta (rede caiu) ou status 5xx.
+ * Com o backend desligado, o proxy `/api` do Next responde 500 — não é erro de rede.
+ */
+export function isFalhaDeServidor(error: unknown): boolean {
+  return !(error instanceof ApiError) || error.status >= 500;
+}
+
+type QueryValue =string | number | boolean | undefined;
 
 interface RequestOptions extends Omit<RequestInit, "body"> {
   /** Corpo serializado como JSON. */

@@ -40,10 +40,9 @@ export function CadastroSucesso({ cliente }: CadastroSucessoProps) {
         </address>
       </div>
 
-      {/* TODO(abrir-conta): levar para a abertura de conta quando a tela existir. */}
       <Button asChild variant="brand" size="xl" className="mt-10 h-[3.25rem] w-full">
-        <Link href={ROUTES.home}>
-          Continuar
+        <Link href={ROUTES.abrirConta}>
+          Abrir minha conta
           <ArrowRight data-icon="inline-end" aria-hidden="true" />
         </Link>
       </Button>
