@@ -73,3 +73,8 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 | `/verificar-contrato` | compara controllers/DTOs do backend, o contrato da API e os tipos do frontend, e aponta divergências |
 | `/varrer-vulnerabilidades` | roda a varredura de CVEs e propõe a correção mínima |
 | `/testar-e2e` | sobe o fluxo real (cadastro → extrato) contra a API e interpreta o resultado |
+| `/explicar-codigo <alvo>` | explica um código que já existe (arquivo, fluxo ou conceito), sem alterar nada |
+| `/revisar-migracao` | revisa migrações Flyway antes do commit (edição de migração aplicada, operação destrutiva, H2 × MySQL) |
+| `/nova-tela <nome>` | cria uma tela no padrão do frontend (página + screen + hook); área do Renan |
+| `/recado` | escreve, responde ou lista recados em `planing/recados.md` |
+| `/notas-de-versao` | notas de versão entre `main` e `develop`, com resumo para o PO e sugestão de versão |

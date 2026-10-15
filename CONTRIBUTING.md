@@ -158,5 +158,10 @@ O projeto tem contexto e skills para o Claude Code (opcional; nada aqui é obrig
 | `.claude/skills/verificar-contrato` | `/verificar-contrato`: compara backend, contrato e tipos do frontend |
 | `.claude/skills/varrer-vulnerabilidades` | `/varrer-vulnerabilidades`: CVEs no Maven e no pnpm e a correção mínima |
 | `.claude/skills/testar-e2e` | `/testar-e2e`: fluxo real contra a API rodando |
+| `.claude/skills/explicar-codigo` | `/explicar-codigo <alvo>`: explica um código existente, sem alterar nada |
+| `.claude/skills/revisar-migracao` | `/revisar-migracao`: revisa as migrações Flyway antes do commit |
+| `.claude/skills/nova-tela` | `/nova-tela <nome>`: cria uma tela no padrão do frontend |
+| `.claude/skills/recado` | `/recado`: escreve, responde ou lista recados do time |
+| `.claude/skills/notas-de-versao` | `/notas-de-versao`: notas de versão entre `main` e `develop` |
 
 Os scripts em [`scripts/`](scripts) funcionam sem IA: `validar.sh`, `smoke-e2e.mjs`, `varrer-cves.js` e o hook de commit.
