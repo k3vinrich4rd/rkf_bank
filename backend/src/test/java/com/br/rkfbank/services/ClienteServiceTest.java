@@ -101,6 +101,34 @@ class ClienteServiceTest {
     }
 
     @Test
+    void deveSalvarEmailEmMinusculasESemEspacos() {
+        CadastroClienteRequestDto request = new CadastroClienteRequestDto(
+                "Joao Silva", "52998224725", "  Joao.Silva@Email.COM ", "11999998888", "01001000", "123", "Apto 45"
+        );
+        when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
+        when(clienteRepository.existsByEmail("joao.silva@email.com")).thenReturn(false);
+        when(clienteViaCep.buscarPorCep("01001000")).thenReturn(new ResponseViaCepDto(
+                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
+        ));
+        when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ClienteResponseDto response = clienteService.cadastrar(request);
+
+        assertEquals("joao.silva@email.com", response.email());
+    }
+
+    @Test
+    void deveLancarConflitoQuandoEmailDuplicadoComMaiusculas() {
+        CadastroClienteRequestDto request = new CadastroClienteRequestDto(
+                "Joao Silva", "52998224725", "JOAO@EMAIL.COM", "11999998888", "01001000", "123", "Apto 45"
+        );
+        when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
+        when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(true);
+
+        assertThrows(NegocioException.class, () -> clienteService.cadastrar(request));
+    }
+
+    @Test
     void deveLancarQuandoClienteNaoExisteNaBusca() {
         UUID id = UUID.randomUUID();
         when(clienteRepository.findById(id)).thenReturn(Optional.empty());
