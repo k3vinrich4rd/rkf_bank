@@ -6,6 +6,8 @@ export const ROUTES = {
   home: "/",
   login: "/login",
   signUp: "/cadastro",
+  conta: "/conta",
+  abrirConta: "/conta/abrir",
 } as const;
 
 /** Âncoras da landing page (ids das seções). */
