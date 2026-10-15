@@ -873,7 +873,10 @@ rkf_bank/
 │   ├── app/                     # rotas: /, /cadastro, /login
 │   ├── components/              # marketing, cadastro, ui, logs
 │   └── lib/                     # api, logger (com máscara LGPD), formatação e máscaras
-├── planing/                     # roadmap, decisões, recados e débitos técnicos do time
+├── planing/                     # roadmap, decisões, recados, débitos técnicos e checklist de features
+├── scripts/                     # validar.sh, smoke-e2e.mjs, varrer-cves.js e hooks de Git
+├── .claude/skills/              # skills do Claude Code (implementar-feature, entregar, ...)
+├── CLAUDE.md                    # contexto do projeto para agentes de IA
 ├── pom.xml                      # build do backend
 ├── mvnw, mvnw.cmd, .mvn/        # Maven Wrapper
 ├── run-test.sh                  # recria o MySQL e roda os testes
