@@ -27,4 +27,4 @@ Outras skills sugerem um recado quando:
 - `/nova-tela` precisa de um endpoint que o backend ainda não tem;
 - uma mudança de contrato da API afeta o outro lado.
 
-Commit: `docs: adiciona recado para <pessoa>` (ou junto do PR que motivou o recado).
+Não commite: o recado fica como alteração no `planing/recados.md` até o Kevin mandar (ele entra junto no `/entregar`). Sugestão de mensagem: `docs: adiciona recado para <pessoa>`.

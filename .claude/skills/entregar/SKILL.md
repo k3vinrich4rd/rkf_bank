@@ -7,6 +7,12 @@ description: Fecha uma entrega no RKF Bank - valida backend e/ou frontend com os
 
 Objetivo: levar o trabalho atual da branch até um PR pronto para revisão, gastando o mínimo de tokens.
 
+> 🔒 **Esta é a única skill que commita e faz push, e só com ordem explícita do Kevin na mensagem atual.**
+> - `/entregar` digitado por ele, ou "commita e sobe" → pode commitar **e** fazer push.
+> - "commita" sem falar em push → só commita.
+> - Chegou aqui por sugestão de outra skill, ou o pedido é ambíguo → **pare** antes do passo 4, mostre o plano de commits e pergunte.
+> - Nunca `reset`, `revert`, `rebase` ou `push --force` sem pedido explícito.
+
 ## 1. Entender o que mudou
 - `git status --short` e `git diff --stat origin/develop...HEAD` (mais o que não foi commitado).
 - Classifique: mudou `backend/` ou `pom.xml`? mudou `frontend/`? só docs?
@@ -36,7 +42,7 @@ Confira e atualize só o que a mudança tornou falso:
 - Termine cada mensagem com a linha de coautoria definida pelo ambiente, quando houver.
 
 ## 5. Push e PR
-- `git push -u origin <branch>` (só se o usuário pediu push ou `/entregar` explicitamente).
+- `git push -u origin <branch>` só se a ordem da mensagem atual incluir push (ver o quadro 🔒 no topo).
 - Escreva a descrição do PR no modelo do `CONTRIBUTING.md` ("O que foi feito", "Como testar", "Checklist"), com:
   - o resultado real da validação (ex.: `107 testes, 0 falhas`);
   - o que o revisor deve olhar com atenção;

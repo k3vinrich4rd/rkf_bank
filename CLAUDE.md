@@ -62,6 +62,11 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 
 ## Git
 
+> 🔒 **Commit e push só quando o Kevin mandar**, na mensagem atual e com essas palavras ("commita", "faz o push", `/entregar`).
+> Sem essa ordem, deixe todas as mudanças **não commitadas** e mostre a lista de arquivos alterados (`git status --short`),
+> para ele revisar na IDE. Autorização dada antes não vale para a próxima entrega. "Commita" sozinho não autoriza push.
+> Nunca use `git reset`, `revert`, `rebase` ou `push --force` sem pedido explícito.
+
 - `feature/*`, `fix/*`, `chore/*`, `docs/*` → Pull Request para a `develop`. Nunca commit direto em `main` ou `develop`.
 - Conventional Commits em português (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`, `build:`, `ci:`), um assunto por commit. O hook `scripts/hooks/commit-msg` recusa mensagem fora do padrão.
 - Antes do PR: `scripts/validar.sh` verde no lado que mudou. Detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -36,4 +36,5 @@ Antes de tudo, leia `frontend/CLAUDE.md` e `frontend/AGENTS.md`: o Next.js deste
 ## 4. Validar e documentar
 - `scripts/validar.sh frontend` (lint, typecheck e build) até ficar verde.
 - Atualizar a tabela "🗺️ Telas" do `frontend/README.md`.
-- Commit `feat: adiciona tela de <nome>`; se houver `TODO(backend)`, registrar em `planing/debitos-tecnicos.md` (seção Frontend).
+- Se houver `TODO(backend)`, registrar em `planing/debitos-tecnicos.md` (seção Frontend).
+- Não commite: mostre os arquivos criados e alterados e sugira a mensagem `feat: adiciona tela de <nome>`. Commit e push só quando quem pediu mandar (`/entregar`).
