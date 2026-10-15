@@ -21,6 +21,10 @@
 		<!-- H2 2.4.240 quebra CHECK ... IN (...) das colunas de enum: a constraint guarda a sessao que rodou o DDL
 		     e todo insert em tb_conta/tb_lancamento falha com "The database has been closed" depois que ela fecha. -->
 		<h2.version>2.3.232</h2.version>
+		<!-- Sobrescreve versoes gerenciadas pelo Spring Boot 4.1.1 com CVEs corrigidas (Tomcat: bypass de autenticacao;
+		     Jackson: DoS no parse). Remover quando o Spring Boot trouxer versoes iguais ou maiores. -->
+		<tomcat.version>11.0.27</tomcat.version>
+		<jackson-bom.version>3.1.7</jackson-bom.version>
 	</properties>
 
 	<dependencies>
