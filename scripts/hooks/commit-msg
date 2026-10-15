@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+# Recusa mensagens de commit fora do padrão Conventional Commits do time (ver CONTRIBUTING.md).
+# Ativar uma vez por máquina: scripts/instalar-hooks.sh
+
+primeira_linha=$(grep -v '^#' "$1" | head -n 1)
+
+# Commits gerados pelo próprio Git passam direto.
+case "$primeira_linha" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *|amend!\ *) exit 0 ;;
+esac
+
+padrao='^(feat|fix|refactor|test|docs|chore|build|ci|perf|style|revert)(\([a-z0-9._/-]+\))?!?: .+'
+
+if printf '%s' "$primeira_linha" | grep -Eq "$padrao"; then
+  exit 0
+fi
+
+cat >&2 <<EOF
+❌ Mensagem de commit fora do padrão:
+   "$primeira_linha"
+
+Use:  tipo: o que foi feito      ou   tipo(escopo): o que foi feito
+Tipos: feat, fix, refactor, test, docs, chore, build, ci, perf, style, revert
+Ex.:  feat: adiciona tela de extrato
+      fix(deps): atualiza Tomcat para 11.0.27
+      test(repositories): cobre o extrato por origem ou destino
+EOF
+exit 1
