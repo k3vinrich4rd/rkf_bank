@@ -98,6 +98,31 @@ Relatório de cobertura: abra `target/site/jacoco/index.html` no navegador.
 > limpo para o teste manual E2E, mas os testes automatizados não o usam. Ele também fixa o `JAVA_HOME` no JDK 25 de `~/.jdks/ms-25.0.4`. Se o seu JDK 25 estiver em outro lugar,
 > ajuste a linha `export JAVA_HOME=...` antes de rodar.
 
+Atalhos que mostram só o resumo (o log completo fica em `.validar/`):
+
+```bash
+scripts/validar.sh backend         # testes em H2 + cobertura, sem Docker
+node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verificações (cadastro → extrato + erros)
+```
+
+### 🔁 Mudei algo: quais testes rodar?
+
+| Se você mudou... | Rode | E confira |
+|---|---|---|
+| **regra de negócio** (`services`) | `scripts/validar.sh backend` | existe um teste novo cobrindo a regra (`*ServiceTest`); escreva o teste antes e veja ele falhar |
+| **entidade JPA ou estrutura do banco** | crie `db/migration/V<n>__descricao.sql` → `scripts/validar.sh backend` → `./run-test.sh` → suba a API → smoke | a API sobe num banco vazio (`Successfully applied N migrations`); `flyway_schema_history` com a versão nova; `/revisar-migracao` |
+| **consulta ou repository** | `scripts/validar.sh backend` | um `*RepositoryTest` (`@DataJpaTest`) cobrindo a consulta |
+| **rota, request ou response** | `scripts/validar.sh backend` → suba a API → smoke | [contrato da API](README_CONTRATO_API.md), [roteiro E2E](README_TESTES_E2E.md), `/verificar-contrato` e recado para o frontend |
+| **dependência** (`pom.xml`) | `scripts/validar.sh backend` → suba a API no MySQL → smoke → `node scripts/varrer-cves.js backend` | testes com mock não provam que a biblioteca nova funciona: a API precisa subir de verdade |
+| **configuração** (`application*.properties`) | `scripts/validar.sh backend` → suba a API no perfil padrão (MySQL) | a mudança vale nos dois perfis? (`test` usa H2) |
+| **só documentação** | nada | links e comandos citados continuam funcionando |
+
+**Antes do PR que mexe em regra, rota ou banco:** `./run-test.sh` (**apaga o MySQL local**) → subir a API → `node scripts/smoke-e2e.mjs`
+→ se mudou o comportamento visível, refazer os itens afetados do [roteiro E2E manual](README_TESTES_E2E.md) e atualizar o
+[checklist E2E](CHECKLIST_TESTES_E2E.md).
+
+> ⚠️ Classe de teste precisa terminar em `Test`, `Tests` ou `TestCase`; senão o Surefire **ignora em silêncio**.
+
 | Classe de teste | O que cobre | Estilo |
 |---|---|---|
 | `CpfValidoValidatorTest` | algoritmo de CPF | unitário puro |

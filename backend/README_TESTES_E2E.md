@@ -21,7 +21,16 @@ com Java 25. Ao repetir, só mudam os valores gerados: `id`s (UUID), `dataHora` 
 2. Suba banco e API (seção "Como rodar" do [backend/README.md](README.md)).
    Sem Docker, dá para rodar com H2 em memória: `./mvnw spring-boot:run -Dspring-boot.run.profiles=test`
    (os dados somem ao parar a API; a seção 5 não se aplica).
+   As tabelas são criadas pelo **Flyway** na subida da API (migrações `V1`, `V2`... em `src/main/resources/db/migration`);
+   no log aparece `Successfully applied N migrations` num banco vazio, ou `Schema ... is up to date` num banco já migrado.
 3. Opcional, para começar do zero: `docker compose down -v && docker compose up -d` (**apaga todos os dados**).
+   **Obrigatório uma vez** se a API recusar subir com *Found non-empty schema(s) ... but no schema history table*
+   (o banco local foi criado pelo Hibernate antes do Flyway).
+
+> **Atalho automático:** com a API no ar, `node scripts/smoke-e2e.mjs` faz uma versão resumida deste roteiro
+> (caminho feliz + 5 erros, 17 verificações) em segundos e pode rodar várias vezes no mesmo banco. O roteiro manual
+> continua valendo para o QA e para conferir as respostas completas. Qual teste rodar para cada tipo de mudança:
+> ["Mudei algo: quais testes rodar?"](README.md#-mudei-algo-quais-testes-rodar).
 4. No Postman/Insomnia, crie um ambiente com estas variáveis e use o header `Content-Type: application/json`:
 
 | Variável | Valor inicial |

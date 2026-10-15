@@ -91,6 +91,21 @@ cobertos acima (itens 1.4, 2.2, 3.4, 3.2 e 1.7).
 
 ---
 
+## 🛫 7. Banco (Flyway)
+
+Executado em **15/10/2026**, na branch `feature/flyway`, com MySQL 8.4 (Docker) e o perfil padrão.
+
+| # | Tipo | Item | Esperado | Resultado |
+|---|---|---|---|:---:|
+| 7.1 | Sucesso | API sobe num banco vazio | log `Successfully applied 2 migrations ... now at version v2` | ✅ |
+| 7.2 | Sucesso | Histórico das migrações | `flyway_schema_history` com `1 - schema inicial` e `2 - email minusculo`, `success = 1` | ✅ |
+| 7.3 | Sucesso | Hibernate valida o schema | API sobe com `ddl-auto=validate` sem erro de *Schema validation* | ✅ |
+| 7.4 | Sucesso | `V2` corrige e-mails antigos | `Teste.Caixa@RKFbank.com` vira `teste.caixa@rkfbank.com`; nenhuma maiúscula restante | ✅ |
+| 7.5 | Sucesso | Cadastro novo com e-mail em maiúsculas | salvo em minúsculas (coberto por `ClienteServiceTest`) | ✅ |
+| 7.6 | Erro | Banco antigo, criado pelo Hibernate | API **recusa** subir com *Found non-empty schema(s) ... but no schema history table* | ✅ |
+| 7.7 | Erro | Migração aplicada editada (um comentário no `V1`) | API **recusa** subir com *Migration checksum mismatch for migration version 1* | ✅ |
+| 7.8 | Sucesso | Fluxo completo no schema criado pelo Flyway | `node scripts/smoke-e2e.mjs` → 17/17 | ✅ |
+
 ## 🧾 Correções em relação à versão anterior do checklist
 
 O primeiro rascunho deste checklist tinha alguns pontos que não batiam com a API:

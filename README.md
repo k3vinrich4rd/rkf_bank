@@ -190,6 +190,7 @@ journey
 | [Log4j2](https://logging.apache.org/log4j/2.x/) | 2 | logs em todas as camadas, com `requestId` por requisição |
 | [MySQL](https://dev.mysql.com/doc/refman/8.4/en/) | 8.4 | banco de dados (via Docker Compose) |
 | [H2](https://www.h2database.com/) | — | banco em memória para os testes |
+| [Flyway](https://documentation.red-gate.com/flyway) | 12 | migrações versionadas do banco (`db/migration`) |
 | [JUnit 5](https://junit.org/junit5/) + [Mockito](https://site.mockito.org/) | — | testes automatizados |
 | [JaCoCo](https://www.jacoco.org/jacoco/) | — | relatório de cobertura de testes |
 | [Maven Wrapper](https://maven.apache.org/wrapper/) | Maven 3.9 | build sem precisar instalar o Maven |
@@ -613,6 +614,9 @@ Get-Content .env | Where-Object { $_ -match '^\s*[^#].*=' } | ForEach-Object {
 
 Teste rápido: `curl http://localhost:8080/clientes` deve responder `200` com um array (`[]` no banco vazio).
 
+> As tabelas são criadas pelo **Flyway** na primeira subida da API. Se ela recusar subir com *Found non-empty schema(s)*,
+> o seu MySQL foi criado antes do Flyway: rode `docker compose down -v && docker compose up -d` uma vez (apaga os dados locais).
+
 > Sem Docker? Suba com H2 em memória: `./mvnw spring-boot:run -Dspring-boot.run.profiles=test`
 > (os dados somem ao parar a API). No IntelliJ, dá para usar o plugin **EnvFile** apontando para o `.env`.
 
@@ -662,7 +666,13 @@ Abra <http://localhost:3000>. O cadastro fica em <http://localhost:3000/cadastro
 
 # recria o MySQL (APAGA os dados) e roda os testes com o perfil "test"
 ./run-test.sh
+
+# atalhos com resumo curto
+scripts/validar.sh backend          # ou: frontend | tudo
+node scripts/smoke-e2e.mjs          # com a API no ar: fluxo real em 17 verificações
 ```
+
+Mudou algo e não sabe qual teste rodar? Veja ["Mudei algo: quais testes rodar?"](backend/README.md#-mudei-algo-quais-testes-rodar).
 
 O relatório do JaCoCo fica em `target/site/jacoco/index.html` — abra no navegador.
 
