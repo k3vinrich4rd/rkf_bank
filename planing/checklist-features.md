@@ -10,7 +10,7 @@ Features do backend em **ordem de prioridade**. Para cada uma o ciclo é o mesmo
 
 | # | Feature | Por que nessa posição | Status |
 |:-:|---|---|:-:|
-| 1 | [Flyway](#1-flyway--migrações-de-banco) | base de tudo: a tabela de usuários do login já nasce como migração | ⬜ |
+| 1 | [Flyway](#1-flyway--migrações-de-banco) | base de tudo: a tabela de usuários do login já nasce como migração | 🛠️ |
 | 2 | [Spring Security + JWT](#2-spring-security--jwt) | débito mais grave: hoje qualquer pessoa movimenta qualquer conta | ⬜ |
 | 3 | [Testcontainers](#3-testcontainers--testes-com-mysql-real) | testa migrações, segurança e concorrência contra o MySQL de verdade | ⬜ |
 | 4 | [Swagger / OpenAPI](#4-swagger--openapi) | documentação viva da API, já com o login no botão *Authorize* | ⬜ |
@@ -47,26 +47,37 @@ Durante o vídeo, prestar atenção em:
 3. Por que o Hibernate passa a só *validar* o schema?
 
 ### 🛠️ Implementação
-- [ ] Criar a branch `feature/flyway` a partir da `develop` atualizada
-- [ ] Ver o schema que o Hibernate gera hoje no MySQL (`SHOW CREATE TABLE ...`)
-- [ ] Adicionar o Flyway no `pom.xml` (starter do Spring Boot 4 + módulo `flyway-mysql`)
-- [ ] Escrever `backend/src/main/resources/db/migration/V1__schema_inicial.sql`
-  - [ ] `tb_endereco`, `tb_cliente`, `tb_conta`, `tb_lancamento`
-  - [ ] constraints `uk_cliente_cpf`, `uk_cliente_email`, `uk_conta_numero` e as FKs
-  - [ ] `DECIMAL(19,2)` para dinheiro, coluna `versao` da conta
-- [ ] `spring.jpa.hibernate.ddl-auto=validate`
-- [ ] Fazer os testes em H2 rodarem a mesma migração (modo de compatibilidade MySQL)
-- [ ] `V2__email_minusculo.sql`: migração de **dados** (e-mails existentes em minúsculas) + o service salvar em minúsculas
-- [ ] Atualizar `debitos-tecnicos.md`, `backend/README.md` e o roadmap
+- [x] Criar a branch `feature/flyway` a partir da `develop` atualizada
+- [x] Ver o schema que o Hibernate gera hoje no MySQL (`SHOW CREATE TABLE ...`)
+- [x] Adicionar o Flyway no `pom.xml` (starter do Spring Boot 4 + módulo `flyway-mysql`)
+- [x] Escrever `backend/src/main/resources/db/migration/V1__schema_inicial.sql`
+  - [x] `tb_endereco`, `tb_cliente`, `tb_conta`, `tb_lancamento`
+  - [x] constraints `uk_cliente_cpf`, `uk_cliente_email`, `uk_conta_numero` e as FKs
+  - [x] `DECIMAL(19,2)` para dinheiro, coluna `versao` da conta
+- [x] `spring.jpa.hibernate.ddl-auto=validate`
+- [x] Fazer os testes em H2 rodarem a mesma migração (SQL portável: `BIT` sem tamanho e UUID fixado como `BINARY` no Hibernate; também foi preciso remover o `defer-datasource-initialization` do perfil de teste)
+- [x] `V2__email_minusculo.sql`: migração de **dados** (e-mails existentes em minúsculas) + o service salvar em minúsculas
+- [x] Atualizar `debitos-tecnicos.md`, `backend/README.md` e o roadmap
 
 ### ✅ Pronto quando
-- [ ] `./run-test.sh` verde
-- [ ] App sobe com `docker compose down -v` + banco vazio e cria tudo pela migração
-- [ ] `flyway_schema_history` com `V1` e `V2`
+- [x] `./run-test.sh` verde (109 testes)
+- [x] App sobe com `docker compose down -v` + banco vazio e cria tudo pela migração (`Successfully applied 2 migrations`, smoke 17/17)
+- [x] `flyway_schema_history` com `V1` e `V2`
 - [ ] PR revisado e mergeado na `develop`
 
 ### 📝 Minhas anotações
 
+> Resumo para entrevista (implementado em 15/10/2026):
+>
+> Troquei o `ddl-auto=update` pelo **Flyway**: o schema agora nasce de scripts versionados (`V1__schema_inicial`,
+> `V2__email_minusculo`) e o Hibernate só **valida** as entidades contra o banco, impedindo a subida se divergirem.
+> O `V1` reproduz o que o Hibernate gerava, mas com nomes legíveis nas constraints e índices para o extrato. O `V2` é uma
+> migração de **dados**: deixa os e-mails em minúsculas, e o service passou a normalizar os novos cadastros.
+>
+> O maior aprendizado foi o **H2 × MySQL**: o `defer-datasource-initialization` fazia o JPA validar antes de o Flyway criar
+> as tabelas; o H2 não aceita `BIT(1)`, espera UUID nativo (resolvi fixando `preferred_uuid_jdbc_type=BINARY`, o mesmo que o
+> MySQL já usava) e trata `CAST(... AS BINARY)` diferente. Vi na prática a regra de ouro: um comentário num `V1` já aplicado
+> gera *checksum mismatch* e a aplicação não sobe. Sem produção ainda, recriei o banco local em vez de usar *baseline*.
 
 ---
 

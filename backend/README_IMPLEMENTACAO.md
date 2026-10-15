@@ -286,7 +286,7 @@ Os testes ficam em `backend/src/test/java/com/br/rkfbank/`, espelhando os pacote
 
 | Hoje | Próximo passo | Por quê |
 |---|---|---|
-| `ddl-auto=update` | **Flyway** com migrations versionadas | histórico do banco no Git; deploy previsível |
+| ~~`ddl-auto=update`~~ | ✅ **Flyway** com migrations versionadas (`db/migration`), Hibernate em `validate` | histórico do banco no Git; deploy previsível |
 | Sem documentação gerada | **springdoc-openapi** (Swagger UI) | contrato navegável e sempre atualizado |
 | Sem autenticação | **Spring Security + JWT**, senha com BCrypt | qualquer um consegue mexer em qualquer conta |
 | `System.out` do Hibernate | **logs estruturados** com id por requisição | rastrear uma operação de ponta a ponta |

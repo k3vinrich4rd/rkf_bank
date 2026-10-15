@@ -841,7 +841,7 @@ O passo a passo completo está no [CONTRIBUTING.md](CONTRIBUTING.md).
 <br/>
 
 - [ ] Login com Spring Security + JWT (senha com BCrypt)
-- [ ] Migrations com Flyway no lugar do `ddl-auto=update`
+- [x] Migrations com Flyway no lugar do `ddl-auto=update`
 - [ ] Documentação viva com Swagger UI (springdoc-openapi)
 - [ ] Testes de integração com Testcontainers + MySQL
 - [ ] CI do frontend (`lint`, `typecheck`, `build`)
