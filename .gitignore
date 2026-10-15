@@ -40,3 +40,5 @@ build/
 
 # properties files (local secrets)
 .application.properties
+### Logs dos scripts de validação ###
+/.validar/
