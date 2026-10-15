@@ -106,4 +106,5 @@ O primeiro rascunho deste checklist tinha alguns pontos que não batiam com a AP
 ## ⏳ Fora deste checklist
 
 - Fluxo pelo frontend (`http://localhost:3000/cadastro`) — validar manualmente.
-- Conflito de concorrência (`409` por *lock* otimista) — coberto só pelos testes unitários.
+- Conflito de concorrência (`409` por *lock* otimista) — coberto só pelos testes automatizados
+  (`ControllerExceptionHandlerTest` e `ContaRepositoryTest`).
