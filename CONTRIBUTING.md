@@ -60,12 +60,25 @@ tipo: o que foi feito
 | `test` | testes | `test: cobre transferência para a mesma conta` |
 | `docs` | documentação | `docs: atualiza contrato da API` |
 | `chore` | configuração | `chore: atualiza dependências` |
+| `build` | build e dependências do Maven | `build: fixa H2 em 2.3.232` |
+| `ci` | workflows do GitHub Actions | `ci: adiciona CI do frontend` |
+
+Escopo é opcional: `test(repositories): cobre o extrato`, `fix(deps): atualiza Tomcat`.
 
 Nunca faça commit de `.env`, senhas ou tokens.
+
+> **Hook de commit:** rode `scripts/instalar-hooks.sh` uma vez depois de clonar. O Git passa a recusar
+> mensagens fora do padrão acima (merges e reverts gerados pelo Git passam direto).
 
 ---
 
 ## 4. Antes de abrir o Pull Request
+
+Atalho para os dois lados (mostra só o resumo; o log completo fica em `.validar/*.log`):
+
+```bash
+scripts/validar.sh backend     # ou: frontend | tudo
+```
 
 **Backend** (na raiz do projeto, com o banco ligado):
 
@@ -80,6 +93,8 @@ pnpm lint
 pnpm typecheck
 pnpm build
 ```
+
+Mexeu em regra de negócio, rota ou banco? Com a API no ar, rode também o smoke test: `node scripts/smoke-e2e.mjs`.
 
 Tudo verde? Pode abrir o PR.
 
@@ -127,3 +142,26 @@ Comentários devem ser claros e respeitosos. Use `nit:` para sugestões que não
 - Código que não é usado é apagado (o Git guarda o histórico).
 - Detalhes do backend: [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.md).
 - Detalhes do frontend: [frontend/README.md](frontend/README.md).
+
+---
+
+## 8. Ferramentas e agentes de IA
+
+O projeto tem contexto e skills para o Claude Code (opcional; nada aqui é obrigatório para contribuir):
+
+| Arquivo | Para quê |
+|---|---|
+| [CLAUDE.md](CLAUDE.md) | contexto do projeto inteiro: comandos, regras e armadilhas conhecidas |
+| [frontend/CLAUDE.md](frontend/CLAUDE.md) | regras específicas do frontend |
+| `.claude/skills/implementar-feature` | `/implementar-feature <n>`: implementa uma feature do [checklist](planing/checklist-features.md) explicando cada conceito |
+| `.claude/skills/entregar` | `/entregar`: valida, atualiza docs, commita, faz push e escreve o PR |
+| `.claude/skills/verificar-contrato` | `/verificar-contrato`: compara backend, contrato e tipos do frontend |
+| `.claude/skills/varrer-vulnerabilidades` | `/varrer-vulnerabilidades`: CVEs no Maven e no pnpm e a correção mínima |
+| `.claude/skills/testar-e2e` | `/testar-e2e`: fluxo real contra a API rodando |
+| `.claude/skills/explicar-codigo` | `/explicar-codigo <alvo>`: explica um código existente, sem alterar nada |
+| `.claude/skills/revisar-migracao` | `/revisar-migracao`: revisa as migrações Flyway antes do commit |
+| `.claude/skills/nova-tela` | `/nova-tela <nome>`: cria uma tela no padrão do frontend |
+| `.claude/skills/recado` | `/recado`: escreve, responde ou lista recados do time |
+| `.claude/skills/notas-de-versao` | `/notas-de-versao`: notas de versão entre `main` e `develop` |
+
+Os scripts em [`scripts/`](scripts) funcionam sem IA: `validar.sh`, `smoke-e2e.mjs`, `varrer-cves.js` e o hook de commit.
