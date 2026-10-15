@@ -15,7 +15,7 @@ discordarem, um dos dois está errado e precisa ser corrigido.
 |---|---|
 | **Backend** | Kevin |
 | **Frontend** | Renan |
-| **Versão** | 1.2 (13/10/2026) |
+| **Versão** | 1.3 (15/10/2026) |
 
 ---
 
@@ -94,7 +94,7 @@ chame o backend direto, sem `/api`.
 |---|:---:|---|
 | `nomeCompleto` | ✅ | até 120 caracteres |
 | `cpf` | ✅ | CPF válido (dígitos verificadores) e único |
-| `email` | ✅ | formato de e-mail válido e único |
+| `email` | ✅ | formato de e-mail válido e único, **sem diferenciar maiúsculas** (`Joao@x.com` = `joao@x.com`) |
 | `telefone` | ✅ | não vazio (o backend **não** valida a quantidade de dígitos — o front envia 10 ou 11) |
 | `cep` | ✅ | precisa existir no ViaCEP |
 | `numero` | ✅ | texto (aceita "S/N") |
@@ -102,6 +102,8 @@ chame o backend direto, sem `/api`.
 
 - **Máscaras:** o front envia CPF, telefone e CEP **só com números**. O backend também aceita com máscara —
   ele remove tudo que não é dígito antes de salvar.
+- **E-mail:** o backend salva e devolve o e-mail **em minúsculas e sem espaços nas pontas** (`" Joao@X.com "` → `"joao@x.com"`).
+  O front pode mostrar o valor da resposta como está; não precisa normalizar antes de enviar.
 - **Endereço:** logradouro, bairro, cidade, UF e IBGE vêm do **ViaCEP**, não do usuário.
 - **Tempo:** a consulta ao ViaCEP tem timeout de **3 segundos** — mostre um *loading* no botão.
 
@@ -302,7 +304,7 @@ Cada item tem o formato da resposta da 4.1.
 | # | Regra | Erro |
 |---|---|---|
 | R1 | CPF não se repete | `409` |
-| R2 | E-mail não se repete | `409` |
+| R2 | E-mail não se repete, sem diferenciar maiúsculas (é salvo em minúsculas) | `409` |
 | R3 | CEP precisa existir no ViaCEP | `422` |
 | R4 | Toda conta pertence a um cliente existente | `404` |
 | R5 | Número da conta não se repete | `409` |
@@ -382,6 +384,7 @@ Proposta de resposta do `GET /contas/{contaId}`: mesmo formato da [4.1](#41-abri
 
 | Versão | Data | Mudança |
 |---|---|---|
+| 1.3 | 15/10/2026 | e-mail salvo e devolvido em minúsculas; R2 sem diferenciar maiúsculas. Sem mudança de campo ou status (não quebra o frontend) |
 | 1.2 | 13/10/2026 | tabela de mensagens de erro reais, regras numeradas, erros por endpoint, propostas priorizadas |
 | 1.1 | 12/10/2026 | stack, convenções e endpoints revisados |
 | — | 11/10/2026 | rotas passam a seguir o backend: sem `/api`, `POST /contas/clientes/{id}` e `POST /contas/transferencia` |
