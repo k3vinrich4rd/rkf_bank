@@ -18,6 +18,10 @@
 
 	<properties>
 		<java.version>25</java.version>
+		<!-- Sobrescreve versoes gerenciadas pelo Spring Boot 4.1.1 com CVEs corrigidas (Tomcat: bypass de autenticacao;
+		     Jackson: DoS no parse). Remover quando o Spring Boot trouxer versoes iguais ou maiores. -->
+		<tomcat.version>11.0.27</tomcat.version>
+		<jackson-bom.version>3.1.7</jackson-bom.version>
 	</properties>
 
 	<dependencies>
