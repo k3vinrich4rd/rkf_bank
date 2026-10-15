@@ -680,6 +680,7 @@ O relatório do JaCoCo fica em `target/site/jacoco/index.html` — abra no naveg
 | `CpfValidoValidatorTest` | dígitos verificadores, CPFs inválidos e com máscara |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e rejeitado quando tenta forjar linhas de log |
 | `EntitiesAndEnumsTest` | entidades e enums |
+| `ClienteRepositoryTest` / `ContaRepositoryTest` / `LancamentoRepositoryTest` | consultas do Spring Data, constraints, cascata, lock otimista e extrato no H2 (`@DataJpaTest`) |
 | `RkfbankApplicationTests` | sobe o contexto completo do Spring |
 
 </details>
@@ -866,7 +867,7 @@ rkf_bank/
 ├── backend/
 │   ├── src/main/java/...        # aplicação Spring Boot
 │   ├── src/main/resources/      # application*.properties (MySQL / H2) e log4j2-spring.xml
-│   ├── src/test/java/...        # testes unitários
+│   ├── src/test/java/...        # testes unitários e de repositório (H2)
 │   └── *.md                     # contrato da API, arquitetura, roteiro e checklist E2E
 ├── frontend/                    # aplicação Next.js (package.json próprio)
 │   ├── app/                     # rotas: /, /cadastro, /login

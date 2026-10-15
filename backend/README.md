@@ -104,12 +104,17 @@ Relatório de cobertura: abra `target/site/jacoco/index.html` no navegador.
 | `ClienteServiceTest` / `ContaServiceTest` | regras de negócio | Mockito (`@ExtendWith(MockitoExtension.class)`) |
 | `ClienteControllerTest` / `ContaControllerTest` | status HTTP e delegação ao service | Mockito |
 | `ControllerExceptionHandlerTest` | exceção → status + corpo de erro | unitário |
+| `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e saneado | unitário |
 | `EntitiesAndEnumsTest` | getters/setters, enums, `@PrePersist` | unitário |
+| `ClienteRepositoryTest` | `existsByCpf`/`existsByEmail`, unicidade, cascata de endereço e contas, `orphanRemoval`, paginação | `@DataJpaTest` (H2) |
+| `ContaRepositoryTest` | `existsByNumeroConta`, unicidade, campos obrigatórios, enum como texto, `@Version` (lock otimista), paginação | `@DataJpaTest` (H2) |
+| `LancamentoRepositoryTest` | extrato (origem **ou** destino, do mais novo para o mais antigo), `@PrePersist` da `dataHora`, campos obrigatórios | `@DataJpaTest` (H2) |
 | `RkfbankApplicationTests` | o contexto Spring sobe | `@SpringBootTest` |
 
 > ⚠️ `RkfbankApplicationTests` sobe o Spring inteiro. Com o perfil padrão ele **precisa do MySQL no ar e das
 > variáveis de ambiente carregadas**; com `-Dspring.profiles.active=test` ele usa H2 e roda sem banco.
-> Os demais testes nunca dependem de banco.
+> Os testes de repositório (`@DataJpaTest`) trocam o datasource por um **H2 embutido** em qualquer perfil, então
+> também rodam sem MySQL. Os demais testes nunca dependem de banco.
 
 Teste manual ponta a ponta: [README_TESTES_E2E.md](README_TESTES_E2E.md) ·
 resultado da última execução: [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md).
@@ -202,3 +207,4 @@ Conexão: `localhost:5441`, usuário e senha do seu `.env`.
 | Cadastro devolve `422 CEP não encontrado` | CEP não existe no ViaCEP | use um CEP real, ex.: `01001000` |
 | Mudei uma entidade e a coluna antiga ficou | `ddl-auto=update` não remove colunas | em dev: `docker compose down -v` apaga o banco e recria |
 | `mvnw: Permission denied` (Linux/macOS) | arquivo sem permissão de execução | `chmod +x mvnw` |
+| Testes de repositório falham com `The database has been closed` | H2 2.4.x quebra o `CHECK ... IN (...)` das colunas de enum | mantenha `<h2.version>2.3.232</h2.version>` no `pom.xml` até o H2 corrigir |
