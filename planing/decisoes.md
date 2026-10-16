@@ -23,6 +23,11 @@ Data: 02/10
 Decisão: usar MySQL 8.4 rodando no Docker (e não PostgreSQL, como pensado no começo).
 Por quê: foi o banco usado na implementação do backend. Trocar agora atrasaria o MVP.
 
+## Banco versionado com Flyway
+Data: 15/10
+Decisão: o schema passa a ser criado e alterado só por migrações do Flyway (`backend/src/main/resources/db/migration`); o Hibernate fica em `ddl-auto=validate`. Bancos locais antigos são recriados uma vez (`docker compose down -v`), sem *baseline*. UUID fixado como `BINARY(16)` no Hibernate e e-mail salvo em minúsculas (`V2`).
+Por quê: histórico do banco no Git, revisado em PR e igual em todo ambiente. Sem produção ainda, recriar é mais seguro que o *baseline*, que esconderia as diferenças do schema antigo (FKs com nome aleatório, sem índices). O `BINARY` e o SQL portável fazem o H2 dos testes validar o mesmo schema do MySQL.
+
 ## Contrato da API
 Data: 02/10
 Decisão: o arquivo `backend/README_CONTRATO_API.md` é a regra entre o backend e o frontend.

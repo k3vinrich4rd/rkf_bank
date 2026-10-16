@@ -24,4 +24,4 @@ Ordem de preferência:
 - `scripts/validar.sh backend` / `frontend`.
 - Para backend: subir a API com o MySQL e rodar `node scripts/smoke-e2e.mjs`, porque testes com mock não provam que o Tomcat/Jackson novos funcionam.
 - Rodar a varredura de novo e mostrar que zerou.
-- Commit: `fix(deps): ...` listando as CVEs no corpo.
+- Não commite: mostre os arquivos alterados e sugira a mensagem `fix(deps): ...` listando as CVEs no corpo. Commit e push só quando o Kevin mandar (`/entregar`).

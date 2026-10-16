@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -46,8 +47,12 @@ public class ClienteService {
             throw new NegocioException("CPF ja cadastrado");
         }
 
+        // Email guardado sempre em minúsculas e sem espaços nas pontas (a V2 do Flyway fez o mesmo com os já salvos).
+        // Assim a unicidade não depende da collation do banco: o MySQL ignora maiúsculas, o H2 dos testes não.
+        String emailNormalizado = request.email().trim().toLowerCase(Locale.ROOT);
+
         // Regra de unicidade de email para evitar conflito de cadastro.
-        if (clienteRepository.existsByEmail(request.email())) {
+        if (clienteRepository.existsByEmail(emailNormalizado)) {
             log.warn("Cadastro de cliente recusado: email ja cadastrado");
             throw new NegocioException("Email ja cadastrado");
         }
@@ -63,6 +68,7 @@ public class ClienteService {
 
         // Altera o CPF da entidade para salvar a versão puramente numérica no banco de dados.
         cliente.setCpf(cpfSanitizado);
+        cliente.setEmail(emailNormalizado);
 
         // Normaliza o telefone para manter apenas dígitos antes de salvar no banco.
         String telefoneSanitizado = request.telefone().replaceAll("\\D", "");

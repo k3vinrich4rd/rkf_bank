@@ -68,7 +68,8 @@ Arquivo: [`src/main/resources/application.properties`](src/main/resources/applic
 
 | Propriedade | Valor | Observação |
 |---|---|---|
-| `spring.jpa.hibernate.ddl-auto` | `update` | o Hibernate cria/altera tabelas sozinho (trocar por Flyway — débito técnico) |
+| `spring.jpa.hibernate.ddl-auto` | `validate` | quem cria e altera o schema é o **Flyway** ([Migrações](#-migrações-flyway)); o Hibernate só confere se as entidades batem com o banco e impede a subida se não baterem |
+| `spring.jpa.properties.hibernate.type.preferred_uuid_jdbc_type` | `BINARY` | UUID sempre como `BINARY(16)`: é o que o MySQL já usa e faz o H2 dos testes validar o mesmo schema |
 | `spring.jpa.show-sql` | `false` | o SQL sai pelo logger `org.hibernate.SQL` do `log4j2-spring.xml`, com o `requestId` da chamada |
 | `viacep.base-url` | `https://viacep.com.br/ws` | |
 | `viacep.timeout-ms` | `3000` | tempo máximo de conexão e de leitura do ViaCEP |
@@ -96,6 +97,31 @@ Relatório de cobertura: abra `target/site/jacoco/index.html` no navegador.
 > O `run-test.sh` roda os testes com `-Dspring.profiles.active=test`, ou seja, **em H2**: o MySQL recriado fica
 > limpo para o teste manual E2E, mas os testes automatizados não o usam. Ele também fixa o `JAVA_HOME` no JDK 25 de `~/.jdks/ms-25.0.4`. Se o seu JDK 25 estiver em outro lugar,
 > ajuste a linha `export JAVA_HOME=...` antes de rodar.
+
+Atalhos que mostram só o resumo (o log completo fica em `.validar/`):
+
+```bash
+scripts/validar.sh backend         # testes em H2 + cobertura, sem Docker
+node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verificações (cadastro → extrato + erros)
+```
+
+### 🔁 Mudei algo: quais testes rodar?
+
+| Se você mudou... | Rode | E confira |
+|---|---|---|
+| **regra de negócio** (`services`) | `scripts/validar.sh backend` | existe um teste novo cobrindo a regra (`*ServiceTest`); escreva o teste antes e veja ele falhar |
+| **entidade JPA ou estrutura do banco** | crie `db/migration/V<n>__descricao.sql` → `scripts/validar.sh backend` → `./run-test.sh` → suba a API → smoke | a API sobe num banco vazio (`Successfully applied N migrations`); `flyway_schema_history` com a versão nova; `/revisar-migracao` |
+| **consulta ou repository** | `scripts/validar.sh backend` | um `*RepositoryTest` (`@DataJpaTest`) cobrindo a consulta |
+| **rota, request ou response** | `scripts/validar.sh backend` → suba a API → smoke | [contrato da API](README_CONTRATO_API.md), [roteiro E2E](README_TESTES_E2E.md), `/verificar-contrato` e recado para o frontend |
+| **dependência** (`pom.xml`) | `scripts/validar.sh backend` → suba a API no MySQL → smoke → `node scripts/varrer-cves.js backend` | testes com mock não provam que a biblioteca nova funciona: a API precisa subir de verdade |
+| **configuração** (`application*.properties`) | `scripts/validar.sh backend` → suba a API no perfil padrão (MySQL) | a mudança vale nos dois perfis? (`test` usa H2) |
+| **só documentação** | nada | links e comandos citados continuam funcionando |
+
+**Antes do PR que mexe em regra, rota ou banco:** `./run-test.sh` (**apaga o MySQL local**) → subir a API → `node scripts/smoke-e2e.mjs`
+→ se mudou o comportamento visível, refazer os itens afetados do [roteiro E2E manual](README_TESTES_E2E.md) e atualizar o
+[checklist E2E](CHECKLIST_TESTES_E2E.md).
+
+> ⚠️ Classe de teste precisa terminar em `Test`, `Tests` ou `TestCase`; senão o Surefire **ignora em silêncio**.
 
 | Classe de teste | O que cobre | Estilo |
 |---|---|---|
@@ -193,6 +219,28 @@ SELECT * FROM tb_conta WHERE id = UUID_TO_BIN('407d727e-4e43-4c93-b01c-331cbaba4
 
 Conexão: `localhost:5441`, usuário e senha do seu `.env`.
 
+### 🛫 Migrações (Flyway)
+
+O schema nasce e evolui por scripts versionados em
+[`src/main/resources/db/migration`](src/main/resources/db/migration). Na subida da API (e em todo teste com banco),
+o Flyway aplica o que falta, **antes** de o Hibernate validar as entidades, e registra cada versão na tabela
+`flyway_schema_history`.
+
+| Versão | O que faz |
+|---|---|
+| `V1__schema_inicial.sql` | as 4 tabelas, constraints com nome legível (`uk_`, `fk_`, `ck_`) e índices do extrato |
+| `V2__email_minusculo.sql` | migração de dados: e-mails existentes em minúsculas (o `ClienteService` faz o mesmo nos novos) |
+
+**Criar uma migração nova:** arquivo `V<próxima versão>__descricao_em_snake_case.sql` (dois sublinhados), SQL que rode
+no MySQL **e** no H2 dos testes, e `scripts/validar.sh backend`. Com o Claude Code, `/revisar-migracao` confere antes do commit.
+
+> ⚠️ **Migração aplicada nunca se edita.** O Flyway guarda o checksum de cada arquivo; mudar um `V` já aplicado
+> (até um comentário) faz a API recusar a subida com *Migration checksum mismatch*. Errou? Crie um `V` novo que corrige.
+
+> **Primeira vez depois do Flyway:** se o seu MySQL local foi criado pelo Hibernate (antes desta mudança), a API recusa
+> subir com *Found non-empty schema... but no schema history table*. Recrie o banco uma vez:
+> `docker compose down -v && docker compose up -d` (**apaga os dados locais**). Não há produção ainda, então não usamos *baseline*.
+
 ---
 
 ## 🧯 Problemas comuns
@@ -205,6 +253,8 @@ Conexão: `localhost:5441`, usuário e senha do seu `.env`.
 | `Port 8080 was already in use` | outra instância rodando | feche a outra ou mate o processo da porta |
 | Cadastro devolve `503` | ViaCEP fora do ar ou sem internet | tente de novo; confira `https://viacep.com.br/ws/01001000/json/` |
 | Cadastro devolve `422 CEP não encontrado` | CEP não existe no ViaCEP | use um CEP real, ex.: `01001000` |
-| Mudei uma entidade e a coluna antiga ficou | `ddl-auto=update` não remove colunas | em dev: `docker compose down -v` apaga o banco e recria |
+| `Schema validation: missing column` / `wrong column type` | mudou a entidade sem criar migração | crie um `V<n>__...sql` com a alteração; o Hibernate não altera mais o banco |
+| `Found non-empty schema(s) ... but no schema history table` | MySQL local criado pelo Hibernate antes do Flyway | `docker compose down -v && docker compose up -d` uma vez (apaga os dados locais) |
+| `Migration checksum mismatch for migration version N` | alguém editou uma migração já aplicada | desfaça a edição (`git checkout -- <arquivo>`) e crie um `V` novo com a correção |
 | `mvnw: Permission denied` (Linux/macOS) | arquivo sem permissão de execução | `chmod +x mvnw` |
 | Testes de repositório falham com `The database has been closed` | H2 2.4.x quebra o `CHECK ... IN (...)` das colunas de enum | mantenha `<h2.version>2.3.232</h2.version>` no `pom.xml` até o H2 corrigir |

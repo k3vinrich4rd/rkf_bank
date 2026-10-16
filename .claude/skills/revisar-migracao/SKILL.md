@@ -32,4 +32,4 @@ Modo **revisão**: aponte problemas e sugira a correção; só edite se o usuár
 - Se o usuário permitir apagar o MySQL local: `./run-test.sh`, depois subir a API e conferir `select version, description, success from flyway_schema_history;`.
 
 ## 4. Saída
-Tabela `arquivo | verificação | gravidade | o que fazer`, seguida de um veredito: **pode commitar** / **corrigir antes**. Para cada item 🔴, explique o conceito em 2 linhas (por que aquilo quebra).
+Tabela `arquivo | verificação | gravidade | o que fazer`, seguida de um veredito: **pronto para commitar quando você mandar** / **corrigir antes**. Esta skill nunca commita. Para cada item 🔴, explique o conceito em 2 linhas (por que aquilo quebra).

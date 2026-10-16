@@ -95,6 +95,10 @@ pnpm build
 ```
 
 Mexeu em regra de negócio, rota ou banco? Com a API no ar, rode também o smoke test: `node scripts/smoke-e2e.mjs`.
+Qual teste rodar para cada tipo de mudança: ["Mudei algo: quais testes rodar?"](backend/README.md#-mudei-algo-quais-testes-rodar).
+
+> **Mudou uma entidade ou o banco?** O schema é do **Flyway**: crie uma migração nova em
+> `backend/src/main/resources/db/migration` (`V<n>__descricao.sql`). Nunca edite uma migração que já entrou na `develop`.
 
 Tudo verde? Pode abrir o PR.
 

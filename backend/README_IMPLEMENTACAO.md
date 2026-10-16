@@ -156,6 +156,7 @@ Pontos de atenção que valem estudo:
 | checar unicidade **e** capturar `DataIntegrityViolationException` | `cadastrar`, `abrir` | o `exists` dá mensagem boa; o `catch` cobre a corrida entre duas requisições |
 | `saveAndFlush` | cadastro de cliente e conta | força o `INSERT` dentro do `try`, para o `catch` acima funcionar |
 | sanitizar antes de validar no banco | CPF, telefone, CEP | `529.982.247-25` e `52998224725` são o mesmo CPF |
+| normalizar o e-mail (`trim` + `toLowerCase(Locale.ROOT)`) | `cadastrar` | `Joao@X.com` e `joao@x.com` são o mesmo e-mail em qualquer banco; `Locale.ROOT` evita surpresas de idioma (o `I` turco) |
 
 ### 4.4 Repository — Spring Data deriva a query pelo nome
 
@@ -286,7 +287,7 @@ Os testes ficam em `backend/src/test/java/com/br/rkfbank/`, espelhando os pacote
 
 | Hoje | Próximo passo | Por quê |
 |---|---|---|
-| `ddl-auto=update` | **Flyway** com migrations versionadas | histórico do banco no Git; deploy previsível |
+| ~~`ddl-auto=update`~~ | ✅ **Flyway** com migrations versionadas (`db/migration`), Hibernate em `validate` | histórico do banco no Git; deploy previsível |
 | Sem documentação gerada | **springdoc-openapi** (Swagger UI) | contrato navegável e sempre atualizado |
 | Sem autenticação | **Spring Security + JWT**, senha com BCrypt | qualquer um consegue mexer em qualquer conta |
 | `System.out` do Hibernate | **logs estruturados** com id por requisição | rastrear uma operação de ponta a ponta |

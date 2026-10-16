@@ -18,14 +18,12 @@ Resolveu um item? Apague a linha no mesmo PR.
 | 🔴 | O arquivo `application-test.properties` está em `src/main/resources`. | Mover para `src/test/resources`. |
 | 🟡 | Não existe login: qualquer pessoa pode ver ou movimentar qualquer conta. | Spring Security + JWT. |
 | 🟡 | `GET /clientes` devolve CPF, e-mail e telefone de todos os clientes. | Proteger com login ou remover do uso público. |
-| 🟡 | O banco é criado pelo Hibernate (`ddl-auto=update`). | Usar Flyway (scripts de banco versionados). |
 | 🟡 | A configuração de CORS vale para `/api/**`, mas as rotas não têm `/api`. Hoje funciona só por causa do proxy do Next. | Ajustar para `/**` ou remover, se o proxy for mantido. |
 | 🟡 | Quem chama a API escolhe a agência e o número da conta. | O backend gerar esses números. |
 | 🟡 | A paginação devolve o `Page` do Spring direto, e esse formato pode mudar entre versões. | Criar um DTO de página próprio. |
 | 🟡 | O `pom.xml` sobrescreve as versões do Tomcat (11.0.27) e do Jackson (3.1.7) por causa de CVEs. | Remover as duas propriedades quando o Spring Boot trouxer versões iguais ou maiores. |
 | 🟢 | O `pom.xml` fixa o H2 em 2.3.232 (o 2.4.240 quebra o `CHECK ... IN` das colunas de enum). | Remover quando o H2 corrigir, ou quando os testes usarem MySQL real (Testcontainers). |
 | 🟢 | O `pom.xml` fica na raiz, mas o código fica em `backend/`. | Mover `pom.xml` e `mvnw` para `backend/`. |
-| 🟢 | E-mail repetido com letras maiúsculas diferentes passa como novo (`Joao@x.com` × `joao@x.com`). | Salvar o e-mail em minúsculas. |
 | 🟢 | O enum de lançamento tem `CREDITO` e `DEBITO`, que não são usados. | Remover ou usar. |
 | 🟢 | Mensagens de erro misturam texto com e sem acento ("nao", "não"). | Padronizar. |
 | 🟢 | Os testes de controller chamam o método direto, sem testar o JSON de verdade. | Usar `MockMvc`. |

@@ -45,5 +45,8 @@ Depois de cada passo:
 2. Confira cada item de "✅ Pronto quando" e diga quais foram atendidos, com a evidência.
 3. Atualize a documentação afetada: `backend/README.md`, `backend/README_CONTRATO_API.md` (se mudou rota ou formato), `planing/debitos-tecnicos.md` (apague as linhas resolvidas), `planing/roadmap.md`.
 4. Escreva em "📝 Minhas anotações" da seção um **resumo conceitual** de 5 a 8 linhas, em primeira pessoa e em linguagem de entrevista ("Usei X porque..., o cuidado principal foi...").
-5. Faça os commits semânticos por assunto (`build:`, `feat:`, `test:`, `docs:`), sem push. Ofereça `/entregar` para o push e a descrição do PR.
-6. Termine com uma tabela "O que você aprendeu" (conceito → onde ficou no código).
+5. **Não commite e não faça push** (regra do `CLAUDE.md`: só quando o Kevin mandar). Deixe tudo como alteração não commitada e mostre:
+   - a tabela **"📂 Arquivos alterados"** a partir de `git status --short`: `estado (novo/modificado/removido) | arquivo | o que mudou`, agrupada em código, configuração, testes e documentação;
+   - como ver o diff: `git diff -- <arquivo>` (arquivos novos aparecem como `??` até serem adicionados) ou a aba de alterações da IDE;
+   - a **proposta** de commits semânticos por assunto (`build:`, `feat:`, `test:`, `docs:`), só como texto.
+6. Termine com uma tabela "O que você aprendeu" (conceito → onde ficou no código) e lembre: quando quiser commitar e subir, é só mandar `/entregar`.

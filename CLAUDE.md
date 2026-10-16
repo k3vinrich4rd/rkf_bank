@@ -48,6 +48,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 - Dinheiro em `BigDecimal` com 2 casas; `Conta` tem `@Version` (lock otimista → `409`).
 - Logs com Log4j2 e `X-Request-Id`; nunca logar CPF completo, senha ou token.
 - Mudou rota ou formato? Atualize `backend/README_CONTRATO_API.md` **e** avise o frontend (`frontend/lib/api/types.ts` espelha o contrato).
+- **Schema só por Flyway** (`backend/src/main/resources/db/migration`, `ddl-auto=validate`): mudou entidade → crie `V<n>__descricao.sql` que rode no MySQL e no H2. **Nunca edite uma migração já mergeada** (checksum). Revise com `/revisar-migracao`.
 
 ## Armadilhas conhecidas
 
@@ -57,8 +58,14 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 - O Mockito é carregado como `-javaagent` no surefire (Java 21+); não remova o `argLine`.
 - Classe de teste precisa terminar em `Test`, `Tests` ou `TestCase`; senão o Surefire **ignora em silêncio**.
 - O Spring **não lê o `.env`** sozinho: carregue as variáveis no terminal antes de `spring-boot:run`.
+- Flyway × H2: não use `spring.jpa.defer-datasource-initialization=true` (faz o JPA validar antes de o Flyway criar as tabelas); UUID está fixado como `BINARY` (`preferred_uuid_jdbc_type`); evite `BIT(n)` e `CAST(... AS BINARY)` sem tamanho, que o H2 trata diferente do MySQL.
 
 ## Git
+
+> 🔒 **Commit e push só quando o Kevin mandar**, na mensagem atual e com essas palavras ("commita", "faz o push", `/entregar`).
+> Sem essa ordem, deixe todas as mudanças **não commitadas** e mostre a lista de arquivos alterados (`git status --short`),
+> para ele revisar na IDE. Autorização dada antes não vale para a próxima entrega. "Commita" sozinho não autoriza push.
+> Nunca use `git reset`, `revert`, `rebase` ou `push --force` sem pedido explícito.
 
 - `feature/*`, `fix/*`, `chore/*`, `docs/*` → Pull Request para a `develop`. Nunca commit direto em `main` ou `develop`.
 - Conventional Commits em português (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`, `build:`, `ci:`), um assunto por commit. O hook `scripts/hooks/commit-msg` recusa mensagem fora do padrão.
