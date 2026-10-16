@@ -17,6 +17,8 @@ Objetivo: levar o trabalho atual da branch até um PR pronto para revisão, gast
 - `git status --short` e `git diff --stat origin/develop...HEAD` (mais o que não foi commitado).
 - Classifique: mudou `backend/` ou `pom.xml`? mudou `frontend/`? só docs?
 - Se a branch atual for `main` ou `develop`, **pare**: crie uma branch `feature/`, `fix/`, `docs/` ou `chore/` antes.
+- **Atualize com a `develop` antes de validar:** `git fetch` + `git merge origin/develop` (merge, não rebase). Conflito → pare e mostre.
+- `git log --oneline origin/develop..HEAD` mostra commits de outra feature ainda não mergeada (branch empilhada)? **Pare** e avise: o PR carregaria trabalho alheio. Espere o merge da outra e atualize.
 
 ## 2. Validar (script, não IA)
 - Backend mudou → `scripts/validar.sh backend`.

@@ -70,6 +70,12 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 - `feature/*`, `fix/*`, `chore/*`, `docs/*` → Pull Request para a `develop`. Nunca commit direto em `main` ou `develop`.
 - Conventional Commits em português (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`, `build:`, `ci:`), um assunto por commit. O hook `scripts/hooks/commit-msg` recusa mensagem fora do padrão.
 - Antes do PR: `scripts/validar.sh` verde no lado que mudou. Detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
+- 🌱 **Branch nova nasce sempre da `origin/develop` atualizada** (`git fetch` + `git switch -c <branch> origin/develop`).
+  Nunca empilhe uma branch em outra que ainda não foi mergeada: se a feature depende de algo fora da `develop`
+  (confira com `git merge-base --is-ancestor <commit> origin/develop`), **pare e espere o merge**. "Vou mergear" ou
+  "está em aprovação" não é merge feito: confira no remoto.
+- 🔄 **Mantenha a branch atualizada com a `develop`**: no início de cada sessão de trabalho e antes do `/entregar`,
+  `git fetch` + `git merge origin/develop` (merge, não rebase). Conflito → pare e mostre ao Kevin.
 
 ## Skills do projeto
 

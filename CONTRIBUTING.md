@@ -42,6 +42,19 @@ git checkout -b feature/tela-extrato
 
 Dica: branch pequena e curta. Quanto mais tempo ela fica aberta, mais conflito aparece.
 
+**Regras de base da branch:**
+- Toda branch nasce da `develop` **atualizada**. Nunca crie uma branch a partir de outra que ainda está em PR
+  (*branch empilhada*): o seu PR passaria a carregar os commits dela, e qualquer ajuste pedido na revisão dela vira
+  conflito na sua.
+- A feature depende de outra (ex.: Spring Security depende do Flyway)? **Espere o merge** da outra na `develop` e só
+  então crie a sua.
+- Mantenha a branch em dia: ao voltar a trabalhar nela e antes de abrir o PR,
+
+```bash
+git fetch origin
+git merge origin/develop   # merge, não rebase: não reescreve o histórico que já foi para o remoto
+```
+
 ---
 
 ## 3. Commits
