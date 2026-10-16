@@ -684,15 +684,18 @@ O relatório do JaCoCo fica em `target/site/jacoco/index.html` — abra no naveg
 
 | Suíte | O que cobre |
 |---|---|
-| `ClienteServiceTest` | cadastro, CPF/e-mail duplicado, integração com ViaCEP |
-| `ContaServiceTest` | abertura de conta, depósito, saque, transferência, saldo e extrato |
+| `ClienteServiceTest` | cadastro, CPF/e-mail duplicado, integração com ViaCEP, senha em hash BCrypt |
+| `ContaServiceTest` | abertura de conta, depósito, saque, transferência, saldo, extrato e regra de dono (`403`) |
+| `TokenServiceTest` / `AuthServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login com a mesma resposta para CPF inexistente e senha errada |
+| `UsuarioServiceTest` / `CriadorAdminTest` | primeiro `ADMIN` criado pelo `.env` |
+| `SegurancaIntegracaoTest` | Spring inteiro com tokens reais: `401`, `403`, login, perfis e ataques ao token (`alg: none`, payload adulterado) |
 | `ClienteControllerTest` / `ContaControllerTest` | status HTTP de cada rota e limites da paginação |
 | `ControllerExceptionHandlerTest` | tradução de cada exceção para o formato de erro |
 | `ClienteViaCepTest` | CEP encontrado, CEP inexistente (`422`) e falha do ViaCEP (`503`) |
 | `CpfValidoValidatorTest` | dígitos verificadores, CPFs inválidos e com máscara |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e rejeitado quando tenta forjar linhas de log |
 | `EntitiesAndEnumsTest` | entidades e enums |
-| `ClienteRepositoryTest` / `ContaRepositoryTest` / `LancamentoRepositoryTest` | consultas do Spring Data, constraints, cascata, lock otimista e extrato no H2 (`@DataJpaTest`) |
+| `ClienteRepositoryTest` / `ContaRepositoryTest` / `LancamentoRepositoryTest` / `UsuarioRepositoryTest` | consultas do Spring Data, constraints, cascata, lock otimista, extrato e `tb_usuario` no H2 (`@DataJpaTest`) |
 | `RkfbankApplicationTests` | sobe o contexto completo do Spring |
 
 </details>
