@@ -104,27 +104,32 @@ Durante o vídeo, prestar atenção em:
 3. Como garantir que o cliente A não consegue sacar da conta do cliente B, mesmo com um token válido?
 
 ### 🛠️ Implementação
-- [ ] Decidir com o time: login com CPF + senha? (registrar em `decisoes.md`)
-- [ ] `V3__usuarios.sql`: senha (hash BCrypt) e perfil ligados ao cliente
-- [ ] Cadastro de cliente recebendo a senha (nunca devolver a senha no response)
-- [ ] `POST /auth/login` devolvendo o JWT com expiração
-- [ ] `SecurityFilterChain`: públicas só `POST /clientes` e `POST /auth/login`
-- [ ] Validação do token em todas as outras rotas
-- [ ] **Regra de dono:** depósito, saque, transferência e extrato só nas contas do usuário logado → `403`
-- [ ] `GET /clientes` só para perfil admin (ou removido do uso público)
-- [ ] `401` e `403` no mesmo formato de erro do `ControllerExceptionHandler`
-- [ ] Segredo do JWT em variável de ambiente (`.env`), nunca no código
-- [ ] Testes: login ok, senha errada, sem token, token expirado, conta de outro cliente
-- [ ] Combinar com o Renan as mudanças no frontend (guardar e enviar o token)
-- [ ] Atualizar `README_CONTRATO_API.md`, `README_TESTES_E2E.md` e os débitos
+- [x] Decidir com o time: login com CPF + senha? (registrar em `decisoes.md`)
+- [x] `V3__usuarios.sql`: senha (hash BCrypt) e perfil ligados ao cliente
+- [x] Cadastro de cliente recebendo a senha (nunca devolver a senha no response)
+- [x] `POST /auth/login` devolvendo o JWT com expiração
+- [x] `SecurityFilterChain`: públicas só `POST /clientes` e `POST /auth/login`
+- [x] Validação do token em todas as outras rotas
+- [x] **Regra de dono:** depósito, saque, transferência e extrato só nas contas do usuário logado → `403`
+- [x] `GET /clientes` só para perfil admin (ou removido do uso público)
+- [x] `401` e `403` no mesmo formato de erro do `ControllerExceptionHandler`
+- [x] Segredo do JWT em variável de ambiente (`.env`), nunca no código
+- [x] Testes: login ok, senha errada, sem token, token expirado, conta de outro cliente
+- [ ] Combinar com o Renan as mudanças no frontend (guardar e enviar o token) — recado enviado em 16/10 (`recados.md`), aguardando resposta
+- [x] Atualizar `README_CONTRATO_API.md`, `README_TESTES_E2E.md` e os débitos
 
 ### ✅ Pronto quando
-- [ ] `./run-test.sh` verde
-- [ ] Sem token → `401`; conta de outro cliente → `403`
-- [ ] Nenhuma senha aparece em log, response ou banco em texto puro
+- [x] `./run-test.sh` verde (16/10: 160/160; integração também no MySQL com `scripts/testar-no-mysql.sh`)
+- [x] Sem token → `401`; conta de outro cliente → `403`
+- [x] Nenhuma senha aparece em log, response ou banco em texto puro
 - [ ] PR revisado e mergeado na `develop`
 
 ### 📝 Minhas anotações
+
+Usei Spring Security com o OAuth2 Resource Server para validar o JWT em vez de escrever um filtro próprio: é a forma oficial, testada, e me deixa só configurar a `SecurityFilterChain` (rotas públicas, perfil `ADMIN`, sessão stateless). O login é CPF + senha; a senha vai para `tb_usuario` só como hash BCrypt, que tem salt embutido e é lento de propósito contra força bruta; cuidei do limite de 72 bytes e de nunca logar senha, CPF ou token (até o `toString` dos DTOs esconde).
+O token é assinado com HS256 e um segredo que vem só do `.env` (a API nem sobe sem ele ou com chave curta). Alterar o payload invalida a assinatura, e o `sub` é o id do usuário, não o CPF, porque o payload é só Base64.
+A diferença entre autenticação e autorização apareceu na prática: `hasRole` resolve perfil, mas "essa conta é sua?" é regra de negócio, então ficou no `ContaService`, com o `clienteId` vindo do token assinado e a ordem 404 → 403 → 422 para não vazar saldo de ninguém.
+O cuidado mais sutil foi o formato do erro: `401`/`403` nascem nos filtros, antes do `DispatcherServlet`, então o `@RestControllerAdvice` não os vê; escrevi um `AuthenticationEntryPoint`/`AccessDeniedHandler` que devolve o mesmo `ErroResponse`. No login, CPF inexistente e senha errada dão a mesma resposta e o mesmo tempo (BCrypt contra um hash falso), para não permitir enumeração de clientes.
 
 
 ---

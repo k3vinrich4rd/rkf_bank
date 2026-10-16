@@ -17,7 +17,7 @@ O cliente consegue:
 
 - **Backend:** quase tudo pronto e testado. Falta buscar uma conta específica.
 - **Frontend:** landing page e cadastro prontos. Faltam as telas da conta.
-- **Precisa decidir:** como o usuário volta para a conta dele sem login (ver `decisoes.md`).
+- **Login (16/10):** backend com CPF + senha e JWT pronto na `feature/spring-security-jwt`; falta a tela de login no frontend (recado para o Renan).
 
 ---
 
@@ -33,7 +33,7 @@ O cliente consegue:
 - [x] Backend: abrir conta
 - [x] Frontend: tela de cadastro
 - [x] Frontend: logs
-- [ ] Decidir como o usuário acessa a conta sem login
+- [x] Decidir como o usuário acessa a conta sem login (resolvido com o login: feature 2)
 - [ ] Backend: `GET /contas/{contaId}` (saldo)
 - [ ] Backend: `GET /clientes/{clienteId}/contas`
 - [ ] Frontend: abrir conta depois do cadastro
@@ -56,7 +56,7 @@ O cliente consegue:
 
 ## Depois do MVP
 
-- Login
+- Login: backend feito (feature 2); falta o frontend
 - Testes automáticos rodando em todo PR (CI)
 - Pix
 - Cartão
