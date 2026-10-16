@@ -599,10 +599,12 @@ docker compose ps             # espere o status "healthy"
 O Spring **não lê o arquivo `.env` sozinho** — as variáveis precisam estar no ambiente do terminal.
 
 ```bash
-# Git Bash / Linux / macOS
-set -a && source .env && set +a
+# Git Bash / Linux / macOS (o tr remove o \r de um .env salvo com CRLF no Windows)
+set -a && source <(tr -d '\r' < .env) && set +a
 ./mvnw spring-boot:run
 ```
+
+O `.env` precisa ter `JWT_SEGREDO` (veja o `.env.example`); sem ele a API não sobe.
 
 ```powershell
 # PowerShell
@@ -644,7 +646,7 @@ Abra <http://localhost:3000>. O cadastro fica em <http://localhost:3000/cadastro
 | Sintoma | Causa provável | Solução |
 |---|---|---|
 | `Rule 0: RequireJavaVersion failed` | JDK diferente do 25 | instale o JDK 25 e aponte o `JAVA_HOME` para ele |
-| `Access denied for user 'rkfbank'` | variáveis do `.env` não carregadas | rode o `source .env` (ou o script do PowerShell) antes do `mvnw` |
+| `Access denied for user 'rkfbank'` | variáveis do `.env` não carregadas | carregue o `.env` (comando acima ou o script do PowerShell) antes do `mvnw` |
 | `Communications link failure` | MySQL desligado ou ainda subindo | `docker compose ps` e espere o `healthy` |
 | Cadastro devolve `503` | ViaCEP fora do ar ou sem internet | tente de novo em alguns segundos |
 | Frontend não acha a API | backend parado ou `.env.local` errado | confira se a API responde em `:8080` |
