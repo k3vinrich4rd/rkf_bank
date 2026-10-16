@@ -22,6 +22,17 @@ public record CadastroClienteRequestDto(
         @NotBlank(message = "numero e obrigatório")
         String numero,
         @Size(max = 80, message = "complemento deve ter no máximo 80 caracteres")
-        String complemento
+        String complemento,
+        // 72 e o limite do BCrypt (em bytes; o ClienteService confere os bytes, porque acento ocupa mais de 1).
+        @NotBlank(message = "senha e obrigatória")
+        @Size(min = 8, max = 72, message = "senha deve ter entre 8 e 72 caracteres")
+        String senha
 ) {
+
+    // O toString padrao do record imprime todos os campos; sem isto, um log do DTO vazaria senha e CPF.
+    @Override
+    public String toString() {
+        return "CadastroClienteRequestDto[nomeCompleto=***, cpf=***, email=***, telefone=***, cep=" + cep
+                + ", numero=" + numero + ", complemento=" + complemento + ", senha=***]";
+    }
 }
