@@ -2,9 +2,12 @@
 // Uso: node scripts/smoke-e2e.mjs [baseUrl]      (padrão: http://localhost:8080)
 // Cria dados novos a cada execução (CPF, e-mail e número de conta aleatórios), então pode rodar
 // várias vezes no mesmo banco. Segue o roteiro de backend/README_TESTES_E2E.md em versão resumida.
+// Login: cada cliente se cadastra com senha e entra em POST /auth/login; as rotas de conta vão com o token.
+// Admin (opcional): com ADMIN_CPF e ADMIN_SENHA no ambiente (os mesmos da API), também confere GET /clientes.
 // Sai com código 0 se todas as verificações passaram e 1 se alguma falhou.
 
 const BASE = (process.argv[2] ?? "http://localhost:8080").replace(/\/$/, "");
+const SENHA = "smoke-senha-" + Math.random().toString(36).slice(2, 10);
 const resultados = [];
 
 function cpfValido() {
@@ -20,10 +23,12 @@ function cpfValido() {
 
 const aleatorio = (digitos) => String(Math.floor(Math.random() * 10 ** digitos)).padStart(digitos, "0");
 
-async function chamar(metodo, caminho, corpo) {
+async function chamar(metodo, caminho, corpo, token) {
+  const headers = { "Content-Type": "application/json", "X-Request-Id": "smoke-e2e-" + aleatorio(6) };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const resposta = await fetch(BASE + caminho, {
     method: metodo,
-    headers: { "Content-Type": "application/json", "X-Request-Id": "smoke-e2e-" + aleatorio(6) },
+    headers,
     body: corpo === undefined ? undefined : typeof corpo === "string" ? corpo : JSON.stringify(corpo),
   });
   const texto = await resposta.text();
@@ -38,23 +43,34 @@ function verificar(nome, condicao, detalhe = "") {
   return Boolean(condicao);
 }
 
-async function novoCliente(nome) {
-  const r = await chamar("POST", "/clientes", {
-    nomeCompleto: nome, cpf: cpfValido(), email: `smoke.${aleatorio(8)}@rkfbank.com`,
-    telefone: "11999999999", cep: "01001000", numero: "123",
-  });
-  verificar(`Cadastrar ${nome} → 201 com endereço do ViaCEP`, r.status === 201 && r.json?.endereco?.logradouro, `status ${r.status} ${JSON.stringify(r.json)}`);
-  return r.json;
+async function login(cpf, senha) {
+  const r = await chamar("POST", "/auth/login", { cpf, senha });
+  return r;
 }
 
-async function novaConta(clienteId) {
-  const r = await chamar("POST", `/contas/clientes/${clienteId}`, { agencia: "0001", numeroConta: aleatorio(8), tipoContaEnum: "CORRENTE" });
+// Cadastra e já faz login: devolve { ...cliente, cpf, token }.
+async function novoCliente(nome) {
+  const cpf = cpfValido();
+  const r = await chamar("POST", "/clientes", {
+    nomeCompleto: nome, cpf, email: `smoke.${aleatorio(8)}@rkfbank.com`,
+    telefone: "11999999999", cep: "01001000", numero: "123", senha: SENHA,
+  });
+  verificar(`Cadastrar ${nome} → 201 com endereço do ViaCEP`, r.status === 201 && r.json?.endereco?.logradouro, `status ${r.status} ${JSON.stringify(r.json)}`);
+  verificar(`Cadastro de ${nome} não devolve senha`, r.json && !("senha" in r.json) && !JSON.stringify(r.json).includes(SENHA));
+  const l = await login(cpf, SENHA);
+  verificar(`Login de ${nome} → 200 com token Bearer e clienteId`, l.status === 200 && l.json?.token && l.json?.tipo === "Bearer" && l.json?.clienteId === r.json?.id, `status ${l.status}`);
+  return { ...r.json, cpf, token: l.json?.token };
+}
+
+async function novaConta(cliente) {
+  const r = await chamar("POST", `/contas/clientes/${cliente.id}`, { agencia: "0001", numeroConta: aleatorio(8), tipoContaEnum: "CORRENTE" }, cliente.token);
   verificar("Abrir conta → 201, saldo 0.00 e ativa", r.status === 201 && Number(r.json?.saldo) === 0 && r.json?.ativa === true, `status ${r.status} ${JSON.stringify(r.json)}`);
   return r.json;
 }
 
-async function saldoDe(contaId) {
-  const r = await chamar("GET", "/contas");
+// GET /contas devolve só as contas do dono do token.
+async function saldoDe(contaId, token) {
+  const r = await chamar("GET", "/contas", undefined, token);
   return Number((r.json ?? []).find((c) => c.id === contaId)?.saldo);
 }
 
@@ -62,35 +78,58 @@ try {
   console.log(`Smoke test E2E em ${BASE}\n`);
   const origem = await novoCliente("Smoke Origem");
   const destino = await novoCliente("Smoke Destino");
-  if (!origem?.id || !destino?.id) throw new Error("cadastro falhou; a API está no ar e com acesso ao ViaCEP?");
-  const contaOrigem = await novaConta(origem.id);
-  const contaDestino = await novaConta(destino.id);
+  if (!origem?.token || !destino?.token) throw new Error("cadastro ou login falhou; a API está no ar, com JWT_SEGREDO e acesso ao ViaCEP?");
+  const contaOrigem = await novaConta(origem);
+  const contaDestino = await novaConta(destino);
 
-  let r = await chamar("POST", `/contas/${contaOrigem.id}/deposito`, { valor: 150.0, descricao: "smoke deposito" });
+  let r = await chamar("POST", `/contas/${contaOrigem.id}/deposito`, { valor: 150.0, descricao: "smoke deposito" }, origem.token);
   verificar("Depósito de 150.00 → 204", r.status === 204, `status ${r.status}`);
-  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 20.0, descricao: "smoke saque" });
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 20.0, descricao: "smoke saque" }, origem.token);
   verificar("Saque de 20.00 → 204", r.status === 204, `status ${r.status}`);
-  r = await chamar("POST", "/contas/transferencia", { contaOrigemId: contaOrigem.id, contaDestinoId: contaDestino.id, valor: 50.0, descricao: "smoke transferencia" });
+  r = await chamar("POST", "/contas/transferencia", { contaOrigemId: contaOrigem.id, contaDestinoId: contaDestino.id, valor: 50.0, descricao: "smoke transferencia" }, origem.token);
   verificar("Transferência de 50.00 → 204", r.status === 204, `status ${r.status}`);
 
-  verificar("Saldo da origem = 80.00", (await saldoDe(contaOrigem.id)) === 80);
-  verificar("Saldo do destino = 50.00", (await saldoDe(contaDestino.id)) === 50);
+  verificar("Saldo da origem = 80.00", (await saldoDe(contaOrigem.id, origem.token)) === 80);
+  verificar("Saldo do destino = 50.00", (await saldoDe(contaDestino.id, destino.token)) === 50);
 
-  r = await chamar("GET", `/contas/${contaOrigem.id}/lancamentos`);
+  r = await chamar("GET", `/contas/${contaOrigem.id}/lancamentos`, undefined, origem.token);
   const tipos = (r.json ?? []).map((l) => l.tipoLancamento);
   verificar("Extrato da origem: 3 lançamentos, do mais novo ao mais antigo", JSON.stringify(tipos) === JSON.stringify(["TRANSFERENCIA", "SAQUE", "DEPOSITO"]), JSON.stringify(tipos));
   const [transf, saque, deposito] = r.json ?? [];
   verificar("Transferência com origem e destino preenchidos", transf?.contaOrigemId === contaOrigem.id && transf?.contaDestinoId === contaDestino.id);
   verificar("Saque com destino nulo e depósito com origem nula", saque?.contaDestinoId === null && deposito?.contaOrigemId === null);
 
+  console.log("\nSegurança");
+  r = await chamar("GET", "/contas");
+  verificar("Sem token → 401 no formato padrão", r.status === 401 && r.json?.status === 401 && r.json?.path === "/contas", `status ${r.status}`);
+  r = await chamar("GET", "/contas", undefined, "token.falso.qualquer");
+  verificar("Token inválido → 401", r.status === 401, `status ${r.status}`);
+  r = await login(origem.cpf, "senha-errada");
+  verificar("Senha errada → 401 'CPF ou senha invalidos'", r.status === 401 && r.json?.message === "CPF ou senha invalidos", `status ${r.status}`);
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 1.0, descricao: "smoke" }, destino.token);
+  verificar("Saque na conta de outro cliente → 403", r.status === 403 && r.json?.status === 403, `status ${r.status}`);
+  r = await chamar("GET", `/contas/${contaOrigem.id}/lancamentos`, undefined, destino.token);
+  verificar("Extrato da conta de outro cliente → 403", r.status === 403, `status ${r.status}`);
+  r = await chamar("GET", "/contas", undefined, destino.token);
+  verificar("GET /contas mostra só as contas do dono do token", Array.isArray(r.json) && r.json.length === 1 && r.json[0].id === contaDestino.id, JSON.stringify(r.json));
+  r = await chamar("GET", "/clientes", undefined, origem.token);
+  verificar("GET /clientes com perfil CLIENTE → 403", r.status === 403, `status ${r.status}`);
+  if (process.env.ADMIN_CPF && process.env.ADMIN_SENHA) {
+    const admin = await login(process.env.ADMIN_CPF, process.env.ADMIN_SENHA);
+    r = await chamar("GET", "/clientes?paginado=true", undefined, admin.json?.token);
+    verificar("GET /clientes com perfil ADMIN → 200", admin.json?.perfil === "ADMIN" && r.status === 200, `login ${admin.status}, listagem ${r.status}`);
+  } else {
+    console.log("⏭️  GET /clientes com ADMIN pulado (defina ADMIN_CPF e ADMIN_SENHA para conferir)");
+  }
+
   console.log("\nCenários de erro");
-  r = await chamar("POST", "/clientes", { nomeCompleto: "X", cpf: "11111111111", email: "x@x.com", telefone: "11999999999", cep: "01001000", numero: "1" });
+  r = await chamar("POST", "/clientes", { nomeCompleto: "X", cpf: "11111111111", email: "x@x.com", telefone: "11999999999", cep: "01001000", numero: "1", senha: SENHA });
   verificar("CPF inválido → 400 com campo cpf", r.status === 400 && (r.json?.campos ?? []).some((c) => c.campo === "cpf"), `status ${r.status}`);
-  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 1000000, descricao: "smoke" });
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 1000000, descricao: "smoke" }, origem.token);
   verificar("Saque maior que o saldo → 422", r.status === 422, `status ${r.status}`);
-  r = await chamar("POST", "/contas/transferencia", { contaOrigemId: contaOrigem.id, contaDestinoId: contaOrigem.id, valor: 1, descricao: "smoke" });
+  r = await chamar("POST", "/contas/transferencia", { contaOrigemId: contaOrigem.id, contaDestinoId: contaOrigem.id, valor: 1, descricao: "smoke" }, origem.token);
   verificar("Transferência para a mesma conta → 422", r.status === 422, `status ${r.status}`);
-  r = await chamar("POST", "/contas/00000000-0000-0000-0000-000000000000/deposito", { valor: 10, descricao: "smoke" });
+  r = await chamar("POST", "/contas/00000000-0000-0000-0000-000000000000/deposito", { valor: 10, descricao: "smoke" }, origem.token);
   verificar("Depósito em conta inexistente → 404", r.status === 404, `status ${r.status}`);
   r = await chamar("POST", "/clientes", "{invalido");
   verificar("JSON inválido → 400", r.status === 400, `status ${r.status}`);

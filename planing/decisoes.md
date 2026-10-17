@@ -48,11 +48,16 @@ Data: 12/10
 Decisão: todo log do frontend passa por `lib/logger`, que esconde CPF, e-mail, telefone e nome.
 Por quê: ajuda a investigar erros sem expor dados pessoais (LGPD).
 
+## Login com CPF + senha e JWT
+Data: 16/10
+Decisão: o cliente entra com **CPF + senha** e recebe um **JWT** (HS256, expira em 15 min por padrão, sem refresh token por enquanto). A API valida o token com o **OAuth2 Resource Server** do Spring (não com filtro próprio). Senha e perfil (`CLIENTE`/`ADMIN`) ficam em `tb_usuario` (V3), separada de `tb_cliente`, com a senha em **BCrypt**. O primeiro `ADMIN` é criado na subida a partir de `ADMIN_CPF`/`ADMIN_SENHA` do `.env`. Públicas só `POST /clientes` e `POST /auth/login`; `GET /clientes` é só do ADMIN; em `GET /contas` o ADMIN vê todas e o CLIENTE só as dele; movimentar, ver extrato e abrir conta só nas contas do próprio cliente (`403`).
+Por quê: CPF já é único e validado no cadastro. O Resource Server é a forma oficial e testada de validar JWT (menos código nosso para errar). Tabela separada deixa credencial longe do dado cadastral e permite admin que não é cliente. Admin pelo `.env` evita senha em migração ou no Git. Também responde ao "acesso à conta sem login": agora o usuário volta pelo login.
+
 ---
 
 ## Ainda falta decidir
 
-- [ ] **Acesso à conta sem login:** depois do cadastro, como o usuário volta para a conta dele? (prazo: 15/10)
+- [x] **Acesso à conta sem login:** resolvido com o login (ver "Login com CPF + senha e JWT").
 - [ ] **Dinheiro:** a API manda o valor em reais (`50.00`) ou em centavos (`5000`)? Hoje a API usa reais e o frontend converte para centavos.
-- [ ] **Login:** fazer no MVP ou depois?
+- [x] **Login:** feito (feature 2 do checklist).
 - [ ] **Onde publicar:** onde o site, a API e o banco vão ficar no ar?

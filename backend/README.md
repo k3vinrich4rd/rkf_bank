@@ -26,12 +26,12 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 > Todos os comandos rodam na **raiz do repositório** (onde está o `pom.xml`), não dentro de `backend/`.
 
 ```bash
-# 1. banco
+# 1. banco (no .env, troque JWT_SEGREDO por um valor seu: openssl rand -base64 48)
 cp .env.example .env
 docker compose up -d
 
 # 2. variáveis no terminal (o Spring não lê o .env sozinho)
-set -a && source .env && set +a           # Git Bash / Linux / macOS
+set -a && source <(tr -d '\r' < .env) && set +a   # Git Bash / Linux / macOS (o tr remove o \r do .env salvo com CRLF)
 
 # 3. API
 ./mvnw spring-boot:run                    # Windows: .\mvnw.cmd spring-boot:run
@@ -45,7 +45,9 @@ Get-Content .env | Where-Object { $_ -match '^\s*[^#].*=' } | ForEach-Object {
 }
 ```
 
-Conferindo: `curl http://localhost:8080/clientes` → `[]`.
+Conferindo: `curl -i http://localhost:8080/contas` → `401` no formato de erro padrão (a API está no ar e exige login).
+Para chamar as rotas protegidas, cadastre-se, faça `POST /auth/login` e mande `Authorization: Bearer <token>`
+([contrato](README_CONTRATO_API.md#autenticação-jwt) e [roteiro, seção 7](README_TESTES_E2E.md#7-login-perfis-e-dados-sensíveis-spring-security--jwt)).
 
 ### Variáveis de ambiente
 
@@ -57,6 +59,9 @@ Conferindo: `curl http://localhost:8080/clientes` → `[]`.
 | `MYSQL_PORT` | `5441` | Docker (porta exposta) e Spring |
 | `MYSQL_ROOT_PASSWORD` | `senha-root-do-banco` | só Docker |
 | `MYSQL_VERSION` | `8.4` | só Docker |
+| `JWT_SEGREDO` | valor de exemplo: **troque** | Spring: assina e confere o JWT. **Obrigatório**, mínimo 32 bytes; sem ele a API não sobe |
+| `JWT_EXPIRACAO` | `15m` | Spring: validade do token (opcional) |
+| `ADMIN_CPF` / `ADMIN_SENHA` | vazios | Spring: criam o primeiro `ADMIN` na subida, se preenchidos (opcional) |
 
 > ⚠️ Se as variáveis **não** estiverem no terminal, o Spring usa os padrões de
 > `application.properties` (`rkfbank` / `rkfbank`), que **não batem** com o usuário criado pelo Docker —
@@ -73,6 +78,16 @@ Arquivo: [`src/main/resources/application.properties`](src/main/resources/applic
 | `spring.jpa.show-sql` | `false` | o SQL sai pelo logger `org.hibernate.SQL` do `log4j2-spring.xml`, com o `requestId` da chamada |
 | `viacep.base-url` | `https://viacep.com.br/ws` | |
 | `viacep.timeout-ms` | `3000` | tempo máximo de conexão e de leitura do ViaCEP |
+| `rkfbank.jwt.segredo` | `${JWT_SEGREDO}` | sem padrão de propósito; o perfil `test` traz um segredo só para testes |
+| `rkfbank.jwt.expiracao` | `${JWT_EXPIRACAO:15m}` | validade do token |
+| `rkfbank.admin.cpf` / `rkfbank.admin.senha` | `${ADMIN_CPF:}` / `${ADMIN_SENHA:}` | admin inicial (`CriadorAdmin`) |
+
+### Segurança (Spring Security + JWT)
+
+Regras de rota em [`ConfiguracaoSeguranca`](src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java):
+públicas só `POST /clientes` e `POST /auth/login`; `GET /clientes` só `ADMIN`; o resto exige token. A **regra de dono**
+(conta de outro cliente → `403`) fica no `ContaService`, porque depende do dado e não só do perfil. `401`/`403` barrados
+nos filtros saem no formato padrão pelo `RespostaErroSeguranca`. Senha em BCrypt em `tb_usuario` (`V3`).
 
 ---
 
@@ -115,6 +130,8 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | **rota, request ou response** | `scripts/validar.sh backend` → suba a API → smoke | [contrato da API](README_CONTRATO_API.md), [roteiro E2E](README_TESTES_E2E.md), `/verificar-contrato` e recado para o frontend |
 | **dependência** (`pom.xml`) | `scripts/validar.sh backend` → suba a API no MySQL → smoke → `node scripts/varrer-cves.js backend` | testes com mock não provam que a biblioteca nova funciona: a API precisa subir de verdade |
 | **configuração** (`application*.properties`) | `scripts/validar.sh backend` → suba a API no perfil padrão (MySQL) | a mudança vale nos dois perfis? (`test` usa H2) |
+| **segurança** (rotas públicas, perfis, regra de dono, JWT) | `scripts/validar.sh backend` → `scripts/testar-no-mysql.sh` → suba a API → smoke → `node scripts/engenharia-reversa-jwt.mjs` | `SegurancaIntegracaoTest` cobre o cenário novo; nenhum ataque do script de engenharia reversa passa; [roteiro, seção 7](README_TESTES_E2E.md#7-login-perfis-e-dados-sensíveis-spring-security--jwt) |
+| **qualquer coisa e quer provar no MySQL** (não só no H2) | `docker compose up -d` → `scripts/testar-no-mysql.sh` | a saída mostra `Database dialect: MySQLDialect`; não apaga dados |
 | **só documentação** | nada | links e comandos citados continuam funcionando |
 
 **Antes do PR que mexe em regra, rota ou banco:** `./run-test.sh` (**apaga o MySQL local**) → subir a API → `node scripts/smoke-e2e.mjs`
@@ -135,12 +152,25 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | `ClienteRepositoryTest` | `existsByCpf`/`existsByEmail`, unicidade, cascata de endereço e contas, `orphanRemoval`, paginação | `@DataJpaTest` (H2) |
 | `ContaRepositoryTest` | `existsByNumeroConta`, unicidade, campos obrigatórios, enum como texto, `@Version` (lock otimista), paginação | `@DataJpaTest` (H2) |
 | `LancamentoRepositoryTest` | extrato (origem **ou** destino, do mais novo para o mais antigo), `@PrePersist` da `dataHora`, campos obrigatórios | `@DataJpaTest` (H2) |
+| `UsuarioRepositoryTest` | `findByLogin`, admin sem cliente, unicidade de login e de cliente (`V3`) | `@DataJpaTest` (H2) |
+| `TokenServiceTest` | claims do JWT, HS256, 15 min, payload adulterado, chave errada, segredo curto | unitário com encoder/decoder reais |
+| `AuthServiceTest` / `UsuarioServiceTest` / `CriadorAdminTest` | login (mesma resposta e mesmo custo para CPF inexistente), admin pelo `.env` | Mockito |
 | `RkfbankApplicationTests` | o contexto Spring sobe | `@SpringBootTest` |
+| `SegurancaIntegracaoTest` | cadeia de filtros de verdade: `401` (sem token, vencido, outra chave, `alg:none`, adulterado), login, BCrypt no banco, regra de dono `403`, perfil `ADMIN` | `@SpringBootTest` + MockMvc (H2; MySQL com `testar-no-mysql.sh`) |
 
-> ⚠️ `RkfbankApplicationTests` sobe o Spring inteiro. Com o perfil padrão ele **precisa do MySQL no ar e das
-> variáveis de ambiente carregadas**; com `-Dspring.profiles.active=test` ele usa H2 e roda sem banco.
-> Os testes de repositório (`@DataJpaTest`) trocam o datasource por um **H2 embutido** em qualquer perfil, então
-> também rodam sem MySQL. Os demais testes nunca dependem de banco.
+> **H2 × MySQL: qual banco cada teste usa?**
+>
+> | Comando | `@SpringBootTest` | `@DataJpaTest` | Para quê |
+> |---|---|---|---|
+> | `scripts/validar.sh backend` | H2 | H2 | dia a dia: rápido, sem Docker |
+> | `./run-test.sh` | H2 (o script recria o MySQL, mas roda com o perfil `test`) | H2 | garantir banco limpo; **não** testa o MySQL |
+> | `scripts/testar-no-mysql.sh` | **MySQL** do Docker | (não roda) | provar consultas, tipos e migrações no banco real |
+> | API no ar + `smoke-e2e.mjs` | **MySQL** (perfil padrão) | — | fluxo real por HTTP |
+>
+> Usar H2 nos testes é decisão do projeto (rapidez e nada de Docker para rodar). O custo é que diferença de
+> dialeto só aparece no MySQL, por isso o `testar-no-mysql.sh` e o smoke antes do PR que mexe no banco.
+> `@DataJpaTest` troca o banco por H2 embutido **em qualquer perfil**; MySQL real para eles é a feature 3 (Testcontainers).
+> Com o perfil padrão (sem `-Dspring.profiles.active=test`), `RkfbankApplicationTests` precisa do MySQL e do `.env` carregado.
 
 Teste manual ponta a ponta: [README_TESTES_E2E.md](README_TESTES_E2E.md) ·
 resultado da última execução: [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md).
@@ -230,6 +260,7 @@ o Flyway aplica o que falta, **antes** de o Hibernate validar as entidades, e re
 |---|---|
 | `V1__schema_inicial.sql` | as 4 tabelas, constraints com nome legível (`uk_`, `fk_`, `ck_`) e índices do extrato |
 | `V2__email_minusculo.sql` | migração de dados: e-mails existentes em minúsculas (o `ClienteService` faz o mesmo nos novos) |
+| `V3__usuarios.sql` | `tb_usuario`: login (CPF), hash BCrypt da senha, perfil (`CLIENTE`/`ADMIN`) e `cliente_id` opcional. Clientes de antes da V3 ficam sem senha: recrie o banco local |
 
 **Criar uma migração nova:** arquivo `V<próxima versão>__descricao_em_snake_case.sql` (dois sublinhados), SQL que rode
 no MySQL **e** no H2 dos testes, e `scripts/validar.sh backend`. Com o Claude Code, `/revisar-migracao` confere antes do commit.
@@ -248,6 +279,9 @@ no MySQL **e** no H2 dos testes, e `scripts/validar.sh backend`. Com o Claude Co
 | Sintoma | Causa provável | Solução |
 |---|---|---|
 | `Access denied for user 'rkfbank'` | variáveis do `.env` não carregadas no terminal | carregue o `.env` (seção "Como rodar") |
+| `Could not resolve placeholder 'JWT_SEGREDO'` ou `JWT_SEGREDO ausente ou curto` | `.env` sem `JWT_SEGREDO` (ou com menos de 32 bytes), ou não carregado | gere com `openssl rand -base64 48`, ponha no `.env` e carregue de novo |
+| Toda chamada devolve `401` | sem `Authorization: Bearer`, token vencido (15 min) ou `JWT_SEGREDO` trocado | faça login de novo |
+| Login devolve `401` com a senha certa | cliente cadastrado antes da `V3` (não tem senha) | recrie o banco local ou cadastre de novo |
 | `Communications link failure` | MySQL não está no ar ou ainda subindo | `docker compose ps` — espere `healthy` |
 | `Rule 0 ... RequireJavaVersion failed` | JDK diferente de 25 | instale o JDK 25 e ajuste `JAVA_HOME` |
 | `Port 8080 was already in use` | outra instância rodando | feche a outra ou mate o processo da porta |

@@ -16,8 +16,9 @@ Resolveu um item? Apague a linha no mesmo PR.
 | 🔴 | O Spring não lê o `.env`. Se as variáveis não estiverem no terminal, ele usa usuário/senha `rkfbank`, que não batem com o Docker. | Adicionar `spring.config.import=optional:file:.env[.properties]` no `application.properties`. |
 | 🔴 | O teste `RkfbankApplicationTests` precisa do MySQL ligado para rodar. | Rodar esse teste com o H2 (perfil de teste). |
 | 🔴 | O arquivo `application-test.properties` está em `src/main/resources`. | Mover para `src/test/resources`. |
-| 🟡 | Não existe login: qualquer pessoa pode ver ou movimentar qualquer conta. | Spring Security + JWT. |
-| 🟡 | `GET /clientes` devolve CPF, e-mail e telefone de todos os clientes. | Proteger com login ou remover do uso público. |
+| 🟡 | O login não limita tentativas: dá para testar senhas de um CPF à vontade (força bruta). | Limitar tentativas por CPF/IP ou bloquear temporariamente (ver "Limites e antifraude" no fim). |
+| 🟡 | Não há *refresh token* nem revogação: o token vale 15 min e "sair" só apaga o token no front; um token vazado vale até expirar. | `POST /auth/refresh` com token de renovação guardado no banco e revogável. |
+| 🟢 | Clientes cadastrados antes da `V3` não têm usuário (sem senha) e não conseguem entrar. | Sem produção, recriar o banco local (`docker compose down -v`). Se um dia houver produção, criar fluxo de "definir senha". |
 | 🟡 | A configuração de CORS vale para `/api/**`, mas as rotas não têm `/api`. Hoje funciona só por causa do proxy do Next. | Ajustar para `/**` ou remover, se o proxy for mantido. |
 | 🟡 | Quem chama a API escolhe a agência e o número da conta. | O backend gerar esses números. |
 | 🟡 | A paginação devolve o `Page` do Spring direto, e esse formato pode mudar entre versões. | Criar um DTO de página próprio. |
@@ -32,6 +33,7 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
+| 🔴 | O backend passou a exigir login (contrato 2.0): sem token, toda rota fora o cadastro responde `401`, e `GET /clientes` virou só `ADMIN`. As telas de conta quebram até o front ter login. | Tela de login (`POST /auth/login`), guardar o token e mandar `Authorization: Bearer` no `apiRequest`; tratar `401` voltando para o login. Ver recado em `recados.md`. |
 | 🔴 | A abertura de conta sorteia agência (`0001`) e número no navegador e tenta de novo se vier `409` (`components/abrir-conta/use-abrir-conta.ts`). | Apagar quando o backend gerar esses números (ver item do backend). |
 | 🔴 | A tela da conta procura a conta página a página em `GET /contas`, porque `GET /contas/{contaId}` ainda não existe (`lib/api/contas.ts`). | Trocar por uma chamada só quando o backend criar o endpoint. |
 | 🟡 | Dependências com vulnerabilidades conhecidas (`node scripts/varrer-cves.js frontend`): `next` 16.3.6 (SSRF na otimização de imagem, cache poisoning em SSG/ISR, entre outras) e as transitivas `sharp` 0.35.4, `source-map-js` 1.2.1 e `@modelcontextprotocol/sdk` 1.30.1. O `braces` 3.0.3 ainda não tem correção. | Atualizar `next` e `eslint-config-next` para 16.3.8+, rodar `pnpm update sharp source-map-js @modelcontextprotocol/sdk --depth Infinity` e validar com `scripts/validar.sh frontend`. |

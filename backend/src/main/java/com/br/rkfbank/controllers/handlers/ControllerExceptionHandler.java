@@ -2,7 +2,9 @@ package com.br.rkfbank.controllers.handlers;
 
 import com.br.rkfbank.dto.comum.ErroCampoResponse;
 import com.br.rkfbank.dto.comum.ErroResponse;
+import com.br.rkfbank.exceptions.AcessoNegadoException;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
+import com.br.rkfbank.exceptions.CredenciaisInvalidasException;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
 import com.br.rkfbank.exceptions.NaoProcessavelException;
 import com.br.rkfbank.exceptions.NegocioException;
@@ -66,6 +68,21 @@ public class ControllerExceptionHandler {
         log.warn("Requisicao invalida em {}: {} {}", request.getRequestURI(), ex.getCampo(), ex.getMessage());
         return montar(HttpStatus.BAD_REQUEST, "Requisicao invalida", request.getRequestURI(),
                 List.of(new ErroCampoResponse(ex.getCampo(), ex.getMessage())));
+    }
+
+    // 401 do login (CPF ou senha errados). O 401 de token ausente/invalido nasce no filtro e sai pelo
+    // RespostaErroSeguranca, porque o filtro roda antes do controller e este advice nao o enxerga.
+    @ExceptionHandler(CredenciaisInvalidasException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ErroResponse credenciaisInvalidas(CredenciaisInvalidasException ex, HttpServletRequest request) {
+        return montarELogar(Level.DEBUG, HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    // 403 da regra de dono: o usuario esta logado, mas o recurso e de outro cliente.
+    @ExceptionHandler(AcessoNegadoException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErroResponse acessoNegado(AcessoNegadoException ex, HttpServletRequest request) {
+        return montarELogar(Level.DEBUG, HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
     @ExceptionHandler(ClienteNaoEncontradoException.class)

@@ -18,9 +18,13 @@ Você é o par de programação e mentor do Kevin (dev Java Junior indo para Ple
 ## Passo 0 — Preparar
 
 1. Leia a seção `## <n>.` de `planing/checklist-features.md`. Se a feature estiver marcada como 🔮 futuro, **pare** e diga que ela ainda não tem plano; ofereça ajudar a responder as perguntas da seção para escrever o plano.
-2. Confira a branch indicada na seção (ex.: `feature/flyway`). Se não existir, crie a partir da `develop` atualizada (`git fetch` + `git switch -c <branch> origin/develop`). Se existir, atualize com a `develop`.
-3. Rode `scripts/validar.sh backend` (e `frontend` se a feature tocar no front) para registrar o ponto de partida. Se já começar vermelho, avise antes de mexer em qualquer coisa.
-4. Mostre um **mapa da feature**: uma tabela curta com os passos da seção "🛠️ Implementação" e o conceito que cada passo ensina.
+2. **Dependências mergeadas?** Veja o "Depende de" da seção. `git fetch` e confira que a feature anterior já está na `origin/develop` (`git merge-base --is-ancestor <último commit dela> origin/develop`). Se **não** estiver, **pare**: diga o que falta mergear e não comece. Nunca crie a branch em cima de outra feature não mergeada (branch empilhada), mesmo que o Kevin diga que "já está mergeada" ou "vai ser aprovada": confira no remoto e mostre o resultado.
+3. **Branch sempre a partir da `develop`:** confira a branch indicada na seção (ex.: `feature/flyway`).
+   - Não existe → `git switch -c <branch> origin/develop`.
+   - Existe → `git merge origin/develop` nela (merge, não rebase). Se ela tiver sido criada a partir de outra branch que não a `develop` e não tiver commits próprios, recrie a partir da `origin/develop`.
+   - Em toda sessão nova de trabalho na mesma feature, repita o `git fetch` + `git merge origin/develop` antes de mexer. Conflito → pare e mostre.
+4. Rode `scripts/validar.sh backend` (e `frontend` se a feature tocar no front) para registrar o ponto de partida. Se já começar vermelho, avise antes de mexer em qualquer coisa.
+5. Mostre um **mapa da feature**: uma tabela curta com os passos da seção "🛠️ Implementação" e o conceito que cada passo ensina.
 
 ## Para cada passo da seção "🛠️ Implementação"
 

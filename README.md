@@ -599,10 +599,12 @@ docker compose ps             # espere o status "healthy"
 O Spring **não lê o arquivo `.env` sozinho** — as variáveis precisam estar no ambiente do terminal.
 
 ```bash
-# Git Bash / Linux / macOS
-set -a && source .env && set +a
+# Git Bash / Linux / macOS (o tr remove o \r de um .env salvo com CRLF no Windows)
+set -a && source <(tr -d '\r' < .env) && set +a
 ./mvnw spring-boot:run
 ```
+
+O `.env` precisa ter `JWT_SEGREDO` (veja o `.env.example`); sem ele a API não sobe.
 
 ```powershell
 # PowerShell
@@ -644,7 +646,7 @@ Abra <http://localhost:3000>. O cadastro fica em <http://localhost:3000/cadastro
 | Sintoma | Causa provável | Solução |
 |---|---|---|
 | `Rule 0: RequireJavaVersion failed` | JDK diferente do 25 | instale o JDK 25 e aponte o `JAVA_HOME` para ele |
-| `Access denied for user 'rkfbank'` | variáveis do `.env` não carregadas | rode o `source .env` (ou o script do PowerShell) antes do `mvnw` |
+| `Access denied for user 'rkfbank'` | variáveis do `.env` não carregadas | carregue o `.env` (comando acima ou o script do PowerShell) antes do `mvnw` |
 | `Communications link failure` | MySQL desligado ou ainda subindo | `docker compose ps` e espere o `healthy` |
 | Cadastro devolve `503` | ViaCEP fora do ar ou sem internet | tente de novo em alguns segundos |
 | Frontend não acha a API | backend parado ou `.env.local` errado | confira se a API responde em `:8080` |
@@ -682,15 +684,18 @@ O relatório do JaCoCo fica em `target/site/jacoco/index.html` — abra no naveg
 
 | Suíte | O que cobre |
 |---|---|
-| `ClienteServiceTest` | cadastro, CPF/e-mail duplicado, integração com ViaCEP |
-| `ContaServiceTest` | abertura de conta, depósito, saque, transferência, saldo e extrato |
+| `ClienteServiceTest` | cadastro, CPF/e-mail duplicado, integração com ViaCEP, senha em hash BCrypt |
+| `ContaServiceTest` | abertura de conta, depósito, saque, transferência, saldo, extrato e regra de dono (`403`) |
+| `TokenServiceTest` / `AuthServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login com a mesma resposta para CPF inexistente e senha errada |
+| `UsuarioServiceTest` / `CriadorAdminTest` | primeiro `ADMIN` criado pelo `.env` |
+| `SegurancaIntegracaoTest` | Spring inteiro com tokens reais: `401`, `403`, login, perfis e ataques ao token (`alg: none`, payload adulterado) |
 | `ClienteControllerTest` / `ContaControllerTest` | status HTTP de cada rota e limites da paginação |
 | `ControllerExceptionHandlerTest` | tradução de cada exceção para o formato de erro |
 | `ClienteViaCepTest` | CEP encontrado, CEP inexistente (`422`) e falha do ViaCEP (`503`) |
 | `CpfValidoValidatorTest` | dígitos verificadores, CPFs inválidos e com máscara |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e rejeitado quando tenta forjar linhas de log |
 | `EntitiesAndEnumsTest` | entidades e enums |
-| `ClienteRepositoryTest` / `ContaRepositoryTest` / `LancamentoRepositoryTest` | consultas do Spring Data, constraints, cascata, lock otimista e extrato no H2 (`@DataJpaTest`) |
+| `ClienteRepositoryTest` / `ContaRepositoryTest` / `LancamentoRepositoryTest` / `UsuarioRepositoryTest` | consultas do Spring Data, constraints, cascata, lock otimista, extrato e `tb_usuario` no H2 (`@DataJpaTest`) |
 | `RkfbankApplicationTests` | sobe o contexto completo do Spring |
 
 </details>

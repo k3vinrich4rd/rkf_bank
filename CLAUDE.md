@@ -32,7 +32,9 @@ scripts/validar.sh backend          # testes do backend em H2, resumo curto (nã
 scripts/validar.sh frontend         # lint + typecheck + build do frontend
 scripts/validar.sh tudo             # os dois
 ./run-test.sh                       # ⚠️ APAGA o MySQL local (docker compose down -v) e roda tudo com o perfil test
+scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do Docker (os outros scripts usam H2); não apaga dados
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
+node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas (OSV.dev) no Maven e no pnpm-lock
 scripts/instalar-hooks.sh           # ativa o hook que valida mensagens de commit
 ```
@@ -68,6 +70,12 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 > Nunca use `git reset`, `revert`, `rebase` ou `push --force` sem pedido explícito.
 
 - `feature/*`, `fix/*`, `chore/*`, `docs/*` → Pull Request para a `develop`. Nunca commit direto em `main` ou `develop`.
+- 🌱 **Branch nova nasce sempre da `origin/develop` atualizada** (`git fetch` + `git switch -c <branch> origin/develop`).
+  Nunca empilhe uma branch em outra que ainda não foi mergeada: se a feature depende de algo fora da `develop`
+  (confira com `git merge-base --is-ancestor <commit> origin/develop`), **pare e espere o merge**. "Vou mergear" ou
+  "está em aprovação" não é merge feito: confira no remoto.
+- 🔄 **Mantenha a branch atualizada com a `develop`**: no início de cada sessão de trabalho e antes do `/entregar`,
+  `git fetch` + `git merge origin/develop` (merge, não rebase). Conflito → pare e mostre ao Kevin.
 - Conventional Commits em português (`feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`, `build:`, `ci:`), um assunto por commit. O hook `scripts/hooks/commit-msg` recusa mensagem fora do padrão.
 - Antes do PR: `scripts/validar.sh` verde no lado que mudou. Detalhes em [CONTRIBUTING.md](CONTRIBUTING.md).
 
