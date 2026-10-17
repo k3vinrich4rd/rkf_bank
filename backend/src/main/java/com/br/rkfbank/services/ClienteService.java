@@ -7,17 +7,23 @@ import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.dto.response.cliente.EnderecoResponseDto;
 import com.br.rkfbank.entities.Cliente;
 import com.br.rkfbank.entities.Endereco;
+import com.br.rkfbank.entities.Usuario;
+import com.br.rkfbank.entities.enums.PerfilEnum;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.ClienteRepository;
+import com.br.rkfbank.repositories.UsuarioRepository;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -27,12 +33,24 @@ public class ClienteService {
 
     private static final Logger log = LogManager.getLogger(ClienteService.class);
 
+    // Limite do BCrypt: o que passa de 72 bytes ele nao le (o Spring Security recusa com excecao).
+    static final int MAX_BYTES_SENHA = 72;
+
     private final ClienteRepository clienteRepository;
     private final ClienteViaCep clienteViaCep;
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public ClienteService(ClienteRepository clienteRepository, ClienteViaCep clienteViaCep) {
+    public ClienteService(
+            ClienteRepository clienteRepository,
+            ClienteViaCep clienteViaCep,
+            UsuarioRepository usuarioRepository,
+            PasswordEncoder passwordEncoder
+    ) {
         this.clienteRepository = clienteRepository;
         this.clienteViaCep = clienteViaCep;
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -55,6 +73,11 @@ public class ClienteService {
         if (clienteRepository.existsByEmail(emailNormalizado)) {
             log.warn("Cadastro de cliente recusado: email ja cadastrado");
             throw new NegocioException("Email ja cadastrado");
+        }
+
+        // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Checado antes de chamar o ViaCEP.
+        if (request.senha().getBytes(StandardCharsets.UTF_8).length > MAX_BYTES_SENHA) {
+            throw new RequisicaoInvalidaException("senha", "senha deve ter no maximo " + MAX_BYTES_SENHA + " bytes");
         }
 
         // Normaliza o CEP para manter somente dígitos antes de chamar o ViaCEP.
@@ -84,6 +107,16 @@ public class ClienteService {
             log.warn("Cadastro de cliente recusado: violacao de unicidade no banco");
             throw new NegocioException("CPF ou email ja cadastrado");
         }
+
+        // Credencial de acesso na mesma transacao: se falhar, o cliente tambem e desfeito (rollback).
+        // So o hash vai para o banco; a senha em texto termina aqui.
+        Usuario usuario = new Usuario();
+        usuario.setLogin(cpfSanitizado);
+        usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
+        usuario.setPerfil(PerfilEnum.CLIENTE);
+        usuario.setCliente(salvo);
+        usuarioRepository.save(usuario);
+
         log.info("Cliente {} cadastrado (cidade={}/{})", salvo.getId(), viaCep.localidade(), viaCep.uf());
         return toResponse(salvo);
     }

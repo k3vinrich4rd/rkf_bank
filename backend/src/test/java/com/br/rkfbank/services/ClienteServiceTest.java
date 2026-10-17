@@ -1,10 +1,12 @@
 package com.br.rkfbank.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.br.rkfbank.clients.viacep.ClienteViaCep;
@@ -13,18 +15,24 @@ import com.br.rkfbank.dto.request.cliente.CadastroClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.entities.Cliente;
 import com.br.rkfbank.entities.Endereco;
+import com.br.rkfbank.entities.Usuario;
+import com.br.rkfbank.entities.enums.PerfilEnum;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.ClienteRepository;
+import com.br.rkfbank.repositories.UsuarioRepository;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -38,8 +46,67 @@ class ClienteServiceTest {
     @Mock
     private ClienteViaCep clienteViaCep;
 
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private ClienteService clienteService;
+
+    @Test
+    void deveCriarUsuarioClienteComSenhaEmHashAoCadastrar() {
+        CadastroClienteRequestDto request = new CadastroClienteRequestDto(
+                "Joao Silva", "529.982.247-25", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1"
+        );
+        when(clienteRepository.existsByCpf("52998224725")).thenReturn(false);
+        when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(false);
+        when(clienteViaCep.buscarPorCep("01001000")).thenReturn(new ResponseViaCepDto(
+                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
+        ));
+        when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(passwordEncoder.encode("senha-forte-1")).thenReturn("$2a$10$hash-gerado-pelo-bcrypt");
+
+        clienteService.cadastrar(request);
+
+        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(captor.capture());
+        Usuario usuario = captor.getValue();
+        assertEquals("52998224725", usuario.getLogin());
+        assertEquals("$2a$10$hash-gerado-pelo-bcrypt", usuario.getSenhaHash());
+        assertEquals(PerfilEnum.CLIENTE, usuario.getPerfil());
+        assertNotNull(usuario.getCliente());
+    }
+
+    @Test
+    void deveRecusarSenhaComMaisDe72BytesAntesDeChamarOViaCep() {
+        // 40 caracteres "ç" cabem no @Size(max = 72), mas ocupam 80 bytes em UTF-8.
+        String senhaComAcentos = "ç".repeat(40);
+        CadastroClienteRequestDto request = new CadastroClienteRequestDto(
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", null, senhaComAcentos
+        );
+        when(clienteRepository.existsByCpf("52998224725")).thenReturn(false);
+        when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(false);
+
+        RequisicaoInvalidaException ex = assertThrows(RequisicaoInvalidaException.class,
+                () -> clienteService.cadastrar(request));
+
+        assertEquals("senha", ex.getCampo());
+        verifyNoInteractions(clienteViaCep, usuarioRepository, passwordEncoder);
+    }
+
+    @Test
+    void naoDeveExporSenhaNemCpfNoToStringDoRequest() {
+        CadastroClienteRequestDto request = new CadastroClienteRequestDto(
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1"
+        );
+
+        String texto = request.toString();
+
+        assertFalse(texto.contains("senha-forte-1"));
+        assertFalse(texto.contains("52998224725"));
+    }
 
     @Test
     void deveCadastrarClienteComEnderecoViaCep() {
@@ -50,7 +117,8 @@ class ClienteServiceTest {
                 "11999998888",
                 "01001000",
                 "123",
-                "Apto 45"
+                "Apto 45",
+                "senha-forte-1"
         );
 
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
@@ -82,7 +150,7 @@ class ClienteServiceTest {
     @Test
     void deveLancarConflitoQuandoCpfDuplicado() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45"
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(true);
 
@@ -92,7 +160,7 @@ class ClienteServiceTest {
     @Test
     void deveLancarConflitoQuandoEmailDuplicado() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45"
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(true);
@@ -103,7 +171,7 @@ class ClienteServiceTest {
     @Test
     void deveSalvarEmailEmMinusculasESemEspacos() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "  Joao.Silva@Email.COM ", "11999998888", "01001000", "123", "Apto 45"
+                "Joao Silva", "52998224725", "  Joao.Silva@Email.COM ", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail("joao.silva@email.com")).thenReturn(false);
@@ -120,7 +188,7 @@ class ClienteServiceTest {
     @Test
     void deveLancarConflitoQuandoEmailDuplicadoComMaiusculas() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "JOAO@EMAIL.COM", "11999998888", "01001000", "123", "Apto 45"
+                "Joao Silva", "52998224725", "JOAO@EMAIL.COM", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(true);
@@ -206,7 +274,8 @@ class ClienteServiceTest {
                 "11999998888",
                 "01001-000",
                 "123",
-                "Apto 45"
+                "Apto 45",
+                "senha-forte-1"
         );
 
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
@@ -224,7 +293,7 @@ class ClienteServiceTest {
     @Test
     void deveConverterConflitoDeUnicidadeNoInsertEm409() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45"
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(false);
