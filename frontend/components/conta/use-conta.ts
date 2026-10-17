@@ -1,28 +1,24 @@
 import { useEffect, useState } from "react";
-import { ApiError, contasApi, isFalhaDeServidor, type ContaResponse, type Uuid } from "@/lib/api";
+import { contasApi, isFalhaDeServidor, type ContaResponse } from "@/lib/api";
 import type { TelaLogger } from "@/components/logs";
-import { useContaAtual } from "./use-conta-atual";
 
 /**
  * O que a tela mostra:
- * - `carregando`: lendo o navegador ou buscando a conta na API;
- * - `sem-cadastro`: nenhum cliente guardado → mandar para o cadastro;
- * - `sem-conta`: cliente guardado, mas sem conta aberta → mandar para a abertura;
+ * - `carregando`: buscando as contas do usuário logado;
+ * - `sem-conta`: logado, mas sem conta aberta → mandar para a abertura;
  * - `erro`: a busca falhou → mensagem e "tentar de novo";
  * - `pronta`: conta carregada.
+ *
+ * Sem login não se chega aqui: o `proxy.ts` manda para o login, e um token vencido no meio do caminho
+ * vira 401, que o `apiRequest` também manda para o login.
  */
-export type EtapaConta = "carregando" | "sem-cadastro" | "sem-conta" | "erro" | "pronta";
+export type EtapaConta = "carregando" | "sem-conta" | "erro" | "pronta";
 
 /**
- * Resultado de uma busca, marcado com a busca que o gerou. Uma busca nova (outra conta
- * ou "tentar de novo") muda a chave, e o resultado antigo deixa de valer sozinho —
- * sem precisar zerar estado dentro do efeito.
+ * Resultado de uma busca, marcado com a tentativa que o gerou. "Tentar de novo" muda a tentativa, e o
+ * resultado antigo deixa de valer sozinho — sem precisar zerar estado dentro do efeito.
  */
-type Resultado = { chave: string } & ({ conta: ContaResponse } | { erro: string });
-
-function chaveDaBusca(contaId: Uuid, tentativa: number) {
-  return `${contaId}#${tentativa}`;
-}
+type Resultado = { tentativa: number } & ({ conta: ContaResponse | null } | { erro: string });
 
 function mensagemDeErro(error: unknown): string {
   return isFalhaDeServidor(error)
@@ -31,70 +27,53 @@ function mensagemDeErro(error: unknown): string {
 }
 
 /**
- * Carrega a conta guardada no navegador (ver `lib/conta-atual.ts`). Usado por todas as telas da conta;
+ * Carrega a conta do usuário logado. Usado por todas as telas da conta;
  * `logTela` é o log da tela que chamou, para as falhas aparecerem no nome dela.
+ *
+ * Um cliente pode ter mais de uma conta (contrato 4.1), mas a interface ainda trabalha com uma só:
+ * a primeira que a API devolve.
  */
 export function useConta(logTela: TelaLogger) {
-  const { conta: contaAtual, carregando: lendoNavegador, salvar } = useContaAtual();
   const [tentativa, setTentativa] = useState(0);
   const [resultado, setResultado] = useState<Resultado | null>(null);
 
-  const clienteId = contaAtual?.clienteId;
-  const contaId = contaAtual?.contaId;
-
   useEffect(() => {
-    if (!clienteId || !contaId) return;
-
     let ativa = true;
-    const chave = chaveDaBusca(contaId, tentativa);
 
-    contasApi.buscar(contaId).then(
-      (conta) => {
-        if (ativa) setResultado({ chave, conta });
+    contasApi.minhas().then(
+      ([primeira]) => {
+        if (ativa) setResultado({ tentativa, conta: primeira ?? null });
       },
       (error: unknown) => {
         if (!ativa) return;
-        if (error instanceof ApiError && error.status === 404) {
-          // A conta guardada não existe mais (ex.: banco recriado): mantém o cliente e pede nova abertura.
-          logTela.falha("Conta guardada não encontrada", error, { contaId });
-          salvar({ clienteId });
-          return;
-        }
         const mensagem = mensagemDeErro(error);
-        logTela.falha("Conta não carregada", error, { contaId, mensagemExibida: mensagem });
-        setResultado({ chave, erro: mensagem });
+        logTela.falha("Conta não carregada", error, { mensagemExibida: mensagem });
+        setResultado({ tentativa, erro: mensagem });
       },
     );
 
     return () => {
       ativa = false;
     };
-  }, [clienteId, contaId, tentativa, logTela, salvar]);
+  }, [tentativa, logTela]);
 
   // Só vale o resultado da busca atual; um resultado antigo conta como "ainda carregando".
-  const atual = contaId && resultado?.chave === chaveDaBusca(contaId, tentativa) ? resultado : null;
+  const atual = resultado?.tentativa === tentativa ? resultado : null;
+  const conta = atual && "conta" in atual ? atual.conta : null;
 
   return {
-    etapa: definirEtapa({ lendoNavegador, clienteId, contaId, atual }),
-    conta: atual && "conta" in atual ? atual.conta : null,
+    etapa: definirEtapa(atual),
+    conta,
     erro: atual && "erro" in atual ? atual.erro : null,
+    /** Busca de novo: depois de um erro ou de uma movimentação que mudou o saldo. */
     tentarDeNovo: () => setTentativa((n) => n + 1),
   };
 }
 
-interface EstadoDaEtapa {
-  lendoNavegador: boolean;
-  clienteId: Uuid | undefined;
-  contaId: Uuid | undefined;
-  atual: Resultado | null;
-}
-
-function definirEtapa({ lendoNavegador, clienteId, contaId, atual }: EstadoDaEtapa): EtapaConta {
-  if (lendoNavegador) return "carregando";
-  if (!clienteId) return "sem-cadastro";
-  if (!contaId) return "sem-conta";
+function definirEtapa(atual: Resultado | null): EtapaConta {
   if (!atual) return "carregando";
-  return "conta" in atual ? "pronta" : "erro";
+  if ("erro" in atual) return "erro";
+  return atual.conta ? "pronta" : "sem-conta";
 }
 
 export type ContaState = ReturnType<typeof useConta>;

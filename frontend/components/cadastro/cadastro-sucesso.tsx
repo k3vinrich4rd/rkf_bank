@@ -6,9 +6,15 @@ import { ROUTES } from "@/lib/routes";
 
 interface CadastroSucessoProps {
   cliente: ClienteResponse;
+  /** O login automático deu certo: segue direto para a abertura de conta. Senão, para o login. */
+  logado: boolean;
 }
 
-export function CadastroSucesso({ cliente }: CadastroSucessoProps) {
+export function CadastroSucesso({ cliente, logado }: CadastroSucessoProps) {
+  const proximoPasso = logado
+    ? { rotulo: "Abrir minha conta", href: ROUTES.abrirConta }
+    : { rotulo: "Entrar com CPF e senha", href: `${ROUTES.login}?voltar=${encodeURIComponent(ROUTES.abrirConta)}` };
+
   const { endereco } = cliente;
   const primeiroNome = cliente.nomeCompleto.split(" ")[0];
 
@@ -41,8 +47,8 @@ export function CadastroSucesso({ cliente }: CadastroSucessoProps) {
       </div>
 
       <Button asChild variant="brand" size="xl" className="mt-10 h-[3.25rem] w-full">
-        <Link href={ROUTES.abrirConta}>
-          Abrir minha conta
+        <Link href={proximoPasso.href}>
+          {proximoPasso.rotulo}
           <ArrowRight data-icon="inline-end" aria-hidden="true" />
         </Link>
       </Button>

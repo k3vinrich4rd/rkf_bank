@@ -34,7 +34,7 @@ export function CadastroScreen() {
 
         <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-14">
           {form.cliente ? (
-            <CadastroSucesso cliente={form.cliente} />
+            <CadastroSucesso cliente={form.cliente} logado={form.logado} />
           ) : (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
               <ProgressBar value={form.progresso} />

@@ -18,3 +18,6 @@ export const logClientes = createLogger("api:clientes");
 
 /** Operações de conta, movimentação e extrato (`lib/api/contas.ts`). */
 export const logContas = createLogger("api:contas");
+
+/** Login, logout e sessão (`lib/api/auth.ts`). */
+export const logAuth = createLogger("api:auth");

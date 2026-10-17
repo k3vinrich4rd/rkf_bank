@@ -33,10 +33,10 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
-| 🔴 | O backend passou a exigir login (contrato 2.0): sem token, toda rota fora o cadastro responde `401`, e `GET /clientes` virou só `ADMIN`. As telas de conta quebram até o front ter login. | Tela de login (`POST /auth/login`), guardar o token e mandar `Authorization: Bearer` no `apiRequest`; tratar `401` voltando para o login. Ver recado em `recados.md`. |
 | 🔴 | A abertura de conta sorteia agência (`0001`) e número no navegador e tenta de novo se vier `409` (`components/abrir-conta/use-abrir-conta.ts`). | Apagar quando o backend gerar esses números (ver item do backend). |
-| 🔴 | A tela da conta procura a conta página a página em `GET /contas`, porque `GET /contas/{contaId}` ainda não existe (`lib/api/contas.ts`). | Trocar por uma chamada só quando o backend criar o endpoint. |
+| 🟡 | Sem *refresh token*: a sessão cai a cada 15 minutos e o usuário precisa entrar de novo (o `401` leva ao login e volta para a tela). | Quando o backend tiver `POST /auth/refresh`, renovar o token no Route Handler do Next antes de vencer. |
 | 🟡 | Não há testes automáticos no frontend. | Vitest + Testing Library. |
+| 🟢 | O cliente pode ter mais de uma conta, mas as telas usam só a primeira que `GET /contas` devolve (`components/conta/use-conta.ts`). | Seletor de conta quando o produto pedir várias contas. |
 | 🟢 | A dependência transitiva `braces` 3.0.3 tem uma vulnerabilidade conhecida ainda **sem correção** (DoS com padrões muito aninhados; só roda nas ferramentas de build, não no navegador). | Rodar `node scripts/varrer-cves.js frontend` de vez em quando e atualizar quando sair a correção. |
 
 ## Projeto
