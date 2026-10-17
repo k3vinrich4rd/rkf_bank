@@ -33,7 +33,8 @@ Resolveu um item? Apague a linha no mesmo PR.
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
 | 🔴 | A abertura de conta sorteia agência (`0001`) e número no navegador e tenta de novo se vier `409` (`components/abrir-conta/use-abrir-conta.ts`). | Apagar quando o backend gerar esses números (ver item do backend). |
-| 🔴 | A tela da conta procura a conta página a página em `GET /contas`, porque `GET /contas/{contaId}` ainda não existe (`lib/api/contas.ts`). | Trocar por uma chamada só quando o backend criar o endpoint. |
+| 🟡 | Sem *refresh token*: a sessão cai a cada 15 minutos e o usuário precisa entrar de novo (o `401` leva ao login e volta para a tela). | Quando o backend tiver `POST /auth/refresh`, renovar o token no Route Handler do Next antes de vencer. |
+| 🟢 | O cliente pode ter mais de uma conta, mas as telas usam só a primeira que `GET /contas` devolve (`components/conta/use-conta.ts`). | Seletor de conta quando o produto pedir várias contas. |
 | 🟡 | Dependências com vulnerabilidades conhecidas (`node scripts/varrer-cves.js frontend`): `next` 16.3.6 (SSRF na otimização de imagem, cache poisoning em SSG/ISR, entre outras) e as transitivas `sharp` 0.35.4, `source-map-js` 1.2.1 e `@modelcontextprotocol/sdk` 1.30.1. O `braces` 3.0.3 ainda não tem correção. | Atualizar `next` e `eslint-config-next` para 16.3.8+, rodar `pnpm update sharp source-map-js @modelcontextprotocol/sdk --depth Infinity` e validar com `scripts/validar.sh frontend`. |
 | 🟡 | Não há testes automáticos no frontend. | Vitest + Testing Library. |
 
