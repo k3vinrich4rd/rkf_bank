@@ -39,7 +39,7 @@ jobs:
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       # build-mode none: o CodeQL lê o código-fonte sem compilar,
       # então não depende da versão do JDK nem do banco.
