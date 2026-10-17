@@ -1,5 +1,6 @@
 import { env } from "@/lib/env";
 import { logHttp, type LogContext } from "@/lib/logger";
+import { ROUTES } from "@/lib/routes";
 import type { ErroCampo, ErroResponse } from "./types";
 
 /**
@@ -105,6 +106,7 @@ export async function apiRequest<T>(
   if (!response.ok) {
     const apiError = await toApiError(response);
     registrarErro(method, path, apiError, { requestId, duracaoMs: duracaoMs(inicio) });
+    if (apiError.status === 401 && !path.startsWith("/auth/")) irParaLogin();
     throw apiError;
   }
 
@@ -112,6 +114,21 @@ export async function apiRequest<T>(
   if (response.status === 204) return undefined as T;
 
   return (await response.json()) as T;
+}
+
+/**
+ * Sem token ou token vencido (401): leva o usuário ao login e, depois de entrar, de volta para a tela atual.
+ * Fica aqui, e não em cada tela, porque qualquer chamada protegida pode receber o 401.
+ * As rotas `/auth/*` ficam de fora: no login, 401 é só "CPF ou senha inválidos".
+ */
+function irParaLogin() {
+  if (typeof window === "undefined") return;
+  const { pathname, search, origin } = window.location;
+  const login = new URL(ROUTES.login, origin);
+  login.searchParams.set("voltar", `${pathname}${search}`);
+  login.searchParams.set("expirou", "1");
+  // Navegação completa de propósito: a sessão acabou, nenhum estado da página deve sobreviver.
+  window.location.assign(login);
 }
 
 /** 4xx é falha esperada (validação/regra de negócio) → warn; 5xx é falha do servidor → error. */
