@@ -1,4 +1,4 @@
-import type { TipoConta } from "@/lib/api";
+import type { DecimalAmount, IsoDateTime, TipoConta } from "@/lib/api";
 import type { Cents } from "@/types";
 
 const NOMES_TIPO_CONTA: Record<TipoConta, string> = {
@@ -48,4 +48,39 @@ export function decimalToCents(value: number): Cents {
   }
 
   return Math.round(value * 100);
+}
+
+/**
+ * Caminho inverso de `decimalToCents`: centavos → decimal em reais, para enviar à API.
+ *
+ * @example centsToDecimal(15050) // 150.5
+ */
+export function centsToDecimal(cents: Cents): DecimalAmount {
+  if (!Number.isSafeInteger(cents)) {
+    throw new TypeError(`centsToDecimal espera um inteiro em centavos, recebeu: ${cents}`);
+  }
+
+  return cents / 100;
+}
+
+const horaFormatter = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
+const diaFormatter = new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", year: "numeric" });
+
+/** "2026-10-12T11:19:53Z" → "08:19" (no fuso do navegador). */
+export function formatHora(dataHora: IsoDateTime): string {
+  return horaFormatter.format(new Date(dataHora));
+}
+
+/** Data por extenso, com "Hoje" e "Ontem" para os dias mais recentes. Ex.: "12 de outubro de 2026". */
+export function formatDia(data: Date, agora: Date = new Date()): string {
+  const ontem = new Date(agora);
+  ontem.setDate(agora.getDate() - 1);
+
+  if (mesmoDia(data, agora)) return "Hoje";
+  if (mesmoDia(data, ontem)) return "Ontem";
+  return diaFormatter.format(data);
+}
+
+function mesmoDia(a: Date, b: Date): boolean {
+  return a.toDateString() === b.toDateString();
 }

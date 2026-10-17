@@ -1,5 +1,5 @@
 import { logContas } from "@/lib/logger";
-import { ApiError, apiRequest } from "./client";
+import { apiRequest } from "./client";
 import type {
   AbrirContaRequest,
   ContaResponse,
@@ -11,28 +11,15 @@ import type {
   Uuid,
 } from "./types";
 
-/** Maior página aceita pelo backend (`Paginacao.MAX_PAGE_SIZE`). */
-const TAMANHO_MAXIMO_PAGINA = 100;
-
-// TODO(backend): apagar quando existir `GET /contas/{contaId}` (contrato, seção 7) — aí `buscar`
-// vira uma chamada só. Até lá, procura a conta página a página na listagem.
-async function procurarNaListagem(contaId: Uuid): Promise<ContaResponse> {
-  for (let page = 0; ; page++) {
-    const pagina = await apiRequest<Page<ContaResponse>>("/contas", {
-      query: { paginado: true, page, size: TAMANHO_MAXIMO_PAGINA },
-    });
-    const conta = pagina.content.find(({ id }) => id === contaId);
-    if (conta) return conta;
-    if (page >= pagina.totalPages - 1) throw new ApiError(404, "Conta não encontrada");
-  }
-}
-
 export const contasApi = {
-  /** Uma conta pelo id. Mesmo formato da abertura (contrato 4.1). */
-  async buscar(contaId: Uuid) {
-    const conta = await procurarNaListagem(contaId);
-    logContas.debug("Conta carregada", { contaId });
-    return conta;
+  /**
+   * Contas do usuário logado: com token de CLIENTE, `GET /contas` já devolve só as dele (contrato 2.0, R13).
+   * Lista simples, sem paginação: um cliente tem poucas contas.
+   */
+  async minhas() {
+    const contas = await apiRequest<ContaResponse[]>("/contas");
+    logContas.debug("Contas do usuário carregadas", { quantidade: contas.length });
+    return contas;
   },
 
   async abrir(clienteId: Uuid, data: AbrirContaRequest) {

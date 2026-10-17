@@ -55,11 +55,17 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 |---|---|---|
 | `/` | [`app/page.tsx`](app/page.tsx) | ✅ landing page (estática) |
 | `/cadastro` | [`app/cadastro/page.tsx`](app/cadastro/page.tsx) | ✅ cadastro de cliente integrado à API |
-| `/login` | [`app/login/page.tsx`](app/login/page.tsx) | 🟡 placeholder ("em breve") |
+| `/login` | [`app/login/page.tsx`](app/login/page.tsx) | ✅ login com CPF e senha (volta para a tela de origem com `?voltar=`) |
 | `/conta/abrir` | [`app/conta/abrir/page.tsx`](app/conta/abrir/page.tsx) | ✅ abertura de conta (passo seguinte ao cadastro) |
 | `/conta` | [`app/conta/page.tsx`](app/conta/page.tsx) | ✅ saldo, dados da conta e ID para receber transferências |
-| `/conta/extrato` *(sugestão)* | — | ⏳ extrato |
-| `/conta/depositar`, `/sacar`, `/transferir` *(sugestão)* | — | ⏳ movimentações |
+| `/conta/depositar` | [`app/conta/depositar/page.tsx`](app/conta/depositar/page.tsx) | ✅ depósito |
+| `/conta/sacar` | [`app/conta/sacar/page.tsx`](app/conta/sacar/page.tsx) | ✅ saque (valida o saldo antes de enviar) |
+| `/conta/transferir` | [`app/conta/transferir/page.tsx`](app/conta/transferir/page.tsx) | ✅ transferência pelo ID da conta de destino |
+| `/conta/extrato` | [`app/conta/extrato/page.tsx`](app/conta/extrato/page.tsx) | ✅ extrato agrupado por dia, entradas em verde |
+
+As três movimentações são **uma tela só** (`components/movimentacao`), configurada por tipo em `movimentacoes.ts`:
+o contrato é o mesmo (`valor` + `descricao`) e a transferência só acrescenta o destino. As telas da conta
+reaproveitam o `useConta` e o `ContaEstado` (`components/conta`), que tratam carregando, sem cadastro, sem conta e erro.
 
 Rotas ficam centralizadas em [`lib/routes.ts`](lib/routes.ts) (`ROUTES.signUp`, `ROUTES.login`…). Ao criar uma
 tela nova, **adicione a rota lá** e use a constante nos links.
@@ -128,14 +134,30 @@ try {
 **Decida pelo `status`, nunca pelo texto da mensagem.** Exemplo real: `mensagemDeErro` em
 [`components/cadastro/use-cadastro-form.ts`](components/cadastro/use-cadastro-form.ts).
 
-### "Minha conta" sem login
+### Login e sessão (JWT em cookie `httpOnly`)
 
-Enquanto não existe login, o navegador guarda quem é o usuário em `localStorage`
-([`lib/conta-atual.ts`](lib/conta-atual.ts)): o cadastro grava o `clienteId` e a abertura de conta grava o
-`contaId`. Nas telas, leia com o hook `useContaAtual()` (`components/conta`), que avisa quando o valor muda e
-expõe `carregando` — espere ele virar `false` antes de concluir que não há cadastro.
+O token **nunca chega ao JavaScript da página**. O servidor do Next fica no meio (padrão BFF):
 
-> Trocar de navegador ou limpar os dados do site "perde" a conta. É uma limitação aceita para o MVP.
+```text
+Login:   navegador ─POST /api/auth/login─► app/api/auth/login (Next) ─► API /auth/login
+                   ◄─ Set-Cookie rkf_token (httpOnly) + { clienteId, perfil, expiraEm }
+Demais:  navegador ─/api/contas (cookie vai sozinho)─► proxy.ts põe "Authorization: Bearer" ─► API
+```
+
+| Peça | Papel |
+|---|---|
+| [`app/api/auth/*`](app/api/auth) | `login` grava os cookies, `logout` apaga, `sessao` diz quem está logado |
+| [`proxy.ts`](proxy.ts) | põe o `Bearer` nas chamadas `/api/*` e manda `/conta/*` sem sessão para o login |
+| [`lib/api/auth.ts`](lib/api/auth.ts) | `authApi.login`, `authApi.sair`, `authApi.sessao` |
+| [`lib/api/client.ts`](lib/api/client.ts) | `401` em qualquer chamada → login com `?expirou=1&voltar=<tela atual>` |
+| [`lib/auth/cookies.ts`](lib/auth/cookies.ts) | nomes e opções dos cookies (`httpOnly`, `SameSite=Lax`, `Secure` em produção) |
+
+- Nas telas, **não trate 401**: o `apiRequest` já leva ao login.
+- Precisa do `clienteId` (ex.: abrir conta)? `await authApi.sessao()`.
+- As contas do usuário vêm de `contasApi.minhas()` (`GET /contas` com o token devolve só as dele).
+- Senha, confirmação e token são mascarados pelo logger (`lib/logger/mascara.ts`).
+
+Por que cookie e não `localStorage`: ver "Onde o frontend guarda o token" em [planing/decisoes.md](../planing/decisoes.md).
 
 ### Dinheiro
 
@@ -155,8 +177,9 @@ frontend/
 │   ├── layout.tsx              # HTML base, fonte, metadata global, tema escuro
 │   ├── globals.css             # Tailwind 4 + tokens de cor da marca
 │   ├── page.tsx                # landing page
+│   ├── api/auth/              # Route Handlers do login, logout e sessão (cookies httpOnly)
 │   ├── cadastro/page.tsx
-│   ├── conta/abrir/page.tsx
+│   ├── conta/                  # conta, abrir, depositar, sacar, transferir, extrato
 │   └── login/page.tsx
 ├── components/
 │   ├── ui/                     # peças genéricas (Button, Input, FormField) — base shadcn
@@ -164,22 +187,26 @@ frontend/
 │   ├── marketing/              # seções da landing page
 │   ├── cadastro/               # tela de cadastro: screen, form, showcase, sucesso e o hook
 │   ├── abrir-conta/            # tela de abertura de conta: screen, form, aviso, sucesso e o hook
-│   ├── conta/                  # tela da conta + peças compartilhadas (useContaAtual, ContaShell, ContaAviso)
+│   ├── conta/                  # tela da conta + peças compartilhadas (useConta, ContaEstado, ContaShell, BotaoSair)
+│   ├── movimentacao/           # depósito, saque e transferência (uma tela configurada por tipo)
+│   ├── extrato/                # tela de extrato
+│   ├── login/                  # tela de login e o hook
 │   └── logs/                   # useLogDeTela e <LogDeTela />
 ├── config/
 │   ├── site.ts                 # nome, slogan, descrição, menu
 │   └── marketing.ts            # textos e dados da landing page
 ├── lib/
-│   ├── api/                    # client HTTP, tipos do contrato, clientesApi, contasApi
+│   ├── api/                    # client HTTP, tipos do contrato, authApi, clientesApi, contasApi
+│   ├── auth/cookies.ts         # cookies da sessão (só o servidor usa)
 │   ├── logger/                 # logger com mascaramento LGPD (ver README próprio)
-│   ├── conta-atual.ts          # "minha conta" guardada no navegador (enquanto não há login)
 │   ├── env.ts                  # variáveis de ambiente
 │   ├── format.ts               # moeda (formatCurrency, decimalToCents) e tipo de conta
 │   ├── masks.ts                # máscaras de CPF, CEP, telefone + onlyDigits
 │   ├── routes.ts               # rotas e âncoras da landing
 │   └── utils.ts                # cn() para juntar classes
 ├── types/index.ts              # tipos do front que não vêm da API (Cents)
-└── next.config.ts              # proxy /api → backend
+├── proxy.ts                    # Bearer nas chamadas /api e proteção das telas /conta
+└── next.config.ts              # rewrite /api → backend
 ```
 
 **Convenções de nomes**
