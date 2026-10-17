@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { LoaderCircle, RotateCw, UserRound, WalletCards } from "lucide-react";
+import { LoaderCircle, RotateCw, WalletCards } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/form-alert";
 import type { ContaResponse } from "@/lib/api";
@@ -16,7 +16,7 @@ interface ContaEstadoProps {
 }
 
 /**
- * Etapas comuns a todas as telas da conta (ver `useConta`): carregando, sem cadastro, sem conta e erro.
+ * Etapas comuns a todas as telas da conta (ver `useConta`): carregando, sem conta e erro.
  * Cada tela só se preocupa com o caso feliz, recebido em `children`.
  */
 export function ContaEstado({ estado, esqueleto, children }: ContaEstadoProps) {
@@ -26,16 +26,6 @@ export function ContaEstado({ estado, esqueleto, children }: ContaEstadoProps) {
     case "carregando":
       return esqueleto ?? (
         <LoaderCircle className="mx-auto size-6 animate-spin text-muted-foreground" aria-label="Carregando" />
-      );
-
-    case "sem-cadastro":
-      return (
-        <ContaAviso
-          icone={UserRound}
-          titulo="Primeiro, seu cadastro"
-          descricao="Não encontramos sua conta neste navegador. Faça seu cadastro para começar."
-          acao={{ rotulo: "Fazer meu cadastro", href: ROUTES.signUp }}
-        />
       );
 
     case "sem-conta":

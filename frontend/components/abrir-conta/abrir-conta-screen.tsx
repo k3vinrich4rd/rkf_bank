@@ -1,7 +1,9 @@
 "use client";
 
-import { LoaderCircle, UserRound, WalletCards } from "lucide-react";
+import { LoaderCircle, RotateCw, WalletCards } from "lucide-react";
 import { ContaAviso } from "@/components/conta/conta-aviso";
+import { Button } from "@/components/ui/button";
+import { FormAlert } from "@/components/ui/form-alert";
 import { ContaShell } from "@/components/conta/conta-shell";
 import { ROUTES } from "@/lib/routes";
 import { AbrirContaForm } from "./abrir-conta-form";
@@ -26,14 +28,15 @@ function Conteudo(estado: AbrirContaState) {
         <LoaderCircle className="mx-auto size-6 animate-spin text-muted-foreground" aria-label="Carregando" />
       );
 
-    case "sem-cadastro":
+    case "erro-conta":
       return (
-        <ContaAviso
-          icone={UserRound}
-          titulo="Primeiro, seu cadastro"
-          descricao="Não encontramos seu cadastro neste navegador. Leva menos de 2 minutos."
-          acao={{ rotulo: "Fazer meu cadastro", href: ROUTES.signUp }}
-        />
+        <div className="flex flex-col gap-4">
+          <FormAlert>{estado.erroConta}</FormAlert>
+          <Button type="button" variant="outline" size="xl" onClick={estado.tentarDeNovo}>
+            <RotateCw data-icon="inline-start" aria-hidden="true" />
+            Tentar de novo
+          </Button>
+        </div>
       );
 
     case "ja-tem-conta":
@@ -41,7 +44,7 @@ function Conteudo(estado: AbrirContaState) {
         <ContaAviso
           icone={WalletCards}
           titulo="Você já tem uma conta"
-          descricao="Sua conta já foi aberta neste navegador."
+          descricao="Sua conta já está aberta e pronta para usar."
           acao={{ rotulo: "Ir para minha conta", href: ROUTES.conta }}
         />
       );
