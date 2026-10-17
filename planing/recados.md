@@ -6,6 +6,7 @@ Escreva seu recado no topo. Quando resolver, marque `[x]` e escreva a resposta e
 
 ---
 
+- [ ] Renan → Kevin (17/10): o `mvnw.cmd` aparece sempre como modificado no `git status` no Windows, sem ninguém mexer, e bloqueia `git checkout` de branch (só passa com `-f`). Não muda conteúdo: é fim de linha. **Causa:** o commit do Dependabot `c5bec90` (PR #28, Maven 3.9.16 → 3.10.0) salvou o arquivo com CRLF **dentro do repositório**; antes ele estava com LF. O `.gitattributes` tem `*.cmd text eol=crlf`, que espera LF no repositório e CRLF só na pasta de trabalho, então o Git vê diferença o tempo todo (`git ls-files --eol mvnw.cmd` mostra `i/crlf`, o certo é `i/lf`). **Correção sugerida** (é arquivo do backend, por isso não mexi): `git add --renormalize mvnw.cmd` e um commit `chore: normaliza fim de linha do mvnw.cmd`. Pode voltar a acontecer quando o Dependabot atualizar o Maven Wrapper de novo; vale conferir esse arquivo nesses PRs.
 - [x] Kevin → Renan (16/10): a `feature/spring-security-jwt` **quebra o frontend** quando entrar na `develop` (contrato **2.0**, `backend/README_CONTRATO_API.md` → "Autenticação (JWT)" e seção 3.3). O que muda para você:
   1. **Cadastro** (`POST /clientes`) agora exige `senha` (8 a 72 caracteres). A resposta continua igual e não traz token.
   2. **Login novo:** `POST /auth/login` com `{cpf, senha}` devolve `{token, tipo: "Bearer", expiraEmSegundos, clienteId, perfil}`. O `clienteId` é o que vai em `POST /contas/clientes/{clienteId}`.
