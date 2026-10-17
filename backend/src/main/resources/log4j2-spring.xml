@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+
+    <Properties>
+        <!-- %X{requestId} vem do FiltroLogRequisicao e liga todas as linhas de uma mesma chamada HTTP;
+             fica vazio em logs fora de requisicao (startup, jobs). -->
+        <Property name="LOG_PATTERN">%style{%d{yyyy-MM-dd HH:mm:ss.SSS}}{cyan} %highlight{%-5p} [%style{%t}{magenta}] [%X{requestId}] %style{%c{1.}}{blue} : %m%n%throwable</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <PatternLayout pattern="${LOG_PATTERN}" charset="UTF-8"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.br.rkfbank" level="INFO"/>
+
+        <!-- SQL gerado pelo Hibernate. Substitui o spring.jpa.show-sql, que escreve direto no stdout sem passar pelo Log4j2. -->
+        <Logger name="org.hibernate.SQL" level="DEBUG"/>
+
+        <!-- Valores ligados aos "?" do SQL. Fica desligado por padrao porque expoe dados pessoais (CPF, email);
+             troque para TRACE apenas localmente ao depurar uma query. -->
+        <Logger name="org.hibernate.orm.jdbc.bind" level="INFO"/>
+
+        <!-- Framework em WARN para limpar o console, mantendo as linhas de startup do Spring Boot (porta, perfil, tempo). -->
+        <Logger name="org.springframework" level="WARN"/>
+        <Logger name="org.springframework.boot" level="INFO"/>
+
+        <Root level="INFO">
+            <AppenderRef ref="ConsoleAppender"/>
+        </Root>
+    </Loggers>
+</Configuration>

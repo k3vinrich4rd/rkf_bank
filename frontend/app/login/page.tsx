@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, LockKeyhole } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
+import { LogDeTela } from "@/components/logs";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/lib/routes";
 
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <main className="relative isolate grid flex-1 place-items-center px-4 py-16">
+      <LogDeTela tela="login" />
       <div
         aria-hidden="true"
         className="absolute top-1/4 left-1/2 -z-10 size-[30rem] -translate-x-1/2 rounded-full bg-brand-blue/15 blur-[120px]"

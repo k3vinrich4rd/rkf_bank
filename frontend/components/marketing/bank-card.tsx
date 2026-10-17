@@ -1,5 +1,4 @@
 import { Nfc } from "lucide-react";
-import { LogoMark } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 
 interface BankCardProps {
@@ -27,15 +26,7 @@ export function BankCard({
 
       <div className="relative flex h-full flex-col justify-between">
         <div className="flex items-start justify-between">
-          <div className="flex items-center gap-2">
-            <LogoMark className="size-6" />
-            <span className="leading-none">
-              <span className="block text-sm font-bold tracking-[0.2em]">RKF</span>
-              <span className="block text-[0.45rem] tracking-[0.3em] text-muted-foreground uppercase">
-                Banco Digital
-              </span>
-            </span>
-          </div>
+          <span className="text-sm font-semibold tracking-[0.3em] text-foreground/90">RKF</span>
           <Nfc className="size-5 text-muted-foreground" aria-hidden="true" />
         </div>
 

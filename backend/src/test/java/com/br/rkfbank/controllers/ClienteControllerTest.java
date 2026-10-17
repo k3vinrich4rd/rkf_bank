@@ -40,7 +40,8 @@ class ClienteControllerTest {
                 "11999998888",
                 "01001000",
                 "123",
-                "Apto 45"
+                "Apto 45",
+                "senha-forte-1"
         );
 
         when(clienteService.cadastrar(request)).thenReturn(clienteResponse());

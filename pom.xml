@@ -17,10 +17,35 @@
 	<description>Projeto RKF Bank</description>
 
 	<properties>
-		<java.version>21</java.version>
+		<java.version>25</java.version>
+		<!-- H2 2.4.240 quebra CHECK ... IN (...) das colunas de enum: a constraint guarda a sessao que rodou o DDL
+		     e todo insert em tb_conta/tb_lancamento falha com "The database has been closed" depois que ela fecha. -->
+		<h2.version>2.3.232</h2.version>
+		<!-- Sobrescreve versoes gerenciadas pelo Spring Boot 4.1.1 com CVEs corrigidas (Tomcat: bypass de autenticacao;
+		     Jackson: DoS no parse). Remover quando o Spring Boot trouxer versoes iguais ou maiores. -->
+		<tomcat.version>11.0.27</tomcat.version>
+		<jackson-bom.version>3.1.7</jackson-bom.version>
 	</properties>
 
 	<dependencies>
+		<!-- Declarado direto so para excluir o Logback: como e a declaracao mais proxima, vence as copias
+		     transitivas dos demais starters e o Log4j2 passa a ser o unico backend de log. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-log4j2</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-h2console</artifactId>
@@ -31,6 +56,18 @@
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
+		<!-- Flyway cria e evolui o schema por scripts versionados em backend/src/main/resources/db/migration.
+		     O modulo flyway-mysql e obrigatorio desde o Flyway 10 (cada banco virou um modulo separado). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-mysql</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
@@ -39,6 +76,17 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+
+		<!-- Login com JWT: a cadeia de filtros do Spring Security e a validacao oficial do token (Nimbus). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
 		</dependency>
 
 		<dependency>
@@ -80,6 +128,12 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
@@ -102,22 +156,32 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.6.2</version>
+				<version>3.6.3</version>
 				<executions>
 					<execution>
-						<id>enforce-java-21</id>
+						<id>enforce-java-25</id>
 						<goals>
 							<goal>enforce</goal>
 						</goals>
 						<configuration>
 							<rules>
 								<requireJavaVersion>
-									<version>[21,22)</version>
+									<version>[25,26)</version>
 								</requireJavaVersion>
 							</rules>
 						</configuration>
 					</execution>
 				</executions>
+			</plugin>
+			<!-- Java 21+ avisa (e versoes futuras bloqueiam) agentes carregados dinamicamente; o Mockito passa a
+			     ser carregado como agente na inicializacao. @{argLine} preserva o agente do JaCoCo.
+			     O caminho usa so propriedades estaticas (mockito.version vem do Spring Boot) para a IDE resolver. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>@{argLine} -javaagent:"${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar"</argLine>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
@@ -129,7 +193,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.12</version>
+				<version>0.8.15</version>
 				<executions>
 					<execution>
 						<goals>

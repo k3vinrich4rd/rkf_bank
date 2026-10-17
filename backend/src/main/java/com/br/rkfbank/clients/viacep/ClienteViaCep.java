@@ -2,17 +2,20 @@ package com.br.rkfbank.clients.viacep;
 
 import com.br.rkfbank.exceptions.NaoProcessavelException;
 import com.br.rkfbank.exceptions.ServicoExternoException;
-
-import java.time.Duration;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.time.Duration;
+
 @Component
 public class ClienteViaCep {
+
+    private static final Logger log = LogManager.getLogger(ClienteViaCep.class);
 
     private final RestClient restClient;
 
@@ -25,6 +28,7 @@ public class ClienteViaCep {
     }
 
     public ResponseViaCepDto buscarPorCep(String cep) {
+        long inicio = System.nanoTime();
         try {
             // Busca o CEP remoto e valida status 5xx como indisponibilidade externa.
             ResponseViaCepDto resposta = restClient.get()
@@ -39,13 +43,23 @@ public class ClienteViaCep {
             if (resposta == null || Boolean.TRUE.equals(resposta.erro())) {
                 throw new NaoProcessavelException("CEP não encontrado");
             }
+            log.debug("ViaCEP respondeu CEP {} em {} ms", cep, duracaoMs(inicio));
             return resposta;
-        } catch (NaoProcessavelException | ServicoExternoException ex) {
-            // Mantem excecoes de negocio/infra mapeadas sem sobrescrever mensagem.
+        } catch (NaoProcessavelException ex) {
+            log.warn("ViaCEP nao encontrou o CEP {} ({} ms)", cep, duracaoMs(inicio));
+            throw ex;
+        } catch (ServicoExternoException ex) {
+            // Mantem excecoes de infra mapeadas sem sobrescrever mensagem.
+            log.error("ViaCEP indisponivel ao consultar CEP {} ({} ms)", cep, duracaoMs(inicio));
             throw ex;
         } catch (RuntimeException ex) {
-            // Qualquer falha inesperada vira erro de servico externo padronizado.
-            throw new ServicoExternoException("Falha ao consultar ViaCEP");
+            // Qualquer falha inesperada vira erro de servico externo padronizado; a causa fica no log.
+            log.error("Falha ao consultar ViaCEP para CEP {} ({} ms)", cep, duracaoMs(inicio), ex);
+            throw new ServicoExternoException("Falha ao consultar ViaCEP", ex);
         }
+    }
+
+    private static long duracaoMs(long inicioNanos) {
+        return (System.nanoTime() - inicioNanos) / 1_000_000;
     }
 }

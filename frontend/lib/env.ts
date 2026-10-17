@@ -1,10 +1,22 @@
+import type { LogLevel } from "@/lib/logger";
+
+const NIVEIS_DE_LOG: readonly LogLevel[] = ["debug", "info", "warn", "error"];
+
+function lerLogLevel(valor: string | undefined): LogLevel {
+  if (NIVEIS_DE_LOG.includes(valor as LogLevel)) return valor as LogLevel;
+  return process.env.NODE_ENV === "production" ? "warn" : "debug";
+}
+
 /**
- * Variáveis de ambiente públicas, lidas em um único lugar.
+ * Variáveis de ambiente, lidas em um único lugar.
  *
- * `process.env.NEXT_PUBLIC_*` precisa ser acessado de forma estática para o
- * Next.js conseguir inliná-lo no bundle do cliente — por isso a referência
- * literal abaixo, sem indexação dinâmica.
+ * `API_URL` é usada só no servidor (proxy do `next.config.ts` e chamadas
+ * de Server Components) — por isso não tem o prefixo `NEXT_PUBLIC_`.
+ *
+ * `NEXT_PUBLIC_LOG_LEVEL` precisa ser lida com o nome literal: o Next só
+ * embute no bundle do navegador referências diretas a `process.env.NEXT_PUBLIC_*`.
  */
 export const env = {
-  apiUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080",
+  apiUrl: process.env.API_URL ?? "http://localhost:8080",
+  logLevel: lerLogLevel(process.env.NEXT_PUBLIC_LOG_LEVEL),
 } as const;
