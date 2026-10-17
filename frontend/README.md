@@ -58,8 +58,14 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 | `/login` | [`app/login/page.tsx`](app/login/page.tsx) | 🟡 placeholder ("em breve") |
 | `/conta/abrir` | [`app/conta/abrir/page.tsx`](app/conta/abrir/page.tsx) | ✅ abertura de conta (passo seguinte ao cadastro) |
 | `/conta` | [`app/conta/page.tsx`](app/conta/page.tsx) | ✅ saldo, dados da conta e ID para receber transferências |
-| `/conta/extrato` *(sugestão)* | — | ⏳ extrato |
-| `/conta/depositar`, `/sacar`, `/transferir` *(sugestão)* | — | ⏳ movimentações |
+| `/conta/depositar` | [`app/conta/depositar/page.tsx`](app/conta/depositar/page.tsx) | ✅ depósito |
+| `/conta/sacar` | [`app/conta/sacar/page.tsx`](app/conta/sacar/page.tsx) | ✅ saque (valida o saldo antes de enviar) |
+| `/conta/transferir` | [`app/conta/transferir/page.tsx`](app/conta/transferir/page.tsx) | ✅ transferência pelo ID da conta de destino |
+| `/conta/extrato` | [`app/conta/extrato/page.tsx`](app/conta/extrato/page.tsx) | ✅ extrato agrupado por dia, entradas em verde |
+
+As três movimentações são **uma tela só** (`components/movimentacao`), configurada por tipo em `movimentacoes.ts`:
+o contrato é o mesmo (`valor` + `descricao`) e a transferência só acrescenta o destino. As telas da conta
+reaproveitam o `useConta` e o `ContaEstado` (`components/conta`), que tratam carregando, sem cadastro, sem conta e erro.
 
 Rotas ficam centralizadas em [`lib/routes.ts`](lib/routes.ts) (`ROUTES.signUp`, `ROUTES.login`…). Ao criar uma
 tela nova, **adicione a rota lá** e use a constante nos links.

@@ -8,6 +8,10 @@ export const ROUTES = {
   signUp: "/cadastro",
   conta: "/conta",
   abrirConta: "/conta/abrir",
+  depositar: "/conta/depositar",
+  sacar: "/conta/sacar",
+  transferir: "/conta/transferir",
+  extrato: "/conta/extrato",
 } as const;
 
 /** Âncoras da landing page (ids das seções). */

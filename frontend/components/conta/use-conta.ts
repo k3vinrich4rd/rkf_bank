@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ApiError, contasApi, isFalhaDeServidor, type ContaResponse, type Uuid } from "@/lib/api";
-import { useLogDeTela } from "@/components/logs";
+import type { TelaLogger } from "@/components/logs";
 import { useContaAtual } from "./use-conta-atual";
 
 /**
@@ -30,9 +30,11 @@ function mensagemDeErro(error: unknown): string {
     : "Não conseguimos carregar sua conta. Tente novamente.";
 }
 
-/** Carrega a conta guardada no navegador (ver `lib/conta-atual.ts`). */
-export function useConta() {
-  const logTela = useLogDeTela("conta");
+/**
+ * Carrega a conta guardada no navegador (ver `lib/conta-atual.ts`). Usado por todas as telas da conta;
+ * `logTela` é o log da tela que chamou, para as falhas aparecerem no nome dela.
+ */
+export function useConta(logTela: TelaLogger) {
   const { conta: contaAtual, carregando: lendoNavegador, salvar } = useContaAtual();
   const [tentativa, setTentativa] = useState(0);
   const [resultado, setResultado] = useState<Resultado | null>(null);
