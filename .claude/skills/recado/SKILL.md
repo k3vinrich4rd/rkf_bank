@@ -6,7 +6,7 @@ description: Escreve, responde ou lista recados entre o time do RKF Bank (Kevin,
 # /recado
 
 Arquivo: `planing/recados.md`. Modelo do time: `- [ ] De → Para (DD/MM): mensagem`.
-Pessoas: **Kevin** (backend), **Renan** (frontend), **Fellipe** (PO & QA). Quem escreve é o usuário Git atual (`git config user.name`; `k3vinrich4rd` = Kevin).
+Pessoas: **Kevin** (backend), **Renan** (frontend), **Fellipe** (idealizador, PO & QA e primeiro cliente). Quem escreve é o usuário Git atual (`git config user.name`; `k3vinrich4rd` = Kevin).
 
 ## Escrever um recado novo
 1. Monte a mensagem curta e acionável: o que precisa, onde (`arquivo:linha` ou branch/PR) e até quando, se houver prazo.
