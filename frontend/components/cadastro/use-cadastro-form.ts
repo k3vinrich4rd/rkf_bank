@@ -1,10 +1,17 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { ApiError, clientesApi, isFalhaDeServidor, type CadastroClienteRequest, type ClienteResponse } from "@/lib/api";
+import {
+  ApiError,
+  authApi,
+  clientesApi,
+  isFalhaDeServidor,
+  type CadastroClienteRequest,
+  type ClienteResponse,
+} from "@/lib/api";
 import { useLogDeTela } from "@/components/logs";
-import { salvarContaAtual } from "@/lib/conta-atual";
 import { maskCep, maskCpf, maskTelefone, onlyDigits } from "@/lib/masks";
 
-export type Campo = keyof CadastroClienteRequest;
+/** Campos da tela: os do contrato mais a confirmação da senha, que não vai para a API. */
+export type Campo = keyof CadastroClienteRequest | "confirmarSenha";
 type Valores = Record<Campo, string>;
 type ErrosPorCampo = Partial<Record<Campo, string>>;
 
@@ -16,6 +23,8 @@ const VALORES_INICIAIS: Valores = {
   cep: "",
   numero: "",
   complemento: "",
+  senha: "",
+  confirmarSenha: "",
 };
 
 const CAMPOS_OBRIGATORIOS: readonly Campo[] = [
@@ -25,7 +34,27 @@ const CAMPOS_OBRIGATORIOS: readonly Campo[] = [
   "email",
   "cep",
   "numero",
+  "senha",
+  "confirmarSenha",
 ];
+
+/** Limites do contrato (3.1): o BCrypt do backend só usa os primeiros 72 bytes, e acento ocupa 2. */
+const SENHA_MINIMO = 8;
+const SENHA_MAXIMO_BYTES = 72;
+
+/** Confere a senha antes de enviar; o resto dos campos o backend valida. */
+function validarSenha(valores: Valores): ErrosPorCampo {
+  const erros: ErrosPorCampo = {};
+  if (valores.senha.length < SENHA_MINIMO) {
+    erros.senha = `Use pelo menos ${SENHA_MINIMO} caracteres.`;
+  } else if (new TextEncoder().encode(valores.senha).length > SENHA_MAXIMO_BYTES) {
+    erros.senha = "Senha longa demais. Use até 72 caracteres (acentos contam como 2).";
+  }
+  if (valores.confirmarSenha !== valores.senha) {
+    erros.confirmarSenha = "As senhas não são iguais.";
+  }
+  return erros;
+}
 
 const MASCARAS: Partial<Record<Campo, (valor: string) => string>> = {
   cpf: maskCpf,
@@ -43,6 +72,8 @@ function toRequest(valores: Valores): CadastroClienteRequest {
     cep: onlyDigits(valores.cep),
     numero: valores.numero.trim(),
     complemento: valores.complemento.trim() || undefined,
+    // A senha vai como foi digitada: espaços também fazem parte dela.
+    senha: valores.senha,
   };
 }
 
@@ -78,6 +109,8 @@ export function useCadastroForm() {
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [cliente, setCliente] = useState<ClienteResponse | null>(null);
+  /** O login automático depois do cadastro deu certo? Se não, a tela de sucesso manda para o login. */
+  const [logado, setLogado] = useState(false);
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const campo = event.target.name as Campo;
@@ -92,6 +125,14 @@ export function useCadastroForm() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    const errosDeSenha = validarSenha(valores);
+    if (Object.keys(errosDeSenha).length > 0) {
+      setErros(errosDeSenha);
+      setErroGeral(null);
+      return;
+    }
+
     setEnviando(true);
     setErros({});
     setErroGeral(null);
@@ -99,11 +140,14 @@ export function useCadastroForm() {
     logTela.acao("Formulário enviado");
 
     try {
-      const novoCliente = await clientesApi.cadastrar(toRequest(valores));
+      const request = toRequest(valores);
+      const novoCliente = await clientesApi.cadastrar(request);
       logTela.sucesso("Cadastro concluído", { clienteId: novoCliente.id });
-      // Lembra o cliente no navegador para a abertura de conta (ainda não há login).
-      salvarContaAtual({ clienteId: novoCliente.id });
+      // O cadastro não devolve token (contrato 3.1): entra com o CPF e a senha que a pessoa acabou de criar.
+      setLogado(await entrarDepoisDoCadastro(request.cpf, request.senha));
       setCliente(novoCliente);
+      // A senha não precisa mais ficar na memória da tela (o nome continua no cartão da vitrine).
+      setValores((atual) => ({ ...atual, senha: "", confirmarSenha: "" }));
     } catch (error) {
       // O detalhe técnico já foi logado na camada HTTP; aqui registramos o que o usuário viu.
       const mensagem = mensagemDeErro(error);
@@ -131,6 +175,17 @@ export function useCadastroForm() {
     };
   }
 
+  /** Falhar aqui não desfaz o cadastro: a pessoa só precisa entrar pela tela de login. */
+  async function entrarDepoisDoCadastro(cpf: string, senha: string): Promise<boolean> {
+    try {
+      await authApi.login({ cpf, senha });
+      return true;
+    } catch (error) {
+      logTela.falha("Login automático depois do cadastro falhou", error);
+      return false;
+    }
+  }
+
   const preenchidos = CAMPOS_OBRIGATORIOS.filter((nome) => valores[nome].trim()).length;
 
   return {
@@ -139,6 +194,7 @@ export function useCadastroForm() {
     erroGeral,
     enviando,
     cliente,
+    logado,
     campo,
     handleSubmit,
   };

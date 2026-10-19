@@ -23,6 +23,10 @@ const MASCARAS: Record<string, (valor: string) => string> = {
   telefone: (valor) => `${OCULTO}${valor.replace(/\D/g, "").slice(-4)}`,
   // Joao Silva → Joao ***
   nomeCompleto: (valor) => `${valor.trim().split(/\s+/)[0] ?? ""} ${OCULTO}`,
+  // Credenciais nunca aparecem, nem em parte.
+  senha: () => OCULTO,
+  confirmarSenha: () => OCULTO,
+  token: () => OCULTO,
 };
 
 const PROFUNDIDADE_MAXIMA = 3;

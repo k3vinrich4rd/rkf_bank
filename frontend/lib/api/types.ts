@@ -36,6 +36,8 @@ export interface CadastroClienteRequest {
   cep: string;
   numero: string;
   complemento?: string;
+  /** 8 a 72 caracteres (e no máximo 72 bytes). Nunca volta na resposta. */
+  senha: string;
 }
 
 export interface EnderecoResponse {
@@ -56,6 +58,36 @@ export interface ClienteResponse {
   email: string;
   telefone: string;
   endereco: EnderecoResponse;
+}
+
+// ── Autenticação ────────────────────────────────────────────────────────
+
+export type Perfil = "CLIENTE" | "ADMIN";
+
+export interface LoginRequest {
+  /** Com ou sem máscara: o backend remove o que não é dígito. */
+  cpf: string;
+  senha: string;
+}
+
+/** Resposta de `POST /auth/login` no backend. Só o servidor do Next a vê: o token vira cookie `httpOnly`. */
+export interface LoginResponse {
+  token: string;
+  tipo: "Bearer";
+  expiraEmSegundos: number;
+  /** `null` para o ADMIN, que não é cliente. */
+  clienteId: Uuid | null;
+  perfil: Perfil;
+}
+
+/**
+ * Sessão como o navegador enxerga: **não vem do backend**, e sim das rotas `/api/auth/*` do próprio Next
+ * (`app/api/auth`). É a resposta do login sem o token.
+ */
+export interface Sessao {
+  clienteId: Uuid | null;
+  perfil: Perfil;
+  expiraEm: IsoDateTime;
 }
 
 // ── Contas e movimentações ──────────────────────────────────────────────

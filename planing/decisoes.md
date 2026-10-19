@@ -55,6 +55,11 @@ Por quê: CPF já é único e validado no cadastro. O Resource Server é a forma
 
 ---
 
+## Onde o frontend guarda o token do login
+Data: 17/10
+Decisão: o token fica num **cookie `httpOnly`** gravado pelo servidor do Next (padrão BFF, *Backend for Frontend*). O login passa por `POST /api/auth/login` (Route Handler do Next), que chama a API, guarda o token no cookie `rkf_token` e devolve ao navegador só `{clienteId, perfil, expiraEm}`. Nas outras chamadas, o `proxy.ts` lê o cookie e envia `Authorization: Bearer` para a API. Cookies com `SameSite=Lax`, `Secure` em produção e validade igual à do token. `401` no meio do uso leva ao login (`?expirou=1`) e depois de volta para a tela.
+Por quê: com `localStorage`/`sessionStorage`, qualquer script que rode na página (um XSS, uma dependência comprometida) lê e rouba o token; com `httpOnly`, o JavaScript não alcança o cookie. O proxy `/api` já existia, então o custo foi pequeno. `SameSite=Lax` evita que outro site faça POST com o cookie (CSRF). Alternativa descartada: `sessionStorage` (mais simples, mas exposta a XSS).
+
 ## Ainda falta decidir
 
 - [x] **Acesso à conta sem login:** resolvido com o login (ver "Login com CPF + senha e JWT").

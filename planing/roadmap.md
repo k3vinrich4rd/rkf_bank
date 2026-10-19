@@ -13,11 +13,11 @@ O cliente consegue:
 - depositar, sacar e transferir
 - ver saldo e extrato
 
-## Como estamos (13/10)
+## Como estamos (17/10)
 
 - **Backend:** quase tudo pronto e testado. Falta buscar uma conta específica.
-- **Frontend:** landing page e cadastro prontos. Faltam as telas da conta.
-- **Login (16/10):** backend com CPF + senha e JWT pronto na `feature/spring-security-jwt`; falta a tela de login no frontend (recado para o Renan).
+- **Frontend:** landing page, cadastro, abertura de conta, tela da conta, movimentações e extrato prontos.
+- **Login:** backend com CPF + senha e JWT na `develop`; frontend (tela de login, senha no cadastro, token em cookie `httpOnly`) na `feature/login-frontend`.
 
 ---
 
@@ -36,15 +36,15 @@ O cliente consegue:
 - [x] Decidir como o usuário acessa a conta sem login (resolvido com o login: feature 2)
 - [ ] Backend: `GET /contas/{contaId}` (saldo)
 - [ ] Backend: `GET /clientes/{clienteId}/contas`
-- [ ] Frontend: abrir conta depois do cadastro
-- [ ] Frontend: tela da conta (saldo)
+- [x] Frontend: abrir conta depois do cadastro
+- [x] Frontend: tela da conta (saldo)
 
 ## Semana 3 (19/10 a 25/10) — Movimentações
 
 - [x] Backend: depósito, saque e transferência
 - [x] Backend: extrato
-- [ ] Frontend: telas de depósito, saque e transferência
-- [ ] Frontend: tela de extrato
+- [x] Frontend: telas de depósito, saque e transferência
+- [x] Frontend: tela de extrato
 - [ ] Decidir onde publicar o projeto
 
 ## Semana 4 (26/10 a 31/10) — Testar e lançar

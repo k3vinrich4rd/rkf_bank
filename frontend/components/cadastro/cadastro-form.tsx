@@ -69,6 +69,24 @@ export function CadastroForm({ campo, handleSubmit, enviando, erroGeral }: Cadas
         />
       </FormSection>
 
+      <FormSection step="03" title="Acesso" description="Você entra com seu CPF e esta senha.">
+        <FormField
+          {...campo("senha")}
+          label="Senha"
+          hint="Mínimo de 8 caracteres"
+          type="password"
+          autoComplete="new-password"
+          className="sm:col-span-3"
+        />
+        <FormField
+          {...campo("confirmarSenha")}
+          label="Confirme a senha"
+          type="password"
+          autoComplete="new-password"
+          className="sm:col-span-3"
+        />
+      </FormSection>
+
       <div className="flex flex-col gap-4">
         {erroGeral && <FormAlert>{erroGeral}</FormAlert>}
 
