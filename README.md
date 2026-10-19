@@ -8,6 +8,7 @@
 [![Último commit](https://img.shields.io/github/last-commit/k3vinrich4rd/rkf_bank/develop?color=3B82F6&label=último%20commit)](https://github.com/k3vinrich4rd/rkf_bank/commits/develop)
 [![PRs fechados](https://img.shields.io/github/issues-pr-closed/k3vinrich4rd/rkf_bank?color=06B6D4&label=PRs%20fechados)](https://github.com/k3vinrich4rd/rkf_bank/pulls?q=is%3Apr+is%3Aclosed)
 [![Status](https://img.shields.io/badge/MVP-31%2F10%2F2026-3B82F6)](planing/roadmap.md)
+[![Feito em Osasco](https://img.shields.io/badge/📍_feito_em-Osasco,_SP-06B6D4)](#-feito-em-osasco)
 
 [![Java](https://img.shields.io/badge/Java-25_LTS-0A0F1C?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/25/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-0A0F1C?logo=springboot&logoColor=6DB33F)](https://spring.io/projects/spring-boot)
@@ -27,6 +28,9 @@
 <a href="#-qualidade-e-testes"><img src="assets/readme/botoes/qualidade.svg" alt="🧪 Qualidade" height="46"/></a>
 <a href="#-roadmap"><img src="assets/readme/botoes/roadmap.svg" alt="🗺️ Roadmap" height="46"/></a>
 <a href="#-quem-faz-o-rkf-bank"><img src="assets/readme/botoes/time.svg" alt="👥 Time" height="46"/></a>
+<br/>
+<a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
+<a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
 <img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 163 testes, 9 rotas REST, 3 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
 
@@ -37,7 +41,7 @@
 ## 🏦 Conheça o RKF Bank
 
 > **Mais que um banco, um parceiro para o seu amanhã.**
-> O RKF Bank é um **banco digital full stack** (API REST + site) idealizado pelo **Fellipe Santana** e construído por três amigos de **Osasco, SP**, com processo de time de verdade: contrato de API, Git Flow, Pull Requests revisados, decisões registradas, testes automatizados, CI e um MVP com data marcada.
+> O RKF Bank é um **banco digital full stack** (API REST + site) idealizado e construído por três amigos de **Osasco, SP** — **Kevin Richard**, **Renan Barros** e **Felipe Santana**, com processo de time de verdade: contrato de API, Git Flow, Pull Requests revisados, decisões registradas, testes automatizados, CI e um MVP com data marcada.
 
 <table>
   <tr>
@@ -93,7 +97,7 @@
 | Pergunta | Resposta rápida |
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
-| Quem fez o quê? | **Kevin Richard**: backend Java/Spring · **Renan Barros**: frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
+| Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Felipe Santana**: idealizador, PO & QA e primeiro cliente |
 | Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **163 testes**, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
@@ -127,8 +131,80 @@ Sugestão de leitura, do mais simples ao mais interessante:
 2. Suba tudo: [rodando o projeto](#-rodando-o-projeto).
 3. Branch nova **sempre** da `origin/develop` atualizada: `git switch -c feature/minha-tarefa origin/develop`.
 4. Antes do PR: `scripts/validar.sh backend` (ou `frontend` / `tudo`).
-5. **Fellipe:** o roteiro de testes de aceite está em [README_TESTES_E2E.md](backend/README_TESTES_E2E.md) e o checklist em [CHECKLIST_TESTES_E2E.md](backend/CHECKLIST_TESTES_E2E.md).
+5. **Felipe:** o roteiro de testes de aceite está em [README_TESTES_E2E.md](backend/README_TESTES_E2E.md) e o checklist em [CHECKLIST_TESTES_E2E.md](backend/CHECKLIST_TESTES_E2E.md).
 6. Recados entre o time: [planing/recados.md](planing/recados.md).
+
+</details>
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
+## 🎮 Aventura: sua primeira semana no RKF Bank
+
+> Você é o Felipe, um dos idealizadores e o primeiro cliente do RKF Bank. Faça as escolhas e veja o que a API responde. 👇 Clique para decidir.
+
+**Segunda-feira.** Você abre o site para criar a conta. O seu CEP é de Osasco.
+
+<details>
+<summary>🅰️ Cadastrar com o CPF <code>111.111.111-11</code> (fácil de lembrar)</summary>
+<br/>
+
+❌ **`400 Bad Request`**: `cpf inválido`. O `@CpfValido` confere os dígitos verificadores, e CPF com todos os números iguais não passa. Volte e tente a outra opção. 🔁
+
+</details>
+
+<details>
+<summary>🅱️ Cadastrar com o seu CPF de verdade, o CEP e uma senha de 8+ caracteres</summary>
+<br/>
+
+✅ **`201 Created`**: o endereço se completou sozinho pelo ViaCEP e a sua senha foi guardada só como hash BCrypt.
+
+**Terça-feira.** Você entra com CPF e senha e abre uma conta corrente. Hora do primeiro dinheiro.
+
+<details>
+<summary>💵 Depositar R$ 150,00</summary>
+<br/>
+
+✅ **`204 No Content`**: saldo de **R$ 150,00**, e o extrato já mostra o depósito.
+
+**Quarta-feira.** O aluguel vence e você precisa transferir **R$ 200,00** para o Renan.
+
+<details>
+<summary>💸 Transferir os R$ 200,00 mesmo assim</summary>
+<br/>
+
+❌ **`422 Unprocessable Entity`**: `Saldo insuficiente`. Nada foi debitado: a transferência é tudo ou nada. Volte e escolha a outra opção. 🔁
+
+</details>
+
+<details>
+<summary>🤝 Transferir R$ 50,00 agora e o resto depois</summary>
+<br/>
+
+✅ **`204`**: saldo de **R$ 100,00**. Débito, crédito e lançamento foram gravados na mesma transação.
+
+**Quinta-feira.** Bate a curiosidade: e se você olhasse o extrato da conta do Kevin?
+
+<details>
+<summary>🕵️ Trocar o id da conta na URL pelo da conta do Kevin</summary>
+<br/>
+
+❌ **`403 Forbidden`**: você está logado, mas a conta não é sua. A resposta não revela nem se o Kevin tem saldo.
+
+</details>
+
+<details>
+<summary>⏰ Deixar o app aberto por 20 minutos e clicar em "Extrato"</summary>
+<br/>
+
+🔐 **`401 Unauthorized`**: o JWT vence em 15 minutos. O site leva você ao login e depois **volta para o extrato**.
+
+**Sexta-feira.** 🏁 Você fechou a semana com R$ 100,00, um extrato certinho e nenhum dado pessoal nos logs. **Missão cumprida!** Agora é a vez do [roteiro E2E de verdade](backend/README_TESTES_E2E.md).
+
+</details>
+
+</details>
+
+</details>
 
 </details>
 
@@ -157,6 +233,21 @@ journey
 <div align="center">
   <img src="assets/readme/extrato.svg" width="100%" alt="Extrato animado: cada lançamento entra na lista e o saldo da conta se atualiza"/>
 </div>
+
+<details>
+<summary><b>📈 O saldo dessa semana em gráfico</b></summary>
+<br/>
+
+```mermaid
+xychart-beta
+    title "Saldo da conta a cada lançamento (R$)"
+    x-axis ["abertura", "depósito", "saque", "transf. enviada", "transf. recebida"]
+    y-axis "Saldo" 0 --> 160
+    bar [0, 150, 130, 80, 115]
+    line [0, 150, 130, 80, 115]
+```
+
+</details>
 
 <details>
 <summary><b>🖥️ As telas do site</b></summary>
@@ -249,6 +340,31 @@ Timeout de 3 s e `503 Service Unavailable` com mensagem clara, em vez de travar.
 | 🌍 qualquer pessoa | `POST /clientes` (cadastro) · `POST /auth/login` |
 | 👤 cliente logado | só as **próprias** contas: abrir, listar, depositar, sacar, transferir (origem), extrato |
 | 🛠️ `ADMIN` | `GET /clientes` e todas as contas em `GET /contas` (o primeiro admin nasce do `.env`) |
+
+<details>
+<summary><b>🔑 Como funciona o login, passo a passo</b></summary>
+<br/>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Cliente
+    participant N as Next.js (BFF)
+    participant A as API /auth/login
+    participant DB as MySQL (tb_usuario)
+    C->>N: CPF + senha
+    N->>A: POST /auth/login
+    A->>DB: busca o usuário pelo CPF
+    A->>A: BCrypt confere a senha (mesmo tempo se o CPF não existir)
+    A-->>N: JWT HS256 de 15 min
+    N-->>C: cookie httpOnly rkf_token (o JavaScript não lê)
+    C->>N: abre o extrato
+    N->>A: GET /contas/{id}/lancamentos + Bearer
+    A->>A: assinatura e validade ok? (401) · a conta é sua? (403)
+    A-->>C: 200 com o extrato
+```
+
+</details>
 
 <details>
 <summary><b>🛡️ Status da LGPD no backend (análise de 19/10/2026)</b></summary>
@@ -461,6 +577,43 @@ flowchart LR
 <div align="center">
   <img src="assets/readme/fluxo-transferencia.svg" width="100%" alt="Animação: uma transferência atravessa Next.js, Spring Security, controller, service e MySQL e volta com 204"/>
 </div>
+
+<details>
+<summary><b>🆚 Antes × depois: decisões que mudaram o projeto</b> (clique em cada uma)</summary>
+<br/>
+
+<details><summary>🗄️ Banco: <code>ddl-auto=update</code> → Flyway</summary>
+
+| Antes | Depois |
+|---|---|
+| o Hibernate "adivinhava" o schema: FKs com nome aleatório e sem índice no extrato | `V1`, `V2` e `V3` versionados, revisados em PR e iguais em todo ambiente |
+| renomear um campo criava uma coluna nova e deixava os dados na velha | `ALTER TABLE ... RENAME COLUMN` numa migração nova |
+
+</details>
+<details><summary>🔐 Acesso: qualquer um movimentava qualquer conta → JWT + regra de dono</summary>
+
+| Antes | Depois |
+|---|---|
+| `POST /contas/{id}/saque` funcionava sem login, para qualquer id | sem token dá `401`; conta de outra pessoa dá `403` |
+| `GET /clientes` mostrava o CPF de todo mundo | só o `ADMIN` lista clientes |
+
+</details>
+<details><summary>🍪 Token: <code>localStorage</code> → cookie <code>httpOnly</code></summary>
+
+| Com `localStorage` (descartado) | Com cookie `httpOnly` |
+|---|---|
+| qualquer script da página (um XSS) leria o token | o Next grava o cookie e o JavaScript não alcança |
+
+</details>
+<details><summary>💰 Dinheiro: <code>double</code> → <code>BigDecimal</code></summary>
+
+| Com `double` | Com `BigDecimal` |
+|---|---|
+| `0.1 + 0.2 = 0.30000000000000004` | `0.30` exato, e `DECIMAL(19,2)` no banco |
+
+</details>
+
+</details>
 
 <details>
 <summary><b>🗃️ Modelo de dados (migrações V1, V2 e V3)</b></summary>
@@ -721,7 +874,7 @@ gantt
     section MVP
     GET conta e contas do cliente  :active, m1, 2026-10-20, 3d
     LGPD mínimo                    :        m2, 2026-10-22, 2d
-    Testes do Fellipe              :        m3, 2026-10-26, 3d
+    Testes do Felipe              :        m3, 2026-10-26, 3d
     Colocar no ar                  :crit,   m4, 2026-10-29, 3d
     section Depois
     Testcontainers                 :        p1, 2026-10-20, 4d
@@ -740,7 +893,7 @@ gantt
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
 - [ ] Backend: `GET /contas/{id}` e `GET /clientes/{id}/contas`
 - [ ] LGPD mínimo: política de privacidade, aceite dos termos e encarregado
-- [ ] Fellipe testa tudo como primeiro cliente e os bugs são corrigidos
+- [ ] Felipe testa tudo como primeiro cliente e os bugs são corrigidos
 - [ ] Colocar no ar e atualizar este README com link e prints
 
 </details>
@@ -765,8 +918,10 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
 
 ## 👥 Quem faz o RKF Bank
 
+> Os três são **idealizadores** do RKF Bank: tiveram a ideia juntos, em Osasco, e dividiram o banco em três frentes, cada um com a sua função: **API** (Kevin), **site** (Renan) e **produto** (Felipe).
+
 <div align="center">
-  <img src="assets/readme/time.svg" width="100%" alt="O time do RKF Bank, todos de Osasco: Kevin Richard no backend, Fellipe Santana idealizador e primeiro cliente, Renan Barros no frontend"/>
+  <img src="assets/readme/time.svg" width="100%" alt="Os três idealizadores do RKF Bank, todos de Osasco: Kevin Richard, idealizador e backend; Felipe Santana, idealizador, PO e QA e primeiro cliente; Renan Barros, idealizador e frontend"/>
 </div>
 
 <table>
@@ -774,22 +929,22 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
     <td align="center" valign="top" width="33%">
       <a href="https://github.com/k3vinrich4rd"><img src="https://github.com/k3vinrich4rd.png" width="96" alt="Kevin Richard"/></a>
       <h3>Kevin Richard</h3>
-      <img src="https://img.shields.io/badge/Responsável_pelo-Backend-3B82F6?logo=springboot&logoColor=white" alt="Backend"/>
-      <p align="left"><sub>API REST em Java e Spring Boot, banco MySQL e Flyway, Spring Security e JWT, integração com o ViaCEP, logs e testes. Objetivo: o dinheiro de cada cliente sempre certo e nenhum dado pessoal vazando.</sub></p>
+      <img src="https://img.shields.io/badge/Idealizador-Backend-3B82F6?logo=springboot&logoColor=white" alt="Idealizador e responsável pelo backend"/>
+      <p align="left"><sub><b>Idealizador</b> do RKF Bank e responsável pelo <b>backend</b>: API REST em Java e Spring Boot, banco MySQL e Flyway, Spring Security e JWT, integração com o ViaCEP, logs e testes. Objetivo: o dinheiro de cada cliente sempre certo e nenhum dado pessoal vazando.</sub></p>
       <a href="mailto:kevinrichardve@gmail.com"><img src="https://img.shields.io/badge/E--mail-kevinrichardve-3B82F6?logo=gmail&logoColor=white" alt="E-mail de Kevin"/></a>
       <a href="https://github.com/k3vinrich4rd"><img src="https://img.shields.io/badge/GitHub-k3vinrich4rd-181717?logo=github&logoColor=white" alt="GitHub de Kevin"/></a>
     </td>
     <td align="center" valign="top" width="33%">
-      <h3>💡<br/>Fellipe Santana</h3>
+      <h3>Felipe Santana</h3>
       <img src="https://img.shields.io/badge/Idealizador-PO_%26_QA-E2C98A" alt="Idealizador, PO e QA"/>
-      <p align="left"><sub>Teve a ideia do RKF Bank, define o que o produto precisa e é o <b>primeiro cliente</b>: tem acesso antes de todo mundo para os primeiros testes e valida o MVP pelo roteiro E2E antes do lançamento.</sub></p>
+      <p align="left"><sub><b>Idealizador</b> do RKF Bank e <b>PO & QA</b>: define o que o produto precisa e é o <b>primeiro cliente</b>, com acesso antes de todo mundo para os primeiros testes. Valida o MVP pelo roteiro E2E antes do lançamento.</sub></p>
       <img src="https://img.shields.io/badge/1º_cliente-acesso_antecipado-0A0F1C" alt="Primeiro cliente"/>
     </td>
     <td align="center" valign="top" width="33%">
       <a href="https://github.com/renanbarrostech-cmd"><img src="https://github.com/renanbarrostech-cmd.png" width="96" alt="Renan Barros"/></a>
       <h3>Renan Barros</h3>
-      <img src="https://img.shields.io/badge/Responsável_pelo-Frontend-06B6D4?logo=nextdotjs&logoColor=white" alt="Frontend"/>
-      <p align="left"><sub>Site em Next.js, React e TypeScript, identidade visual RKF, telas da conta, login com cookie <code>httpOnly</code> e logs com máscara. Objetivo: parecer e funcionar como um banco digital de verdade.</sub></p>
+      <img src="https://img.shields.io/badge/Idealizador-Frontend-06B6D4?logo=nextdotjs&logoColor=white" alt="Idealizador e responsável pelo frontend"/>
+      <p align="left"><sub><b>Idealizador</b> do RKF Bank e responsável pelo <b>frontend</b>: site em Next.js, React e TypeScript, identidade visual RKF, telas da conta, login com cookie <code>httpOnly</code> e logs com máscara. Objetivo: parecer e funcionar como um banco digital de verdade.</sub></p>
       <a href="mailto:renanbarros.tech@gmail.com"><img src="https://img.shields.io/badge/E--mail-renanbarros.tech-06B6D4?logo=gmail&logoColor=white" alt="E-mail de Renan"/></a>
       <a href="https://github.com/renanbarrostech-cmd"><img src="https://img.shields.io/badge/GitHub-renanbarrostech--cmd-181717?logo=github&logoColor=white" alt="GitHub de Renan"/></a>
     </td>
@@ -798,14 +953,18 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
 
 <div align="center">
 
-Dúvida sobre a API ou o banco? **Kevin**. Telas e site? **Renan**. Produto, prioridade e testes de aceite? **Fellipe**.
+Dúvida sobre a API ou o banco? **Kevin**. Telas e site? **Renan**. Produto, prioridade e testes de aceite? **Felipe**.
 Bug ou sugestão? Abra uma [issue](https://github.com/k3vinrich4rd/rkf_bank/issues).
 
 </div>
 
-<details>
-<summary><b>📍 De onde o RKF Bank sai (mapa interativo: arraste e dê zoom)</b></summary>
-<br/>
+### 📍 Feito em Osasco
+
+<div align="center">
+  <img src="assets/readme/osasco.svg" width="100%" alt="Feito em Osasco, SP: onde três amigos tiveram a ideia do RKF Bank"/>
+</div>
+
+O RKF Bank nasceu em **Osasco**, na Grande São Paulo, da ideia de três amigos que queriam aprender construindo algo de verdade. Arraste e dê zoom no mapa:
 
 ```geojson
 {
@@ -815,7 +974,7 @@ Bug ou sugestão? Abra uma [issue](https://github.com/k3vinrich4rd/rkf_bank/issu
       "type": "Feature",
       "properties": {
         "title": "RKF Bank · Osasco, SP",
-        "description": "Kevin, Renan e Fellipe: o time inteiro é de Osasco",
+        "description": "Kevin, Renan e Felipe: o time inteiro é de Osasco",
         "marker-color": "#3B82F6",
         "marker-size": "large",
         "marker-symbol": "bank"
@@ -825,8 +984,6 @@ Bug ou sugestão? Abra uma [issue](https://github.com/k3vinrich4rd/rkf_bank/issu
   ]
 }
 ```
-
-</details>
 
 <details>
 <summary><b>🤝 Como o time trabalha</b></summary>
@@ -962,7 +1119,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | API | [Contrato da API (2.0)](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
-| Backend | [Roteiro E2E](backend/README_TESTES_E2E.md) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) | testes de aceite do Fellipe |
+| Backend | [Roteiro E2E](backend/README_TESTES_E2E.md) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) | testes de aceite do Felipe |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
 | Planejamento | [planing/](planing/README.md) | roadmap, decisões, checklist de features, débitos e recados |
 
@@ -972,7 +1129,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 
 <a href="planing/roadmap.md"><img src="assets/readme/chamada.svg" width="100%" alt="Mais que um banco, um parceiro para o seu amanhã. Ver o roadmap."/></a>
 
-<sub>RKF Banco Digital — feito em Osasco, SP, por Kevin Richard, Renan Barros e Fellipe Santana.</sub>
+<sub>📍 RKF Banco Digital — idealizado e feito em Osasco, SP, por Kevin Richard, Renan Barros e Felipe Santana.</sub>
 <br/>
 <a href="#readme">⬆️ voltar ao topo</a>
 
