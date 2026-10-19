@@ -3,7 +3,7 @@
 Roteiro para testar a API inteira na mão, com Postman, Insomnia ou curl. Serve para:
 
 - conferir que tudo funciona antes de abrir um PR que mexe em regra de negócio;
-- o **Fellipe (QA)** validar o MVP;
+- o **Fellipe** (idealizador, QA e primeiro cliente) validar o MVP;
 - quem está chegando entender o fluxo real do banco.
 
 > Rotas e formatos oficiais: [README_CONTRATO_API.md](README_CONTRATO_API.md).

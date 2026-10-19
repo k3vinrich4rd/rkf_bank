@@ -1,6 +1,6 @@
 # RKF Bank — contexto para agentes de IA
 
-Banco digital full stack feito em dupla. **Backend:** Kevin. **Frontend:** Renan. **PO & QA:** Fellipe.
+Banco digital full stack, time de Osasco, SP. **Backend:** Kevin. **Frontend:** Renan. **Idealizador, PO & QA e primeiro cliente:** Fellipe Santana.
 Este arquivo vale para o projeto inteiro; o frontend tem regras próprias em [frontend/CLAUDE.md](frontend/CLAUDE.md).
 
 ## Premissas do time
@@ -36,6 +36,7 @@ scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do D
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
 node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas (OSV.dev) no Maven e no pnpm-lock
+node scripts/gerar-svgs-readme.mjs  # regera os SVGs animados do README (assets/readme/) com o número atual de testes e migrações
 scripts/instalar-hooks.sh           # ativa o hook que valida mensagens de commit
 ```
 
@@ -49,6 +50,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 - Erros: exceção de negócio → status pelo `ControllerExceptionHandler` (`400`, `404`, `409`, `422`, `503`) no formato padrão (`timestamp`, `status`, `error`, `message`, `path`, `campos`).
 - Dinheiro em `BigDecimal` com 2 casas; `Conta` tem `@Version` (lock otimista → `409`).
 - Logs com Log4j2 e `X-Request-Id`; nunca logar CPF completo, senha ou token.
+- **LGPD:** dado pessoal novo precisa de finalidade; response devolve só o que a tela usa; nada de dado pessoal em log, exceção, URL ou prompt de IA. Pendências em `planing/debitos-tecnicos.md`.
 - Mudou rota ou formato? Atualize `backend/README_CONTRATO_API.md` **e** avise o frontend (`frontend/lib/api/types.ts` espelha o contrato).
 - **Schema só por Flyway** (`backend/src/main/resources/db/migration`, `ddl-auto=validate`): mudou entidade → crie `V<n>__descricao.sql` que rode no MySQL e no H2. **Nunca edite uma migração já mergeada** (checksum). Revise com `/revisar-migracao`.
 

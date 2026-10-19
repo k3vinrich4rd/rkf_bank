@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="14" viewBox="0 0 1200 14" role="img" aria-label="divisor">
+  <!-- Gerado por scripts/gerar-svgs-readme.mjs. Não edite à mão. -->
+  <defs><linearGradient id="marca" x1="0" x2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+    <radialGradient id="luz"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".35" stop-color="#06B6D4" stop-opacity=".8"/><stop offset="1" stop-color="#06B6D4" stop-opacity="0"/></radialGradient>
+  </defs>
+  <style>
+    .luz { animation: corre 4.5s ease-in-out infinite; }
+    @keyframes corre { 0% { transform: translateX(-60px); } 100% { transform: translateX(1260px); } }
+  </style>
+  <rect y="6" width="1200" height="2" rx="1" fill="url(#marca)" opacity=".85"/>
+  <ellipse class="luz" cx="0" cy="7" rx="60" ry="6" fill="url(#luz)"/>
+</svg>

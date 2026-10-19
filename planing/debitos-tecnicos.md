@@ -16,6 +16,9 @@ Resolveu um item? Apague a linha no mesmo PR.
 | 🔴 | O Spring não lê o `.env`. Se as variáveis não estiverem no terminal, ele usa usuário/senha `rkfbank`, que não batem com o Docker. | Adicionar `spring.config.import=optional:file:.env[.properties]` no `application.properties`. |
 | 🔴 | O teste `RkfbankApplicationTests` precisa do MySQL ligado para rodar. | Rodar esse teste com o H2 (perfil de teste). |
 | 🔴 | O arquivo `application-test.properties` está em `src/main/resources`. | Mover para `src/test/resources`. |
+| 🔴 | **LGPD:** o cadastro diz "você concorda com os Termos de Uso e a Política de Privacidade", mas os documentos não existem e o aceite não é registrado. | Antes de ir ao ar: escrever a política (dados, finalidade, compartilhamento com o ViaCEP, retenção, contato), `V4__` com `termos_versao` e `termos_aceitos_em`, campo obrigatório no cadastro e encarregado definido. |
+| 🟡 | **LGPD:** o titular não consegue ver, corrigir nem pedir o encerramento dos próprios dados. | `GET /clientes/me`, `PATCH /clientes/me` e encerramento de conta com retenção legal e anonimização no fim do prazo. |
+| 🟢 | **LGPD:** o cadastro devolve o CPF completo e o handler de JSON inválido loga a mensagem do Jackson (pode trazer trecho do valor enviado). | Devolver o CPF mascarado e logar só o tipo da exceção. |
 | 🟡 | O login não limita tentativas: dá para testar senhas de um CPF à vontade (força bruta). | Limitar tentativas por CPF/IP ou bloquear temporariamente (ver "Limites e antifraude" no fim). |
 | 🟡 | Não há *refresh token* nem revogação: o token vale 15 min e "sair" só apaga o token no front; um token vazado vale até expirar. | `POST /auth/refresh` com token de renovação guardado no banco e revogável. |
 | 🟢 | Clientes cadastrados antes da `V3` não têm usuário (sem senha) e não conseguem entrar. | Sem produção, recriar o banco local (`docker compose down -v`). Se um dia houver produção, criar fluxo de "definir senha". |
