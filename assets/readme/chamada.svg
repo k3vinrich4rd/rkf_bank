@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="200" viewBox="0 0 1200 200" role="img" aria-label="Mais que um banco, um parceiro para o seu amanhã. Acompanhe o RKF Bank até o lançamento do MVP em 31/10.">
+  <!-- Gerado por scripts/gerar-svgs-readme.mjs. Não edite à mão. -->
+  <defs><linearGradient id="marca" x1="0" x2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+    <radialGradient id="g1" cx=".15" cy=".3" r=".7"><stop offset="0" stop-color="#3B82F6" stop-opacity=".45"/><stop offset="1" stop-color="#3B82F6" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g2" cx=".9" cy=".8" r=".6"><stop offset="0" stop-color="#06B6D4" stop-opacity=".3"/><stop offset="1" stop-color="#06B6D4" stop-opacity="0"/></radialGradient>
+  </defs>
+  <style>
+    .entra { opacity: 0; animation: entra .7s cubic-bezier(.2,.8,.2,1) forwards; }
+    @keyframes entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .onda { animation: onda 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes onda { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(1.3); opacity: 0; } }
+    .reflexo { animation: reflexo 4.5s ease-in-out infinite; }
+    @keyframes reflexo { 0% { transform: translateX(0) skewX(-20deg); } 60%,100% { transform: translateX(600px) skewX(-20deg); } }
+  </style>
+  <rect width="1200" height="200" rx="18" fill="#0A0F1C" stroke="#1E293B"/>
+  <rect width="1200" height="200" rx="18" fill="url(#g1)"/><rect width="1200" height="200" rx="18" fill="url(#g2)"/>
+  <g transform="translate(46 38) scale(.62)"><g transform="translate(0 0)">
+      <defs>
+        <linearGradient id="fundoCartao" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1e3d"/><stop offset=".55" stop-color="#0A0F1C"/><stop offset="1" stop-color="#0b2a4a"/></linearGradient>
+        <linearGradient id="chip" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2c98a"/><stop offset="1" stop-color="#a88a4c"/></linearGradient>
+        <clipPath id="formaCartao"><rect width="300" height="189" rx="18"/></clipPath>
+        <linearGradient id="reflexo" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".10"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      </defs>
+      <g clip-path="url(#formaCartao)">
+        <rect width="300" height="189" fill="url(#fundoCartao)"/>
+        <path d="M-20 149.31 C 66 90.72, 150 194.67000000000002, 320 83.16" stroke="#3B82F6" stroke-opacity="0.12" stroke-width="1.2" fill="none"/><path d="M-20 135.31 C 66 76.72, 150 180.67000000000002, 320 69.16" stroke="#3B82F6" stroke-opacity="0.17" stroke-width="1.2" fill="none"/><path d="M-20 121.31 C 66 62.72, 150 166.67000000000002, 320 55.16" stroke="#3B82F6" stroke-opacity="0.21" stroke-width="1.2" fill="none"/><path d="M-20 107.31 C 66 48.72, 150 152.67000000000002, 320 41.16" stroke="#3B82F6" stroke-opacity="0.26" stroke-width="1.2" fill="none"/><path d="M-20 93.31 C 66 34.72, 150 138.67000000000002, 320 27.159999999999997" stroke="#3B82F6" stroke-opacity="0.31" stroke-width="1.2" fill="none"/>
+        <rect class="reflexo" x="-300" width="180" height="189" fill="url(#reflexo)" transform="skewX(-20)"/>
+      </g>
+      <rect width="300" height="189" rx="18" fill="none" stroke="#ffffff" stroke-opacity=".12"/>
+      <text x="24" y="40" style="font: 700 17px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; letter-spacing: 5px" fill="#F1F5F9">RKF</text>
+      <g transform="translate(256 24)" stroke="#94A3B8" stroke-width="2" fill="none" stroke-linecap="round">
+        <path d="M4 4 q6 8 0 16"/><path d="M10 1 q9 11 0 22"/><path d="M16 -2 q12 14 0 28"/>
+      </g>
+      <rect x="24" y="71.82000000000001" width="46" height="34" rx="6" fill="url(#chip)" opacity=".92"/>
+      <text x="24" y="143" style="font: 600 17px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace; letter-spacing: 4px" fill="#F1F5F9">•••• •••• •••• 0001</text>
+      <text x="24" y="167" style="font: 600 11px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; letter-spacing: 3px" fill="#94A3B8">VOCÊ AQUI</text>
+      <text x="276" y="167" text-anchor="end" style="font: 700 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; letter-spacing: 3px" fill="#06B6D4">DÉBITO</text>
+    </g></g>
+  <text x="280" y="86" class="entra" style="font: 800 32px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:.15s" fill="#fff">Mais que um banco, um parceiro para o seu amanhã.</text>
+  <text x="282" y="122" class="entra" style="font: 400 16px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:.35s" fill="#94A3B8">Acompanhe o RKF Bank até o lançamento do MVP em 31/10/2026 ⭐</text>
+  <g transform="translate(900 136)">
+    <rect width="250" height="44" rx="22" fill="none" stroke="#06B6D4" stroke-width="2" class="onda"/>
+    <rect width="250" height="44" rx="22" fill="url(#marca)"/>
+    <text x="125" y="28" text-anchor="middle" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#fff">Ver o roadmap  ›</text>
+  </g>
+</svg>

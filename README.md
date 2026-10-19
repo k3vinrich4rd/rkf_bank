@@ -1,391 +1,300 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:003D74,100:EC7000&height=220&section=header&text=RKF%20Bank&fontSize=72&fontColor=ffffff&fontAlignY=36&desc=Banco%20digital%20constru%C3%ADdo%20ponta%20a%20ponta%2C%20com%20processo%20de%20time%20de%20verdade&descSize=18&descAlignY=58&animation=fadeIn" width="100%" alt="RKF Bank"/>
-
-<a href="#-sobre-o-projeto">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&duration=3000&pause=800&color=EC7000&center=true&vCenter=true&width=720&lines=Conta+digital+em+minutos+%F0%9F%8F%A6;Dep%C3%B3sito%2C+saque+e+transfer%C3%AAncia+%F0%9F%92%B8;Extrato+sempre+atualizado+%F0%9F%93%9C;Java+%2B+Spring+Boot+%2B+Next.js+%E2%9A%A1;Cada+opera%C3%A7%C3%A3o+rastreada+nos+logs+%F0%9F%94%8E" alt="O que o RKF Bank faz"/>
-</a>
-
-**Responsáveis pelo projeto:**
-[**Kevin Richard**](https://github.com/k3vinrich4rd) — backend ·
-[**Renan Barros**](https://github.com/renanbarrostech-cmd) — frontend
+<!-- Os SVGs de assets/readme/ são gerados por scripts/gerar-svgs-readme.mjs (rode de novo quando mudar testes ou migrações). -->
+<a href="#-conheça-o-rkf-bank"><img src="assets/readme/banner.svg" width="100%" alt="RKF Banco Digital: conta digital com depósito, saque, transferência e extrato. Confiança, tecnologia e liberdade."/></a>
 
 [![Backend CI](https://github.com/k3vinrich4rd/rkf_bank/actions/workflows/backend-ci.yml/badge.svg?branch=develop)](https://github.com/k3vinrich4rd/rkf_bank/actions/workflows/backend-ci.yml)
 [![Backend CodeQL](https://github.com/k3vinrich4rd/rkf_bank/actions/workflows/backend-codeql.yml/badge.svg?branch=develop)](https://github.com/k3vinrich4rd/rkf_bank/actions/workflows/backend-codeql.yml)
-[![Último commit](https://img.shields.io/github/last-commit/k3vinrich4rd/rkf_bank/develop?color=EC7000&label=último%20commit)](https://github.com/k3vinrich4rd/rkf_bank/commits/develop)
-[![PRs abertos](https://img.shields.io/github/issues-pr/k3vinrich4rd/rkf_bank?color=003D74&label=PRs%20abertos)](https://github.com/k3vinrich4rd/rkf_bank/pulls)
+[![Último commit](https://img.shields.io/github/last-commit/k3vinrich4rd/rkf_bank/develop?color=3B82F6&label=último%20commit)](https://github.com/k3vinrich4rd/rkf_bank/commits/develop)
+[![PRs fechados](https://img.shields.io/github/issues-pr-closed/k3vinrich4rd/rkf_bank?color=06B6D4&label=PRs%20fechados)](https://github.com/k3vinrich4rd/rkf_bank/pulls?q=is%3Apr+is%3Aclosed)
+[![Status](https://img.shields.io/badge/MVP-31%2F10%2F2026-3B82F6)](planing/roadmap.md)
 
-[![Java](https://img.shields.io/badge/Java-25_LTS-EC7000?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/25/)
-[![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-003D74?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![MySQL](https://img.shields.io/badge/MySQL-8.4-003D74?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
-[![Next.js](https://img.shields.io/badge/Next.js-16-EC7000?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19-003D74?logo=react&logoColor=white)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-003D74?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Status](https://img.shields.io/badge/status-MVP_em_desenvolvimento-EC7000)](planing/roadmap.md)
+[![Java](https://img.shields.io/badge/Java-25_LTS-0A0F1C?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/25/)
+[![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-0A0F1C?logo=springboot&logoColor=6DB33F)](https://spring.io/projects/spring-boot)
+[![Spring Security](https://img.shields.io/badge/Spring_Security-JWT-0A0F1C?logo=springsecurity&logoColor=6DB33F)](https://docs.spring.io/spring-security/reference/)
+[![Flyway](https://img.shields.io/badge/Flyway-V1→V3-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
+[![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+[![Testes](https://img.shields.io/badge/testes-163_✔-22C55E)](#-qualidade-e-testes)
 
-[Sobre](#-sobre-o-projeto) ·
-[Experiência](#-a-experiência-rkf-bank) ·
-[Funcionalidades](#-funcionalidades) ·
-[Tecnologias](#%EF%B8%8F-tecnologias) ·
-[Arquitetura](#%EF%B8%8F-arquitetura) ·
-[API](#-api-rest) ·
-[Rodando](#-rodando-o-projeto) ·
-[Testes](#-testes-e-qualidade) ·
-[Logs](#-observabilidade-e-logs) ·
-[CI/CD](#%EF%B8%8F-github-actions-cicd) ·
-[Roadmap](#%EF%B8%8F-roadmap) ·
-[Time e contato](#-quem-faz-o-rkf-bank)
+<!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
+<a href="#-conheça-o-rkf-bank"><img src="assets/readme/botoes/abrir-conta.svg" alt="🏦 Conheça o banco" height="46"/></a>
+<a href="#-a-experiência"><img src="assets/readme/botoes/experiencia.svg" alt="📱 Experiência" height="46"/></a>
+<a href="#-segurança-e-lgpd"><img src="assets/readme/botoes/seguranca.svg" alt="🛡️ Segurança" height="46"/></a>
+<a href="#-api-rest"><img src="assets/readme/botoes/api.svg" alt="🔌 API" height="46"/></a>
+<br/>
+<a href="#-rodando-o-projeto"><img src="assets/readme/botoes/rodar.svg" alt="🚀 Rodar local" height="46"/></a>
+<a href="#-qualidade-e-testes"><img src="assets/readme/botoes/qualidade.svg" alt="🧪 Qualidade" height="46"/></a>
+<a href="#-roadmap"><img src="assets/readme/botoes/roadmap.svg" alt="🗺️ Roadmap" height="46"/></a>
+<a href="#-quem-faz-o-rkf-bank"><img src="assets/readme/botoes/time.svg" alt="👥 Time" height="46"/></a>
+
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 163 testes, 9 rotas REST, 3 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
-## 🧭 Sobre o projeto
+## 🏦 Conheça o RKF Bank
 
-O **RKF Bank** é uma aplicação bancária completa (**API REST + site**) criada para praticar, na vida real,
-o que um time de engenharia faz no dia a dia: combinar um **contrato de API**, trabalhar com **Git Flow e
-Pull Requests**, registrar **decisões**, escrever **testes automatizados**, rodar **CI no GitHub Actions** e
-entregar um **MVP com prazo**.
-
-> *Conhecimento não tem teto. Código não tem limite. Só tem próximo nível.*
+> **Mais que um banco, um parceiro para o seu amanhã.**
+> O RKF Bank é um **banco digital full stack** (API REST + site) idealizado pelo **Fellipe Santana** e construído por três amigos de **Osasco, SP**, com processo de time de verdade: contrato de API, Git Flow, Pull Requests revisados, decisões registradas, testes automatizados, CI e um MVP com data marcada.
 
 <table>
   <tr>
-    <td align="center" width="25%"><h3>🏦</h3><b>Banco digital</b><br/><sub>clientes, contas e movimentações</sub></td>
-    <td align="center" width="25%"><h3>🔌</h3><b>API REST</b><br/><sub>contrato combinado antes do código</sub></td>
-    <td align="center" width="25%"><h3>🧪</h3><b>Testado</b><br/><sub>testes automatizados + roteiro E2E</sub></td>
-    <td align="center" width="25%"><h3>🚀</h3><b>MVP</b><br/><sub>meta: no ar até 31/10/2026</sub></td>
+    <td align="center" width="25%"><h3>💳</h3><b>Conta em minutos</b><br/><sub>cadastro com CPF validado e endereço pelo CEP</sub></td>
+    <td align="center" width="25%"><h3>💸</h3><b>Dinheiro em movimento</b><br/><sub>depósito, saque e transferência tudo-ou-nada</sub></td>
+    <td align="center" width="25%"><h3>📜</h3><b>Extrato na hora</b><br/><sub>cada lançamento aparece assim que acontece</sub></td>
+    <td align="center" width="25%"><h3>🔐</h3><b>Login seguro</b><br/><sub>CPF + senha, JWT e cookie <code>httpOnly</code></sub></td>
   </tr>
 </table>
-
-Acompanhe a meta no [roadmap](planing/roadmap.md).
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
-
-## 📱 A experiência RKF Bank
-
-A jornada de quem abre uma conta no RKF Bank, do cadastro ao extrato:
-
-```mermaid
-journey
-    title Jornada do cliente no RKF Bank
-    section Abrir a conta
-      Preenche nome, CPF e e-mail: 5: Cliente
-      Digita o CEP e o endereço aparece sozinho: 5: Cliente
-      Escolhe conta corrente ou poupança: 4: Cliente
-    section Movimentar
-      Deposita o primeiro dinheiro: 5: Cliente
-      Saca quando precisa: 4: Cliente
-      Transfere para outra conta: 5: Cliente
-    section Acompanhar
-      Confere o extrato, do mais novo para o mais antigo: 5: Cliente
-```
-
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <h3>👤 Cadastro inteligente</h3>
-      CPF validado na hora, e-mail único e endereço completo preenchido pelo <b>ViaCEP</b> só com o CEP.
-    </td>
-    <td align="center" width="33%">
-      <h3>💳 Conta digital</h3>
-      Corrente ou poupança, aberta em segundos, com <b>saldo zero e conta ativa</b> desde o primeiro minuto.
-    </td>
-    <td align="center" width="33%">
-      <h3>💸 Dinheiro em movimento</h3>
-      Depósito, saque e transferência com <b>tudo-ou-nada</b>: nunca sai dinheiro de uma conta sem entrar na outra.
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <h3>📜 Extrato</h3>
-      Todos os lançamentos da conta, com entrada e saída identificadas e o mais recente primeiro.
-    </td>
-    <td align="center">
-      <h3>🛡️ Segurança e LGPD</h3>
-      CPF e e-mail <b>nunca</b> vão para os logs do backend; o frontend mascara CPF, e-mail e telefone.
-    </td>
-    <td align="center">
-      <h3>🔎 Rastreável</h3>
-      Cada operação ganha um <code>X-Request-Id</code> que segue por todas as linhas de log, até o SQL.
-    </td>
-  </tr>
-</table>
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
-
-## ✨ Funcionalidades
 
 | Funcionalidade | Backend | Frontend |
 |---|:---:|:---:|
-| Landing page institucional (hero, recursos, segurança, FAQ) | — | ✅ |
-| Cadastro de cliente com endereço automático pelo CEP (ViaCEP) | ✅ | ✅ |
-| Listagem de clientes (completa ou paginada) | ✅ | — |
-| Abertura de conta corrente ou poupança | ✅ | ⏳ |
-| Listagem de contas (completa ou paginada) | ✅ | — |
-| Depósito e saque | ✅ | ⏳ |
-| Transferência entre contas | ✅ | ⏳ |
-| Extrato da conta | ✅ | ⏳ |
-| Logs rastreáveis por requisição | ✅ | ✅ |
-| Tela de saldo da conta | ⏳ | ⏳ |
-| Login | ⏳ | 🟡 |
+| Landing page (benefícios, como funciona, cartão, segurança, FAQ) | — | ✅ |
+| Cadastro com senha e endereço automático pelo CEP (ViaCEP) | ✅ | ✅ |
+| Login com CPF + senha (JWT) e sessão em cookie `httpOnly` | ✅ | ✅ |
+| Abertura de conta corrente ou poupança | ✅ | ✅ |
+| Tela da conta com saldo | ✅ (via `GET /contas`) | ✅ |
+| Depósito, saque e transferência | ✅ | ✅ |
+| Extrato | ✅ | ✅ |
+| Perfis `CLIENTE` e `ADMIN` + regra de dono da conta | ✅ | — |
+| Logs rastreáveis por requisição (`X-Request-Id`) | ✅ | ✅ |
+| `GET /contas/{id}` e `GET /clientes/{id}/contas` | ⏳ | — |
+| Política de privacidade e aceite dos termos (LGPD) | ⏳ | ⏳ |
 
-✅ pronto · 🟡 parcial · ⏳ a fazer
+<sub>✅ pronto na <code>develop</code> · ⏳ a fazer antes do lançamento</sub>
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
+## 🎮 Escolha a sua trilha
+
+> Cada botão abre um caminho diferente pelo projeto. 👇 Eles abrem e fecham.
 
 <details>
-<summary><b>🔎 Ver as regras de negócio que o backend garante</b></summary>
+<summary><img src="assets/readme/botoes/trilha-cliente.svg" height="64" alt="💳 Quero ser cliente: o que o RKF Bank faz por mim?"/></summary>
 <br/>
 
-- CPF (com dígito verificador validado por `@CpfValido`) e e-mail **não se repetem**.
-- O **CEP precisa existir** no ViaCEP — logradouro, bairro, cidade, UF e IBGE são preenchidos automaticamente.
-- Toda conta pertence a um cliente e **começa com saldo zero e ativa**. Um cliente pode ter várias contas.
-- O **número da conta não se repete**.
-- Só **conta ativa** movimenta e tem extrato.
-- Todo valor precisa ser **maior que zero**, com até 2 casas decimais.
-- Saque e transferência exigem **saldo suficiente**.
-- Não dá para **transferir para a mesma conta**.
-- Débito e crédito da transferência acontecem **na mesma transação** (tudo ou nada).
-- Operações simultâneas na mesma conta **não se sobrescrevem** (lock otimista com `@Version`).
+| Você quer... | No RKF Bank |
+|---|---|
+| abrir uma conta sem fila | cadastro com nome, CPF, e-mail, telefone, CEP e senha; o endereço se completa sozinho |
+| não pagar mensalidade | conta sem tarifa (o MVP não cobra nada) |
+| mandar dinheiro para alguém | transferência entre contas RKF, debitada e creditada na mesma operação |
+| saber para onde foi o dinheiro | extrato com entradas e saídas, do mais novo para o mais antigo |
+| ter certeza de que é seguro | senha guardada só como hash, sessão que expira em 15 min e ninguém mexe na sua conta além de você |
+
+**Jornada em 3 passos:** `Cadastre-se` → `Abra a conta` → `Movimente com liberdade`. Veja a [experiência completa](#-a-experiência).
 
 </details>
 
 <details>
-<summary><b>⭐ Ver os destaques técnicos</b></summary>
+<summary><img src="assets/readme/botoes/trilha-recrutador.svg" height="64" alt="🧑‍💼 Sou recrutador(a): o que esse projeto prova?"/></summary>
 <br/>
 
-- **Dinheiro tratado com cuidado:** `BigDecimal`, `@Transactional` e lock otimista contra concorrência.
-- **Contrato de API primeiro:** frontend e backend trabalham em paralelo a partir do mesmo documento.
-- **Arquitetura em camadas:** Controller → Service → Repository, com DTOs (`record`) e erros padronizados.
-- **Integração externa resiliente:** consulta ao ViaCEP com *timeout* de 3s e erros traduzidos para `422`/`503`.
-- **Erros previsíveis:** um único `@RestControllerAdvice` devolve sempre o mesmo formato, com o campo inválido.
-- **Logs com Log4j2 em todas as camadas**, com `requestId` em cada linha e sem dados pessoais.
-- **Testes automatizados** em todas as camadas do backend, com cobertura (JaCoCo), e roteiro E2E com checklist.
-- **LGPD de ponta a ponta:** o backend não registra CPF/e-mail; o frontend mascara CPF, e-mail e telefone.
-- **Esteira no GitHub Actions:** build, testes, análise de segurança e revisão de dependências em todo PR.
+| Pergunta | Resposta rápida |
+|---|---|
+| O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
+| Quem fez o quê? | **Kevin Richard**: backend Java/Spring · **Renan Barros**: frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **163 testes**, CI com CodeQL |
+| Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
+| Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
+<details>
+<summary><img src="assets/readme/botoes/trilha-dev.svg" height="64" alt="👩‍💻 Sou dev: quero ver código, testes e decisões"/></summary>
+<br/>
 
-## 🛠️ Tecnologias
+Sugestão de leitura, do mais simples ao mais interessante:
+
+| Arquivo | Por que olhar |
+|---|---|
+| [`ContaService.java`](backend/src/main/java/com/br/rkfbank/services/ContaService.java) | transferência atômica, regra de dono (404 → 403 → 422) e validação de saldo |
+| [`Conta.java`](backend/src/main/java/com/br/rkfbank/entities/Conta.java) | `@Version` para lock otimista |
+| [`ConfiguracaoSeguranca.java`](backend/src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java) | `SecurityFilterChain`, JWT HS256 com algoritmo fixo, BCrypt |
+| [`AuthService.java`](backend/src/main/java/com/br/rkfbank/services/AuthService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
+| [`db/migration/`](backend/src/main/resources/db/migration) | `V1` schema, `V2` migração de dados, `V3` usuários |
+| [`FiltroLogRequisicao.java`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) | `X-Request-Id` em todas as linhas de log, com proteção contra log forjado |
+| [`SegurancaIntegracaoTest.java`](backend/src/test/java/com/br/rkfbank/SegurancaIntegracaoTest.java) | ataques ao token (`alg: none`, payload adulterado) |
+| [`planing/decisoes.md`](planing/decisoes.md) | por que cada escolha foi feita |
+
+</details>
+
+<details>
+<summary><img src="assets/readme/botoes/trilha-time.svg" height="64" alt="🤝 Sou do time: como rodo, testo e entrego?"/></summary>
+<br/>
+
+1. Leia o [CONTRIBUTING.md](CONTRIBUTING.md) e o [CLAUDE.md](CLAUDE.md) (regras do time, também para agentes de IA).
+2. Suba tudo: [rodando o projeto](#-rodando-o-projeto).
+3. Branch nova **sempre** da `origin/develop` atualizada: `git switch -c feature/minha-tarefa origin/develop`.
+4. Antes do PR: `scripts/validar.sh backend` (ou `frontend` / `tudo`).
+5. **Fellipe:** o roteiro de testes de aceite está em [README_TESTES_E2E.md](backend/README_TESTES_E2E.md) e o checklist em [CHECKLIST_TESTES_E2E.md](backend/CHECKLIST_TESTES_E2E.md).
+6. Recados entre o time: [planing/recados.md](planing/recados.md).
+
+</details>
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
+## 📱 A experiência
+
+```mermaid
+journey
+    title Do cadastro ao extrato no RKF Bank
+    section Abrir a conta
+      Preenche nome, CPF, e-mail e senha: 5: Cliente
+      Digita o CEP e o endereço aparece sozinho: 5: Cliente, API
+      Escolhe conta corrente ou poupança: 4: Cliente
+    section Entrar
+      Faz login com CPF e senha: 5: Cliente
+      Recebe a sessão em cookie seguro: 5: Next.js
+    section Movimentar
+      Deposita 150,00: 5: Cliente
+      Saca 20,00: 4: Cliente
+      Transfere 50,00 numa única transação: 5: API
+    section Acompanhar
+      Vê o saldo e o extrato atualizados: 5: Cliente
+```
 
 <div align="center">
-
-<img src="https://skillicons.dev/icons?i=java,spring,maven,mysql,docker,nextjs,react,ts,tailwind,githubactions&perline=10" alt="Stack do RKF Bank"/>
-
+  <img src="assets/readme/extrato.svg" width="100%" alt="Extrato animado: cada lançamento entra na lista e o saldo da conta se atualiza"/>
 </div>
 
-<details open>
-<summary><b>☕ Backend</b></summary>
-<br/>
-
-| Tecnologia | Versão | Para que usamos |
-|---|---|---|
-| [Java](https://openjdk.org/projects/jdk/25/) | 25 (LTS) | linguagem do backend |
-| [Spring Boot](https://spring.io/projects/spring-boot) | 4.1 | base da aplicação |
-| Spring Web MVC | — | controllers REST |
-| [Spring Data JPA](https://spring.io/projects/spring-data-jpa) + Hibernate | 7 | acesso ao banco e repositórios |
-| [Jakarta Validation](https://beanvalidation.org/) | — | validação dos DTOs + validador customizado de CPF |
-| `RestClient` (Spring) | — | integração com o [ViaCEP](https://viacep.com.br/) |
-| [Log4j2](https://logging.apache.org/log4j/2.x/) | 2 | logs em todas as camadas, com `requestId` por requisição |
-| [MySQL](https://dev.mysql.com/doc/refman/8.4/en/) | 8.4 | banco de dados (via Docker Compose) |
-| [H2](https://www.h2database.com/) | — | banco em memória para os testes |
-| [Flyway](https://documentation.red-gate.com/flyway) | 12 | migrações versionadas do banco (`db/migration`) |
-| [JUnit 5](https://junit.org/junit5/) + [Mockito](https://site.mockito.org/) | — | testes automatizados |
-| [JaCoCo](https://www.jacoco.org/jacoco/) | — | relatório de cobertura de testes |
-| [Maven Wrapper](https://maven.apache.org/wrapper/) | Maven 3.9 | build sem precisar instalar o Maven |
-| Spring DevTools | — | reinício automático em desenvolvimento |
-
-</details>
-
 <details>
-<summary><b>⚛️ Frontend</b></summary>
+<summary><b>🖥️ As telas do site</b></summary>
 <br/>
 
-| Tecnologia | Versão | Para que usamos |
-|---|---|---|
-| [Next.js](https://nextjs.org/) (App Router) | 16 | framework do site e proxy `/api` para o backend |
-| [React](https://react.dev/) | 19 | interface |
-| [TypeScript](https://www.typescriptlang.org/) | 5 | tipagem, espelhando o contrato da API |
-| [Tailwind CSS](https://tailwindcss.com/) | 4 | estilos |
-| [shadcn/ui](https://ui.shadcn.com/) + [Radix UI](https://www.radix-ui.com/) | — | componentes acessíveis |
-| [Lucide](https://lucide.dev/) | — | ícones |
-| [ESLint](https://eslint.org/) | 9 | padrão de código |
-| [pnpm](https://pnpm.io/) | 10 | gerenciador de pacotes |
-
-</details>
-
-<details>
-<summary><b>🧰 Infra, qualidade e processo</b></summary>
-<br/>
-
-| Ferramenta | Para que usamos |
+| Rota | Tela |
 |---|---|
-| [Docker Compose](https://docs.docker.com/compose/) | sobe o MySQL local com *healthcheck* |
-| [GitHub Actions](https://docs.github.com/actions) | CI do backend, CodeQL e revisão de dependências |
-| [CodeQL](https://codeql.github.com/) | análise de segurança do código Java |
-| [Dependabot](https://docs.github.com/code-security/dependabot) | PRs automáticos de atualização (Maven e Actions) |
-| [Conventional Commits](https://www.conventionalcommits.org/pt-br) | padrão das mensagens de commit |
-| Git Flow simplificado | `feature/*` → `develop` → `main` |
+| `/` | landing page: benefícios, como funciona, cartão, segurança e dúvidas |
+| `/cadastro` | cadastro com CEP automático e senha |
+| `/login` | entrar com CPF e senha |
+| `/conta/abrir` | abrir conta corrente ou poupança |
+| `/conta` | saldo e atalhos |
+| `/conta/depositar` · `/conta/sacar` · `/conta/transferir` | movimentações |
+| `/conta/extrato` | extrato |
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
-
-## 🏗️ Arquitetura
-
-```mermaid
-flowchart LR
-    U([Usuário]) -->|navegador| FE
-
-    subgraph FE [Frontend · Next.js :3000]
-        P[Páginas / telas] --> H[Hooks de tela]
-        H --> API["lib/api<br/>(clientesApi, contasApi)"]
-    end
-
-    API -->|"/api/... (proxy do Next)"| BE
-
-    subgraph BE [Backend · Spring Boot :8080]
-        F["Filtro de log<br/>(X-Request-Id)"] --> C[Controllers]
-        C --> S[Services]
-        S --> R[Repositories]
-        S --> V[Client ViaCEP]
-        C -. erros .-> EH[ExceptionHandler]
-    end
-
-    R --> DB[(MySQL 8.4<br/>Docker :5441)]
-    V -->|HTTPS| VC[[viacep.com.br]]
-```
-
-- O **navegador nunca fala direto com o backend**: ele chama `/api/...` no próprio Next, que repassa para
-  `http://localhost:8080` (veja [`frontend/next.config.ts`](frontend/next.config.ts)).
-- A **fronteira entre os dois lados** é o [contrato de API](backend/README_CONTRATO_API.md). Mudou um endpoint?
-  Muda o contrato **no mesmo PR**.
-
 <details>
-<summary><b>📦 Ver as camadas do backend</b></summary>
+<summary><b>🔄 O ciclo de vida de uma conta</b></summary>
 <br/>
 
-| Pacote | Responsabilidade |
+```mermaid
+stateDiagram-v2
+    [*] --> Ativa: abrir conta (saldo 0,00)
+    Ativa --> Ativa: depósito / saque / transferência
+    Ativa --> Conflito: duas operações ao mesmo tempo
+    Conflito --> Ativa: 409, cliente tenta de novo
+    Ativa --> Inativa: encerrar (🔮 futuro)
+    Inativa --> [*]
+    note right of Ativa
+        só conta ativa movimenta
+        saldo nunca fica negativo
+    end note
+```
+
+</details>
+
+<details>
+<summary><b>🎲 Simulador: e se eu tentar...?</b> (clique em cada cenário)</summary>
+<br/>
+
+<details><summary>💸 ...sacar mais do que tenho?</summary>
+
+`422 Unprocessable Entity` com `Saldo insuficiente`. Nada é debitado e a tentativa fica no log com o `X-Request-Id`.
+
+</details>
+<details><summary>🕵️ ...ver o extrato da conta de outra pessoa?</summary>
+
+`403 Forbidden`. A regra de dono fica no `ContaService`: o `clienteId` vem do token assinado, não do que você manda na URL. E a ordem 404 → 403 → 422 garante que ninguém descubra o saldo alheio pela mensagem de erro.
+
+</details>
+<details><summary>⏰ ...usar o app depois de 15 minutos parado?</summary>
+
+O JWT expira e a API responde `401`. O site leva você ao login (`?expirou=1`) e depois **de volta para a tela onde estava**.
+
+</details>
+<details><summary>⚡ ...fazer duas transferências ao mesmo tempo da mesma conta?</summary>
+
+Uma passa e a outra recebe `409 Conflict`: a `Conta` tem `@Version` (lock otimista). O saldo nunca é sobrescrito.
+
+</details>
+<details><summary>🔁 ...cadastrar o mesmo CPF ou e-mail duas vezes?</summary>
+
+`409 Conflict`. E-mail é comparado sem diferenciar maiúsculas (`Joao@x.com` = `joao@x.com`, migração `V2`).
+
+</details>
+<details><summary>📮 ...cadastrar com o ViaCEP fora do ar?</summary>
+
+Timeout de 3 s e `503 Service Unavailable` com mensagem clara, em vez de travar. CEP que não existe vira `422`.
+
+</details>
+<details><summary>🧪 ...adulterar o token (trocar o perfil para ADMIN)?</summary>
+
+`401`. A assinatura HS256 não bate mais. Token com `alg: none` também é recusado (algoritmo fixo no `JwtDecoder`). Teste você mesmo: `node scripts/engenharia-reversa-jwt.mjs`.
+
+</details>
+
+</details>
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
+## 🔐 Segurança e LGPD
+
+<div align="center">
+  <img src="assets/readme/seguranca.svg" width="100%" alt="Seis camadas de segurança: BCrypt, JWT, cookie httpOnly, regra de dono, lock otimista e logs sem dados pessoais"/>
+</div>
+
+| Quem pode o quê | Rota |
 |---|---|
-| [`config`](backend/src/main/java/com/br/rkfbank/config) | CORS e o filtro que registra cada requisição com o `X-Request-Id` |
-| [`controllers`](backend/src/main/java/com/br/rkfbank/controllers) | recebe a requisição HTTP e devolve o status |
-| [`services`](backend/src/main/java/com/br/rkfbank/services) | regras de negócio e transações |
-| [`repositories`](backend/src/main/java/com/br/rkfbank/repositories) | acesso ao banco (Spring Data JPA) |
-| [`entities`](backend/src/main/java/com/br/rkfbank/entities) | modelo persistido (`Cliente`, `Endereco`, `Conta`, `Lancamento`) |
-| [`dto`](backend/src/main/java/com/br/rkfbank/dto) | formato de entrada e saída da API |
-| [`clients/viacep`](backend/src/main/java/com/br/rkfbank/clients/viacep) | integração com o ViaCEP |
-| [`controllers/handlers`](backend/src/main/java/com/br/rkfbank/controllers/handlers) | padroniza as respostas de erro |
-| [`validation`](backend/src/main/java/com/br/rkfbank/validation) | validações customizadas (`@CpfValido`) |
-| [`exceptions`](backend/src/main/java/com/br/rkfbank/exceptions) | exceções de negócio que viram status HTTP |
-
-Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.md).
-
-</details>
+| 🌍 qualquer pessoa | `POST /clientes` (cadastro) · `POST /auth/login` |
+| 👤 cliente logado | só as **próprias** contas: abrir, listar, depositar, sacar, transferir (origem), extrato |
+| 🛠️ `ADMIN` | `GET /clientes` e todas as contas em `GET /contas` (o primeiro admin nasce do `.env`) |
 
 <details>
-<summary><b>🗃️ Ver o modelo de dados</b></summary>
+<summary><b>🛡️ Status da LGPD no backend (análise de 19/10/2026)</b></summary>
 <br/>
 
-```mermaid
-erDiagram
-    CLIENTE ||--|| ENDERECO : mora_em
-    CLIENTE ||--o{ CONTA : possui
-    CONTA ||--o{ LANCAMENTO : "contaOrigemId / contaDestinoId"
+**Já atende:**
 
-    CLIENTE {
-        uuid id
-        string nomeCompleto
-        string cpf "único"
-        string email "único"
-        string telefone
-    }
-    ENDERECO {
-        uuid id
-        string cep
-        string logradouro
-        string bairro
-        string cidade
-        string uf
-        string ibge
-        string numero
-        string complemento
-    }
-    CONTA {
-        uuid id
-        string agencia
-        string numeroConta "único"
-        enum tipoContaEnum "CORRENTE | POUPANCA"
-        decimal saldo
-        boolean ativa
-        long versao "lock otimista (@Version)"
-    }
-    LANCAMENTO {
-        uuid id
-        enum tipoLancamentoEnum "DEPOSITO | SAQUE | TRANSFERENCIA"
-        decimal valor
-        uuid contaOrigemId
-        uuid contaDestinoId
-        string descricao
-        instant dataHora
-    }
-```
+- ✅ Senha só como hash BCrypt; nunca volta em resposta nem em log.
+- ✅ Logs sem CPF, e-mail, telefone, senha ou token (até o `toString` dos DTOs esconde os dados).
+- ✅ Autenticação em todas as rotas privadas e regra de dono (`403`).
+- ✅ Dados de todos os clientes só para `ADMIN`.
+- ✅ O `sub` do JWT é o id do usuário, não o CPF (o payload do JWT é só Base64).
+- ✅ Frontend mascara CPF, e-mail e telefone nos logs; token fora do alcance do JavaScript.
+
+**Falta antes de colocar no ar** (bloqueia o deploy, não o desenvolvimento):
+
+- ⏳ Política de privacidade e termos de uso de verdade (o cadastro já cita os dois).
+- ⏳ Registrar o aceite dos termos (versão + data) numa migração `V4`.
+- ⏳ Encarregado e canal de contato do titular.
+
+**Depois do MVP:** rota "meus dados" (`GET /clientes/me`), correção de dados, encerramento de conta com retenção e anonimização, limite de tentativas de login e auditoria.
+Detalhes e prioridades em [planing/debitos-tecnicos.md](planing/debitos-tecnicos.md) e [planing/decisoes.md](planing/decisoes.md).
 
 </details>
 
-<details>
-<summary><b>🔁 Ver o fluxo de uma transferência</b></summary>
-<br/>
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant F as Frontend
-    participant L as FiltroLogRequisicao
-    participant C as ContaController
-    participant S as ContaService
-    participant DB as MySQL
-
-    F->>L: POST /contas/transferencia
-    L->>L: gera ou reaproveita o X-Request-Id
-    L->>C: segue a requisição
-    C->>C: valida o JSON (@Valid)
-    C->>S: transferir(request)
-    activate S
-    Note over S,DB: @Transactional — tudo ou nada
-    S->>DB: busca conta de origem e de destino
-    S->>S: contas ativas? diferentes? saldo suficiente?
-    S->>DB: debita origem e credita destino (@Version)
-    S->>DB: grava o lançamento TRANSFERENCIA
-    deactivate S
-    C-->>L: 204 No Content
-    L-->>F: 204 + header X-Request-Id
-    Note over F,C: Erro de regra → 422 · conta alterada ao mesmo tempo → 409
-```
-
-</details>
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
 ## 🔌 API REST
 
-Base URL: `http://localhost:8080` · JSON · IDs em UUID · dinheiro com 2 casas (`150.00`) · datas em ISO-8601 UTC.
-O contrato completo está em [backend/README_CONTRATO_API.md](backend/README_CONTRATO_API.md) e as respostas
-de cada rota, inclusive dos erros, estão no [roteiro E2E](backend/README_TESTES_E2E.md).
+Base URL: `http://localhost:8080` · JSON · IDs em UUID · dinheiro com 2 casas (`150.00`) · datas ISO-8601 UTC · rotas privadas com `Authorization: Bearer <token>`.
+Contrato completo (versão 2.0): [backend/README_CONTRATO_API.md](backend/README_CONTRATO_API.md).
 
-| Método | Rota | O que faz | Sucesso |
-|---|---|---|---|
-| `POST` | `/clientes` | cadastra cliente | `201` |
-| `GET` | `/clientes` | lista clientes (`?paginado=true&page=0&size=10`) | `200` |
-| `POST` | `/contas/clientes/{clienteId}` | abre conta para o cliente | `201` |
-| `GET` | `/contas` | lista contas (`?paginado=true&page=0&size=10`) | `200` |
-| `POST` | `/contas/{contaId}/deposito` | deposita | `204` |
-| `POST` | `/contas/{contaId}/saque` | saca | `204` |
-| `POST` | `/contas/transferencia` | transfere entre contas | `204` |
-| `GET` | `/contas/{contaId}/lancamentos` | extrato (mais recente primeiro) | `200` |
+| Método | Rota | O que faz | Quem pode | Sucesso |
+|---|---|---|---|---|
+| `POST` | `/clientes` | cadastra cliente (com senha) | público | `201` |
+| `POST` | `/auth/login` | login com CPF + senha | público | `200` + token |
+| `GET` | `/clientes` | lista clientes (`?paginado=true&page=0&size=10`) | `ADMIN` | `200` |
+| `POST` | `/contas/clientes/{clienteId}` | abre conta | o próprio cliente | `201` |
+| `GET` | `/contas` | lista contas | `ADMIN`: todas · `CLIENTE`: as dele | `200` |
+| `POST` | `/contas/{contaId}/deposito` | deposita | dono da conta | `204` |
+| `POST` | `/contas/{contaId}/saque` | saca | dono da conta | `204` |
+| `POST` | `/contas/transferencia` | transfere | dono da conta de origem | `204` |
+| `GET` | `/contas/{contaId}/lancamentos` | extrato (mais recente primeiro) | dono da conta | `200` |
 
 <details>
-<summary><b>👤 <code>POST /clientes</code> — cadastrar cliente</b></summary>
+<summary><b>👤 <code>POST /clientes</code> — cadastrar</b></summary>
 <br/>
 
 ```json
@@ -396,97 +305,53 @@ de cada rota, inclusive dos erros, estão no [roteiro E2E](backend/README_TESTES
   "telefone": "11999998888",
   "cep": "01001000",
   "numero": "123",
-  "complemento": "Apto 45"
+  "complemento": "Apto 45",
+  "senha": "minha-senha-forte"
 }
 ```
 
-Resposta `201` — o endereço vem do ViaCEP e CPF, telefone e CEP voltam formatados:
-
-```json
-{
-  "id": "1a89861c-70a0-4b7c-947a-d16cdfe2dd08",
-  "nomeCompleto": "Joao Silva",
-  "cpf": "529.982.247-25",
-  "email": "joao.silva@rkfbank.com",
-  "telefone": "(11) 99999-8888",
-  "endereco": {
-    "cep": "01001-000",
-    "logradouro": "Praça da Sé",
-    "bairro": "Sé",
-    "cidade": "São Paulo",
-    "uf": "SP",
-    "ibge": "3550308",
-    "numero": "123",
-    "complemento": "Apto 45"
-  }
-}
-```
+Resposta `201`: o cliente com o endereço completo vindo do ViaCEP. A senha **nunca** volta.
 
 </details>
 
 <details>
-<summary><b>💳 <code>POST /contas/clientes/{clienteId}</code> — abrir conta</b></summary>
+<summary><b>🔑 <code>POST /auth/login</code> — entrar</b></summary>
 <br/>
 
 ```json
-{
-  "agencia": "0001",
-  "numeroConta": "12345678",
-  "tipoContaEnum": "CORRENTE"
-}
+{ "cpf": "52998224725", "senha": "minha-senha-forte" }
 ```
-
-Resposta `201`:
 
 ```json
 {
-  "id": "407d727e-4e43-4c93-b01c-331cbaba42fb",
+  "token": "eyJhbGciOiJIUzI1NiJ9...",
+  "tipo": "Bearer",
+  "expiraEmSegundos": 900,
   "clienteId": "1a89861c-70a0-4b7c-947a-d16cdfe2dd08",
-  "agencia": "0001",
-  "numeroConta": "12345678",
-  "tipoContaEnum": "CORRENTE",
-  "saldo": 0.00,
-  "ativa": true
+  "perfil": "CLIENTE"
 }
 ```
+
+CPF sem cadastro e senha errada recebem **a mesma** resposta `401`, de propósito.
 
 </details>
 
 <details>
-<summary><b>💰 <code>POST /contas/{contaId}/deposito</code> e <code>/saque</code> — movimentar</b></summary>
+<summary><b>💳 Abrir conta, movimentar e ver o extrato</b></summary>
 <br/>
 
 ```json
-{
-  "valor": 150.00,
-  "descricao": "Deposito inicial"
-}
+// POST /contas/clientes/{clienteId}
+{ "agencia": "0001", "numeroConta": "12345678", "tipoContaEnum": "CORRENTE" }
+
+// POST /contas/{contaId}/deposito  e  /saque
+{ "valor": 150.00, "descricao": "Deposito inicial" }
+
+// POST /contas/transferencia
+{ "contaOrigemId": "407d727e-...", "contaDestinoId": "566dd28f-...", "valor": 50.00, "descricao": "Aluguel" }
 ```
 
-Resposta `204` sem corpo. O saque exige saldo suficiente.
-
-</details>
-
-<details>
-<summary><b>🔀 <code>POST /contas/transferencia</code> — transferir</b></summary>
-<br/>
-
-```json
-{
-  "contaOrigemId": "407d727e-4e43-4c93-b01c-331cbaba42fb",
-  "contaDestinoId": "566dd28f-b08f-41e4-ac55-cc69ecfea4cd",
-  "valor": 50.00,
-  "descricao": "Transferencia aluguel"
-}
-```
-
-Resposta `204` sem corpo.
-
-</details>
-
-<details>
-<summary><b>📄 <code>GET /contas/{contaId}/lancamentos</code> — extrato</b></summary>
-<br/>
+Extrato (`GET /contas/{contaId}/lancamentos`):
 
 ```json
 [
@@ -496,7 +361,7 @@ Resposta `204` sem corpo.
     "valor": 50.00,
     "contaOrigemId": "407d727e-4e43-4c93-b01c-331cbaba42fb",
     "contaDestinoId": "566dd28f-b08f-41e4-ac55-cc69ecfea4cd",
-    "descricao": "Transferencia aluguel",
+    "descricao": "Aluguel",
     "dataHora": "2026-10-12T11:19:53.038985Z"
   }
 ]
@@ -517,15 +382,15 @@ O `valor` é sempre positivo: se a conta da tela é o `contaDestinoId`, é entra
   "error": "Bad Request",
   "message": "Requisicao invalida",
   "path": "/clientes",
-  "campos": [
-    { "campo": "cpf", "mensagem": "cpf inválido" }
-  ]
+  "campos": [{ "campo": "cpf", "mensagem": "cpf inválido" }]
 }
 ```
 
 | Status | Quando |
 |---|---|
 | `400` | dados inválidos, JSON mal formado ou parâmetro inválido |
+| `401` | sem token, token inválido ou vencido, ou CPF/senha errados no login |
+| `403` | logado, mas sem permissão (conta de outro cliente, rota de `ADMIN`) |
 | `404` | cliente ou conta não encontrado |
 | `409` | CPF, e-mail ou número de conta repetido, ou conta alterada ao mesmo tempo |
 | `422` | regra de negócio: CEP inexistente, saldo insuficiente, mesma conta na transferência |
@@ -534,60 +399,178 @@ O `valor` é sempre positivo: se a conta da tela é o `contaDestinoId`, é entra
 </details>
 
 <details>
-<summary><b>🧪 Testar o fluxo completo com <code>curl</code></b></summary>
+<summary><b>🧪 Fluxo completo com <code>curl</code></b></summary>
 <br/>
 
 ```bash
 API=http://localhost:8080
 
-# 1. cliente
+# 1. cadastro (público)
 curl -X POST $API/clientes -H "Content-Type: application/json" -d '{
   "nomeCompleto":"Joao Silva","cpf":"52998224725","email":"joao@rkfbank.com",
-  "telefone":"11999998888","cep":"01001000","numero":"123"}'
+  "telefone":"11999998888","cep":"01001000","numero":"123","senha":"minha-senha-forte"}'
 
-# 2. conta (use o id do cliente)
-curl -X POST $API/contas/clientes/$CLIENTE_ID -H "Content-Type: application/json" \
-  -d '{"agencia":"0001","numeroConta":"12345678","tipoContaEnum":"CORRENTE"}'
+# 2. login: guarde o token e o clienteId
+curl -X POST $API/auth/login -H "Content-Type: application/json" \
+  -d '{"cpf":"52998224725","senha":"minha-senha-forte"}'
+TOKEN=cole-o-token-aqui
 
-# 3. movimentações (use o id da conta)
-curl -X POST $API/contas/$CONTA_ID/deposito -H "Content-Type: application/json" -d '{"valor":150.00}'
-curl -X POST $API/contas/$CONTA_ID/saque    -H "Content-Type: application/json" -d '{"valor":20.00}'
+# 3. conta (use o clienteId do login)
+curl -X POST $API/contas/clientes/$CLIENTE_ID -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"agencia":"0001","numeroConta":"12345678","tipoContaEnum":"CORRENTE"}'
 
-# 4. extrato
-curl $API/contas/$CONTA_ID/lancamentos
+# 4. movimentações e extrato (use o id da conta)
+curl -X POST $API/contas/$CONTA_ID/deposito -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"valor":150.00}'
+curl $API/contas/$CONTA_ID/lancamentos -H "Authorization: Bearer $TOKEN"
 ```
 
 CPFs válidos para teste: `52998224725`, `16899535009`, `39053344705`, `11144477735`.
-Roteiro completo para Postman/Insomnia: [backend/README_TESTES_E2E.md](backend/README_TESTES_E2E.md).
+Ou rode tudo de uma vez com a API no ar: `node scripts/smoke-e2e.mjs`.
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
+## 🧱 Arquitetura
+
+```mermaid
+flowchart LR
+    U([📱 Cliente]) -->|navegador| FE
+
+    subgraph FE [Frontend · Next.js :3000]
+        P[Telas] --> H[Hooks]
+        H --> API["lib/api"]
+        RH["Route Handlers<br/>/api/auth/*"] --> CK[(cookie httpOnly<br/>rkf_token)]
+    end
+
+    API -->|"/api/... + Bearer (proxy)"| BE
+
+    subgraph BE [Backend · Spring Boot :8080]
+        F["FiltroLogRequisicao<br/>X-Request-Id"] --> SEC["SecurityFilterChain<br/>JWT · 401/403"]
+        SEC --> C[Controllers]
+        C --> S[Services<br/>regra de dono · @Transactional]
+        S --> R[Repositories]
+        S --> V[Client ViaCEP]
+        C -. erros .-> EH[ExceptionHandler]
+    end
+
+    R --> DB[(MySQL 8.4<br/>schema pelo Flyway)]
+    V -->|HTTPS| VC[[viacep.com.br]]
+```
+
+<div align="center">
+  <img src="assets/readme/fluxo-transferencia.svg" width="100%" alt="Animação: uma transferência atravessa Next.js, Spring Security, controller, service e MySQL e volta com 204"/>
+</div>
+
+<details>
+<summary><b>🗃️ Modelo de dados (migrações V1, V2 e V3)</b></summary>
+<br/>
+
+```mermaid
+erDiagram
+    tb_cliente ||--|| tb_endereco : "mora em"
+    tb_cliente ||--o{ tb_conta : "possui"
+    tb_cliente ||--o| tb_usuario : "entra com"
+    tb_conta ||..o{ tb_lancamento : "origem ou destino"
+    tb_cliente {
+        BINARY16 id PK
+        string nome_completo
+        string cpf UK
+        string email UK "minúsculas (V2)"
+        string telefone
+    }
+    tb_endereco {
+        BINARY16 id PK
+        string cep
+        string logradouro
+        string cidade
+        string uf
+    }
+    tb_conta {
+        BINARY16 id PK
+        string numero_conta UK
+        string agencia
+        string tipo_conta_enum "CORRENTE | POUPANCA"
+        decimal saldo "DECIMAL(19,2)"
+        bit ativa
+        bigint versao "lock otimista"
+    }
+    tb_usuario {
+        BINARY16 id PK
+        string login UK "CPF"
+        string senha_hash "BCrypt (60)"
+        string perfil "CLIENTE | ADMIN"
+        BINARY16 cliente_id UK
+    }
+    tb_lancamento {
+        BINARY16 id PK
+        string tipo_lancamento_enum
+        decimal valor
+        BINARY16 conta_origem_id
+        BINARY16 conta_destino_id
+        datetime data_hora
+    }
+```
+
+</details>
+
+<details>
+<summary><b>📦 Pacotes do backend</b></summary>
+<br/>
+
+| Pacote | Responsabilidade |
+|---|---|
+| [`config`](backend/src/main/java/com/br/rkfbank/config) | segurança (filter chain, JWT, erros 401/403), CORS, filtro de log, criação do admin |
+| [`controllers`](backend/src/main/java/com/br/rkfbank/controllers) | HTTP: `AuthController`, `ClienteController`, `ContaController` |
+| [`services`](backend/src/main/java/com/br/rkfbank/services) | regras de negócio, transações, login e token |
+| [`security`](backend/src/main/java/com/br/rkfbank/security) | `UsuarioLogado`, montado a partir do JWT |
+| [`repositories`](backend/src/main/java/com/br/rkfbank/repositories) | Spring Data JPA |
+| [`entities`](backend/src/main/java/com/br/rkfbank/entities) | `Cliente`, `Endereco`, `Conta`, `Lancamento`, `Usuario` |
+| [`dto`](backend/src/main/java/com/br/rkfbank/dto) | entrada e saída da API (`record`) |
+| [`clients/viacep`](backend/src/main/java/com/br/rkfbank/clients/viacep) | integração com o ViaCEP |
+| [`validation`](backend/src/main/java/com/br/rkfbank/validation) | `@CpfValido` |
+| [`exceptions`](backend/src/main/java/com/br/rkfbank/exceptions) | exceções de negócio que viram status HTTP |
+
+Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.md).
+
+</details>
+
+<details>
+<summary><b>🧰 Stack completa</b></summary>
+<br/>
+
+<div align="center">
+<img src="https://skillicons.dev/icons?i=java,spring,maven,mysql,docker,nextjs,react,ts,tailwind,githubactions&perline=10" alt="Stack do RKF Bank"/>
+</div>
+
+| Lado | Tecnologias |
+|---|---|
+| Backend | Java 25 · Spring Boot 4.1 · Spring Web MVC · Spring Data JPA (Hibernate 7) · Spring Security + OAuth2 Resource Server · Bean Validation · `RestClient` · Flyway · Log4j2 |
+| Banco | MySQL 8.4 (Docker Compose) · H2 2.3.232 nos testes |
+| Testes | JUnit 5 · Mockito · `@DataJpaTest` · `@SpringBootTest` · JaCoCo |
+| Frontend | Next.js 16 (App Router) · React 19 · TypeScript 5 · Tailwind CSS 4 · shadcn/ui · Lucide · pnpm 10 |
+| Esteira | GitHub Actions · CodeQL · Dependency Review · Dependabot · Conventional Commits |
+
+</details>
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
 ## 🚀 Rodando o projeto
 
-### Pré-requisitos
-
-| Ferramenta | Versão | Para quê |
-|---|---|---|
-| [JDK](https://adoptium.net/temurin/releases/?version=25) | **25** (o Maven Enforcer bloqueia outras versões) | backend |
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | recente | banco MySQL |
-| [Node.js](https://nodejs.org/) | 20 ou superior | frontend |
-| [pnpm](https://pnpm.io/installation) | 10 (`corepack enable` já resolve) | frontend |
-
-> O Maven **não** precisa ser instalado: o projeto usa o Maven Wrapper (`mvnw` / `mvnw.cmd`).
-> Confira o Java com `java -version` (deve mostrar `25.x`) e garanta que o `JAVA_HOME` aponta para o JDK 25.
+| Ferramenta | Versão |
+|---|---|
+| [JDK](https://adoptium.net/temurin/releases/?version=25) | **25** (o Maven Enforcer bloqueia outras) |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | recente |
+| [Node.js](https://nodejs.org/) + [pnpm](https://pnpm.io/installation) | 20+ e 10 (`corepack enable`) |
 
 <details open>
-<summary><b>1️⃣ Banco de dados (MySQL no Docker)</b></summary>
+<summary><b>1️⃣ Banco (MySQL no Docker)</b></summary>
 <br/>
 
-Na **raiz** do repositório:
-
 ```bash
-cp .env.example .env          # PowerShell: Copy-Item .env.example .env
-docker compose up -d          # sobe o MySQL na porta 5441
-docker compose ps             # espere o status "healthy"
+cp .env.example .env          # preencha senhas e gere o JWT_SEGREDO: openssl rand -base64 48
+docker compose up -d          # MySQL na porta 5441
+docker compose ps             # espere "healthy"
 ```
 
 </details>
@@ -596,15 +579,13 @@ docker compose ps             # espere o status "healthy"
 <summary><b>2️⃣ Backend (porta 8080)</b></summary>
 <br/>
 
-O Spring **não lê o arquivo `.env` sozinho** — as variáveis precisam estar no ambiente do terminal.
+O Spring **não lê o `.env` sozinho**: carregue as variáveis no terminal.
 
 ```bash
-# Git Bash / Linux / macOS (o tr remove o \r de um .env salvo com CRLF no Windows)
+# Git Bash / Linux / macOS
 set -a && source <(tr -d '\r' < .env) && set +a
 ./mvnw spring-boot:run
 ```
-
-O `.env` precisa ter `JWT_SEGREDO` (veja o `.env.example`); sem ele a API não sobe.
 
 ```powershell
 # PowerShell
@@ -614,13 +595,7 @@ Get-Content .env | Where-Object { $_ -match '^\s*[^#].*=' } | ForEach-Object {
 .\mvnw.cmd spring-boot:run
 ```
 
-Teste rápido: `curl http://localhost:8080/clientes` deve responder `200` com um array (`[]` no banco vazio).
-
-> As tabelas são criadas pelo **Flyway** na primeira subida da API. Se ela recusar subir com *Found non-empty schema(s)*,
-> o seu MySQL foi criado antes do Flyway: rode `docker compose down -v && docker compose up -d` uma vez (apaga os dados locais).
-
-> Sem Docker? Suba com H2 em memória: `./mvnw spring-boot:run -Dspring-boot.run.profiles=test`
-> (os dados somem ao parar a API). No IntelliJ, dá para usar o plugin **EnvFile** apontando para o `.env`.
+As tabelas nascem pelo **Flyway** na primeira subida. Se a API recusar com *Found non-empty schema(s)*, o seu MySQL é anterior ao Flyway: rode `docker compose down -v && docker compose up -d` uma vez (apaga os dados locais).
 
 </details>
 
@@ -630,12 +605,12 @@ Teste rápido: `curl http://localhost:8080/clientes` deve responder `200` com um
 
 ```bash
 cd frontend
-cp .env.example .env.local    # PowerShell: Copy-Item .env.example .env.local
+cp .env.example .env.local
 pnpm install
 pnpm dev
 ```
 
-Abra <http://localhost:3000>. O cadastro fica em <http://localhost:3000/cadastro>.
+Abra <http://localhost:3000>, crie a conta em `/cadastro` e entre em `/login`.
 
 </details>
 
@@ -645,209 +620,128 @@ Abra <http://localhost:3000>. O cadastro fica em <http://localhost:3000/cadastro
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
-| `Rule 0: RequireJavaVersion failed` | JDK diferente do 25 | instale o JDK 25 e aponte o `JAVA_HOME` para ele |
-| `Access denied for user 'rkfbank'` | variáveis do `.env` não carregadas | carregue o `.env` (comando acima ou o script do PowerShell) antes do `mvnw` |
-| `Communications link failure` | MySQL desligado ou ainda subindo | `docker compose ps` e espere o `healthy` |
-| Cadastro devolve `503` | ViaCEP fora do ar ou sem internet | tente de novo em alguns segundos |
-| Frontend não acha a API | backend parado ou `.env.local` errado | confira se a API responde em `:8080` |
+| `Rule 0: RequireJavaVersion failed` | JDK diferente do 25 | instale o JDK 25 e aponte o `JAVA_HOME` |
+| `JWT_SEGREDO ausente ou curto` | `.env` sem segredo ou não carregado | gere com `openssl rand -base64 48` e carregue o `.env` |
+| `Access denied for user` | variáveis do `.env` não carregadas | carregue o `.env` antes do `mvnw` |
+| `Communications link failure` | MySQL desligado ou subindo | `docker compose ps` e espere o `healthy` |
+| `Validate failed: Migration checksum mismatch` | uma migração já aplicada foi editada | nunca edite `V<n>__`; crie uma nova versão |
+| Cadastro devolve `503` | ViaCEP fora do ar | tente de novo em alguns segundos |
+| Volta para o login toda hora | token de 15 min venceu | esperado: ainda não há refresh token |
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
-## 🧪 Testes e qualidade
+## 🧪 Qualidade e testes
 
-### Automatizados (backend)
+<div align="center">
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 163 testes, 0 falhas, BUILD SUCCESS"/>
+</div>
 
 ```bash
-# sem Docker: perfil "test" usa H2 em memória (+ relatório de cobertura)
-./mvnw clean verify -Dspring.profiles.active=test   # PowerShell: .\mvnw.cmd clean verify "-Dspring.profiles.active=test"
-
-# com o MySQL no ar e o .env carregado
-./mvnw clean verify
-
-# recria o MySQL (APAGA os dados) e roda os testes com o perfil "test"
-./run-test.sh
-
-# atalhos com resumo curto
-scripts/validar.sh backend          # ou: frontend | tudo
-node scripts/smoke-e2e.mjs          # com a API no ar: fluxo real em 17 verificações
+scripts/validar.sh backend          # testes em H2, resumo curto (sem Docker)
+scripts/validar.sh frontend         # lint + typecheck + build
+scripts/testar-no-mysql.sh          # testes de integração contra o MySQL do Docker
+node scripts/smoke-e2e.mjs          # fluxo real contra a API no ar
+node scripts/engenharia-reversa-jwt.mjs  # tenta forjar o JWT: tudo tem que dar 401
+node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no pnpm
 ```
 
-Mudou algo e não sabe qual teste rodar? Veja ["Mudei algo: quais testes rodar?"](backend/README.md#-mudei-algo-quais-testes-rodar).
-
-O relatório do JaCoCo fica em `target/site/jacoco/index.html` — abra no navegador.
-
 <details>
-<summary><b>📋 Ver o que é testado no backend</b></summary>
+<summary><b>📋 O que cada suíte cobre</b></summary>
 <br/>
 
 | Suíte | O que cobre |
 |---|---|
-| `ClienteServiceTest` | cadastro, CPF/e-mail duplicado, integração com ViaCEP, senha em hash BCrypt |
-| `ContaServiceTest` | abertura de conta, depósito, saque, transferência, saldo, extrato e regra de dono (`403`) |
-| `TokenServiceTest` / `AuthServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login com a mesma resposta para CPF inexistente e senha errada |
-| `UsuarioServiceTest` / `CriadorAdminTest` | primeiro `ADMIN` criado pelo `.env` |
-| `SegurancaIntegracaoTest` | Spring inteiro com tokens reais: `401`, `403`, login, perfis e ataques ao token (`alg: none`, payload adulterado) |
-| `ClienteControllerTest` / `ContaControllerTest` | status HTTP de cada rota e limites da paginação |
-| `ControllerExceptionHandlerTest` | tradução de cada exceção para o formato de erro |
-| `ClienteViaCepTest` | CEP encontrado, CEP inexistente (`422`) e falha do ViaCEP (`503`) |
-| `CpfValidoValidatorTest` | dígitos verificadores, CPFs inválidos e com máscara |
-| `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e rejeitado quando tenta forjar linhas de log |
-| `EntitiesAndEnumsTest` | entidades e enums |
-| `ClienteRepositoryTest` / `ContaRepositoryTest` / `LancamentoRepositoryTest` / `UsuarioRepositoryTest` | consultas do Spring Data, constraints, cascata, lock otimista, extrato e `tb_usuario` no H2 (`@DataJpaTest`) |
-| `RkfbankApplicationTests` | sobe o contexto completo do Spring |
+| `ClienteServiceTest` | cadastro, CPF/e-mail duplicado, ViaCEP, senha em BCrypt |
+| `ContaServiceTest` | abertura, depósito, saque, transferência, extrato e regra de dono (`403`) |
+| `TokenServiceTest` / `AuthServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login sem enumeração |
+| `UsuarioServiceTest` / `CriadorAdminTest` | primeiro `ADMIN` pelo `.env` |
+| `SegurancaIntegracaoTest` | Spring inteiro com tokens reais: `401`, `403`, perfis, `alg: none` |
+| `ClienteControllerTest` / `ContaControllerTest` | status de cada rota e limites da paginação |
+| `ControllerExceptionHandlerTest` | cada exceção no formato de erro |
+| `ClienteViaCepTest` | CEP encontrado, inexistente (`422`) e ViaCEP fora (`503`) |
+| `CpfValidoValidatorTest` | dígitos verificadores e máscara |
+| `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e rejeitado contra log forjado |
+| `*RepositoryTest` | consultas, constraints, cascata, `@Version` e `tb_usuario` (`@DataJpaTest` com as migrações do Flyway) |
+
+Relatório de cobertura: `target/site/jacoco/index.html`. Teste manual de aceite: [roteiro E2E](backend/README_TESTES_E2E.md) + [checklist](backend/CHECKLIST_TESTES_E2E.md).
 
 </details>
 
-### Ponta a ponta (manual)
+<details>
+<summary><b>⚙️ Esteira no GitHub Actions</b></summary>
+<br/>
 
-| Passo | Documento |
-|---|---|
-| 1. Siga o roteiro: caminho feliz e cenários de erro, com o response de cada request | [README_TESTES_E2E.md](backend/README_TESTES_E2E.md) |
-| 2. Marque o resultado item a item | [CHECKLIST_TESTES_E2E.md](backend/CHECKLIST_TESTES_E2E.md) |
-
-### Frontend
-
-```bash
-cd frontend
-pnpm lint
-pnpm typecheck
-pnpm build
+```mermaid
+flowchart LR
+    PR([Pull Request<br/>para develop/main]) --> CI[Backend CI<br/>JDK 25 · mvnw verify · JaCoCo]
+    PR --> CQ[CodeQL<br/>análise de segurança]
+    PR --> DR{Dependency Review<br/>vulnerabilidade alta?}
+    DR -->|sim| X[❌ bloqueia]
+    DR -->|não| OK[✅ libera]
+    DB([Dependabot semanal]) -.-> PR
 ```
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
+| Workflow | Arquivo | O que faz |
+|---|---|---|
+| Backend CI | [`backend-ci.yml`](.github/workflows/backend-ci.yml) | compila, testa e publica relatórios |
+| Backend CodeQL | [`backend-codeql.yml`](.github/workflows/backend-codeql.yml) | procura vulnerabilidades no código Java |
+| Dependency Review | [`backend-dependency-review.yml`](.github/workflows/backend-dependency-review.yml) | barra dependência vulnerável ou com licença AGPL |
+| Dependabot | [`dependabot.yml`](.github/dependabot.yml) | PRs de atualização para a `develop` |
 
-## 🔎 Observabilidade e logs
+</details>
 
-Cada requisição ao backend recebe um **`X-Request-Id`** (reaproveitado se o cliente enviar um válido, ou gerado
-na hora). Ele volta no header da resposta e aparece em **todas** as linhas de log daquela chamada:
+<details>
+<summary><b>🔎 Logs rastreáveis</b></summary>
+<br/>
 
 ```text
 INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.s.ContaService : Transferencia de 50.00 da conta 672e4ddf-... para 83af15fb-...
 INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.c.FiltroLogRequisicao : POST /contas/transferencia -> 204 (15 ms)
 ```
 
-<details>
-<summary><b>📐 Ver o que cada camada registra</b></summary>
-<br/>
-
-| Camada | Nível | O que aparece |
-|---|---|---|
-| Filtro (`FiltroLogRequisicao`) | `INFO` | uma linha por requisição: método, rota, status e duração |
-| Controllers | `DEBUG` | parâmetros recebidos (ids, valores, paginação) |
-| Services | `INFO` / `WARN` | operação concluída (cadastro, abertura, depósito, saque, transferência) ou recusada pela regra de negócio |
-| Client ViaCEP | `DEBUG` / `WARN` / `ERROR` | tempo da consulta, CEP inexistente, ViaCEP indisponível (com a causa) |
-| Handler de erros | `WARN` | erros de entrada (validação, JSON, parâmetro) e conflitos de concorrência |
-| Hibernate (`org.hibernate.SQL`) | `DEBUG` | SQL executado, também com o `requestId` |
-
-- **CPF e e-mail nunca são registrados**, nem quando vêm dentro da mensagem de erro do banco.
-- O formato e os níveis ficam em [`log4j2-spring.xml`](backend/src/main/resources/log4j2-spring.xml).
+Cada requisição ganha um `X-Request-Id` que aparece em todas as linhas, até no SQL. CPF, e-mail, senha e token **nunca** entram no log. Configuração: [`log4j2-spring.xml`](backend/src/main/resources/log4j2-spring.xml).
 
 </details>
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
-## ⚙️ GitHub Actions (CI/CD)
-
-Todo PR para `develop` ou `main` passa por uma esteira automática. PR com check vermelho não entra.
+## 🧭 Roadmap
 
 ```mermaid
-flowchart LR
-    PR([Pull Request<br/>para develop/main]) --> CI
-    PR --> CQ
-    PR --> DR
-
-    subgraph CI [Backend CI]
-        B1[JDK 25] --> B2["mvnw verify<br/>(build + testes)"] --> B3[relatórios de<br/>testes e cobertura]
-    end
-
-    subgraph CQ [Backend CodeQL]
-        Q1[análise de segurança<br/>do código Java] --> Q2[alertas em<br/>Security › Code scanning]
-    end
-
-    subgraph DR [Dependency Review]
-        D1[dependências novas<br/>no pom.xml] --> D2{vulnerabilidade<br/>alta/crítica?}
-        D2 -->|sim| X[❌ bloqueia o PR]
-        D2 -->|não| OK[✅ libera]
-    end
-
-    DB([Dependabot<br/>toda semana]) -.->|abre PRs de atualização| PR
+gantt
+    title Do MVP ao próximo nível
+    dateFormat YYYY-MM-DD
+    axisFormat %d/%m
+    section Feito
+    Flyway V1 a V3                 :done,   f1, 2026-10-15, 2d
+    Spring Security + JWT          :done,   f2, 2026-10-16, 2d
+    Telas da conta e login         :done,   f0, 2026-10-14, 4d
+    section MVP
+    GET conta e contas do cliente  :active, m1, 2026-10-20, 3d
+    LGPD mínimo                    :        m2, 2026-10-22, 2d
+    Testes do Fellipe              :        m3, 2026-10-26, 3d
+    Colocar no ar                  :crit,   m4, 2026-10-29, 3d
+    section Depois
+    Testcontainers                 :        p1, 2026-10-20, 4d
+    Swagger / OpenAPI              :        p2, after p1, 2d
+    Pix, boleto e cartão (simulados) :      p3, 2026-11-05, 20d
 ```
-
-| Workflow | Arquivo | Quando roda | O que faz |
-|---|---|---|---|
-| **Backend CI** | [`backend-ci.yml`](.github/workflows/backend-ci.yml) | push/PR no backend | compila com JDK 25, roda os testes e publica os relatórios do JaCoCo e do Surefire |
-| **Backend CodeQL** | [`backend-codeql.yml`](.github/workflows/backend-codeql.yml) | push/PR no backend e toda segunda | procura vulnerabilidades no código Java (SQL injection, dados sensíveis em log etc.) |
-| **Backend Dependency Review** | [`backend-dependency-review.yml`](.github/workflows/backend-dependency-review.yml) | PR que muda o `pom.xml` | bloqueia dependência com vulnerabilidade alta/crítica ou licença AGPL |
-| **Dependabot** | [`dependabot.yml`](.github/dependabot.yml) | toda semana (Maven) e todo mês (Actions) | abre PRs para a `develop` atualizando dependências |
-
-<details>
-<summary><b>🧑‍🎓 Primeira vez com GitHub Actions? Leia aqui</b></summary>
-<br/>
-
-- Um **workflow** é um arquivo `.yml` em `.github/workflows/`. O GitHub lê esse arquivo e executa os passos
-  numa máquina virtual sempre que o evento configurado em `on:` acontece (push, PR, horário…).
-- Os workflows do backend só rodam quando arquivos do backend mudam (filtro `paths:`), então um PR só de
-  frontend não gasta minutos à toa.
-- O resultado aparece na aba **Actions** do repositório e no final de cada PR, como *checks* ✅ ou ❌.
-- Clique num check que falhou para ver o log do passo que quebrou. Os relatórios de testes e cobertura ficam em
-  **Artifacts**, no resumo da execução.
-- Para exigir CI verde antes do merge: **Settings › Branches › Add rule** em `develop` e `main`,
-  marcando *Require status checks to pass*.
-
-</details>
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
-
-## 🤝 Como trabalhamos
-
-```mermaid
-gitGraph
-    commit id: "main"
-    branch develop
-    checkout develop
-    commit id: "integração"
-    branch feature/minha-tarefa
-    checkout feature/minha-tarefa
-    commit id: "feat: ..."
-    commit id: "test: ..."
-    checkout develop
-    merge feature/minha-tarefa id: "PR revisado + CI verde"
-    checkout main
-    merge develop id: "release do MVP"
-```
-
-- **Branches:** `main` é o que está no ar, `develop` é a integração. Cada tarefa vira uma branch
-  `feature/...`, `fix/...` ou `docs/...` saindo da `develop`.
-- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/pt-br) — `feat:`, `fix:`, `docs:`,
-  `refactor:`, `test:`, `build:`, `ci:`, `chore:`.
-- **Pull Requests:** todo código entra por PR, com descrição, revisão do outro dev e CI verde.
-- **Contrato primeiro:** endpoint novo é combinado no [contrato](backend/README_CONTRATO_API.md) antes de virar código.
-- **Decisões:** escolhas importantes ficam em [planing/decisoes.md](planing/decisoes.md).
-
-O passo a passo completo está no [CONTRIBUTING.md](CONTRIBUTING.md).
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
-
-## 🗺️ Roadmap
 
 <details open>
 <summary><b>🚀 MVP — até 31/10/2026</b></summary>
 <br/>
 
-- [x] Backend compilando e rodando
-- [x] Backend: cadastro de cliente + ViaCEP
-- [x] Backend: abertura de conta
-- [x] Backend: depósito, saque, transferência e extrato
-- [x] Backend: logs rastreáveis em todas as camadas
-- [x] Frontend: landing page e tela de cadastro
-- [x] CI do backend no GitHub Actions
-- [x] Roteiro de testes E2E com checklist
+- [x] Cadastro com ViaCEP, abertura de conta, depósito, saque, transferência e extrato
+- [x] Logs rastreáveis, CI, CodeQL e Dependabot
+- [x] Banco versionado com Flyway (V1, V2, V3)
+- [x] Login com Spring Security + JWT, perfis e regra de dono
+- [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
 - [ ] Backend: `GET /contas/{id}` e `GET /clientes/{id}/contas`
-- [ ] Frontend: telas de conta, movimentações e extrato
-- [ ] Testes do Fellipe (PO & QA) e correções
-- [ ] Deploy
+- [ ] LGPD mínimo: política de privacidade, aceite dos termos e encarregado
+- [ ] Fellipe testa tudo como primeiro cliente e os bugs são corrigidos
+- [ ] Colocar no ar e atualizar este README com link e prints
 
 </details>
 
@@ -855,126 +749,48 @@ O passo a passo completo está no [CONTRIBUTING.md](CONTRIBUTING.md).
 <summary><b>🔭 Depois do MVP</b></summary>
 <br/>
 
-- [ ] Login com Spring Security + JWT (senha com BCrypt)
-- [x] Migrations com Flyway no lugar do `ddl-auto=update`
-- [ ] Documentação viva com Swagger UI (springdoc-openapi)
-- [ ] Testes de integração com Testcontainers + MySQL
-- [ ] CI do frontend (`lint`, `typecheck`, `build`)
-- [ ] Pix e cartão
+- [ ] Testes de integração com Testcontainers + MySQL e `MockMvc` ([checklist](planing/checklist-features.md))
+- [ ] Swagger UI com o botão *Authorize* (springdoc-openapi)
+- [ ] Refresh token, limite de tentativas de login e 2FA
+- [ ] "Meus dados", editar perfil e encerrar conta (direitos do titular)
+- [ ] CI do frontend
+- [ ] Pix, boleto, QR Code e cartão virtual (simulados) — [funcionalidades futuras](planing/debitos-tecnicos.md#funcionalidades-futuras-)
+- [ ] 🤖 Assistente do extrato com Spring AI (ideia)
 
 </details>
 
-O planejamento detalhado está em [planing/roadmap.md](planing/roadmap.md).
+Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist de features](planing/checklist-features.md) · [decisões](planing/decisoes.md).
 
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
-
-## 🗂️ Estrutura do repositório
-
-<details>
-<summary><b>Ver a árvore de pastas</b></summary>
-<br/>
-
-```text
-rkf_bank/
-├── .github/
-│   ├── workflows/               # GitHub Actions (CI, CodeQL, Dependency Review)
-│   └── dependabot.yml           # atualização automática de dependências
-├── backend/
-│   ├── src/main/java/...        # aplicação Spring Boot
-│   ├── src/main/resources/      # application*.properties (MySQL / H2) e log4j2-spring.xml
-│   ├── src/test/java/...        # testes unitários e de repositório (H2)
-│   └── *.md                     # contrato da API, arquitetura, roteiro e checklist E2E
-├── frontend/                    # aplicação Next.js (package.json próprio)
-│   ├── app/                     # rotas: /, /cadastro, /login
-│   ├── components/              # marketing, cadastro, ui, logs
-│   └── lib/                     # api, logger (com máscara LGPD), formatação e máscaras
-├── planing/                     # roadmap, decisões, recados, débitos técnicos e checklist de features
-├── scripts/                     # validar.sh, smoke-e2e.mjs, varrer-cves.js e hooks de Git
-├── .claude/skills/              # skills do Claude Code (implementar-feature, entregar, ...)
-├── CLAUDE.md                    # contexto do projeto para agentes de IA
-├── pom.xml                      # build do backend
-├── mvnw, mvnw.cmd, .mvn/        # Maven Wrapper
-├── run-test.sh                  # recria o MySQL e roda os testes
-├── docker-compose.yml           # MySQL local
-├── .env.example                 # variáveis do banco (copie para .env)
-└── CONTRIBUTING.md              # como trabalhamos: branches, commits, PRs e revisão
-```
-
-</details>
-
-## 📚 Documentação
-
-| Área | Documento | O que tem |
-|---|---|---|
-| Time | [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, Pull Requests e revisão |
-| API | [Contrato da API](backend/README_CONTRATO_API.md) | rotas, exemplos de JSON, regras e erros |
-| Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco de dados e problemas comuns |
-| Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais de cada uma |
-| Backend | [Testes manuais](backend/README_TESTES_E2E.md) | roteiro completo, com o response de cada request |
-| Backend | [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) | itens de validação do MVP, item a item |
-| Frontend | [frontend/README.md](frontend/README.md) | como rodar e estrutura do frontend |
-| Frontend | [Logs](frontend/lib/logger/README.md) | como registrar logs com dados mascarados |
-| Planejamento | [planing/](planing/README.md) | roadmap, decisões e recados |
-| Planejamento | [Débitos técnicos](planing/debitos-tecnicos.md) | o que funciona hoje, mas precisa melhorar |
-
-<img src="https://capsule-render.vercel.app/api?type=rect&color=0:003D74,100:EC7000&height=3&section=header" width="100%"/>
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
 ## 👥 Quem faz o RKF Bank
 
-O RKF Bank tem **dois responsáveis**, um para cada lado da aplicação.
+<div align="center">
+  <img src="assets/readme/time.svg" width="100%" alt="O time do RKF Bank, todos de Osasco: Kevin Richard no backend, Fellipe Santana idealizador e primeiro cliente, Renan Barros no frontend"/>
+</div>
 
 <table>
   <tr>
-    <td align="center" valign="top" width="50%">
-      <a href="https://github.com/k3vinrich4rd">
-        <img src="https://github.com/k3vinrich4rd.png" width="120" alt="Kevin Richard"/>
-      </a>
+    <td align="center" valign="top" width="33%">
+      <a href="https://github.com/k3vinrich4rd"><img src="https://github.com/k3vinrich4rd.png" width="96" alt="Kevin Richard"/></a>
       <h3>Kevin Richard</h3>
-      <img src="https://img.shields.io/badge/Responsável_pelo-Backend-EC7000?logo=springboot&logoColor=white" alt="Responsável pelo backend"/>
-      <br/><br/>
-      <p align="left">
-        <b>👋 Apresentação</b><br/>
-        Dev backend do RKF Bank. Cuida de tudo o que roda atrás da tela: a API REST em Java e Spring Boot,
-        o banco MySQL, a integração com o ViaCEP, os logs e os testes.
-      </p>
-      <p align="left">
-        <b>🎯 Objetivo no projeto</b><br/>
-        Garantir que o dinheiro de cada cliente esteja sempre certo: nenhuma operação pela metade, nenhum
-        saldo errado, nenhum dado pessoal vazando — e que qualquer problema possa ser rastreado nos logs.
-      </p>
-      <p align="left">
-        <b>🧱 Frentes</b><br/>
-        Cadastro de clientes com ViaCEP · contas · depósito, saque, transferência e extrato · validação de CPF ·
-        erros padronizados · logs e observabilidade · testes automatizados e roteiro E2E.
-      </p>
-      <p align="left"><b>📬 Contato</b></p>
-      <a href="mailto:kevinrichardve@gmail.com"><img src="https://img.shields.io/badge/E--mail-kevinrichardve@gmail.com-EC7000?logo=gmail&logoColor=white" alt="E-mail de Kevin"/></a>
+      <img src="https://img.shields.io/badge/Responsável_pelo-Backend-3B82F6?logo=springboot&logoColor=white" alt="Backend"/>
+      <p align="left"><sub>API REST em Java e Spring Boot, banco MySQL e Flyway, Spring Security e JWT, integração com o ViaCEP, logs e testes. Objetivo: o dinheiro de cada cliente sempre certo e nenhum dado pessoal vazando.</sub></p>
+      <a href="mailto:kevinrichardve@gmail.com"><img src="https://img.shields.io/badge/E--mail-kevinrichardve-3B82F6?logo=gmail&logoColor=white" alt="E-mail de Kevin"/></a>
       <a href="https://github.com/k3vinrich4rd"><img src="https://img.shields.io/badge/GitHub-k3vinrich4rd-181717?logo=github&logoColor=white" alt="GitHub de Kevin"/></a>
     </td>
-    <td align="center" valign="top" width="50%">
-      <a href="https://github.com/renanbarrostech-cmd">
-        <img src="https://github.com/renanbarrostech-cmd.png" width="120" alt="Renan Barros"/>
-      </a>
+    <td align="center" valign="top" width="33%">
+      <h3>💡<br/>Fellipe Santana</h3>
+      <img src="https://img.shields.io/badge/Idealizador-PO_%26_QA-E2C98A" alt="Idealizador, PO e QA"/>
+      <p align="left"><sub>Teve a ideia do RKF Bank, define o que o produto precisa e é o <b>primeiro cliente</b>: tem acesso antes de todo mundo para os primeiros testes e valida o MVP pelo roteiro E2E antes do lançamento.</sub></p>
+      <img src="https://img.shields.io/badge/1º_cliente-acesso_antecipado-0A0F1C" alt="Primeiro cliente"/>
+    </td>
+    <td align="center" valign="top" width="33%">
+      <a href="https://github.com/renanbarrostech-cmd"><img src="https://github.com/renanbarrostech-cmd.png" width="96" alt="Renan Barros"/></a>
       <h3>Renan Barros</h3>
-      <img src="https://img.shields.io/badge/Responsável_pelo-Frontend-003D74?logo=nextdotjs&logoColor=white" alt="Responsável pelo frontend"/>
-      <br/><br/>
-      <p align="left">
-        <b>👋 Apresentação</b><br/>
-        Dev frontend do RKF Bank. Cuida de tudo o que o cliente vê e toca: o site em Next.js, React e
-        TypeScript, a identidade visual da marca e a comunicação com a API.
-      </p>
-      <p align="left">
-        <b>🎯 Objetivo no projeto</b><br/>
-        Fazer o RKF Bank parecer e funcionar como um banco digital de verdade: telas claras, cadastro sem
-        atrito, mensagens de erro que o cliente entende e dados pessoais sempre mascarados.
-      </p>
-      <p align="left">
-        <b>🧱 Frentes</b><br/>
-        Landing page institucional · identidade visual RKF · tela de cadastro · tela de login ·
-        cliente HTTP da API · logs do frontend com máscara LGPD · planejamento e documentação do time.
-      </p>
-      <p align="left"><b>📬 Contato</b></p>
-      <a href="mailto:renanbarros.tech@gmail.com"><img src="https://img.shields.io/badge/E--mail-renanbarros.tech@gmail.com-003D74?logo=gmail&logoColor=white" alt="E-mail de Renan"/></a>
+      <img src="https://img.shields.io/badge/Responsável_pelo-Frontend-06B6D4?logo=nextdotjs&logoColor=white" alt="Frontend"/>
+      <p align="left"><sub>Site em Next.js, React e TypeScript, identidade visual RKF, telas da conta, login com cookie <code>httpOnly</code> e logs com máscara. Objetivo: parecer e funcionar como um banco digital de verdade.</sub></p>
+      <a href="mailto:renanbarros.tech@gmail.com"><img src="https://img.shields.io/badge/E--mail-renanbarros.tech-06B6D4?logo=gmail&logoColor=white" alt="E-mail de Renan"/></a>
       <a href="https://github.com/renanbarrostech-cmd"><img src="https://img.shields.io/badge/GitHub-renanbarrostech--cmd-181717?logo=github&logoColor=white" alt="GitHub de Renan"/></a>
     </td>
   </tr>
@@ -982,49 +798,182 @@ O RKF Bank tem **dois responsáveis**, um para cada lado da aplicação.
 
 <div align="center">
 
-| Papel | Pessoa | GitHub | Contato |
-|---|---|---|---|
-| 🧡 Responsável pelo backend | Kevin Richard | [@k3vinrich4rd](https://github.com/k3vinrich4rd) | [kevinrichardve@gmail.com](mailto:kevinrichardve@gmail.com) |
-| 💙 Responsável pelo frontend | Renan Barros | [@renanbarrostech-cmd](https://github.com/renanbarrostech-cmd) | [renanbarros.tech@gmail.com](mailto:renanbarros.tech@gmail.com) |
-| 🧪 PO & QA | Fellipe | — | nosso primeiro "cliente" — valida o MVP |
-
-Dúvida sobre a API ou o banco? Fale com o **Kevin**. Sobre telas, layout ou o site? Fale com o **Renan**.
+Dúvida sobre a API ou o banco? **Kevin**. Telas e site? **Renan**. Produto, prioridade e testes de aceite? **Fellipe**.
 Bug ou sugestão? Abra uma [issue](https://github.com/k3vinrich4rd/rkf_bank/issues).
 
 </div>
 
 <details>
-<summary><b>📊 Métricas de desenvolvimento</b></summary>
+<summary><b>📍 De onde o RKF Bank sai (mapa interativo: arraste e dê zoom)</b></summary>
+<br/>
+
+```geojson
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "title": "RKF Bank · Osasco, SP",
+        "description": "Kevin, Renan e Fellipe: o time inteiro é de Osasco",
+        "marker-color": "#3B82F6",
+        "marker-size": "large",
+        "marker-symbol": "bank"
+      },
+      "geometry": { "type": "Point", "coordinates": [-46.7917, -23.5329] }
+    }
+  ]
+}
+```
+
+</details>
+
+<details>
+<summary><b>🤝 Como o time trabalha</b></summary>
+<br/>
+
+```mermaid
+gitGraph
+    commit id: "main"
+    branch develop
+    checkout develop
+    commit id: "integração"
+    branch feature/flyway
+    checkout feature/flyway
+    commit id: "feat(db): V1, V2"
+    checkout develop
+    merge feature/flyway id: "PR #23"
+    branch feature/spring-security-jwt
+    checkout feature/spring-security-jwt
+    commit id: "feat: login JWT"
+    commit id: "test: ataques ao token"
+    checkout develop
+    merge feature/spring-security-jwt id: "PR #24"
+    branch feature/login-frontend
+    checkout feature/login-frontend
+    commit id: "feat: cookie httpOnly"
+    checkout develop
+    merge feature/login-frontend id: "PR #27"
+    checkout main
+    merge develop id: "release do MVP"
+```
+
+- **Branches:** `main` é o que vai ao ar, `develop` é a integração; toda tarefa sai da `origin/develop` atualizada.
+- **Commits:** [Conventional Commits](https://www.conventionalcommits.org/pt-br) em português, validados por hook.
+- **PRs:** revisão do outro dev + CI verde. **Contrato primeiro:** mudou rota, muda o [contrato](backend/README_CONTRATO_API.md) no mesmo PR.
+- **IA no time:** o [CLAUDE.md](CLAUDE.md) e as skills em [`.claude/skills/`](.claude/skills) (`/implementar-feature`, `/entregar`, `/revisar-migracao`, `/testar-e2e`...) dão a qualquer agente o mesmo contexto e as mesmas regras do time.
+
+Passo a passo completo: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+</details>
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
+## 💬 Pergunte ao RKF
+
+> Perguntas que um cliente, um recrutador ou um dev costumam fazer. Clique para abrir.
+
+<details>
+<summary><b>Por que a transferência nunca deixa o dinheiro "no meio do caminho"?</b></summary>
+<br/>
+
+Débito, crédito e lançamento do extrato acontecem dentro de um único `@Transactional`: ou os três são gravados, ou nenhum. E o `@Version` na `Conta` impede que duas operações simultâneas sobrescrevam o saldo (a segunda recebe `409`).
+
+</details>
+
+<details>
+<summary><b>Por que o token fica num cookie e não no <code>localStorage</code>?</b></summary>
+<br/>
+
+Qualquer script que rode na página (um XSS, uma dependência comprometida) consegue ler o `localStorage`. Com cookie `httpOnly`, gravado pelo servidor do Next, o JavaScript não alcança o token. `SameSite=Lax` protege contra CSRF. Decisão registrada em [decisoes.md](planing/decisoes.md).
+
+</details>
+
+<details>
+<summary><b>Por que Flyway em vez de deixar o Hibernate criar as tabelas?</b></summary>
+<br/>
+
+Com `ddl-auto=update` o Hibernate "adivinha" o schema, não remove nem renomeia nada e não deixa histórico. Com Flyway, cada mudança é um SQL versionado (`V1__`, `V2__`, `V3__`), revisado no PR e igual em todo ambiente; o Hibernate só **valida**. Migração aplicada nunca se edita: o checksum muda e a API não sobe.
+
+</details>
+
+<details>
+<summary><b>O RKF Bank é um banco de verdade?</b></summary>
+<br/>
+
+Ainda não: é um projeto real de engenharia, com processo de time, mas sem autorização do Banco Central. Pix e boleto, quando vierem, serão **simulados** entre as contas do próprio RKF Bank, para aprender o domínio sem depender de terceiros.
+
+</details>
+
+### 🎯 Desafio relâmpago
+
+**1. Um cliente logado tenta sacar da conta de outra pessoa. Qual status a API devolve?**
+
+<details><summary>A) 401 Unauthorized</summary>
+
+❌ **Quase.** `401` é para quem **não** está autenticado (sem token, token vencido ou adulterado).
+
+</details>
+<details><summary>B) 403 Forbidden</summary>
+
+✅ **Isso!** Ele está autenticado, mas não é dono da conta. A regra fica no `ContaService`, com o `clienteId` vindo do token assinado.
+
+</details>
+<details><summary>C) 422 Unprocessable Entity</summary>
+
+❌ **Ainda não.** `422` é regra de negócio (saldo insuficiente). Responder `422` aqui revelaria o saldo de outra pessoa.
+
+</details>
+
+**2. Alguém troca `"perfil":"CLIENTE"` por `"ADMIN"` no payload do JWT. O que acontece?**
+
+<details><summary>A) Vira admin, o payload é só Base64</summary>
+
+❌ **Não.** O payload é legível, mas a **assinatura** HS256 deixa de bater.
+
+</details>
+<details><summary>B) 401: assinatura inválida</summary>
+
+✅ **Isso!** O `JwtDecoder` confere assinatura e algoritmo em toda requisição. Rode `node scripts/engenharia-reversa-jwt.mjs` para ver.
+
+</details>
+
+**3. Como a senha do cliente fica guardada no banco?**
+
+<details><summary>A) Criptografada, para poder ser recuperada</summary>
+
+❌ **Não.** Se dá para descriptografar, quem rouba a chave lê todas as senhas.
+
+</details>
+<details><summary>B) Como hash BCrypt com salt</summary>
+
+✅ **Isso!** Hash de mão única, com salt embutido e lento de propósito contra força bruta. Nem o time consegue ver a sua senha.
+
+</details>
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
+## 📚 Documentação
+
+| Área | Documento | O que tem |
+|---|---|---|
+| Time | [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, PRs e revisão |
+| Time e IA | [CLAUDE.md](CLAUDE.md) | regras do projeto para pessoas e agentes de IA |
+| API | [Contrato da API (2.0)](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
+| Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
+| Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
+| Backend | [Roteiro E2E](backend/README_TESTES_E2E.md) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) | testes de aceite do Fellipe |
+| Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
+| Planejamento | [planing/](planing/README.md) | roadmap, decisões, checklist de features, débitos e recados |
+
 <br/>
 
 <div align="center">
 
-<b>Kevin Richard</b><br/>
-<img src="https://github-readme-stats.vercel.app/api?username=k3vinrich4rd&show_icons=true&theme=tokyonight&include_all_commits=true&count_private=true&hide_border=true&rank_icon=github&bg_color=0d1117&title_color=EC7000&icon_color=003D74&text_color=ffffff" alt="GitHub Stats de Kevin" width="49%"/>
-<img src="https://github-readme-streak-stats.herokuapp.com/?user=k3vinrich4rd&theme=tokyonight&hide_border=true&background=0d1117&ring=EC7000&fire=EC7000&currStreakLabel=EC7000&sideLabels=003D74" alt="GitHub Streak de Kevin" width="49%"/>
+<a href="planing/roadmap.md"><img src="assets/readme/chamada.svg" width="100%" alt="Mais que um banco, um parceiro para o seu amanhã. Ver o roadmap."/></a>
 
-<b>Renan Barros</b><br/>
-<img src="https://github-readme-stats.vercel.app/api?username=renanbarrostech-cmd&show_icons=true&theme=tokyonight&include_all_commits=true&count_private=true&hide_border=true&rank_icon=github&bg_color=0d1117&title_color=003D74&icon_color=EC7000&text_color=ffffff" alt="GitHub Stats de Renan" width="49%"/>
-<img src="https://github-readme-streak-stats.herokuapp.com/?user=renanbarrostech-cmd&theme=tokyonight&hide_border=true&background=0d1117&ring=003D74&fire=003D74&currStreakLabel=003D74&sideLabels=EC7000" alt="GitHub Streak de Renan" width="49%"/>
+<sub>RKF Banco Digital — feito em Osasco, SP, por Kevin Richard, Renan Barros e Fellipe Santana.</sub>
+<br/>
+<a href="#readme">⬆️ voltar ao topo</a>
 
-</div>
-
-</details>
-
-<div align="center">
-
-<a href="https://github.com/k3vinrich4rd/rkf_bank/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=k3vinrich4rd/rkf_bank" alt="Contribuidores do RKF Bank"/>
-</a>
-
-Quer contribuir? Leia o [CONTRIBUTING.md](CONTRIBUTING.md) antes de abrir a primeira branch.
-
-</div>
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:EC7000,100:003D74&height=120&section=footer&text=S%C3%B3%20tem%20pr%C3%B3ximo%20n%C3%ADvel&fontSize=24&fontColor=ffffff&fontAlignY=70" width="100%" alt="Rodapé RKF Bank"/>
-
-<div align="center">
-  <small>RKF Bank — projeto colaborativo de estudo em engenharia de software.</small>
-  <br/>
-  <a href="#readme">⬆️ voltar ao topo</a>
 </div>

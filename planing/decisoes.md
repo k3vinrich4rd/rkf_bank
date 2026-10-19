@@ -60,6 +60,18 @@ Data: 17/10
 Decisão: o token fica num **cookie `httpOnly`** gravado pelo servidor do Next (padrão BFF, *Backend for Frontend*). O login passa por `POST /api/auth/login` (Route Handler do Next), que chama a API, guarda o token no cookie `rkf_token` e devolve ao navegador só `{clienteId, perfil, expiraEm}`. Nas outras chamadas, o `proxy.ts` lê o cookie e envia `Authorization: Bearer` para a API. Cookies com `SameSite=Lax`, `Secure` em produção e validade igual à do token. `401` no meio do uso leva ao login (`?expirou=1`) e depois de volta para a tela.
 Por quê: com `localStorage`/`sessionStorage`, qualquer script que rode na página (um XSS, uma dependência comprometida) lê e rouba o token; com `httpOnly`, o JavaScript não alcança o cookie. O proxy `/api` já existia, então o custo foi pequeno. `SameSite=Lax` evita que outro site faça POST com o cookie (CSRF). Alternativa descartada: `sessionStorage` (mais simples, mas exposta a XSS).
 
+## Papéis do time
+Data: 19/10
+Decisão: **Fellipe Santana** é o idealizador do RKF Bank, PO & QA e o **primeiro cliente**: tem acesso antes de todo mundo para os primeiros testes. Kevin cuida do backend e Renan do frontend. O time inteiro é de Osasco, SP.
+Por quê: deixa claro quem decide prioridade de produto e quem dá o aceite do MVP.
+
+## LGPD: mínimo antes do deploy, resto depois do MVP
+Data: 19/10
+Decisão: o roadmap técnico segue (Testcontainers → Swagger). O "LGPD mínimo" (política de privacidade, registro do aceite dos termos e encarregado) **bloqueia o "Colocar no ar"**, como o login bloqueou. Direitos do titular (ver, corrigir, encerrar) entram depois do MVP, com contrato combinado com o frontend.
+Por quê: hoje só há dados de teste no ambiente local, então o risco real começa no deploy. Os itens mínimos são pequenos e não competem com as features; os direitos do titular são features de produto que precisam de tela.
+
+---
+
 ## Ainda falta decidir
 
 - [x] **Acesso à conta sem login:** resolvido com o login (ver "Login com CPF + senha e JWT").

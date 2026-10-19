@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="121" height="46" viewBox="0 0 121 46" role="img" aria-label="👥 Time">
+  <!-- Gerado por scripts/gerar-svgs-readme.mjs. Não edite à mão. -->
+  <defs><linearGradient id="marca" x1="0" x2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+    <linearGradient id="brilho" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <clipPath id="forma"><rect x="1" y="1" width="119" height="44" rx="22"/></clipPath>
+  </defs>
+  <style>
+    .brilho { animation: passa 3.4s ease-in-out infinite; }
+    @keyframes passa { 0% { transform: translateX(-121px); } 60%,100% { transform: translateX(121px); } }
+    .seta { animation: seta 1.4s ease-in-out infinite; }
+    @keyframes seta { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+  </style>
+  <g clip-path="url(#forma)">
+    <rect width="121" height="46" fill="#0A0F1C"/>
+    <rect width="121" height="46" fill="#3B82F6" opacity="0.1"/>
+    <rect class="brilho" width="61" height="46" fill="url(#brilho)"/>
+  </g>
+  <rect x="1" y="1" width="119" height="44" rx="22" fill="none" stroke="#3B82F6" stroke-width="1.5"/>
+  <text x="22" y="29" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">👥 Time</text>
+  
+  <text x="91" y="29" style="font: 700 16px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#3B82F6" class="seta">›</text>
+</svg>
