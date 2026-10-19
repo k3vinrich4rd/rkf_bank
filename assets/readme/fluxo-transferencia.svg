@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="250" viewBox="0 0 1200 250" role="img" aria-label="Uma transferência passa pelo Next.js, pelo Spring Security, pelo controller, pelo service e pelo MySQL numa única transação, e volta com 204.">
+  <!-- Gerado por scripts/gerar-svgs-readme.mjs. Não edite à mão. -->
+  <defs><linearGradient id="marca" x1="0" x2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+    <radialGradient id="bola"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="#06B6D4"/><stop offset="1" stop-color="#06B6D4" stop-opacity="0"/></radialGradient>
+  </defs>
+  <style>
+    .entra { opacity: 0; animation: entra .7s cubic-bezier(.2,.8,.2,1) forwards; }
+    @keyframes entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .vai { animation: vai 3.5s cubic-bezier(.6,0,.4,1) infinite; }
+    @keyframes vai { 0% { transform: translateX(0); opacity: 0; } 5% { opacity: 1; } 85% { transform: translateX(960px); opacity: 1; } 100% { transform: translateX(960px); opacity: 0; } }
+    .volta { animation: volta 3.5s ease-in-out infinite; opacity: 0; }
+    @keyframes volta { 0%, 85% { opacity: 0; } 92%, 100% { opacity: 1; } }
+    .acende { opacity: 0; animation: acende 3.5s ease-in-out infinite; }
+    @keyframes acende { 0% { opacity: 0; } 8% { opacity: 1; } 22%, 100% { opacity: 0; } }
+  </style>
+  <rect width="1200" height="250" rx="20" fill="#0A0F1C" stroke="#1E293B"/>
+  <text x="40" y="46" style="font: 700 20px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🔁 POST /contas/transferencia</text>
+  <text x="350" y="46" style="font: 400 14px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">débito, crédito e lançamento: tudo ou nada</text>
+  <path d="M120 124 H1080" stroke="url(#marca)" stroke-width="2" stroke-dasharray="6 8" opacity=".5"/>
+  
+  <g class="entra" style="animation-delay:0.10s">
+    <rect x="14" y="70" width="212" height="108" rx="16" fill="#111827" stroke="#1E293B"/>
+    <rect class="acende" style="animation-delay:0.0s" x="14" y="70" width="212" height="108" rx="16" fill="none" stroke="#06B6D4" stroke-width="2"/>
+    <text x="120" y="108" text-anchor="middle" style="font: 400 24px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">🌐</text>
+    <text x="120" y="138" text-anchor="middle" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Next.js (BFF)</text>
+    <text x="120" y="160" text-anchor="middle" style="font: 400 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">cookie httpOnly → Bearer</text>
+  </g>
+  <g class="entra" style="animation-delay:0.25s">
+    <rect x="254" y="70" width="212" height="108" rx="16" fill="#111827" stroke="#1E293B"/>
+    <rect class="acende" style="animation-delay:0.7s" x="254" y="70" width="212" height="108" rx="16" fill="none" stroke="#06B6D4" stroke-width="2"/>
+    <text x="360" y="108" text-anchor="middle" style="font: 400 24px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">🛡️</text>
+    <text x="360" y="138" text-anchor="middle" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Spring Security</text>
+    <text x="360" y="160" text-anchor="middle" style="font: 400 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">JWT válido? senão 401</text>
+  </g>
+  <g class="entra" style="animation-delay:0.40s">
+    <rect x="494" y="70" width="212" height="108" rx="16" fill="#111827" stroke="#1E293B"/>
+    <rect class="acende" style="animation-delay:1.4s" x="494" y="70" width="212" height="108" rx="16" fill="none" stroke="#06B6D4" stroke-width="2"/>
+    <text x="600" y="108" text-anchor="middle" style="font: 400 24px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">🎯</text>
+    <text x="600" y="138" text-anchor="middle" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">ContaController</text>
+    <text x="600" y="160" text-anchor="middle" style="font: 400 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">@Valid no JSON → 400</text>
+  </g>
+  <g class="entra" style="animation-delay:0.55s">
+    <rect x="734" y="70" width="212" height="108" rx="16" fill="#111827" stroke="#1E293B"/>
+    <rect class="acende" style="animation-delay:2.1s" x="734" y="70" width="212" height="108" rx="16" fill="none" stroke="#06B6D4" stroke-width="2"/>
+    <text x="840" y="108" text-anchor="middle" style="font: 400 24px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">⚙️</text>
+    <text x="840" y="138" text-anchor="middle" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">ContaService</text>
+    <text x="840" y="160" text-anchor="middle" style="font: 400 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">dono? 403 · saldo? 422</text>
+  </g>
+  <g class="entra" style="animation-delay:0.70s">
+    <rect x="974" y="70" width="212" height="108" rx="16" fill="#111827" stroke="#1E293B"/>
+    <rect class="acende" style="animation-delay:2.8s" x="974" y="70" width="212" height="108" rx="16" fill="none" stroke="#06B6D4" stroke-width="2"/>
+    <text x="1080" y="108" text-anchor="middle" style="font: 400 24px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">🗄️</text>
+    <text x="1080" y="138" text-anchor="middle" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">MySQL</text>
+    <text x="1080" y="160" text-anchor="middle" style="font: 400 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">@Transactional + @Version</text>
+  </g>
+  <circle class="vai" cx="120" cy="124" r="14" fill="url(#bola)"/>
+  <g class="volta">
+    <rect x="452" y="200" width="296" height="34" rx="17" fill="#22C55E" fill-opacity=".14" stroke="#22C55E"/>
+    <text x="600" y="223" text-anchor="middle" style="font: 700 14px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#22C55E">✓ 204 No Content · X-Request-Id no log</text>
+  </g>
+</svg>

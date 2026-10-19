@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="370" viewBox="0 0 1200 370" role="img" aria-label="Camadas de segurança do RKF Bank: BCrypt, JWT, cookie httpOnly, regra de dono, lock otimista e logs sem dados pessoais.">
+  <!-- Gerado por scripts/gerar-svgs-readme.mjs. Não edite à mão. -->
+  <defs><linearGradient id="marca" x1="0" x2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+    <linearGradient id="escudo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+  </defs>
+  <style>
+    .entra { opacity: 0; animation: entra .7s cubic-bezier(.2,.8,.2,1) forwards; }
+    @keyframes entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .escudo { animation: respira 3s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes respira { 0%,100% { transform: scale(1); } 50% { transform: scale(1.04); } }
+    .onda { animation: onda 2.6s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes onda { 0% { transform: scale(.9); opacity: .6; } 100% { transform: scale(1.5); opacity: 0; } }
+  </style>
+  <rect width="1200" height="370" rx="20" fill="#0A0F1C" stroke="#1E293B"/>
+  <g transform="translate(70 70)">
+    <path class="onda" d="M80 0 L160 30 V110 C160 170 120 200 80 220 C40 200 0 170 0 110 V30 Z" fill="none" stroke="#06B6D4" stroke-width="2"/>
+    <path class="escudo" d="M80 0 L160 30 V110 C160 170 120 200 80 220 C40 200 0 170 0 110 V30 Z" fill="url(#escudo)" fill-opacity=".9"/>
+    <path d="M48 112 L72 136 L116 86" stroke="#fff" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="80" y="262" text-anchor="middle" style="font: 700 16px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">6 camadas</text>
+  </g>
+  
+  <g class="entra" style="animation-delay:0.20s">
+    <rect x="300" y="40" width="860" height="44" rx="12" fill="#111827" stroke="#3B82F6" stroke-opacity=".45"/>
+    <text x="322" y="68" style="font: 400 18px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">🔑</text>
+    <text x="356" y="67" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Senha em BCrypt</text>
+    <text x="560" y="67" style="font: 400 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">hash com salt, custo 10; a senha nunca chega ao banco</text>
+  </g>
+  <g class="entra" style="animation-delay:0.38s">
+    <rect x="310" y="92" width="840" height="44" rx="12" fill="#111827" stroke="#06B6D4" stroke-opacity=".45"/>
+    <text x="332" y="120" style="font: 400 18px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">🎫</text>
+    <text x="366" y="119" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">JWT HS256 · 15 min</text>
+    <text x="570" y="119" style="font: 400 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">OAuth2 Resource Server; alg none e payload adulterado → 401</text>
+  </g>
+  <g class="entra" style="animation-delay:0.56s">
+    <rect x="320" y="144" width="820" height="44" rx="12" fill="#111827" stroke="#3B82F6" stroke-opacity=".45"/>
+    <text x="342" y="172" style="font: 400 18px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">🍪</text>
+    <text x="376" y="171" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Cookie httpOnly</text>
+    <text x="580" y="171" style="font: 400 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">o JavaScript da página não alcança o token (XSS)</text>
+  </g>
+  <g class="entra" style="animation-delay:0.74s">
+    <rect x="330" y="196" width="800" height="44" rx="12" fill="#111827" stroke="#06B6D4" stroke-opacity=".45"/>
+    <text x="352" y="224" style="font: 400 18px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">👤</text>
+    <text x="386" y="223" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Regra de dono</text>
+    <text x="590" y="223" style="font: 400 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">conta de outro cliente → 403, sem vazar saldo</text>
+  </g>
+  <g class="entra" style="animation-delay:0.92s">
+    <rect x="340" y="248" width="780" height="44" rx="12" fill="#111827" stroke="#3B82F6" stroke-opacity=".45"/>
+    <text x="362" y="276" style="font: 400 18px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">🔒</text>
+    <text x="396" y="275" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Lock otimista</text>
+    <text x="600" y="275" style="font: 400 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">duas operações ao mesmo tempo → 409, saldo nunca errado</text>
+  </g>
+  <g class="entra" style="animation-delay:1.10s">
+    <rect x="350" y="300" width="760" height="44" rx="12" fill="#111827" stroke="#06B6D4" stroke-opacity=".45"/>
+    <text x="372" y="328" style="font: 400 18px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif">🙈</text>
+    <text x="406" y="327" style="font: 700 15px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Logs sem dado pessoal</text>
+    <text x="610" y="327" style="font: 400 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">nada de CPF, e-mail, senha ou token; X-Request-Id em tudo</text>
+  </g>
+</svg>

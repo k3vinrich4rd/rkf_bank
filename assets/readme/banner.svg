@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-label="RKF Banco Digital: conta digital com depósito, saque, transferência e extrato. Confiança, tecnologia e liberdade.">
+  <!-- Gerado por scripts/gerar-svgs-readme.mjs. Não edite à mão. -->
+  <defs><linearGradient id="marca" x1="0" x2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
+    <radialGradient id="luzAzul" cx=".15" cy=".2" r=".6"><stop offset="0" stop-color="#3B82F6" stop-opacity=".35"/><stop offset="1" stop-color="#3B82F6" stop-opacity="0"/></radialGradient>
+    <radialGradient id="luzCiano" cx=".85" cy=".85" r=".55"><stop offset="0" stop-color="#06B6D4" stop-opacity=".25"/><stop offset="1" stop-color="#06B6D4" stop-opacity="0"/></radialGradient>
+    <pattern id="grade" width="32" height="32" patternUnits="userSpaceOnUse"><path d="M32 0H0V32" fill="none" stroke="#ffffff" stroke-opacity=".035"/></pattern>
+  </defs>
+  <style>
+    .entra { opacity: 0; animation: entra .7s cubic-bezier(.2,.8,.2,1) forwards; }
+    @keyframes entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    .flutua { animation: flutua 5s ease-in-out infinite; }
+    @keyframes flutua { 0%,100% { transform: translate(0,0) rotate(-8deg); } 50% { transform: translate(0,-10px) rotate(-6deg); } }
+    .reflexo { animation: reflexo 4.5s ease-in-out infinite; }
+    @keyframes reflexo { 0% { transform: translateX(0) skewX(-20deg); } 60%,100% { transform: translateX(900px) skewX(-20deg); } }
+    .linha { opacity: 0; animation: entra .5s ease-out forwards; }
+    .toast { opacity: 0; animation: toast 6s ease-in-out 2.4s infinite; }
+    @keyframes toast { 0% { opacity: 0; transform: translateY(-12px); } 8%,40% { opacity: 1; transform: none; } 50%,100% { opacity: 0; transform: translateY(-12px); } }
+    .pulso { animation: pulso 2s ease-in-out infinite; }
+    @keyframes pulso { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+  </style>
+  <rect width="1200" height="440" rx="20" fill="#0A0F1C"/>
+  <rect width="1200" height="440" rx="20" fill="url(#grade)"/>
+  <rect width="1200" height="440" rx="20" fill="url(#luzAzul)"/>
+  <rect width="1200" height="440" rx="20" fill="url(#luzCiano)"/>
+  <rect x=".5" y=".5" width="1199" height="439" rx="20" fill="none" stroke="#1E293B"/>
+
+  <g transform="translate(64 0)">
+    <rect x="0" y="62" width="196" height="30" rx="15" fill="#3B82F6" fill-opacity=".12" stroke="#3B82F6" stroke-opacity=".5" class="entra"/>
+    <circle cx="18" cy="77" r="4" fill="#22C55E" class="pulso"/>
+    <text x="32" y="82" class="entra" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">MVP em construção · 31/10</text>
+    <text x="0" y="158" class="entra" style="font: 800 64px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; letter-spacing: 10px; animation-delay:.15s" fill="#F1F5F9">RKF</text>
+    <text x="196" y="158" class="entra" style="font: 300 40px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:.25s" fill="url(#marca)">Banco Digital</text>
+    <text x="2" y="200" class="entra" style="font: 600 20px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:.4s" fill="#06B6D4">Confiança. Tecnologia. Liberdade.</text>
+    <text x="2" y="240" class="entra" style="font: 400 16px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:.55s" fill="#94A3B8">Conta digital sem mensalidade, transferência na hora</text>
+    <text x="2" y="263" class="entra" style="font: 400 16px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:.6s" fill="#94A3B8">e extrato em tempo real. Feito em Osasco, SP. 🏙️</text>
+    
+    <g class="entra" style="animation-delay:0.75s">
+      <rect x="0" y="296" width="93.60000000000001" height="30" rx="8" fill="#111827" stroke="#1E293B"/>
+      <text x="10" y="316" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">☕ Java 25</text>
+    </g>
+    <g class="entra" style="animation-delay:0.83s">
+      <rect x="118" y="296" width="152.4" height="30" rx="8" fill="#111827" stroke="#1E293B"/>
+      <text x="128" y="316" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🍃 Spring Boot 4</text>
+    </g>
+    <g class="entra" style="animation-delay:0.91s">
+      <rect x="272" y="296" width="68.4" height="30" rx="8" fill="#111827" stroke="#1E293B"/>
+      <text x="282" y="316" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🔐 JWT</text>
+    </g>
+    <g class="entra" style="animation-delay:0.99s">
+      <rect x="352" y="296" width="85.2" height="30" rx="8" fill="#111827" stroke="#1E293B"/>
+      <text x="362" y="316" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🐬 MySQL</text>
+    </g>
+    <g class="entra" style="animation-delay:1.07s">
+      <rect x="446" y="296" width="102" height="30" rx="8" fill="#111827" stroke="#1E293B"/>
+      <text x="456" y="316" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">⚛️ Next.js</text>
+    </g>
+    <text x="2" y="372" class="entra" style="font: 400 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:1.2s" fill="#94A3B8">Kevin Richard · backend   ·   Renan Barros · frontend   ·   Fellipe Santana · idealizador e 1º cliente</text>
+  </g>
+
+  <g class="flutua" style="transform-origin: 800px 250px"><g transform="translate(600 176)">
+      <defs>
+        <linearGradient id="fundoCartao" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0f1e3d"/><stop offset=".55" stop-color="#0A0F1C"/><stop offset="1" stop-color="#0b2a4a"/></linearGradient>
+        <linearGradient id="chip" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2c98a"/><stop offset="1" stop-color="#a88a4c"/></linearGradient>
+        <clipPath id="formaCartao"><rect width="300" height="189" rx="18"/></clipPath>
+        <linearGradient id="reflexo" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".10"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      </defs>
+      <g clip-path="url(#formaCartao)">
+        <rect width="300" height="189" fill="url(#fundoCartao)"/>
+        <path d="M-20 149.31 C 66 90.72, 150 194.67000000000002, 320 83.16" stroke="#3B82F6" stroke-opacity="0.12" stroke-width="1.2" fill="none"/><path d="M-20 135.31 C 66 76.72, 150 180.67000000000002, 320 69.16" stroke="#3B82F6" stroke-opacity="0.17" stroke-width="1.2" fill="none"/><path d="M-20 121.31 C 66 62.72, 150 166.67000000000002, 320 55.16" stroke="#3B82F6" stroke-opacity="0.21" stroke-width="1.2" fill="none"/><path d="M-20 107.31 C 66 48.72, 150 152.67000000000002, 320 41.16" stroke="#3B82F6" stroke-opacity="0.26" stroke-width="1.2" fill="none"/><path d="M-20 93.31 C 66 34.72, 150 138.67000000000002, 320 27.159999999999997" stroke="#3B82F6" stroke-opacity="0.31" stroke-width="1.2" fill="none"/>
+        <rect class="reflexo" x="-300" width="180" height="189" fill="url(#reflexo)" transform="skewX(-20)"/>
+      </g>
+      <rect width="300" height="189" rx="18" fill="none" stroke="#ffffff" stroke-opacity=".12"/>
+      <text x="24" y="40" style="font: 700 17px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; letter-spacing: 5px" fill="#F1F5F9">RKF</text>
+      <g transform="translate(256 24)" stroke="#94A3B8" stroke-width="2" fill="none" stroke-linecap="round">
+        <path d="M4 4 q6 8 0 16"/><path d="M10 1 q9 11 0 22"/><path d="M16 -2 q12 14 0 28"/>
+      </g>
+      <rect x="24" y="71.82000000000001" width="46" height="34" rx="6" fill="url(#chip)" opacity=".92"/>
+      <text x="24" y="143" style="font: 600 17px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace; letter-spacing: 4px" fill="#F1F5F9">•••• •••• •••• 4821</text>
+      <text x="24" y="167" style="font: 600 11px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; letter-spacing: 3px" fill="#94A3B8">FELLIPE SANTANA</text>
+      <text x="276" y="167" text-anchor="end" style="font: 700 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; letter-spacing: 3px" fill="#06B6D4">DÉBITO</text>
+    </g></g>
+  <g transform="translate(918 24) scale(.84)"><g transform="translate(0 0)">
+      <rect width="250" height="470" rx="34" fill="#05080f" stroke="#2b3547" stroke-width="2"/>
+      <rect x="10" y="10" width="230" height="450" rx="26" fill="#0A0F1C"/>
+      <rect x="85" y="18" width="80" height="20" rx="10" fill="#05080f"/>
+      
+      <text x="28" y="72" style="font: 600 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">Olá, Fellipe 👋</text>
+      <text x="28" y="96" style="font: 700 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; letter-spacing: 3px" fill="#F1F5F9">RKF</text>
+      <rect x="22" y="112" width="206" height="96" rx="16" fill="#111827" stroke="#1E293B"/>
+      <text x="38" y="138" style="font: 400 11px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">Saldo disponível</text>
+      <text x="38" y="170" class="saldo" style="font: 800 26px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">R$ 1.250,00</text>
+      <text x="38" y="192" style="font: 400 10px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace" fill="#94A3B8">ag 0001 · cc 48213579</text>
+      
+      <g transform="translate(22 222)">
+        <rect width="62" height="62" rx="14" fill="#111827" stroke="#1E293B"/>
+        <text x="31" y="30" text-anchor="middle" style="font: 700 18px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#06B6D4">↓</text>
+        <text x="31" y="50" text-anchor="middle" style="font: 500 9.5px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Depositar</text>
+      </g>
+      <g transform="translate(92 222)">
+        <rect width="62" height="62" rx="14" fill="#111827" stroke="#1E293B"/>
+        <text x="31" y="30" text-anchor="middle" style="font: 700 18px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#06B6D4">↑</text>
+        <text x="31" y="50" text-anchor="middle" style="font: 500 9.5px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Sacar</text>
+      </g>
+      <g transform="translate(162 222)">
+        <rect width="62" height="62" rx="14" fill="#111827" stroke="#1E293B"/>
+        <text x="31" y="30" text-anchor="middle" style="font: 700 18px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#06B6D4">⇄</text>
+        <text x="31" y="50" text-anchor="middle" style="font: 500 9.5px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Transferir</text>
+      </g>
+      <text x="28" y="314" style="font: 600 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Extrato</text>
+      
+      <g class="linha" style="animation-delay:1.20s">
+        <rect x="22" y="326" width="206" height="32" rx="9" fill="#111827"/>
+        <text x="34" y="347" style="font: 500 10.5px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Transferência recebida</text>
+        <text x="216" y="347" text-anchor="end" style="font: 700 10.5px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace" fill="#22C55E">+ 50,00</text>
+      </g>
+      <g class="linha" style="animation-delay:1.55s">
+        <rect x="22" y="364" width="206" height="32" rx="9" fill="#111827"/>
+        <text x="34" y="385" style="font: 500 10.5px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Saque</text>
+        <text x="216" y="385" text-anchor="end" style="font: 700 10.5px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace" fill="#F87171">− 20,00</text>
+      </g>
+      <g class="linha" style="animation-delay:1.90s">
+        <rect x="22" y="402" width="206" height="32" rx="9" fill="#111827"/>
+        <text x="34" y="423" style="font: 500 10.5px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Depósito</text>
+        <text x="216" y="423" text-anchor="end" style="font: 700 10.5px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace" fill="#22C55E">+ 150,00</text>
+      </g>
+    </g></g>
+  <g class="toast">
+    <rect x="682" y="44" width="236" height="52" rx="14" fill="#111827" stroke="#22C55E" stroke-opacity=".6"/>
+    <circle cx="706" cy="70" r="12" fill="#22C55E" fill-opacity=".18"/>
+    <text x="706" y="75" text-anchor="middle" style="font: 700 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#22C55E">✓</text>
+    <text x="726" y="66" style="font: 700 12px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">Transferência recebida</text>
+    <text x="726" y="84" style="font: 400 11px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">+ R$ 50,00 · agora</text>
+  </g>
+</svg>
