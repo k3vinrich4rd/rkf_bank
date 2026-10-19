@@ -50,7 +50,7 @@ O cliente consegue:
 ## Semana 4 (26/10 a 31/10) — Testar e lançar
 
 - [ ] LGPD mínimo: política de privacidade, aceite dos termos (`V4`) e encarregado definido
-- [ ] Fellipe (idealizador e primeiro cliente) testa tudo (roteiro em `backend/README_TESTES_E2E.md`)
+- [ ] Felipe (idealizador e primeiro cliente) testa tudo (roteiro em `backend/README_TESTES_E2E.md`)
 - [ ] Corrigir bugs
 - [ ] Colocar no ar
 - [ ] Atualizar o README com link e prints

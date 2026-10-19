@@ -1,12 +1,12 @@
 ---
 name: recado
-description: Escreve, responde ou lista recados entre o time do RKF Bank (Kevin, Renan, Fellipe) em planing/recados.md, no modelo do arquivo. Use quando pedirem "/recado", "deixa um recado pro Renan", "responde o recado do Renan", "quais recados estão pendentes" ou similar.
+description: Escreve, responde ou lista recados entre o time do RKF Bank (Kevin, Renan, Felipe) em planing/recados.md, no modelo do arquivo. Use quando pedirem "/recado", "deixa um recado pro Renan", "responde o recado do Renan", "quais recados estão pendentes" ou similar.
 ---
 
 # /recado
 
 Arquivo: `planing/recados.md`. Modelo do time: `- [ ] De → Para (DD/MM): mensagem`.
-Pessoas: **Kevin** (backend), **Renan** (frontend), **Fellipe** (idealizador, PO & QA e primeiro cliente). Quem escreve é o usuário Git atual (`git config user.name`; `k3vinrich4rd` = Kevin).
+Pessoas: **Kevin** (backend), **Renan** (frontend), **Felipe** (PO & QA e primeiro cliente). Quem escreve é o usuário Git atual (`git config user.name`; `k3vinrich4rd` = Kevin).
 
 ## Escrever um recado novo
 1. Monte a mensagem curta e acionável: o que precisa, onde (`arquivo:linha` ou branch/PR) e até quando, se houver prazo.

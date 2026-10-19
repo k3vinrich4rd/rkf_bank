@@ -62,7 +62,7 @@ Por quê: com `localStorage`/`sessionStorage`, qualquer script que rode na pági
 
 ## Papéis do time
 Data: 19/10
-Decisão: **Fellipe Santana** é o idealizador do RKF Bank, PO & QA e o **primeiro cliente**: tem acesso antes de todo mundo para os primeiros testes. Kevin cuida do backend e Renan do frontend. O time inteiro é de Osasco, SP.
+Decisão: o RKF Bank foi **idealizado pelos três**: Kevin Richard, Renan Barros e Felipe Santana. Kevin cuida do backend, Renan do frontend e **Felipe** é o PO & QA e o **primeiro cliente** (tem acesso antes de todo mundo para os primeiros testes). O time inteiro é de Osasco, SP. (Atualizado em 19/10: antes só o Felipe constava como idealizador.)
 Por quê: deixa claro quem decide prioridade de produto e quem dá o aceite do MVP.
 
 ## LGPD: mínimo antes do deploy, resto depois do MVP
