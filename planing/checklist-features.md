@@ -10,9 +10,9 @@ Features do backend em **ordem de prioridade**. Para cada uma o ciclo é o mesmo
 
 | # | Feature | Por que nessa posição | Status |
 |:-:|---|---|:-:|
-| 1 | [Flyway](#1-flyway--migrações-de-banco) | base de tudo: a tabela de usuários do login já nasce como migração | 🛠️ |
-| 2 | [Spring Security + JWT](#2-spring-security--jwt) | débito mais grave: hoje qualquer pessoa movimenta qualquer conta | ⬜ |
-| 3 | [Testcontainers](#3-testcontainers--testes-com-mysql-real) | testa migrações, segurança e concorrência contra o MySQL de verdade | ⬜ |
+| 1 | [Flyway](#1-flyway--migrações-de-banco) | base de tudo: a tabela de usuários do login já nasce como migração | ✅ |
+| 2 | [Spring Security + JWT](#2-spring-security--jwt) | débito mais grave: qualquer pessoa movimentava qualquer conta | ✅ |
+| 3 | [Testcontainers](#3-testcontainers--testes-com-mysql-real) | testa migrações, segurança e concorrência contra o MySQL de verdade | ⏫ próxima |
 | 4 | [Swagger / OpenAPI](#4-swagger--openapi) | documentação viva da API, já com o login no botão *Authorize* | ⬜ |
 | 5 | [Deploy na AWS](#5-deploy-na-aws---futuro) 🔮 | **futuro**: ainda não sabemos como fazer | 🔮 |
 | 6 | [Mensageria](#6-mensageria---futuro) 🔮 | **futuro**: ainda não sabemos como fazer | 🔮 |
@@ -63,7 +63,7 @@ Durante o vídeo, prestar atenção em:
 - [x] `./run-test.sh` verde (109 testes)
 - [x] App sobe com `docker compose down -v` + banco vazio e cria tudo pela migração (`Successfully applied 2 migrations`, smoke 17/17)
 - [x] `flyway_schema_history` com `V1` e `V2`
-- [ ] PR revisado e mergeado na `develop`
+- [x] PR revisado e mergeado na `develop` (PR #23)
 
 ### 📝 Minhas anotações
 
@@ -115,14 +115,14 @@ Durante o vídeo, prestar atenção em:
 - [x] `401` e `403` no mesmo formato de erro do `ControllerExceptionHandler`
 - [x] Segredo do JWT em variável de ambiente (`.env`), nunca no código
 - [x] Testes: login ok, senha errada, sem token, token expirado, conta de outro cliente
-- [ ] Combinar com o Renan as mudanças no frontend (guardar e enviar o token) — recado enviado em 16/10 (`recados.md`), aguardando resposta
+- [x] Combinar com o Renan as mudanças no frontend (guardar e enviar o token) — feito: cookie `httpOnly` no Next (decisão de 17/10, PR #27)
 - [x] Atualizar `README_CONTRATO_API.md`, `README_TESTES_E2E.md` e os débitos
 
 ### ✅ Pronto quando
 - [x] `./run-test.sh` verde (16/10: 160/160; integração também no MySQL com `scripts/testar-no-mysql.sh`)
 - [x] Sem token → `401`; conta de outro cliente → `403`
 - [x] Nenhuma senha aparece em log, response ou banco em texto puro
-- [ ] PR revisado e mergeado na `develop`
+- [x] PR revisado e mergeado na `develop` (PR #24)
 
 ### 📝 Minhas anotações
 

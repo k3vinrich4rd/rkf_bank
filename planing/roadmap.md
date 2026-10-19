@@ -13,11 +13,11 @@ O cliente consegue:
 - depositar, sacar e transferir
 - ver saldo e extrato
 
-## Como estamos (17/10)
+## Como estamos (19/10)
 
-- **Backend:** quase tudo pronto e testado. Falta buscar uma conta específica.
-- **Frontend:** landing page, cadastro, abertura de conta, tela da conta, movimentações e extrato prontos.
-- **Login:** backend com CPF + senha e JWT na `develop`; frontend (tela de login, senha no cadastro, token em cookie `httpOnly`) na `feature/login-frontend`.
+- **Backend:** tudo do MVP pronto e testado (163 testes), com Flyway e login JWT na `develop`. Falta buscar uma conta específica.
+- **Frontend:** landing page, cadastro, login, abertura de conta, tela da conta, movimentações e extrato prontos na `develop` (PR #27).
+- **Antes de ir ao ar:** LGPD mínimo (política de privacidade, aceite dos termos e encarregado) — ver `debitos-tecnicos.md`.
 
 ---
 
@@ -49,15 +49,16 @@ O cliente consegue:
 
 ## Semana 4 (26/10 a 31/10) — Testar e lançar
 
-- [ ] Fellipe testa tudo (roteiro em `backend/README_TESTES_E2E.md`)
+- [ ] LGPD mínimo: política de privacidade, aceite dos termos (`V4`) e encarregado definido
+- [ ] Fellipe (idealizador e primeiro cliente) testa tudo (roteiro em `backend/README_TESTES_E2E.md`)
 - [ ] Corrigir bugs
 - [ ] Colocar no ar
 - [ ] Atualizar o README com link e prints
 
 ## Depois do MVP
 
-- Login: backend feito (feature 2); falta o frontend
-- Testes automáticos rodando em todo PR (CI)
+- Login: feito no backend (PR #24) e no frontend (PR #27)
+- Testcontainers e Swagger (features 3 e 4 do checklist)
 - Pix
 - Cartão
 
