@@ -97,7 +97,7 @@
 | Pergunta | Resposta rápida |
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
-| Quem fez o quê? | os três idealizaram o banco juntos · **Kevin Richard**: backend Java/Spring · **Renan Barros**: frontend Next.js · **Felipe Santana**: PO & QA e primeiro cliente |
+| Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Felipe Santana**: idealizador, PO & QA e primeiro cliente |
 | Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **163 testes**, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
@@ -140,7 +140,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 
 ## 🎮 Aventura: sua primeira semana no RKF Bank
 
-> Você é o Felipe, primeiro cliente do RKF Bank. Faça as escolhas e veja o que a API responde. 👇 Clique para decidir.
+> Você é o Felipe, um dos idealizadores e o primeiro cliente do RKF Bank. Faça as escolhas e veja o que a API responde. 👇 Clique para decidir.
 
 **Segunda-feira.** Você abre o site para criar a conta. O seu CEP é de Osasco.
 
@@ -918,10 +918,10 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
 
 ## 👥 Quem faz o RKF Bank
 
-> Três amigos de Osasco tiveram a ideia juntos e dividiram o banco em três frentes: **API**, **site** e **produto**.
+> Os três são **idealizadores** do RKF Bank: tiveram a ideia juntos, em Osasco, e dividiram o banco em três frentes, cada um com a sua função: **API** (Kevin), **site** (Renan) e **produto** (Felipe).
 
 <div align="center">
-  <img src="assets/readme/time.svg" width="100%" alt="Os três idealizadores do RKF Bank, todos de Osasco: Kevin Richard no backend, Felipe Santana no produto e como primeiro cliente, Renan Barros no frontend"/>
+  <img src="assets/readme/time.svg" width="100%" alt="Os três idealizadores do RKF Bank, todos de Osasco: Kevin Richard, idealizador e backend; Felipe Santana, idealizador, PO e QA e primeiro cliente; Renan Barros, idealizador e frontend"/>
 </div>
 
 <table>
@@ -930,21 +930,21 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
       <a href="https://github.com/k3vinrich4rd"><img src="https://github.com/k3vinrich4rd.png" width="96" alt="Kevin Richard"/></a>
       <h3>Kevin Richard</h3>
       <img src="https://img.shields.io/badge/Idealizador-Backend-3B82F6?logo=springboot&logoColor=white" alt="Idealizador e responsável pelo backend"/>
-      <p align="left"><sub>API REST em Java e Spring Boot, banco MySQL e Flyway, Spring Security e JWT, integração com o ViaCEP, logs e testes. Objetivo: o dinheiro de cada cliente sempre certo e nenhum dado pessoal vazando.</sub></p>
+      <p align="left"><sub><b>Idealizador</b> do RKF Bank e responsável pelo <b>backend</b>: API REST em Java e Spring Boot, banco MySQL e Flyway, Spring Security e JWT, integração com o ViaCEP, logs e testes. Objetivo: o dinheiro de cada cliente sempre certo e nenhum dado pessoal vazando.</sub></p>
       <a href="mailto:kevinrichardve@gmail.com"><img src="https://img.shields.io/badge/E--mail-kevinrichardve-3B82F6?logo=gmail&logoColor=white" alt="E-mail de Kevin"/></a>
       <a href="https://github.com/k3vinrich4rd"><img src="https://img.shields.io/badge/GitHub-k3vinrich4rd-181717?logo=github&logoColor=white" alt="GitHub de Kevin"/></a>
     </td>
     <td align="center" valign="top" width="33%">
-      <h3>💡<br/>Felipe Santana</h3>
+      <h3>Felipe Santana</h3>
       <img src="https://img.shields.io/badge/Idealizador-PO_%26_QA-E2C98A" alt="Idealizador, PO e QA"/>
-      <p align="left"><sub>Idealizou o RKF Bank com Kevin e Renan, define o que o produto precisa e é o <b>primeiro cliente</b>: tem acesso antes de todo mundo para os primeiros testes e valida o MVP pelo roteiro E2E antes do lançamento.</sub></p>
+      <p align="left"><sub><b>Idealizador</b> do RKF Bank e <b>PO & QA</b>: define o que o produto precisa e é o <b>primeiro cliente</b>, com acesso antes de todo mundo para os primeiros testes. Valida o MVP pelo roteiro E2E antes do lançamento.</sub></p>
       <img src="https://img.shields.io/badge/1º_cliente-acesso_antecipado-0A0F1C" alt="Primeiro cliente"/>
     </td>
     <td align="center" valign="top" width="33%">
       <a href="https://github.com/renanbarrostech-cmd"><img src="https://github.com/renanbarrostech-cmd.png" width="96" alt="Renan Barros"/></a>
       <h3>Renan Barros</h3>
       <img src="https://img.shields.io/badge/Idealizador-Frontend-06B6D4?logo=nextdotjs&logoColor=white" alt="Idealizador e responsável pelo frontend"/>
-      <p align="left"><sub>Site em Next.js, React e TypeScript, identidade visual RKF, telas da conta, login com cookie <code>httpOnly</code> e logs com máscara. Objetivo: parecer e funcionar como um banco digital de verdade.</sub></p>
+      <p align="left"><sub><b>Idealizador</b> do RKF Bank e responsável pelo <b>frontend</b>: site em Next.js, React e TypeScript, identidade visual RKF, telas da conta, login com cookie <code>httpOnly</code> e logs com máscara. Objetivo: parecer e funcionar como um banco digital de verdade.</sub></p>
       <a href="mailto:renanbarros.tech@gmail.com"><img src="https://img.shields.io/badge/E--mail-renanbarros.tech-06B6D4?logo=gmail&logoColor=white" alt="E-mail de Renan"/></a>
       <a href="https://github.com/renanbarrostech-cmd"><img src="https://img.shields.io/badge/GitHub-renanbarrostech--cmd-181717?logo=github&logoColor=white" alt="GitHub de Renan"/></a>
     </td>
