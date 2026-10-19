@@ -1,6 +1,6 @@
 # RKF Bank — contexto para agentes de IA
 
-Banco digital full stack, time de Osasco, SP. **Backend:** Kevin. **Frontend:** Renan. **Idealizador, PO & QA e primeiro cliente:** Fellipe Santana.
+Banco digital full stack idealizado por três amigos de Osasco, SP. **Backend:** Kevin. **Frontend:** Renan. **PO & QA e primeiro cliente:** Felipe Santana.
 Este arquivo vale para o projeto inteiro; o frontend tem regras próprias em [frontend/CLAUDE.md](frontend/CLAUDE.md).
 
 ## Premissas do time
