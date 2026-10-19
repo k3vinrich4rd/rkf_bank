@@ -101,7 +101,7 @@ function celular(x, y, conteudo, { w = 250, h = 470 } = {}) {
 
 function banner() {
   const tela = `
-      <text x="28" y="72" style="font: 600 12px ${SANS}" fill="${APAGADO}">Olá, Fellipe 👋</text>
+      <text x="28" y="72" style="font: 600 12px ${SANS}" fill="${APAGADO}">Olá, Felipe 👋</text>
       <text x="28" y="96" style="font: 700 13px ${SANS}; letter-spacing: 3px" fill="${TEXTO}">RKF</text>
       <rect x="22" y="112" width="206" height="96" rx="16" fill="${SUPERFICIE}" stroke="${BORDA}"/>
       <text x="38" y="138" style="font: 400 11px ${SANS}" fill="${APAGADO}">Saldo disponível</text>
@@ -159,10 +159,10 @@ function banner() {
       <rect x="${dx}" y="296" width="${t.length * 8.4 + 18}" height="30" rx="8" fill="${SUPERFICIE}" stroke="${BORDA}"/>
       <text x="${dx + 10}" y="316" style="font: 600 13px ${SANS}" fill="${TEXTO}">${t}</text>
     </g>`).join('')}
-    <text x="2" y="372" class="entra" style="font: 400 13px ${SANS}; animation-delay:1.2s" fill="${APAGADO}">Kevin Richard · backend   ·   Renan Barros · frontend   ·   Fellipe Santana · idealizador e 1º cliente</text>
+    <text x="2" y="372" class="entra" style="font: 400 13px ${SANS}; animation-delay:1.2s" fill="${APAGADO}">Idealizado por Kevin Richard · Renan Barros · Felipe Santana</text>
   </g>
 
-  <g class="flutua" style="transform-origin: 800px 250px">${cartao(600, 176, 300, 'FELLIPE SANTANA', '4821')}</g>
+  <g class="flutua" style="transform-origin: 800px 250px">${cartao(600, 176, 300, 'FELIPE SANTANA', '4821')}</g>
   <g transform="translate(918 24) scale(.84)">${celular(0, 0, tela)}</g>
   <g class="toast">
     <rect x="682" y="44" width="236" height="52" rx="14" fill="${SUPERFICIE}" stroke="${VERDE}" stroke-opacity=".6"/>
@@ -213,6 +213,8 @@ const BOTOES = {
   qualidade: ['🧪 Qualidade', {}],
   roadmap: ['🗺️ Roadmap', { cor: CIANO }],
   time: ['👥 Time', {}],
+  osasco: ['📍 Osasco', { cor: CIANO }],
+  aventura: ['🎮 Aventura', { destaque: true }],
   'trilha-recrutador': ['🧑‍💼 Sou recrutador(a)', { sub: 'tenho 1 minuto: o que esse projeto prova?' }],
   'trilha-dev': ['👩‍💻 Sou dev', { sub: 'quero ver código, testes e decisões' }],
   'trilha-cliente': ['💳 Quero ser cliente', { sub: 'o que o RKF Bank faz por mim?', destaque: true }],
@@ -385,58 +387,115 @@ function seguranca() {
 
 // ---------- 👥 time (avatares) ----------
 
-const PELE_KEVIN = '#5a3520';
-const PELE_FELLIPE = '#6b4226';
-const PELE_RENAN = '#f0c8a0';
+// Desenhados a partir de fotos de referência do time (caixa 100x120, cabeça centrada em 50,44).
+const PRATA = '#d6dde4';
 
-function rosto(pele, sombra) {
+function rosto(pele, sombra, { rx = 22, ry = 25 } = {}) {
   return `<rect x="42" y="62" width="16" height="18" rx="5" fill="${sombra}"/>
-      <circle cx="28" cy="46" r="5.5" fill="${sombra}"/>
-      <circle cx="72" cy="46" r="5.5" fill="${sombra}"/>
-      <ellipse cx="50" cy="44" rx="22" ry="25" fill="${pele}"/>
-      <circle cx="42" cy="45" r="2.4" fill="#0d0d0d"/>
-      <circle cx="58" cy="45" r="2.4" fill="#0d0d0d"/>`;
+      <ellipse cx="${50 - rx - 0.5}" cy="47" rx="5" ry="6" fill="${sombra}"/>
+      <ellipse cx="${50 + rx + 0.5}" cy="47" rx="5" ry="6" fill="${sombra}"/>
+      <ellipse cx="50" cy="44" rx="${rx}" ry="${ry}" fill="${pele}"/>`;
 }
 
-function corpo(roupa, detalhe) {
+/** Olhos com pálpebra: `aberto` < 1 deixa o olhar mais relaxado. */
+function olhos(cor = '#0d0d0d', aberto = 1) {
+  const h = (2.6 * aberto).toFixed(1);
+  return `<ellipse cx="41.5" cy="45.5" rx="3.2" ry="${h}" fill="#f5efe8"/><circle cx="41.8" cy="45.8" r="1.9" fill="${cor}"/>
+      <ellipse cx="58.5" cy="45.5" rx="3.2" ry="${h}" fill="#f5efe8"/><circle cx="58.2" cy="45.8" r="1.9" fill="${cor}"/>
+      <path d="M37.8 ${(45.5 - 2.6 * aberto).toFixed(1)} Q41.5 ${(43.6 - 2.6 * aberto).toFixed(1)} 45.2 ${(45.5 - 2.6 * aberto).toFixed(1)} M54.8 ${(45.5 - 2.6 * aberto).toFixed(1)} Q58.5 ${(43.6 - 2.6 * aberto).toFixed(1)} 62.2 ${(45.5 - 2.6 * aberto).toFixed(1)}" stroke="#1a1210" stroke-width="1.3" fill="none" stroke-linecap="round"/>`;
+}
+
+function nariz(sombra) {
+  return `<path d="M50 47 L48 53.5 Q50 55 52.5 53.8" stroke="${sombra}" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+/** Camiseta lisa (Kevin e Felipe); o moletom com zíper fica no Renan, com a cor do frontend. */
+function camiseta(cor, gola) {
   return `<ellipse cx="50" cy="121" rx="30" ry="3" fill="#000" opacity=".35"/>
-      <path d="M12 120 C12 90 29 78 50 78 C71 78 88 90 88 120 Z" fill="${roupa}"/>
-      <path d="M50 80 L50 120" stroke="${detalhe}" stroke-width="2.5"/>
-      <path d="M38 80 Q50 92 62 80" fill="none" stroke="#0a1730" stroke-width="3"/>`;
+      <path d="M12 120 C12 92 27 80 50 80 C73 80 88 92 88 120 Z" fill="${cor}"/>
+      <path d="M40 80.5 Q50 89 60 80.5" fill="none" stroke="${gola}" stroke-width="2.6"/>`;
+}
+
+function moletom(cor, detalhe) {
+  return `<ellipse cx="50" cy="121" rx="30" ry="3" fill="#000" opacity=".35"/>
+      <path d="M12 120 C12 90 29 78 50 78 C71 78 88 90 88 120 Z" fill="${cor}"/>
+      <path d="M50 82 L50 120" stroke="${detalhe}" stroke-width="2.5"/>
+      <path d="M36 80 Q50 94 64 80" fill="none" stroke="#0a3a4a" stroke-width="3"/>`;
 }
 
 const AVATARES = {
-  // Kevin: homem negro, cabelo raspado na máquina 2, bigode e barbicha.
-  kevin: () => `${corpo('#1d4ed8', CIANO)}
-      ${rosto(PELE_KEVIN, '#45281a')}
-      <path d="M27.5 41 C25.5 22 36 17.5 50 17.5 C64 17.5 74.5 22 72.5 41 C70 30 61 27 50 27 C39 27 30 30 27.5 41 Z" fill="#121212" opacity=".92"/>
-      <path d="M38 37 h7 M55 37 h7" stroke="#121212" stroke-width="2.4" stroke-linecap="round"/>
-      <path d="M40.5 54 C43 51.5 47.5 52.5 50 54.2 C52.5 52.5 57 51.5 59.5 54 C57 56.6 53 56 50 55.4 C47 56 43 56.6 40.5 54 Z" fill="#121212"/>
-      <path d="M45 63.5 C46 66 48 69.5 50 70.5 C52 69.5 54 66 55 63.5 C53 64.6 47 64.6 45 63.5 Z" fill="#121212"/>
-      <path d="M45 59.4 Q50 62.6 55 59.4" stroke="#f2e6dc" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
-  // Renan: homem branco, cabelo cacheado.
-  renan: () => `${corpo('#0e7490', AZUL)}
-      ${rosto(PELE_RENAN, '#d9a982')}
-      ${[[30, 30, 8], [38, 22, 8.5], [48, 18, 9], [58, 19, 8.5], [67, 25, 8], [72, 34, 6.5], [27, 38, 6], [43, 27, 6], [54, 26, 6], [63, 30, 5.5]]
-        .map(([cx, cy, r]) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#3b2314"/>`).join('')}
-      ${[[34, 24], [46, 16], [60, 18], [69, 28]].map(([cx, cy]) => `<path d="M${cx - 4} ${cy} q4 -4 8 0" stroke="#5a3a24" stroke-width="1.4" fill="none"/>`).join('')}
-      <path d="M38 38 h7 M55 38 h7" stroke="#3b2314" stroke-width="2.2" stroke-linecap="round"/>
-      <path d="M44 58 Q50 62.5 56 58" stroke="#9a4a3a" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
-  // Fellipe: homem negro, moicano black power.
-  fellipe: () => `${corpo('#0f172a', '#e2c98a')}
-      ${rosto(PELE_FELLIPE, '#4f2f1b')}
-      <path d="M29 40 C28 30 33 25 37 24 M71 40 C72 30 67 25 63 24" stroke="#1a1a1a" stroke-width="1.6" fill="none" opacity=".6"/>
-      <ellipse cx="50" cy="12" rx="15" ry="20" fill="#141414"/>
-      ${[[40, 0], [46, -6], [54, -6], [60, 0], [38, 10], [62, 10], [50, -9]].map(([cx, cy]) => `<circle cx="${cx}" cy="${cy}" r="6" fill="#141414"/>`).join('')}
-      <path d="M38 38 h7 M55 38 h7" stroke="#141414" stroke-width="2.4" stroke-linecap="round"/>
-      <path d="M44 58 Q50 63 56 58" stroke="#f2e6dc" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+  // Kevin: pele negra escura, bucket hat bege, piercings na sobrancelha e no nariz,
+  // bigode fino e barbicha, corrente prateada e camiseta marrom.
+  kevin: () => {
+    const pele = '#4a2a18';
+    const sombra = '#3a2012';
+    return `${camiseta('#6b4433', '#57361f')}
+      <path d="M38 80 Q44 92 50.5 96 Q57 92 63 80" fill="none" stroke="${PRATA}" stroke-width="1.1"/>
+      <rect x="49" y="95" width="3.5" height="6" rx="1" fill="${PRATA}" transform="rotate(-12 50.7 98)"/>
+      ${rosto(pele, sombra, { rx: 21.5, ry: 26 })}
+      ${olhos('#120a06', 0.75)}
+      <path d="M36.5 39.5 Q41.5 37.5 46 39 M54 39 Q58.5 37.5 63.5 39.5" stroke="#120a06" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <circle cx="35.2" cy="37.8" r="1.1" fill="${PRATA}"/><circle cx="35.6" cy="41.3" r="1.1" fill="${PRATA}"/>
+      ${nariz(sombra)}
+      <circle cx="46.6" cy="53.6" r="0.9" fill="${PRATA}"/>
+      <path d="M41.5 57.6 Q46 55.6 50 56.8 Q54 55.6 58.5 57.6" stroke="#120a06" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <path d="M43.5 59.5 Q50 57.6 56.5 59.5 Q53 64 50 64 Q47 64 43.5 59.5 Z" fill="#8a4f40"/>
+      <path d="M44 59.6 Q50 61 56 59.6" stroke="#5e3026" stroke-width=".9" fill="none"/>
+      <path d="M47 67.2 Q50 69.8 53 67.2 L52 69.6 Q50 71 48 69.6 Z" fill="#120a06"/>
+      <g transform="translate(0 -6)">
+      <path d="M26 38 C26 20 36 12.5 50 12.5 C64 12.5 74 20 74 38 Z" fill="#b9a98b"/>
+      <path d="M28 33 Q50 28 72 33" stroke="#a3926f" stroke-width="1" fill="none"/>
+      <path d="M13 41 Q50 26 87 41 Q86 48.5 75 45.5 Q50 37.5 25 45.5 Q14 48.5 13 41 Z" fill="#c7b89a"/>
+      <path d="M17 42.5 Q50 30.5 83 42.5" stroke="#a3926f" stroke-width=".9" fill="none" stroke-dasharray="2 2"/>
+      </g>`;
+  },
+  // Felipe: pele negra clara, black power curto no topo com laterais baixas, risquinho na sobrancelha,
+  // brinco, bigode leve e camiseta branca.
+  felipe: () => {
+    const pele = '#a8714a';
+    const sombra = '#8a5a3a';
+    const cachos = [[30, 26, 7], [36, 18, 8], [44, 13, 8.5], [52, 11.5, 8.5], [60, 14, 8], [67, 20, 7.5], [71, 28, 6],
+      [40, 22, 6], [49, 19, 6], [58, 21, 6], [33, 32, 5], [67, 31, 5]];
+    return `${camiseta('#e8ecef', '#cfd6dc')}
+      ${rosto(pele, sombra, { rx: 21.5, ry: 25.5 })}
+      <path d="M28.5 42 C28 34 30 30 33 28 M71.5 42 C72 34 70 30 67 28" stroke="#1a1410" stroke-width="2.4" fill="none" opacity=".45"/>
+      ${cachos.map(([cx, cy, r]) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#16110e"/>`).join('')}
+      ${[[36, 14], [48, 8], [60, 10], [68, 18], [42, 18]].map(([cx, cy]) => `<path d="M${cx - 3} ${cy} q3 -3 6 0" stroke="#3a2d24" stroke-width="1.1" fill="none"/>`).join('')}
+      <path d="M30 33 Q50 27.5 70 33 L70 27 Q50 21 30 27 Z" fill="#16110e"/>
+      ${olhos('#160c06', 0.85)}
+      <path d="M36 39.6 Q41 36.6 46 39 M54 39 Q55.6 38.2 57.4 37.9 M59.6 37.8 Q62 38.2 64 39.6" stroke="#16110e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      ${nariz(sombra)}
+      <path d="M43.5 58 Q50 56.2 56.5 58" stroke="#3a2416" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".8"/>
+      <path d="M44.5 60.5 Q50 59 55.5 60.5 Q52.5 64.2 50 64.2 Q47.5 64.2 44.5 60.5 Z" fill="#9c5d4a"/>
+      <path d="M48.2 68.5 Q50 69.6 51.8 68.5" stroke="#3a2416" stroke-width="1" fill="none" opacity=".7"/>
+      <circle cx="27.6" cy="51" r="1.4" fill="${PRATA}"/>`;
+  },
+  // Renan: pele clara, cabelo cacheado escuro e volumoso no topo, sobrancelhas grossas,
+  // rosto mais cheio, bigode e barbicha; moletom na cor do frontend.
+  renan: () => {
+    const pele = '#efc6a0';
+    const sombra = '#d6a47e';
+    const cachos = [[28, 30, 7.5], [32, 21, 8.5], [40, 14, 9], [50, 11, 9.5], [60, 12, 9], [69, 18, 8.5], [74, 27, 7],
+      [37, 24, 6], [47, 20, 6.5], [58, 20, 6.5], [66, 25, 6], [27, 38, 5], [74, 36, 5], [44, 27, 4.5], [56, 27, 4.5]];
+    return `${moletom('#0e7490', AZUL)}
+      ${rosto(pele, sombra, { rx: 24, ry: 25.5 })}
+      ${cachos.map(([cx, cy, r]) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#1c1410"/>`).join('')}
+      ${[[32, 18], [42, 10], [53, 7], [63, 9], [71, 16], [37, 27], [62, 24]].map(([cx, cy]) => `<path d="M${cx - 3.5} ${cy} q3.5 -3.5 7 0" stroke="#3d2a1e" stroke-width="1.2" fill="none"/>`).join('')}
+      <path d="M33 33 q2 4 0 7 M67 33 q-2 4 0 7" stroke="#1c1410" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      ${olhos('#2a1a10', 0.7)}
+      <path d="M35.5 39.4 Q41 36.4 46.5 38.6 M53.5 38.6 Q59 36.4 64.5 39.4" stroke="#1c1410" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+      ${nariz(sombra)}
+      <path d="M42 58 Q46.5 56 50 57.2 Q53.5 56 58 58" stroke="#1c1410" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      <path d="M43.5 60 Q50 58.4 56.5 60 Q53.5 64.8 50 64.8 Q46.5 64.8 43.5 60 Z" fill="#c9776a"/>
+      <path d="M47.5 67.6 Q50 70.2 52.5 67.6" stroke="#1c1410" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+  },
 };
 
 function time() {
   const pessoas = [
-    ['kevin', 'Kevin Richard', 'Backend', 'API, banco, segurança, testes', AZUL, '☕'],
-    ['fellipe', 'Fellipe Santana', 'Idealizador · PO & QA', '1º cliente: testa antes de todo mundo', '#e2c98a', '💡'],
-    ['renan', 'Renan Barros', 'Frontend', 'telas, marca e experiência', CIANO, '⚛️'],
+    ['kevin', 'Kevin Richard', 'Idealizador · Backend', 'API, banco, segurança, testes', AZUL, '☕'],
+    ['felipe', 'Felipe Santana', 'Idealizador · PO & QA', '1º cliente: testa antes de todo mundo', '#e2c98a', '🧪'],
+    ['renan', 'Renan Barros', 'Idealizador · Frontend', 'telas, marca e experiência', CIANO, '⚛️'],
   ];
   const cards = pessoas.map(([id, nome, papel, desc, cor, ic], i) => `
   <g class="entra" style="animation-delay:${(0.15 + i * 0.2).toFixed(2)}s">
@@ -451,7 +510,7 @@ function time() {
     <text x="${220 + i * 380}" y="308" text-anchor="middle" style="font: 700 12.5px ${SANS}" fill="${TEXTO}">${ic} ${xml(papel)}</text>
     <text x="${220 + i * 380}" y="340" text-anchor="middle" style="font: 400 13px ${SANS}" fill="${APAGADO}">${xml(desc)}</text>
   </g>`).join('');
-  return `${cabecalho(1200, 390, 'O time do RKF Bank, todos de Osasco, SP: Kevin Richard no backend, Fellipe Santana idealizador e primeiro cliente, Renan Barros no frontend.')}
+  return `${cabecalho(1200, 390, 'Os três idealizadores do RKF Bank, todos de Osasco, SP: Kevin Richard no backend, Felipe Santana no produto e como primeiro cliente, Renan Barros no frontend.')}
   <style>
     ${entra}
     .respira { animation: respira 2.8s ease-in-out infinite; }
@@ -460,9 +519,57 @@ function time() {
     @keyframes acena { 0%,100% { transform: translateY(0); } 25% { transform: translateY(-6px); } 50% { transform: translateY(0); } 75% { transform: translateY(-3px); } }
   </style>
   <rect width="1200" height="390" rx="20" fill="${FUNDO}" stroke="${BORDA}"/>
-  <text x="40" y="40" style="font: 700 20px ${SANS}" fill="${TEXTO}">👥 Quem faz o RKF Bank</text>
+  <text x="40" y="40" style="font: 700 20px ${SANS}" fill="${TEXTO}">👥 Os três idealizadores do RKF Bank</text>
   <text x="1160" y="40" text-anchor="end" style="font: 500 14px ${SANS}" fill="${APAGADO}">📍 todos de Osasco, SP</text>
   ${cards}
+</svg>
+`;
+}
+
+// ---------- 📍 feito em Osasco ----------
+
+function osasco() {
+  // Prédios genéricos (silhueta de cidade), sem tentar reproduzir pontos reais.
+  const predios = [[0, 70], [46, 110], [96, 84], [138, 140], [196, 96], [244, 124], [300, 78], [344, 152], [404, 104], [456, 88], [500, 132], [560, 96], [610, 116], [668, 80]]
+    .map(([x, h], i) => {
+      const janelas = Array.from({ length: Math.floor(h / 22) }, (_, k) =>
+        `<rect x="${x + 12}" y="${300 - h + 14 + k * 22}" width="8" height="8" rx="1" fill="${k % 2 ? CIANO : AZUL}" class="janela" style="animation-delay:${((i * 3 + k) % 9) * 0.35}s"/>`).join('');
+      return `<rect x="${x}" y="${300 - h}" width="40" height="${h}" rx="3" fill="${SUPERFICIE}" stroke="${BORDA}"/>${janelas}`;
+    }).join('');
+  return `${cabecalho(1200, 320, 'Feito em Osasco, São Paulo: o RKF Bank nasceu da ideia de três amigos de Osasco, Kevin, Renan e Felipe.')}
+  <defs>${marca}
+    <radialGradient id="ceu" cx=".75" cy=".1" r=".9"><stop offset="0" stop-color="${AZUL}" stop-opacity=".35"/><stop offset="1" stop-color="${AZUL}" stop-opacity="0"/></radialGradient>
+    <linearGradient id="pinoGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${CIANO}"/><stop offset="1" stop-color="${AZUL}"/></linearGradient>
+  </defs>
+  <style>
+    ${entra}
+    .pino { animation: pula 2.2s cubic-bezier(.3,0,.3,1) infinite; }
+    @keyframes pula { 0%,100% { transform: translateY(0); } 45% { transform: translateY(-16px); } }
+    .onda { animation: onda 2.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes onda { 0% { transform: scale(.4); opacity: .8; } 100% { transform: scale(1.8); opacity: 0; } }
+    .janela { animation: acende 3.2s ease-in-out infinite; }
+    @keyframes acende { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+  </style>
+  <rect width="1200" height="320" rx="20" fill="${FUNDO}" stroke="${BORDA}"/>
+  <rect width="1200" height="320" rx="20" fill="url(#ceu)"/>
+  <g transform="translate(470 0)">${predios}<rect y="300" width="730" height="2" fill="url(#marca)" opacity=".6"/></g>
+  <g transform="translate(830 92)">
+    <ellipse class="onda" cx="0" cy="96" rx="34" ry="10" fill="none" stroke="${CIANO}" stroke-width="2"/>
+    <g class="pino">
+      <path d="M0 96 C-6 70 -34 52 -34 24 A34 34 0 0 1 34 24 C34 52 6 70 0 96 Z" fill="url(#pinoGrad)" stroke="#fff" stroke-opacity=".3"/>
+      <circle cx="0" cy="24" r="13" fill="${FUNDO}"/>
+      <text x="0" y="30" text-anchor="middle" style="font: 800 13px ${SANS}; letter-spacing: 1px" fill="${TEXTO}">RKF</text>
+    </g>
+  </g>
+  <text x="48" y="74" class="entra" style="font: 600 14px ${SANS}; letter-spacing: 3px" fill="${CIANO}">📍 FEITO EM</text>
+  <text x="46" y="134" class="entra" style="font: 800 58px ${SANS}; animation-delay:.15s" fill="${TEXTO}">Osasco, SP</text>
+  <text x="48" y="172" class="entra" style="font: 400 17px ${SANS}; animation-delay:.3s" fill="${APAGADO}">Grande São Paulo · onde três amigos tiveram a ideia</text>
+  <text x="48" y="196" class="entra" style="font: 400 17px ${SANS}; animation-delay:.35s" fill="${APAGADO}">e decidiram construir um banco digital de verdade.</text>
+  ${[['☕ Kevin', AZUL], ['🧪 Felipe', '#e2c98a'], ['⚛️ Renan', CIANO]].map(([t, c], i) => `
+  <g class="entra" style="animation-delay:${(0.5 + i * 0.12).toFixed(2)}s">
+    <rect x="${48 + i * 132}" y="226" width="120" height="36" rx="18" fill="${c}" fill-opacity=".12" stroke="${c}" stroke-opacity=".6"/>
+    <text x="${108 + i * 132}" y="250" text-anchor="middle" style="font: 700 14px ${SANS}" fill="${TEXTO}">${t}</text>
+  </g>`).join('')}
 </svg>
 `;
 }
@@ -550,6 +657,7 @@ const arquivos = {
   'fluxo-transferencia.svg': fluxo(),
   'seguranca.svg': seguranca(),
   'time.svg': time(),
+  'osasco.svg': osasco(),
   'terminal.svg': terminal(),
   'divisor.svg': divisor(),
   'chamada.svg': chamada(),
