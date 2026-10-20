@@ -15,8 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
+// Perfil test explicito: roda igual no IDE e no Maven (H2, sem seed, sem o .env de quem roda).
+@ActiveProfiles("test")
 class UsuarioRepositoryTest {
 
     // Hash BCrypt de exemplo: 60 caracteres, o tamanho da coluna senha_hash.
@@ -39,6 +42,16 @@ class UsuarioRepositoryTest {
         assertEquals(HASH, encontrado.getSenhaHash());
         assertEquals(PerfilEnum.CLIENTE, encontrado.getPerfil());
         assertEquals(cliente.getId(), encontrado.getCliente().getId());
+    }
+
+    @Test
+    void bancoDeTesteComecaVazio() {
+        // O perfil test aplica so o db/migration. Se falhar, algum db/seed entrou no banco de teste,
+        // o que bagunca contagens e CPFs dos outros testes.
+        assertEquals(0L, entityManager.getEntityManager()
+                        .createQuery("select count(c) from Cliente c", Long.class).getSingleResult(),
+                "dados de seed no banco de teste: confira spring.flyway.locations do application-test.properties");
+        assertTrue(usuarioRepository.findAll().isEmpty());
     }
 
     @Test

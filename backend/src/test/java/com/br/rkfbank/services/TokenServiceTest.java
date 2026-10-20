@@ -44,6 +44,8 @@ class TokenServiceTest {
         assertEquals("rkfbank", jwt.getClaimAsString("iss"));
         assertEquals("CLIENTE", jwt.getClaimAsString(TokenService.CLAIM_PERFIL));
         assertEquals("d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e", jwt.getClaimAsString(TokenService.CLAIM_CLIENTE_ID));
+        // Versao da senha vai no token: trocou a senha, a versao no banco sobe e este token passa a ser recusado.
+        assertEquals(0, ((Number) jwt.getClaim(TokenService.CLAIM_VERSAO_CREDENCIAL)).intValue());
         assertEquals(Duration.ofMinutes(30), Duration.between(jwt.getIssuedAt(), jwt.getExpiresAt()));
         assertEquals("HS256", jwt.getHeaders().get("alg").toString());
     }
@@ -105,6 +107,18 @@ class TokenServiceTest {
     void naoDeveSubirSemSegredo() {
         assertThrows(IllegalStateException.class,
                 () -> configuracao.chaveJwt(new JwtPropriedades(null, Duration.ofHours(1))));
+    }
+
+    @Test
+    void segredoAleatorioIgnoraOSegredoConfiguradoEMudaACadaSubida() {
+        // Perfil visitante: ninguem conhece a chave, nem quem le o application-visitante.properties.
+        JwtPropriedades visitante = new JwtPropriedades(null, Duration.ofHours(1), true);
+
+        byte[] primeira = configuracao.chaveJwt(visitante).getEncoded();
+        byte[] segunda = configuracao.chaveJwt(visitante).getEncoded();
+
+        assertEquals(48, primeira.length);
+        assertFalse(java.util.Arrays.equals(primeira, segunda));
     }
 
     private Usuario usuario(PerfilEnum perfil, UUID clienteId) {

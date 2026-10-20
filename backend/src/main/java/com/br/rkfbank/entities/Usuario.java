@@ -41,6 +41,14 @@ public class Usuario {
     @Column(nullable = false, length = 20)
     private PerfilEnum perfil;
 
+    // Desativado (V7): login falha e tokens ja emitidos dao 401. Um ADMIN liga e desliga pela rota /admin/usuarios.
+    @Column(nullable = false)
+    private boolean ativo = true;
+
+    // Sobe a cada troca de senha (V8) e vai no token: token com versao antiga e recusado.
+    @Column(name = "versao_credencial", nullable = false)
+    private int versaoCredencial;
+
     // Nulo para o ADMIN, que nao e cliente.
     @OneToOne
     @JoinColumn(name = "cliente_id")
@@ -54,5 +62,14 @@ public class Usuario {
     public PerfilEnum getPerfil() { return perfil; }
     public void setPerfil(PerfilEnum perfil) { this.perfil = perfil; }
     public Cliente getCliente() { return cliente; }
+    public boolean isAtivo() { return ativo; }
+    public void setAtivo(boolean ativo) { this.ativo = ativo; }
+    public int getVersaoCredencial() { return versaoCredencial; }
+
+    // Troca de senha de quem ja existe: novo hash e nova versao, para derrubar os tokens emitidos com a senha antiga.
+    public void trocarSenha(String novoHash) {
+        this.senhaHash = novoHash;
+        this.versaoCredencial++;
+    }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }
 }

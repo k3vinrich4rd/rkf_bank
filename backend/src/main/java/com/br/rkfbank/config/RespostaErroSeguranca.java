@@ -1,6 +1,7 @@
 package com.br.rkfbank.config;
 
 import com.br.rkfbank.dto.comum.ErroResponse;
+import com.br.rkfbank.security.AcessoAlteradoException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -38,7 +39,9 @@ public class RespostaErroSeguranca implements AuthenticationEntryPoint, AccessDe
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
             throws IOException {
-        String mensagem = ex instanceof InvalidBearerTokenException
+        String mensagem = ex instanceof AcessoAlteradoException
+                ? "Seu acesso foi alterado ou desativado; faca login novamente"
+                : ex instanceof InvalidBearerTokenException
                 ? "Token invalido ou expirado; faca login novamente"
                 : "Autenticacao necessaria: envie o token no header Authorization (Bearer)";
         // Nunca o token no log: com ele, qualquer um entra como o usuario ate expirar.

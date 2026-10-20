@@ -8,8 +8,11 @@ import static org.mockito.Mockito.times;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.boot.SpringApplication;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
+// Perfil test explicito: roda igual no IDE e no Maven (H2, sem seed, sem o .env de quem roda).
+@ActiveProfiles("test")
 class RkfbankApplicationTests {
 
 	@Test

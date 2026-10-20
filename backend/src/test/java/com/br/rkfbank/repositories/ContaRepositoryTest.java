@@ -21,8 +21,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
+// Perfil test explicito: roda igual no IDE e no Maven (H2, sem seed, sem o .env de quem roda).
+@ActiveProfiles("test")
 class ContaRepositoryTest {
 
     @Autowired
