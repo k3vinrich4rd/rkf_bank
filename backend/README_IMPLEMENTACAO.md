@@ -289,8 +289,103 @@ Os testes ficam em `backend/src/test/java/com/br/rkfbank/`, espelhando os pacote
 |---|---|---|
 | ~~`ddl-auto=update`~~ | ✅ **Flyway** com migrations versionadas (`db/migration`), Hibernate em `validate` | histórico do banco no Git; deploy previsível |
 | Sem documentação gerada | **springdoc-openapi** (Swagger UI) | contrato navegável e sempre atualizado |
-| Sem autenticação | **Spring Security + JWT**, senha com BCrypt | qualquer um consegue mexer em qualquer conta |
+| ~~Sem autenticação~~ | ✅ **Spring Security + JWT** (OAuth2 Resource Server), senha com BCrypt | qualquer um conseguia mexer em qualquer conta |
 | `System.out` do Hibernate | **logs estruturados** com id por requisição | rastrear uma operação de ponta a ponta |
-| Pacotes por camada | pacotes por funcionalidade (`cliente/`, `conta/`) | quando entrar Pix e cartão |
+| Pacotes por camada | **monólito modular** por funcionalidade (`cliente/`, `conta/`, `auth/`) | quando entrar Pix e cartão — ver seção 8 |
 
 A lista completa, com prioridade, está em [planing/debitos-tecnicos.md](../planing/debitos-tecnicos.md).
+
+---
+
+## 8. Revisão de arquitetura (20/10/2026)
+
+Revisão feita olhando o código, não a intenção: pacotes, `ContaService`, entidades, segurança, migrações e testes.
+
+### 8.1 Veredito
+
+**A arquitetura em camadas continua certa para o MVP. Não reescreva nada agora.** O código respeita a regra de
+dependência (controller → service → repository), a entidade não vaza pela API, a regra de dono está no service com o
+`clienteId` vindo do token, dinheiro é `BigDecimal` com lock otimista, e o schema é versionado. Trocar para hexagonal ou
+microsserviços hoje custaria semanas e não resolveria nenhum problema que o time tem.
+
+O que **muda** é o destino: quando entrar a primeira feature grande (Pix ou cartão), o alvo é um **monólito modular**,
+e há **três ajustes de domínio** que precisam vir **antes de ir para produção**, porque mexem com dinheiro.
+
+### 8.2 O que está bom (manter)
+
+| Ponto | Por que é bom |
+|---|---|
+| Camadas finas e DTO `record` | fácil de ler, testar e explicar em entrevista |
+| Regra de dono no `ContaService` (403 antes de 404/422) | não vaza se a conta existe nem o saldo dela |
+| Resource Server do Spring validando o JWT | segurança com código oficial, não filtro caseiro |
+| `@Version` em `Conta` | duas escritas simultâneas viram `409` em vez de saldo errado |
+| Flyway com `ddl-auto=validate` + seed separado (`db/seed`) | schema igual em todo ambiente; dado de demo nunca vai para produção |
+| `X-Request-Id` em todo log | rastreia uma operação de ponta a ponta |
+
+### 8.3 Riscos encontrados, por gravidade
+
+| # | Risco | Onde | Por que importa | Recomendação |
+|:-:|---|---|---|---|
+| 1 🔴 | **Transferência sem idempotência** | `POST /contas/transferencia` | a rede cai depois do débito, o app tenta de novo e o dinheiro sai **duas vezes** | header `Idempotency-Key` (UUID gerado pelo cliente) + tabela `tb_idempotencia` com a chave e a resposta; repetiu a chave, devolve a mesma resposta sem movimentar |
+| 2 🔴 | **Conta pode ser apagada em cascata** | `Cliente.contas` com `cascade = ALL, orphanRemoval = true` | tirar uma conta da lista do cliente **apaga** a conta; banco não apaga conta, **encerra** (o extrato precisa sobreviver) | trocar por `cascade = PERSIST` (sem `orphanRemoval`) e encerrar com `ativa = false` |
+| 3 🟡 | **Quem chama escolhe o número da conta** | `AbrirContaRequestDto.numeroConta` | número de conta é identidade do banco; o frontend hoje sorteia e tenta de novo no `409` | o backend gera número + dígito verificador (já está nos débitos); muda o contrato → combinar com o Renan |
+| 4 🟡 | **Saldo e extrato são duas verdades** | `tb_conta.saldo` + `tb_lancamento` | se um dia um `UPDATE` manual mexer no saldo, nada avisa | manter o saldo como "cache" e criar um teste/rotina de **conciliação** (`saldo = soma dos lançamentos`); no futuro, partidas dobradas (`DEBITO` na origem + `CREDITO` no destino, os enums já existem) |
+| 5 🟡 | **Sem health check** | `pom.xml` sem Actuator | o deploy (e o Docker) não tem como saber se a API está viva | `spring-boot-starter-actuator` expondo só `health` |
+| 6 🟢 | **Pacotes por camada** | `controllers/`, `services/`... | com Pix e cartão, cada pasta vira uma gaveta com tudo misturado | monólito modular (8.4) |
+
+### 8.4 Arquitetura alvo: monólito modular
+
+Um único deploy (como hoje), mas o código organizado **por funcionalidade**, com cada módulo expondo só uma fachada:
+
+```text
+com.br.rkfbank
+├── cliente/        ClienteController, ClienteService, Cliente, Endereco, ClienteRepository, viacep/
+├── conta/          ContaController, ContaService, Conta, Lancamento, repositórios, regras de saldo
+├── auth/           AuthController, AuthService, TokenService, Usuario, ConfiguracaoSeguranca
+├── pix/            (futuro) chaves, cobrança, transferência instantânea — usa conta/ pela fachada
+└── compartilhado/  erros (ControllerExceptionHandler), logs (FiltroLogRequisicao), validação (@CpfValido)
+```
+
+```mermaid
+flowchart LR
+    subgraph API["Um deploy só (Spring Boot)"]
+        AUTH[auth] --> CLI[cliente]
+        CONTA[conta] --> CLI
+        PIX["pix (futuro)"] --> CONTA
+        AUTH & CLI & CONTA & PIX --> COMP[compartilhado]
+    end
+    API --> DB[(MySQL — um schema, tabelas por módulo)]
+    CLI --> VIA[[ViaCEP]]
+```
+
+| Por que essa e não... | Motivo |
+|---|---|
+| ...microsserviços | 3 pessoas, um banco, sem necessidade de escalar partes separadas. Microsserviço traria rede, consistência eventual e deploy múltiplo sem ganho |
+| ...hexagonal completa | portas e adaptadores para tudo é cerimônia demais para CRUD + regras simples. Vale só onde há integração externa (o ViaCEP já está atrás do `ClienteViaCep`, e o Pix terá um adaptador igual) |
+| ...ficar como está para sempre | com 3+ domínios, "camadas" espalha uma feature em 6 pastas; por funcionalidade, uma feature = uma pasta |
+
+**Quando mover:** no PR que começar o Pix, e não antes. Como mover sem quebrar: uma pasta por PR, só `git mv` e ajuste
+de `import` (nenhuma regra muda), `scripts/validar.sh backend` verde em cada um. Opcional depois: **Spring Modulith**
+(`@ApplicationModule` + um teste que falha se `cliente` importar algo de dentro de `conta`).
+
+### 8.5 O que já foi feito (20/10/2026, mesmo dia da revisão)
+
+| # | Risco | Status |
+|:-:|---|---|
+| 1 | Transferência sem idempotência | ✅ `Idempotency-Key` obrigatório em depósito, saque e transferência (`IdempotenciaService`, V6) |
+| 2 | Conta apagada em cascata | ✅ `cascade = PERSIST`, sem `orphanRemoval`; FK impede excluir cliente com conta |
+| 3 | Quem chama escolhe o número da conta | ✅ banco gera 8 dígitos com DV; frontend parou de sortear |
+| 4 | Saldo × extrato | ✅ teste de conciliação no `DadosEquipeIntegracaoTest` (rotina em produção continua como próximo passo) |
+| 5 | Sem health check | ✅ `GET /actuator/health` público, sem detalhes |
+| — | Login sem limite (débito antigo) | ✅ `429` depois de 5 erros por CPF em 15 min |
+| 6 | Pacotes por camada | ⏳ monólito modular junto com o Pix |
+
+### 8.6 Ordem sugerida (original)
+
+1. 🔴 Idempotência na transferência e fim do `orphanRemoval` em contas (antes do "Colocar no ar").
+2. 🟡 Número de conta gerado pelo backend (com o Renan, muda o contrato) e Actuator `health`.
+3. 🟡 Teste de conciliação saldo × extrato.
+4. 🟢 Monólito modular junto com o Pix.
+
+Itens registrados em [planing/debitos-tecnicos.md](../planing/debitos-tecnicos.md); a proposta de arquitetura alvo
+está em "Ainda falta decidir" de [planing/decisoes.md](../planing/decisoes.md) para o time aprovar.

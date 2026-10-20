@@ -18,8 +18,11 @@ import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
+// Perfil test explicito: roda igual no IDE e no Maven (H2, sem seed, sem o .env de quem roda).
+@ActiveProfiles("test")
 class ClienteRepositoryTest {
 
     @Autowired
@@ -125,8 +128,10 @@ class ClienteRepositoryTest {
         assertEquals("12345678", encontrado.getContas().getFirst().getNumeroConta());
     }
 
+    // Regra de banco (mudou em 20/10/2026): conta nunca e apagada por tabela; e encerrada com ativa = false.
+    // Antes, orphanRemoval apagava a conta ao tira-la da lista do cliente, e o extrato perdia a referencia.
     @Test
-    void deveRemoverContaOrfaAoDesvincularDoCliente() {
+    void tirarAContaDaListaDoClienteNaoApagaAConta() {
         Cliente cliente = novoCliente("52998224725", "joao@rkfbank.com");
         cliente.getContas().add(novaConta(cliente, "12345678"));
         Cliente salvo = clienteRepository.saveAndFlush(cliente);
@@ -135,22 +140,34 @@ class ClienteRepositoryTest {
         Cliente encontrado = clienteRepository.findById(salvo.getId()).orElseThrow();
         encontrado.getContas().clear();
         clienteRepository.saveAndFlush(encontrado);
+        entityManager.clear();
 
-        assertEquals(0L, contar("Conta"));
+        assertEquals(1L, contar("Conta"));
     }
 
     @Test
-    void deveExcluirEnderecoEContasEmCascataAoExcluirCliente() {
+    void naoExcluiClienteQueAindaTemConta() {
         Cliente cliente = novoCliente("52998224725", "joao@rkfbank.com");
         cliente.getContas().add(novaConta(cliente, "12345678"));
         Cliente salvo = clienteRepository.saveAndFlush(cliente);
+        entityManager.clear();
+
+        // Sem cascata de REMOVE nas contas, a FK fk_conta_cliente barra a exclusao.
+        assertThrows(DataIntegrityViolationException.class, () -> {
+            clienteRepository.deleteById(salvo.getId());
+            clienteRepository.flush();
+        });
+    }
+
+    @Test
+    void excluirClienteSemContaLevaOEnderecoJunto() {
+        Cliente salvo = clienteRepository.saveAndFlush(novoCliente("52998224725", "joao@rkfbank.com"));
         entityManager.clear();
 
         clienteRepository.deleteById(salvo.getId());
         clienteRepository.flush();
 
         assertFalse(clienteRepository.existsById(salvo.getId()));
-        assertEquals(0L, contar("Conta"));
         assertEquals(0L, contar("Endereco"));
     }
 

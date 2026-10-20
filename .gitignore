@@ -42,3 +42,6 @@ build/
 .application.properties
 ### Logs dos scripts de validação ###
 /.validar/
+
+### Guia privado da equipe (senhas reais de teste): nunca no Git ###
+/.equipe/

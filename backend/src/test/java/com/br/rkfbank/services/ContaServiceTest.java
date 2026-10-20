@@ -3,9 +3,11 @@ package com.br.rkfbank.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -219,6 +221,44 @@ class ContaServiceTest {
         assertNotNull(response.id());
         assertEquals(new BigDecimal("0.00"), response.saldo());
         assertEquals(TipoContaEnum.CORRENTE, response.tipoContaEnum());
+    }
+
+    @Test
+    void semNumeroNoPedidoOBancoGeraOitoDigitosComDigitoVerificadorNaAgenciaPadrao() {
+        UUID clienteId = UUID.randomUUID();
+        Cliente cliente = new Cliente();
+        ReflectionTestUtils.setField(cliente, "id", clienteId);
+        when(clienteService.buscar(clienteId)).thenReturn(cliente);
+        when(contaRepository.saveAndFlush(any(Conta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ContaResponseDto response = contaService.abrir(clienteId,
+                new AbrirContaRequestDto(null, null, TipoContaEnum.POUPANCA), donoDe(clienteId));
+
+        assertEquals(ContaService.AGENCIA_PADRAO, response.agencia());
+        String numero = response.numeroConta();
+        assertTrue(numero.matches("[1-9]\\d{7}"), numero);
+        assertEquals(ContaService.digitoVerificador(numero.substring(0, 7)), Character.getNumericValue(numero.charAt(7)));
+    }
+
+    @Test
+    void numeroGeradoQueJaExisteESorteadoDeNovo() {
+        UUID clienteId = UUID.randomUUID();
+        when(clienteService.buscar(clienteId)).thenReturn(new Cliente());
+        // Primeiro sorteio colide; o segundo esta livre.
+        when(contaRepository.existsByNumeroConta(any())).thenReturn(true, false);
+        when(contaRepository.saveAndFlush(any(Conta.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        contaService.abrir(clienteId, new AbrirContaRequestDto(null, null, TipoContaEnum.CORRENTE), donoDe(clienteId));
+
+        verify(contaRepository, times(3)).existsByNumeroConta(any());
+    }
+
+    @Test
+    void digitoVerificadorSegueOModulo11() {
+        // 1234567: 7*2+6*3+5*4+4*5+3*6+2*7+1*8 = 112; 112 % 11 = 2 -> 11 - 2 = 9.
+        assertEquals(9, ContaService.digitoVerificador("1234567"));
+        // Resto 0 ou 1 vira 0.
+        assertEquals(0, ContaService.digitoVerificador("0000000"));
     }
 
     @Test

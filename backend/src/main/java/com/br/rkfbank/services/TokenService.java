@@ -17,6 +17,7 @@ public class TokenService {
     public static final String EMISSOR = "rkfbank";
     public static final String CLAIM_PERFIL = "perfil";
     public static final String CLAIM_CLIENTE_ID = "clienteId";
+    public static final String CLAIM_VERSAO_CREDENCIAL = "versaoCredencial";
 
     private final JwtEncoder jwtEncoder;
     private final JwtPropriedades propriedades;
@@ -33,7 +34,9 @@ public class TokenService {
                 .subject(usuario.getId().toString())
                 .issuedAt(agora)
                 .expiresAt(agora.plus(propriedades.expiracao()))
-                .claim(CLAIM_PERFIL, usuario.getPerfil().name());
+                .claim(CLAIM_PERFIL, usuario.getPerfil().name())
+                // Trocou a senha depois deste login? A versao no banco fica maior e este token deixa de valer.
+                .claim(CLAIM_VERSAO_CREDENCIAL, usuario.getVersaoCredencial());
         // O ADMIN nao e cliente: o token dele nao leva clienteId.
         if (usuario.getCliente() != null) {
             claims.claim(CLAIM_CLIENTE_ID, usuario.getCliente().getId().toString());

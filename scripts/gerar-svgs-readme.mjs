@@ -450,13 +450,13 @@ const AVATARES = {
       </g>`;
   },
   // Felipe: pele negra clara, black power curto no topo com laterais baixas, risquinho na sobrancelha,
-  // brinco, bigode leve e camiseta branca.
+  // brinco, bigode leve e camiseta vermelha (a mesma camiseta lisa, na cor que ele pediu).
   felipe: () => {
     const pele = '#a8714a';
     const sombra = '#8a5a3a';
     const cachos = [[30, 26, 7], [36, 18, 8], [44, 13, 8.5], [52, 11.5, 8.5], [60, 14, 8], [67, 20, 7.5], [71, 28, 6],
       [40, 22, 6], [49, 19, 6], [58, 21, 6], [33, 32, 5], [67, 31, 5]];
-    return `${camiseta('#e8ecef', '#cfd6dc')}
+    return `${camiseta('#c62828', '#8e1b1b')}
       ${rosto(pele, sombra, { rx: 21.5, ry: 25.5 })}
       <path d="M28.5 42 C28 34 30 30 33 28 M71.5 42 C72 34 70 30 67 28" stroke="#1a1410" stroke-width="2.4" fill="none" opacity=".45"/>
       ${cachos.map(([cx, cy, r]) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#16110e"/>`).join('')}

@@ -6,10 +6,12 @@ import com.br.rkfbank.exceptions.AcessoNegadoException;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.CredenciaisInvalidasException;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
+import com.br.rkfbank.exceptions.MuitasTentativasException;
 import com.br.rkfbank.exceptions.NaoProcessavelException;
 import com.br.rkfbank.exceptions.NegocioException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.exceptions.ServicoExternoException;
+import com.br.rkfbank.exceptions.UsuarioNaoEncontradoException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
@@ -18,7 +20,9 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -78,6 +82,15 @@ public class ControllerExceptionHandler {
         return montarELogar(Level.DEBUG, HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
+    // 429 do login: o mesmo CPF errou demais. Retry-After diz em quantos segundos tentar de novo.
+    @ExceptionHandler(MuitasTentativasException.class)
+    public ResponseEntity<ErroResponse> muitasTentativas(MuitasTentativasException ex, HttpServletRequest request) {
+        ErroResponse corpo = montarELogar(Level.DEBUG, HttpStatus.TOO_MANY_REQUESTS, ex.getMessage(), request);
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(HttpHeaders.RETRY_AFTER, String.valueOf(ex.getSegundosParaLiberar()))
+                .body(corpo);
+    }
+
     // 403 da regra de dono: o usuario esta logado, mas o recurso e de outro cliente.
     @ExceptionHandler(AcessoNegadoException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
@@ -94,6 +107,12 @@ public class ControllerExceptionHandler {
     @ExceptionHandler(ContaNaoEncontradaException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErroResponse contaNaoEncontrada(ContaNaoEncontradaException ex, HttpServletRequest request) {
+        return montarELogar(Level.DEBUG, HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UsuarioNaoEncontradoException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ErroResponse usuarioNaoEncontrado(UsuarioNaoEncontradoException ex, HttpServletRequest request) {
         return montarELogar(Level.DEBUG, HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 

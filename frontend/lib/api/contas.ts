@@ -11,6 +11,9 @@ import type {
   Uuid,
 } from "./types";
 
+/** Header que torna depósito, saque e transferência seguros contra repetição. */
+export const HEADER_IDEMPOTENCIA = "Idempotency-Key";
+
 export const contasApi = {
   /**
    * Contas do usuário logado: com token de CLIENTE, `GET /contas` já devolve só as dele (contrato 2.0, R13).
@@ -40,22 +43,38 @@ export const contasApi = {
     return pagina;
   },
 
-  async depositar(contaId: Uuid, data: MovimentacaoRequest) {
+  /**
+   * Movimentações exigem `Idempotency-Key` (contrato 2.1): a mesma chave em uma repetição (rede caiu, clique duplo)
+   * faz a API responder 204 sem movimentar de novo. Gere uma chave por operação e reuse-a só para repetir a mesma.
+   */
+  async depositar(contaId: Uuid, data: MovimentacaoRequest, chaveIdempotencia: string) {
     logContas.info("Depositando", { contaId, valor: data.valor });
-    await apiRequest<void>(`/contas/${contaId}/deposito`, { method: "POST", body: data });
+    await apiRequest<void>(`/contas/${contaId}/deposito`, {
+      method: "POST",
+      body: data,
+      headers: { [HEADER_IDEMPOTENCIA]: chaveIdempotencia },
+    });
     logContas.info("Depósito concluído", { contaId });
   },
 
-  async sacar(contaId: Uuid, data: MovimentacaoRequest) {
+  async sacar(contaId: Uuid, data: MovimentacaoRequest, chaveIdempotencia: string) {
     logContas.info("Sacando", { contaId, valor: data.valor });
-    await apiRequest<void>(`/contas/${contaId}/saque`, { method: "POST", body: data });
+    await apiRequest<void>(`/contas/${contaId}/saque`, {
+      method: "POST",
+      body: data,
+      headers: { [HEADER_IDEMPOTENCIA]: chaveIdempotencia },
+    });
     logContas.info("Saque concluído", { contaId });
   },
 
-  async transferir(data: TransferenciaRequest) {
+  async transferir(data: TransferenciaRequest, chaveIdempotencia: string) {
     const contexto = { contaOrigemId: data.contaOrigemId, contaDestinoId: data.contaDestinoId };
     logContas.info("Transferindo", { ...contexto, valor: data.valor });
-    await apiRequest<void>("/contas/transferencia", { method: "POST", body: data });
+    await apiRequest<void>("/contas/transferencia", {
+      method: "POST",
+      body: data,
+      headers: { [HEADER_IDEMPOTENCIA]: chaveIdempotencia },
+    });
     logContas.info("Transferência concluída", contexto);
   },
 

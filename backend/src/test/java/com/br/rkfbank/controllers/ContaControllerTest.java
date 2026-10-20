@@ -3,7 +3,12 @@ package com.br.rkfbank.controllers;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doNothing;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.br.rkfbank.dto.request.conta.AbrirContaRequestDto;
@@ -18,12 +23,14 @@ import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.security.UsuarioLogado;
 import com.br.rkfbank.services.ContaService;
+import com.br.rkfbank.services.IdempotenciaService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,6 +45,9 @@ class ContaControllerTest {
 
     @Mock
     private ContaService contaService;
+
+    @Mock
+    private IdempotenciaService idempotenciaService;
 
     @InjectMocks
     private ContaController contaController;
@@ -67,40 +77,80 @@ class ContaControllerTest {
     }
 
     @Test
-    void deveRetornar204AoDepositar() {
+    void deveDepositarUmaVezPelaIdempotenciaERetornar204() {
         UUID contaId = UUID.randomUUID();
         DepositarRequestDto request = new DepositarRequestDto(new BigDecimal("10.00"), "Deposito");
-        doNothing().when(contaService).depositar(contaId, request, USUARIO);
+        executaAMovimentacao();
 
-        ResponseEntity<Void> response = contaController.depositar(contaId, request, JWT);
+        ResponseEntity<Void> response = contaController.depositar(contaId, request, "chave-deposito-1", JWT);
 
         assertEquals(204, response.getStatusCode().value());
+        assertNull(response.getHeaders().getFirst(IdempotenciaService.HEADER_REPETIDA));
+        verify(contaService).depositar(contaId, request, USUARIO);
+        verify(idempotenciaService).executarUmaVez(eq(USUARIO), eq("chave-deposito-1"), eq(TipoLancamentoEnum.DEPOSITO),
+                eq(contaId + "|null|10|Deposito"), any());
     }
 
     @Test
-    void deveRetornar204AoSacar() {
+    void deveSacarUmaVezPelaIdempotenciaERetornar204() {
         UUID contaId = UUID.randomUUID();
         SaqueRequestDto request = new SaqueRequestDto(new BigDecimal("5.00"), "Saque");
-        doNothing().when(contaService).sacar(contaId, request, USUARIO);
+        executaAMovimentacao();
 
-        ResponseEntity<Void> response = contaController.sacar(contaId, request, JWT);
+        ResponseEntity<Void> response = contaController.sacar(contaId, request, "chave-saque-1", JWT);
 
         assertEquals(204, response.getStatusCode().value());
+        verify(contaService).sacar(contaId, request, USUARIO);
     }
 
     @Test
-    void deveRetornar204AoTransferir() {
-        TransferirRequestDto request = new TransferirRequestDto(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                new BigDecimal("50.00"),
-                "Transferencia"
-        );
-        doNothing().when(contaService).transferir(request, USUARIO);
+    void deveTransferirComOrigemEDestinoNaAssinatura() {
+        UUID origem = UUID.randomUUID();
+        UUID destino = UUID.randomUUID();
+        TransferirRequestDto request = new TransferirRequestDto(origem, destino, new BigDecimal("50.00"), null);
+        executaAMovimentacao();
 
-        ResponseEntity<Void> response = contaController.transferir(request, JWT);
+        ResponseEntity<Void> response = contaController.transferir(request, "chave-transf-1", JWT);
 
         assertEquals(204, response.getStatusCode().value());
+        verify(contaService).transferir(request, USUARIO);
+        // Descricao nula vira vazia; 50.00 vira 50 (mesma operacao que 50.0).
+        verify(idempotenciaService).executarUmaVez(eq(USUARIO), eq("chave-transf-1"), eq(TipoLancamentoEnum.TRANSFERENCIA),
+                eq(origem + "|" + destino + "|50|"), any());
+    }
+
+    @Test
+    void repeticaoDevolve204ComHeaderSemChamarOService() {
+        UUID contaId = UUID.randomUUID();
+        when(idempotenciaService.executarUmaVez(any(), any(), any(), any(), any())).thenReturn(true);
+
+        ResponseEntity<Void> response = contaController.depositar(contaId,
+                new DepositarRequestDto(new BigDecimal("10.00"), null), "chave-repetida-1", JWT);
+
+        assertEquals(204, response.getStatusCode().value());
+        assertEquals("true", response.getHeaders().getFirst(IdempotenciaService.HEADER_REPETIDA));
+        verifyNoInteractions(contaService);
+    }
+
+    @Test
+    void valoresIguaisComEscalasDiferentesGeramAMesmaAssinatura() {
+        UUID contaId = UUID.randomUUID();
+        executaAMovimentacao();
+
+        contaController.depositar(contaId, new DepositarRequestDto(new BigDecimal("10.0"), "x"), "chave-a-12345", JWT);
+        contaController.depositar(contaId, new DepositarRequestDto(new BigDecimal("10.00"), "x"), "chave-a-12345", JWT);
+
+        ArgumentCaptor<String> assinaturas = ArgumentCaptor.forClass(String.class);
+        verify(idempotenciaService, times(2)).executarUmaVez(any(), any(), any(), assinaturas.capture(), any());
+        assertEquals(assinaturas.getAllValues().get(0), assinaturas.getAllValues().get(1));
+    }
+
+    // Faz o mock da idempotencia rodar a movimentacao recebida, como o servico de verdade faz na primeira chamada.
+    private void executaAMovimentacao() {
+        when(idempotenciaService.executarUmaVez(any(), any(), any(), any(), any())).thenAnswer(chamada -> {
+            chamada.<Runnable>getArgument(4).run();
+            return false;
+        });
     }
 
     @Test

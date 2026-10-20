@@ -6,6 +6,12 @@ Escreva seu recado no topo. Quando resolver, marque `[x]` e escreva a resposta e
 
 ---
 
+- [ ] Kevin → Renan (20/10): o contrato **2.1** (`backend/README_CONTRATO_API.md` → "Idempotência" e 4.1) mexeu no frontend, e eu já fiz o ajuste mínimo no mesmo PR para nada quebrar — revisa quando puder:
+  1. **Depósito, saque e transferência agora exigem o header `Idempotency-Key`** (sem ele → `400`). `contasApi.depositar/sacar/transferir` (`frontend/lib/api/contas.ts`) recebem a chave como último parâmetro; o `use-movimentacao.ts` gera `crypto.randomUUID()` ao enviar e **reusa a mesma** se o usuário clicar de novo depois de erro de rede (troca quando ele edita um campo ou dá certo). Repetição devolve `204` com `Idempotency-Replayed: true`: se quiser, dá para mostrar "essa operação já tinha sido feita".
+  2. **Abrir conta sem agência e número:** o banco gera (`0001` + 8 dígitos com DV). Apaguei o sorteio e o retry do `use-abrir-conta.ts`; `AbrirContaRequest` ficou com os dois campos opcionais em `types.ts`.
+  3. **Login pode dar `429`** depois de 5 senhas erradas para o mesmo CPF (15 min, header `Retry-After`). Hoje a tela de login cai na mensagem genérica; vale uma mensagem própria.
+  4. Os acessos de teste do Felipe e do seu usuário (Renan, conta destino) saíram dos READMEs: estão no guia privado da equipe (`.equipe/GUIA_TESTES_EQUIPE.md`, fora do Git) que eu te mando por DM, junto com a `EQUIPE_SENHA` para o seu `.env`. Sem Docker: `./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe`.
+  `scripts/validar.sh frontend` passou (lint, typecheck e build).
 - [x] Kevin → Renan (16/10): a `feature/spring-security-jwt` **quebra o frontend** quando entrar na `develop` (contrato **2.0**, `backend/README_CONTRATO_API.md` → "Autenticação (JWT)" e seção 3.3). O que muda para você:
   1. **Cadastro** (`POST /clientes`) agora exige `senha` (8 a 72 caracteres). A resposta continua igual e não traz token.
   2. **Login novo:** `POST /auth/login` com `{cpf, senha}` devolve `{token, tipo: "Bearer", expiraEmSegundos, clienteId, perfil}`. O `clienteId` é o que vai em `POST /contas/clientes/{clienteId}`.

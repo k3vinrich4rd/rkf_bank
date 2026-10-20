@@ -13,17 +13,16 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
-| 🔴 | O Spring não lê o `.env`. Se as variáveis não estiverem no terminal, ele usa usuário/senha `rkfbank`, que não batem com o Docker. | Adicionar `spring.config.import=optional:file:.env[.properties]` no `application.properties`. |
-| 🔴 | O teste `RkfbankApplicationTests` precisa do MySQL ligado para rodar. | Rodar esse teste com o H2 (perfil de teste). |
-| 🔴 | O arquivo `application-test.properties` está em `src/main/resources`. | Mover para `src/test/resources`. |
-| 🔴 | **LGPD:** o cadastro diz "você concorda com os Termos de Uso e a Política de Privacidade", mas os documentos não existem e o aceite não é registrado. | Antes de ir ao ar: escrever a política (dados, finalidade, compartilhamento com o ViaCEP, retenção, contato), `V4__` com `termos_versao` e `termos_aceitos_em`, campo obrigatório no cadastro e encarregado definido. |
+| 🔴 | **LGPD:** o cadastro diz "você concorda com os Termos de Uso e a Política de Privacidade", mas os documentos não existem e o aceite não é registrado. | Antes de ir ao ar: escrever a política (dados, finalidade, compartilhamento com o ViaCEP, retenção, contato), `V7__` com `termos_versao` e `termos_aceitos_em`, campo obrigatório no cadastro e encarregado definido. |
 | 🟡 | **LGPD:** o titular não consegue ver, corrigir nem pedir o encerramento dos próprios dados. | `GET /clientes/me`, `PATCH /clientes/me` e encerramento de conta com retenção legal e anonimização no fim do prazo. |
 | 🟢 | **LGPD:** o cadastro devolve o CPF completo e o handler de JSON inválido loga a mensagem do Jackson (pode trazer trecho do valor enviado). | Devolver o CPF mascarado e logar só o tipo da exceção. |
-| 🟡 | O login não limita tentativas: dá para testar senhas de um CPF à vontade (força bruta). | Limitar tentativas por CPF/IP ou bloquear temporariamente (ver "Limites e antifraude" no fim). |
+| 🟢 | O limite de tentativas de login fica em memória: reiniciar zera, e com mais de uma instância cada uma conta a sua parte. | Redis ou tabela quando houver deploy com várias instâncias. |
+| 🟢 | A senha redefinida pelo ADMIN não obriga a pessoa a trocá-la no próximo login. | Flag `deve_trocar_senha` e bloqueio das outras rotas até a troca. |
+| 🟢 | O `ConversorTokenUsuario` faz 1 SELECT por requisição. | Cache de poucos segundos se o volume crescer. |
+| 🟢 | `tb_idempotencia` cresce para sempre. | Rotina que apaga chaves com mais de 30 dias (repetições reais acontecem em segundos). |
 | 🟡 | Não há *refresh token* nem revogação: o token vale 15 min e "sair" só apaga o token no front; um token vazado vale até expirar. | `POST /auth/refresh` com token de renovação guardado no banco e revogável. |
-| 🟢 | Clientes cadastrados antes da `V3` não têm usuário (sem senha) e não conseguem entrar. | Sem produção, recriar o banco local (`docker compose down -v`). Se um dia houver produção, criar fluxo de "definir senha". |
 | 🟡 | A configuração de CORS vale para `/api/**`, mas as rotas não têm `/api`. Hoje funciona só por causa do proxy do Next. | Ajustar para `/**` ou remover, se o proxy for mantido. |
-| 🟡 | Quem chama a API escolhe a agência e o número da conta. | O backend gerar esses números. |
+| 🟢 | A conciliação saldo × extrato só roda nos testes (`DadosEquipeIntegracaoTest`). | Rotina agendada ou rota de ADMIN que aponte contas divergentes em produção. |
 | 🟡 | A paginação devolve o `Page` do Spring direto, e esse formato pode mudar entre versões. | Criar um DTO de página próprio. |
 | 🟡 | O `pom.xml` sobrescreve as versões do Tomcat (11.0.27) e do Jackson (3.1.7) por causa de CVEs. | Remover as duas propriedades quando o Spring Boot trouxer versões iguais ou maiores. |
 | 🟢 | O `pom.xml` fixa o H2 em 2.3.232 (o 2.4.240 quebra o `CHECK ... IN` das colunas de enum). | Remover quando o H2 corrigir, ou quando os testes usarem MySQL real (Testcontainers). |
@@ -36,11 +35,11 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
-| 🔴 | A abertura de conta sorteia agência (`0001`) e número no navegador e tenta de novo se vier `409` (`components/abrir-conta/use-abrir-conta.ts`). | Apagar quando o backend gerar esses números (ver item do backend). |
 | 🟡 | Sem *refresh token*: a sessão cai a cada 15 minutos e o usuário precisa entrar de novo (o `401` leva ao login e volta para a tela). | Quando o backend tiver `POST /auth/refresh`, renovar o token no Route Handler do Next antes de vencer. |
 | 🟡 | Não há testes automáticos no frontend. | Vitest + Testing Library. |
 | 🟢 | O cliente pode ter mais de uma conta, mas as telas usam só a primeira que `GET /contas` devolve (`components/conta/use-conta.ts`). | Seletor de conta quando o produto pedir várias contas. |
 | 🟢 | A dependência transitiva `braces` 3.0.3 tem uma vulnerabilidade conhecida ainda **sem correção** (DoS com padrões muito aninhados; só roda nas ferramentas de build, não no navegador). | Rodar `node scripts/varrer-cves.js frontend` de vez em quando e atualizar quando sair a correção. |
+| 🟢 | `hono` 4.13.9 (CVE-2026-109955, moderada: `serveStatic` decodifica o caminho duas vezes) chega pelo CLI `shadcn` → `@modelcontextprotocol/sdk`. É ferramenta de desenvolvimento: o site não usa o `serveStatic` do Hono. Achado em 20/10/2026 pelo `/varrer-vulnerabilidades`. | Subir o `shadcn` quando trouxer `hono` ≥ 4.13.11, ou `pnpm.overrides` com `"hono": "^4.13.11"`. Área do Renan. |
 
 ## Projeto
 

@@ -44,8 +44,10 @@ public class Cliente {
     @JoinColumn(name = "endereco_id", nullable = false)
     private Endereco endereco;
 
-    // Lista de contas do cliente; orphanRemoval remove registros desvinculados.
-    @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Contas do cliente. So PERSIST: salvar um cliente novo salva as contas novas junto, mas nada aqui APAGA conta.
+    // Banco nao apaga conta (o extrato precisa sobreviver): encerra com ativa = false. Sem orphanRemoval, tirar a
+    // conta da lista nao a remove; e a FK fk_conta_cliente impede excluir um cliente que ainda tem conta.
+    @OneToMany(mappedBy = "cliente", cascade = CascadeType.PERSIST)
     private List<Conta> contas = new ArrayList<>();
 
     public UUID getId() {
