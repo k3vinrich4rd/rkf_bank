@@ -14,6 +14,10 @@ Como executar cada passo: [README_TESTES_E2E.md](README_TESTES_E2E.md). Rotas e 
 
 > Os dados de teste (CPF, e-mail e número de conta) foram gerados na hora para não colidir com o que já estava no banco.
 
+> 🔁 **20/10/2026:** contrato 2.1 (idempotência, número de conta gerado, `429` no login). O aceite do MVP passa a seguir o
+> **guia privado da equipe** (seção 11, fora do repositório), com as contas do Felipe e do Renan; quem não é da equipe usa o
+> [guia público](README_TESTES_E2E.md) com as contas de visitante. A próxima execução completa atualiza esta página.
+
 Legenda: ✅ aprovado · ❌ reprovado · ⏳ não executado
 
 ---
@@ -60,7 +64,7 @@ Legenda: ✅ aprovado · ❌ reprovado · ⏳ não executado
 
 ## 🚫 5. Cenários de erro do roteiro
 
-Numeração igual à seção 2 do [roteiro](README_TESTES_E2E.md#2-cenários-de-erro). E1, E6, E12, E15 e E17 já estão
+Numeração igual à seção 2 do [roteiro](README_TESTES_E2E.md#7-cenários-de-erro-e01-a-e18). E1, E6, E12, E15 e E17 já estão
 cobertos acima (itens 1.4, 2.2, 3.4, 3.2 e 1.7).
 
 | # | Cenário | Esperado | Resultado |
