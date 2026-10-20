@@ -1,8 +1,7 @@
--- Credenciais de acesso (login com CPF + senha), separadas do cadastro do cliente.
+-- Credenciais de acesso (login com CPF + senha), separadas do cadastro do cliente:
+-- dado cadastral e segredo nao andam juntos, e o ADMIN pode existir sem ser cliente.
 -- senha_hash guarda o BCrypt (sempre 60 caracteres, com o salt dentro); a senha em texto nunca chega ao banco.
--- cliente_id e opcional: o ADMIN nao e cliente. O UNIQUE garante no maximo um usuario por cliente.
--- Clientes cadastrados antes desta versao ficam sem usuario (sem senha) e nao conseguem entrar;
--- sem producao ainda, basta recriar o banco local.
+-- cliente_id e opcional (nulo para o ADMIN). O UNIQUE garante no maximo um usuario por cliente.
 
 CREATE TABLE tb_usuario (
     id          BINARY(16)  NOT NULL,
