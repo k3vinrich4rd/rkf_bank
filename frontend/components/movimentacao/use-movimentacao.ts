@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, contasApi, isFalhaDeServidor, type ContaResponse, type Uuid } from "@/lib/api";
 import { useConta } from "@/components/conta/use-conta";
 import { useLogDeTela } from "@/components/logs";
@@ -47,20 +47,19 @@ function validar(tipo: TipoMovimentacao, valores: Valores, conta: ContaResponse)
   return erros;
 }
 
-async function executar(tipo: TipoMovimentacao, contaId: Uuid, comprovante: Comprovante) {
+async function executar(tipo: TipoMovimentacao, contaId: Uuid, comprovante: Comprovante, chave: string) {
   const movimentacao = { valor: centsToDecimal(comprovante.valor), descricao: comprovante.descricao };
 
   switch (tipo) {
     case "deposito":
-      return contasApi.depositar(contaId, movimentacao);
+      return contasApi.depositar(contaId, movimentacao, chave);
     case "saque":
-      return contasApi.sacar(contaId, movimentacao);
+      return contasApi.sacar(contaId, movimentacao, chave);
     case "transferencia":
-      return contasApi.transferir({
-        ...movimentacao,
-        contaOrigemId: contaId,
-        contaDestinoId: comprovante.contaDestinoId ?? "",
-      });
+      return contasApi.transferir(
+        { ...movimentacao, contaOrigemId: contaId, contaDestinoId: comprovante.contaDestinoId ?? "" },
+        chave,
+      );
   }
 }
 
@@ -103,11 +102,15 @@ export function useMovimentacao(tipo: TipoMovimentacao) {
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [comprovante, setComprovante] = useState<Comprovante | null>(null);
+  // Chave de idempotência da operação em andamento: a mesma em cada nova tentativa do MESMO pedido (ex.: a rede
+  // caiu e o usuário clica de novo), para a API não movimentar duas vezes. Nova chave quando o pedido muda ou dá certo.
+  const chaveIdempotencia = useRef<string | null>(null);
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const campo = event.target.name as Campo;
     const valor = campo === "valor" ? maskMoeda(event.target.value) : event.target.value;
 
+    chaveIdempotencia.current = null;
     setValores((atual) => ({ ...atual, [campo]: valor }));
     setErros((atual) => ({ ...atual, [campo]: undefined }));
     setErroGeral(null);
@@ -135,7 +138,9 @@ export function useMovimentacao(tipo: TipoMovimentacao) {
     logTela.acao("Movimentação enviada", { tipo, contaId: conta.conta.id });
 
     try {
-      await executar(tipo, conta.conta.id, pedido);
+      chaveIdempotencia.current ??= crypto.randomUUID();
+      await executar(tipo, conta.conta.id, pedido, chaveIdempotencia.current);
+      chaveIdempotencia.current = null;
       logTela.sucesso("Movimentação concluída", { tipo, contaId: conta.conta.id });
       setComprovante(pedido);
       setValores(VALORES_INICIAIS);

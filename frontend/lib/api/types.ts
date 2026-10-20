@@ -93,10 +93,10 @@ export interface Sessao {
 // ── Contas e movimentações ──────────────────────────────────────────────
 
 export interface AbrirContaRequest {
-  /** 4 dígitos. */
-  agencia: string;
-  /** 5 a 12 dígitos. */
-  numeroConta: string;
+  /** 4 dígitos. Opcional desde o contrato 2.1: sem ele, a API usa a agência 0001. */
+  agencia?: string;
+  /** 5 a 12 dígitos. Opcional desde o contrato 2.1: sem ele, a API gera o número (8 dígitos com DV). */
+  numeroConta?: string;
   tipoContaEnum: TipoConta;
 }
 
@@ -149,6 +149,38 @@ export interface Page<T> {
   totalPages: number;
   number: number;
   size: number;
+}
+
+/** Gestão de usuários (só ADMIN, contrato 2.2). Sem tela por enquanto: tipos para quando houver. */
+export interface UsuarioAdminResponse {
+  /** Id de tb_usuario (não é o clienteId). */
+  id: Uuid;
+  /** Mascarado: "***.456.789-**". */
+  cpf: string;
+  /** null para o ADMIN que não é cliente. */
+  nome: string | null;
+  perfil: Perfil;
+  ativo: boolean;
+  clienteId: Uuid | null;
+}
+
+export interface AlterarPerfilRequest {
+  perfil: Perfil;
+}
+
+export interface AlterarAcessoRequest {
+  ativo: boolean;
+}
+
+/** `PATCH /auth/senha` (contrato 2.3). Depois do 204, o token atual deixa de valer: mande para o login. */
+export interface TrocarSenhaRequest {
+  senhaAtual: string;
+  novaSenha: string;
+}
+
+/** `PATCH /admin/usuarios/{id}/senha`, só ADMIN. */
+export interface RedefinirSenhaRequest {
+  novaSenha: string;
 }
 
 export interface ErroCampo {

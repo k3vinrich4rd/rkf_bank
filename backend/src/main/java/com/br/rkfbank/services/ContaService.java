@@ -19,6 +19,7 @@ import com.br.rkfbank.repositories.LancamentoRepository;
 import com.br.rkfbank.security.UsuarioLogado;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
@@ -33,6 +34,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class ContaService {
 
     private static final Logger log = LogManager.getLogger(ContaService.class);
+
+    static final String AGENCIA_PADRAO = "0001";
+    private static final int TENTATIVAS_NUMERO_LIVRE = 5;
+    private static final SecureRandom ALEATORIO = new SecureRandom();
 
     private final ContaRepository contaRepository;
     private final LancamentoRepository lancamentoRepository;
@@ -59,16 +64,20 @@ public class ContaService {
         // Garante que a conta sempre nasce vinculada a um cliente existente.
         Cliente cliente = clienteService.buscar(clienteId);
 
+        // Sem numero no pedido, o banco gera um livre (o normal desde o contrato 2.1).
+        String numeroConta = request.numeroConta() != null ? request.numeroConta() : gerarNumeroLivre();
+        String agencia = request.agencia() != null ? request.agencia() : AGENCIA_PADRAO;
+
         // Regra de unicidade de número da conta.
-        if (contaRepository.existsByNumeroConta(request.numeroConta())) {
-            log.warn("Abertura de conta recusada para cliente {}: numero {} ja existe", clienteId, request.numeroConta());
+        if (contaRepository.existsByNumeroConta(numeroConta)) {
+            log.warn("Abertura de conta recusada para cliente {}: numero {} ja existe", clienteId, numeroConta);
             throw new NegocioException("Numero de conta ja existe");
         }
 
         Conta conta = new Conta();
         conta.setCliente(cliente);
-        conta.setAgencia(request.agencia());
-        conta.setNumeroConta(request.numeroConta());
+        conta.setAgencia(agencia);
+        conta.setNumeroConta(numeroConta);
         conta.setTipoConta(request.tipoContaEnum());
         conta.setSaldo(new BigDecimal("0.00"));
         conta.setAtiva(true);
@@ -80,7 +89,7 @@ public class ContaService {
         } catch (DataIntegrityViolationException ex) {
             // Abertura concorrente com o mesmo numero passou pela checagem acima e esbarrou na constraint do banco.
             log.warn("Abertura de conta recusada para cliente {}: numero {} ja existe (constraint do banco)",
-                    clienteId, request.numeroConta());
+                    clienteId, numeroConta);
             throw new NegocioException("Numero de conta ja existe");
         }
         log.info("Conta {} ({}) aberta para cliente {}", salva.getId(), salva.getTipoConta(), clienteId);
@@ -187,6 +196,36 @@ public class ContaService {
         log.debug("Listagem paginada de contas: pagina {} com {} de {} registros",
                 pageable.getPageNumber(), pagina.getNumberOfElements(), pagina.getTotalElements());
         return pagina;
+    }
+
+    // 7 digitos aleatorios + 1 digito verificador (modulo 11, como nos bancos): 8 digitos que ninguem escolhe nem adivinha
+    // em sequencia. SecureRandom para o proximo numero nao ser previsivel. Colisao e rara; ainda assim, tenta de novo.
+    private String gerarNumeroLivre() {
+        for (int tentativa = 1; tentativa <= TENTATIVAS_NUMERO_LIVRE; tentativa++) {
+            String numero = gerarNumeroConta(ALEATORIO);
+            if (!contaRepository.existsByNumeroConta(numero)) {
+                return numero;
+            }
+            log.debug("Numero de conta gerado ja existia (tentativa {})", tentativa);
+        }
+        throw new NegocioException("Nao foi possivel gerar um numero de conta livre; tente novamente");
+    }
+
+    static String gerarNumeroConta(SecureRandom aleatorio) {
+        String base = String.valueOf(1_000_000 + aleatorio.nextInt(9_000_000));
+        return base + digitoVerificador(base);
+    }
+
+    // Pesos 2,3,4... da direita para a esquerda; resto 0 ou 1 vira digito 0.
+    static int digitoVerificador(String base) {
+        int soma = 0;
+        int peso = 2;
+        for (int i = base.length() - 1; i >= 0; i--) {
+            soma += Character.getNumericValue(base.charAt(i)) * peso;
+            peso = peso == 9 ? 2 : peso + 1;
+        }
+        int resto = soma % 11;
+        return resto < 2 ? 0 : 11 - resto;
     }
 
     // Ordem 404 -> 403 -> 422: o dono e conferido antes de qualquer regra que revele o estado da conta.

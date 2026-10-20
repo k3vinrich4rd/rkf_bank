@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { ApiError, authApi, contasApi, isFalhaDeServidor, type ContaResponse, type TipoConta, type Uuid } from "@/lib/api";
+import { ApiError, authApi, contasApi, isFalhaDeServidor, type ContaResponse, type TipoConta } from "@/lib/api";
 import { useConta, type ContaState } from "@/components/conta/use-conta";
 import { useLogDeTela } from "@/components/logs";
 
@@ -13,32 +13,6 @@ import { useLogDeTela } from "@/components/logs";
  */
 export type EtapaAbrirConta = "carregando" | "erro-conta" | "ja-tem-conta" | "formulario" | "sucesso";
 
-// TODO(backend): apagar a geração de agência/número quando o backend passar a gerá-los
-// (ver planing/debitos-tecnicos.md). Até lá, o número é sorteado aqui e, se já existir (409),
-// sorteamos de novo.
-const AGENCIA_PADRAO = "0001";
-const TENTATIVAS_NUMERO_LIVRE = 3;
-
-/** Número de 8 dígitos, sem zero à esquerda (o contrato aceita de 5 a 12). */
-function sortearNumeroConta(): string {
-  const [aleatorio] = crypto.getRandomValues(new Uint32Array(1));
-  return String(10_000_000 + (aleatorio % 90_000_000));
-}
-
-async function abrirComNumeroLivre(clienteId: Uuid, tipoContaEnum: TipoConta): Promise<ContaResponse> {
-  for (let tentativa = 1; ; tentativa++) {
-    try {
-      return await contasApi.abrir(clienteId, {
-        agencia: AGENCIA_PADRAO,
-        numeroConta: sortearNumeroConta(),
-        tipoContaEnum,
-      });
-    } catch (error) {
-      const numeroJaExiste = error instanceof ApiError && error.status === 409;
-      if (!numeroJaExiste || tentativa >= TENTATIVAS_NUMERO_LIVRE) throw error;
-    }
-  }
-}
 
 /** Perfil sem cliente (o ADMIN): não tem cadastro em que abrir conta. */
 class SemCadastroDeCliente extends Error {}
@@ -52,7 +26,7 @@ function mensagemDeErro(error: unknown): string {
     return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
-  // Número de conta repetido em todas as tentativas.
+  // A API gera agência e número (contrato 2.1); 409 aqui só se ela não achar número livre.
   if (error instanceof ApiError && error.status === 409) {
     return "Não conseguimos gerar o número da sua conta. Tente novamente.";
   }
@@ -86,7 +60,8 @@ export function useAbrirConta() {
     try {
       const { clienteId } = await authApi.sessao();
       if (!clienteId) throw new SemCadastroDeCliente();
-      const conta = await abrirComNumeroLivre(clienteId, tipoConta);
+      // Sem agência e número: a API usa a 0001 e gera o número com dígito verificador.
+      const conta = await contasApi.abrir(clienteId, { tipoContaEnum: tipoConta });
       logTela.sucesso("Conta aberta", { contaId: conta.id });
       setContaAberta(conta);
     } catch (error) {
