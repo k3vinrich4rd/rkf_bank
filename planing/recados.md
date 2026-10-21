@@ -6,6 +6,11 @@ Escreva seu recado no topo. Quando resolver, marque `[x]` e escreva a resposta e
 
 ---
 
+- [ ] Kevin → Renan (21/10): o Dependabot abriu **2 alertas no frontend** (`frontend/pnpm-lock.yaml`). Nenhum afeta o site no ar (os dois vêm de ferramentas de desenvolvimento), mas é a sua área, então registrei em `debitos-tecnicos.md` → Frontend e não mexi no `package.json`:
+  1. **`hono` 4.13.9 → 4.13.11** ([alerta #17](https://github.com/k3vinrich4rd/rkf_bank/security/dependabot/17), moderada). Vem do CLI `shadcn` → `@modelcontextprotocol/sdk`. **Já tem correção:** `"pnpm": { "overrides": { "hono": "^4.13.11" } }` no `frontend/package.json`, `pnpm install` e `scripts/validar.sh frontend`. Se preferir, espere o `shadcn` subir a dependência.
+  2. **`braces` 3.0.3** ([alerta #7](https://github.com/k3vinrich4rd/rkf_bank/security/dependabot/7), alta) **ainda sem versão corrigida**. Vem do `eslint-config-next` e do `shadcn` (via `fast-glob`/`micromatch`) e só roda no lint, na sua máquina. Não há o que fazer agora; quando sair a correção, o `node scripts/varrer-cves.js frontend` mostra.
+  Para conferir de onde vem: `cd frontend && pnpm why hono braces`.
+  **Obs.:** o frontend dos contratos 2.1 a 2.3 (recado abaixo, PR #39) já entrou na `develop` e na `main` em 21/10. A sua revisão continua valendo: se achar algo, abrimos um `fix/`.
 - [ ] Kevin → Renan (20/10): fiz as atualizações do frontend para os contratos **2.1 a 2.3** na branch `feature/frontend-contrato-2-3` (lint, typecheck e build ✅; testado na tela contra a API no MySQL 8.4). É a sua área, então preciso da sua revisão antes do merge:
   1. **Tela nova "Trocar senha"** (`/conta/senha`, link embaixo das ações da conta): página + `components/trocar-senha` (screen + hook). Ela chama `PATCH /api/auth/senha`, uma **rota nova do Next** (`app/api/auth/senha/route.ts`) que lê o cookie, chama `PATCH /auth/senha` da API e, no `204`, **apaga a sessão** (a API derruba todo token antigo). Depois vai para `/login?senha=trocada`, que mostra "Senha trocada. Entre com a senha nova.".
   2. **Login com `429`:** `use-login.ts` mostra "Muitas tentativas seguidas...". (Fecha o item 3 do recado anterior.)
