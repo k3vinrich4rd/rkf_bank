@@ -24,6 +24,12 @@ Legenda: ⬜ não começou · 🎬 estudando · 🛠️ implementando · ✅ mer
 
 > ⚠️ O MVP vence em **31/10/2026** e o item "Colocar no ar" do roadmap continua valendo. Ele pode ser resolvido de um jeito mais simples que a AWS (decisão em aberto em `decisoes.md`) sem esperar a feature 5.
 
+> 🧭 **Ordem revisada em 20/10/2026** (11 dias para o MVP): **3. Testcontainers** continua a próxima (automatiza a validação
+> no MySQL que hoje é manual e protege o deploy). Depois dela vêm os **bloqueios do lançamento**, antes do Swagger:
+> `GET /contas/{contaId}` → LGPD mínimo → **colocar no ar de um jeito simples** (Docker + perfil `prod` sem dados de teste +
+> banco gerenciado) → testes do Felipe. A **feature 4 (Swagger)** fica para logo depois do MVP; **5 (AWS)** e **6 (Mensageria)**
+> seguem como futuro. Detalhes em `decisoes.md`.
+
 ---
 
 ## 1. Flyway — migrações de banco

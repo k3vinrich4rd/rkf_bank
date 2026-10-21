@@ -110,6 +110,11 @@ Data: 20/10
 Decisão: `PATCH /auth/senha` troca a própria senha exigindo a atual (erro conta no limite de tentativas do login); `PATCH /admin/usuarios/{id}/senha` deixa o ADMIN redefinir a senha de quem esqueceu (nunca a própria). Toda troca sobe `tb_usuario.versao_credencial` (V8); o token leva a claim `versaoCredencial` e o `ConversorTokenUsuario` recusa versão diferente, então os tokens anteriores caem na hora. Nas contas da equipe, a `EQUIPE_SENHA` do `.env` volta a valer na próxima subida.
 Por quê: senha que não se troca é débito de segurança (vazou, não há o que fazer). Contador e não data de troca: o `iat` do JWT só tem segundos, e uma comparação por horário deixaria passar o token emitido no mesmo segundo da troca.
 
+## Ordem até o MVP
+Data: 20/10
+Decisão: Testcontainers (3) segue como a próxima; em seguida os bloqueios do lançamento: `GET /contas/{contaId}`, LGPD mínimo, deploy simples (Docker + perfil `prod` sem seed + banco gerenciado) e testes do Felipe. Swagger (4) fica para logo depois do MVP; AWS (5) e Mensageria (6) continuam futuro.
+Por quê: faltam 11 dias para 31/10. Swagger melhora a experiência, mas não bloqueia ninguém; deploy e LGPD mínimo bloqueiam o lançamento. Testcontainers vem antes porque automatiza a validação no MySQL real (feita à mão em 20/10) e reduz o risco do deploy.
+
 ---
 
 ## Ainda falta decidir
