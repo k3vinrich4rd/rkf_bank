@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Clock, LoaderCircle, LockKeyhole } from "lucide-react";
+import { ArrowRight, CircleCheck, Clock, LoaderCircle, LockKeyhole } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/form-alert";
@@ -14,10 +14,12 @@ interface LoginScreenProps {
   destino: string;
   /** Chegou aqui porque o token venceu no meio do uso. */
   expirou: boolean;
+  /** Chegou aqui logo depois de trocar a senha (a sessão antiga cai junto). */
+  senhaTrocada: boolean;
 }
 
 /** Login com CPF e senha. O estado vive no `useLogin`. */
-export function LoginScreen({ destino, expirou }: LoginScreenProps) {
+export function LoginScreen({ destino, expirou, senhaTrocada }: LoginScreenProps) {
   const { campo, erroGeral, enviando, handleSubmit } = useLogin(destino);
 
   return (
@@ -38,6 +40,16 @@ export function LoginScreen({ destino, expirou }: LoginScreenProps) {
 
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">Entrar na sua conta</h1>
         <p className="mt-2 text-sm text-muted-foreground">Use o CPF e a senha do seu cadastro.</p>
+
+        {senhaTrocada && (
+          <p
+            role="status"
+            className="mt-6 flex items-start gap-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] px-4 py-3 text-sm text-foreground/90"
+          >
+            <CircleCheck className="mt-0.5 size-4 shrink-0 text-emerald-400" aria-hidden="true" />
+            Senha trocada. Entre com a senha nova.
+          </p>
+        )}
 
         {expirou && (
           <p

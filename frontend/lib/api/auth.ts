@@ -1,6 +1,6 @@
 import { logAuth } from "@/lib/logger";
 import { apiRequest } from "./client";
-import type { LoginRequest, Sessao } from "./types";
+import type { LoginRequest, Sessao, TrocarSenhaRequest } from "./types";
 
 /**
  * Sessão do usuário. Estas chamadas vão para as rotas `/api/auth/*` do próprio Next (`app/api/auth`),
@@ -18,6 +18,16 @@ export const authApi = {
   async sair() {
     await apiRequest<void>("/auth/logout", { method: "POST" });
     logAuth.info("Sessão encerrada");
+  },
+
+  /**
+   * Troca a própria senha (contrato 2.3). Depois do 204 a sessão acabou: a API derruba todo token antigo e a rota
+   * do Next apaga o cookie, então quem chama deve mandar a pessoa para o login.
+   */
+  async trocarSenha(data: TrocarSenhaRequest) {
+    // As senhas são mascaradas pelo logger.
+    await apiRequest<void>("/auth/senha", { method: "PATCH", body: data });
+    logAuth.info("Senha trocada; sessão encerrada");
   },
 
   /** Quem está logado. Sem sessão → `ApiError` 401. */
