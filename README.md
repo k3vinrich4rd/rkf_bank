@@ -394,6 +394,51 @@ Timeout de 3 s e `503 Service Unavailable` com mensagem clara, em vez de travar.
 | 👤 cliente logado | só as **próprias** contas: abrir, listar, depositar, sacar, transferir (origem), extrato |
 | 🛠️ `ADMIN` | `GET /clientes`, todas as contas em `GET /contas` e a gestão de usuários em `/admin/usuarios` (promover, rebaixar, desativar, redefinir senha; vale na hora). O primeiro admin nasce do `.env` |
 
+<details open>
+<summary><b>🛡️ Spring Security por dentro: toda requisição passa por 4 portões</b></summary>
+<br/>
+
+```mermaid
+flowchart LR
+    R(["📨 Requisição<br/>Bearer eyJ..."]) --> P1{"🔏 Portão 1<br/>assinatura HS256<br/>e validade"}
+    P1 -- "adulterado, alg:none,<br/>vencido" --> X1["401<br/>Token invalido"]
+    P1 -- ok --> P2{"🗄️ Portão 2<br/>usuário existe, ativo,<br/>mesmo perfil e<br/>mesma versão de senha?"}
+    P2 -- "desativado, rebaixado,<br/>trocou a senha" --> X2["401<br/>acesso alterado"]
+    P2 -- ok --> P3{"🎫 Portão 3<br/>a rota exige ADMIN?"}
+    P3 -- "CLIENTE em /admin/**" --> X3["403<br/>perfil sem acesso"]
+    P3 -- ok --> P4{"🏠 Portão 4<br/>a conta é sua?"}
+    P4 -- "conta de outro" --> X4["403<br/>não é dono"]
+    P4 -- ok --> OK(["✅ 200 / 201 / 204"])
+```
+
+| Portão | Quem faz | Por que existe |
+|---|---|---|
+| 1 | `BearerTokenAuthenticationFilter` (OAuth2 Resource Server do Spring) | ninguém fabrica token sem o `JWT_SEGREDO` |
+| 2 | `ConversorTokenUsuario` (nosso) | JWT é *stateless*: sem este portão, rebaixar ou desativar alguém só valeria quando o token vencesse |
+| 3 | `AuthorizationFilter` + `SecurityFilterChain` | perfis `CLIENTE` e `ADMIN` |
+| 4 | `ContaService` | o `clienteId` vem do **token assinado**, nunca da URL ou do corpo |
+
+**E antes de tudo, no login:** 5 senhas erradas para o mesmo CPF em 15 min → **`429`** (nem a senha certa entra), e
+CPF inexistente e senha errada dão a **mesma** resposta, no mesmo tempo.
+
+<details>
+<summary>🎛️ O que o admin muda e quando passa a valer (clique)</summary>
+<br/>
+
+| Ação | Rota | Token antigo da pessoa | Novo login |
+|---|---|:-:|---|
+| Promover a ADMIN | `PATCH /admin/usuarios/{id}/perfil` | ❌ `401` na hora | ✅ já vem como ADMIN |
+| Rebaixar a CLIENTE | `PATCH /admin/usuarios/{id}/perfil` | ❌ `401` na hora | ✅ volta a CLIENTE |
+| Desativar ("remover") | `PATCH /admin/usuarios/{id}/acesso` | ❌ `401` na hora | ❌ `CPF ou senha invalidos` |
+| Redefinir a senha de quem esqueceu | `PATCH /admin/usuarios/{id}/senha` | ❌ `401` na hora | ✅ com a senha nova |
+| Trocar a **própria** senha | `PATCH /auth/senha` (pede a atual) | ❌ `401` na hora | ✅ com a senha nova |
+
+Ninguém mexe no **próprio** perfil ou acesso: o admin não se tranca para fora e sempre sobra um ADMIN ativo.
+
+</details>
+
+</details>
+
 <details>
 <summary><b>🔑 Como funciona o login, passo a passo</b></summary>
 <br/>
@@ -728,6 +773,70 @@ flowchart LR
 
 </details>
 
+<details open>
+<summary><b>🛫 Flyway: do banco vazio à API no ar</b></summary>
+<br/>
+
+```mermaid
+timeline
+    title O banco do RKF Bank, versão a versão
+    V1 a V5 : endereço, cliente, conta, lançamento, usuário : uma tabela por versão
+    V6 : idempotência : o dinheiro nunca sai duas vezes
+    V7 : usuário ativo : desativar alguém vale na hora
+    V8 : versão da senha : trocar a senha derruba os tokens antigos
+    a cada subida : callback afterMigrate : contas da equipe ou de visitante, sem duplicar
+```
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant API as Spring Boot
+    participant F as Flyway
+    participant DB as MySQL
+    participant H as Hibernate
+    API->>F: subir
+    F->>DB: o que já rodou? (flyway_schema_history)
+    F->>DB: aplica só as versões que faltam (V1…V8)
+    F->>DB: afterMigrate: contas prontas, só o que falta
+    API->>H: ddl-auto=validate
+    H->>DB: as entidades batem com as tabelas?
+    alt alguém mudou a entidade e esqueceu a migração
+        H-->>API: ❌ a API nem sobe
+    else tudo bate
+        API->>DB: CriadorAdmin e CriadorAcessoEquipe (logins do .env)
+        API-->>API: ✅ Tomcat no ar
+    end
+```
+
+<details>
+<summary>🤔 E se... (clique em cada um)</summary>
+<br/>
+
+<details><summary>...alguém editar a <code>V1</code> depois de aplicada?</summary>
+
+❌ `Migration checksum mismatch`: o Flyway guarda o checksum de cada versão e a API recusa subir. Mudou algo? **Versão nova** (`V9__...`).
+
+</details>
+<details><summary>...alguém criar um campo na entidade e esquecer a migração?</summary>
+
+❌ O Hibernate em `validate` compara entidade × tabela e a API **não sobe**: o erro aparece no seu computador, não em produção.
+
+</details>
+<details><summary>...a API reiniciar dez vezes?</summary>
+
+✅ As versões rodam uma vez só; o callback `afterMigrate` roda nas dez, mas só insere o que falta. Nada duplica e saldo movimentado nunca é resetado.
+
+</details>
+<details><summary>...subir em produção?</summary>
+
+✅ `FLYWAY_LOCATIONS=classpath:db/migration`: só o schema, **nenhuma** conta de teste.
+
+</details>
+
+</details>
+
+</details>
+
 <details>
 <summary><b>🗃️ Modelo de dados (migrações V1 a V8)</b></summary>
 <br/>
@@ -1003,18 +1112,19 @@ gantt
     dateFormat YYYY-MM-DD
     axisFormat %d/%m
     section Feito
-    Flyway V1 a V3                 :done,   f1, 2026-10-15, 2d
-    Spring Security + JWT          :done,   f2, 2026-10-16, 2d
-    Telas da conta e login         :done,   f0, 2026-10-14, 4d
+    Telas da conta e login               :done,   f0, 2026-10-14, 4d
+    Flyway V1 a V3                       :done,   f1, 2026-10-15, 2d
+    Spring Security + JWT                :done,   f2, 2026-10-16, 2d
+    Idempotência, gestão de usuários, Flyway V1 a V8 :done, f3, 2026-10-20, 1d
     section MVP
-    GET conta e contas do cliente  :active, m1, 2026-10-20, 3d
-    LGPD mínimo                    :        m2, 2026-10-22, 2d
-    Testes do Felipe              :        m3, 2026-10-26, 3d
-    Colocar no ar                  :crit,   m4, 2026-10-29, 3d
+    Testcontainers (MySQL real)          :active, m0, 2026-10-21, 2d
+    GET conta e contas do cliente        :        m1, after m0, 1d
+    LGPD mínimo                          :        m2, after m1, 2d
+    Deploy (Docker, perfil prod, banco)  :crit,   m4, after m2, 3d
+    Testes do Felipe e correções         :        m3, after m4, 2d
     section Depois
-    Testcontainers                 :        p1, 2026-10-20, 4d
-    Swagger / OpenAPI              :        p2, after p1, 2d
-    Pix, boleto e cartão (simulados) :      p3, 2026-11-05, 20d
+    Swagger / OpenAPI                    :        p2, 2026-11-02, 2d
+    Pix, boleto e cartão (simulados)     :        p3, 2026-11-05, 20d
 ```
 
 <details open>
@@ -1027,10 +1137,12 @@ gantt
 - [x] Idempotência nas movimentações, número de conta gerado pelo banco, limite de tentativas no login e health check
 - [x] Login com Spring Security + JWT, perfis e regra de dono
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
+- [x] Gestão de usuários pelo ADMIN (promover, rebaixar, desativar) e troca de senha, valendo na hora
+- [ ] Testes de integração com Testcontainers + MySQL real (protege o deploy)
 - [ ] Backend: `GET /contas/{id}` e `GET /clientes/{id}/contas`
 - [ ] LGPD mínimo: política de privacidade, aceite dos termos e encarregado
 - [ ] Felipe testa tudo como primeiro cliente e os bugs são corrigidos
-- [ ] Colocar no ar e atualizar este README com link e prints
+- [ ] Colocar no ar (Docker, perfil `prod` sem dados de teste, banco gerenciado) e atualizar este README com link e prints
 
 </details>
 
@@ -1038,9 +1150,9 @@ gantt
 <summary><b>🔭 Depois do MVP</b></summary>
 <br/>
 
-- [ ] Testes de integração com Testcontainers + MySQL e `MockMvc` ([checklist](planing/checklist-features.md))
+- [ ] `MockMvc` em todos os controllers e teste de concorrência ([checklist](planing/checklist-features.md))
 - [ ] Swagger UI com o botão *Authorize* (springdoc-openapi)
-- [ ] Refresh token, limite de tentativas de login e 2FA
+- [ ] Refresh token e 2FA (limite de tentativas e revogação já existem)
 - [ ] "Meus dados", editar perfil e encerrar conta (direitos do titular)
 - [ ] CI do frontend
 - [ ] Pix, boleto, QR Code e cartão virtual (simulados) — [funcionalidades futuras](planing/debitos-tecnicos.md#funcionalidades-futuras-)
@@ -1274,6 +1386,45 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 <details><summary>B) Como hash BCrypt com salt</summary>
 
 ✅ **Isso!** Hash de mão única, com salt embutido e lento de propósito contra força bruta. Nem o time consegue ver a sua senha.
+
+</details>
+
+**4. A rede cai no meio da transferência e o app manda a mesma de novo. O dinheiro sai duas vezes?**
+
+<details><summary>A) Sai: a API não tem como saber</summary>
+
+❌ Tem sim: o app manda um `Idempotency-Key` por operação.
+
+</details>
+<details><summary>B) Não: a repetição volta 204 com <code>Idempotency-Replayed: true</code></summary>
+
+✅ **Isso!** A chave foi gravada na mesma transação do dinheiro (`tb_idempotencia`, V6). A repetição só confirma.
+
+</details>
+
+**5. O admin rebaixa alguém que está logado com um token de ADMIN válido por mais 50 minutos. E aí?**
+
+<details><summary>A) Continua admin até o token vencer</summary>
+
+❌ Seria assim com JWT puro, que é *stateless*.
+
+</details>
+<details><summary>B) A próxima requisição dele dá 401</summary>
+
+✅ **Isso!** O `ConversorTokenUsuario` confere o banco a cada requisição: o perfil do token não bate mais.
+
+</details>
+
+**6. Qual versão do Flyway criou a coluna que faz a troca de senha derrubar os tokens antigos?**
+
+<details><summary>A) V5</summary>
+
+❌ A V5 criou a `tb_usuario`.
+
+</details>
+<details><summary>B) V8</summary>
+
+✅ **Isso!** `versao_credencial`: sobe a cada troca e vai dentro do token.
 
 </details>
 
