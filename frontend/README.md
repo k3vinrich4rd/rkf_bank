@@ -62,6 +62,7 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 | `/conta/sacar` | [`app/conta/sacar/page.tsx`](app/conta/sacar/page.tsx) | ✅ saque (valida o saldo antes de enviar) |
 | `/conta/transferir` | [`app/conta/transferir/page.tsx`](app/conta/transferir/page.tsx) | ✅ transferência pelo ID da conta de destino |
 | `/conta/extrato` | [`app/conta/extrato/page.tsx`](app/conta/extrato/page.tsx) | ✅ extrato agrupado por dia, entradas em verde |
+| `/conta/senha` | [`app/conta/senha/page.tsx`](app/conta/senha/page.tsx) | ✅ trocar a própria senha (contrato 2.3); a sessão cai e o login mostra "senha trocada" |
 
 As três movimentações são **uma tela só** (`components/movimentacao`), configurada por tipo em `movimentacoes.ts`:
 o contrato é o mesmo (`valor` + `descricao`) e a transferência só acrescenta o destino. As telas da conta

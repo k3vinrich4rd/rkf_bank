@@ -26,6 +26,10 @@ const MASCARAS: Record<string, (valor: string) => string> = {
   // Credenciais nunca aparecem, nem em parte.
   senha: () => OCULTO,
   confirmarSenha: () => OCULTO,
+  // Troca de senha (contrato 2.3).
+  senhaAtual: () => OCULTO,
+  novaSenha: () => OCULTO,
+  confirmarNovaSenha: () => OCULTO,
   token: () => OCULTO,
 };
 

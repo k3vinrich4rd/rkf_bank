@@ -12,6 +12,7 @@ export const ROUTES = {
   sacar: "/conta/sacar",
   transferir: "/conta/transferir",
   extrato: "/conta/extrato",
+  trocarSenha: "/conta/senha",
 } as const;
 
 /**
