@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError, contasApi, isFalhaDeServidor, type ContaResponse, type Uuid } from "@/lib/api";
 import { useConta } from "@/components/conta/use-conta";
 import { useLogDeTela } from "@/components/logs";
@@ -47,20 +47,19 @@ function validar(tipo: TipoMovimentacao, valores: Valores, conta: ContaResponse)
   return erros;
 }
 
-async function executar(tipo: TipoMovimentacao, contaId: Uuid, comprovante: Comprovante) {
+async function executar(tipo: TipoMovimentacao, contaId: Uuid, comprovante: Comprovante, chave: string) {
   const movimentacao = { valor: centsToDecimal(comprovante.valor), descricao: comprovante.descricao };
 
   switch (tipo) {
     case "deposito":
-      return contasApi.depositar(contaId, movimentacao);
+      return contasApi.depositar(contaId, movimentacao, chave);
     case "saque":
-      return contasApi.sacar(contaId, movimentacao);
+      return contasApi.sacar(contaId, movimentacao, chave);
     case "transferencia":
-      return contasApi.transferir({
-        ...movimentacao,
-        contaOrigemId: contaId,
-        contaDestinoId: comprovante.contaDestinoId ?? "",
-      });
+      return contasApi.transferir(
+        { ...movimentacao, contaOrigemId: contaId, contaDestinoId: comprovante.contaDestinoId ?? "" },
+        chave,
+      );
   }
 }
 
@@ -74,8 +73,12 @@ function mensagemDeErro(error: unknown): string {
     case 400:
     case 404: // na transferência, a conta de destino não existe (vira erro no campo)
       return "Confira os campos destacados.";
-    case 409: // lock otimista: outra operação mexeu na conta ao mesmo tempo
-      return "Sua conta acabou de ser movimentada por outra operação. Confira o saldo e tente novamente.";
+    case 409:
+      // A mesma operação ainda está sendo processada (a chave de idempotência continua a mesma): enviar de novo mostra
+      // o resultado sem movimentar duas vezes. Fora isso, é o lock otimista (outra operação mexeu na conta).
+      return error.message.startsWith("Esta operacao ja esta sendo processada")
+        ? "Sua operação ainda está sendo processada. Envie de novo para ver o resultado: nada será cobrado duas vezes."
+        : "Sua conta acabou de ser movimentada por outra operação. Confira o saldo e tente novamente.";
     case 422: // conta inativa, saldo insuficiente ou mesma conta
       return error.message;
     default:
@@ -103,11 +106,15 @@ export function useMovimentacao(tipo: TipoMovimentacao) {
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [comprovante, setComprovante] = useState<Comprovante | null>(null);
+  // Chave de idempotência da operação em andamento: a mesma em cada nova tentativa do MESMO pedido (ex.: a rede
+  // caiu e o usuário clica de novo), para a API não movimentar duas vezes. Nova chave quando o pedido muda ou dá certo.
+  const chaveIdempotencia = useRef<string | null>(null);
 
   function handleChange(event: ChangeEvent<HTMLInputElement>) {
     const campo = event.target.name as Campo;
     const valor = campo === "valor" ? maskMoeda(event.target.value) : event.target.value;
 
+    chaveIdempotencia.current = null;
     setValores((atual) => ({ ...atual, [campo]: valor }));
     setErros((atual) => ({ ...atual, [campo]: undefined }));
     setErroGeral(null);
@@ -135,7 +142,9 @@ export function useMovimentacao(tipo: TipoMovimentacao) {
     logTela.acao("Movimentação enviada", { tipo, contaId: conta.conta.id });
 
     try {
-      await executar(tipo, conta.conta.id, pedido);
+      chaveIdempotencia.current ??= crypto.randomUUID();
+      await executar(tipo, conta.conta.id, pedido, chaveIdempotencia.current);
+      chaveIdempotencia.current = null;
       logTela.sucesso("Movimentação concluída", { tipo, contaId: conta.conta.id });
       setComprovante(pedido);
       setValores(VALORES_INICIAIS);

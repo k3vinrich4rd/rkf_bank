@@ -1,1492 +1,385 @@
-# RKF Bank — Roteiro de testes ponta a ponta (manual)
+# RKF Bank — Guia de testes manuais, passo a passo
 
-Roteiro para testar a API inteira na mão, com Postman, Insomnia ou curl. Serve para:
+> **Para quem é:** qualquer pessoa que queira testar a API inteira na própria máquina, sem ajuda: visitantes,
+> recrutadores, quem está chegando no projeto. Cada teste diz **o que fazer**, **o que deve aparecer** e **por quê**.
+> Começo rápido em 5 minutos: [VISITANTES.md](../VISITANTES.md).
+>
+> 🔒 A equipe (Kevin, Renan e Felipe) tem um guia próprio, com as contas e os acessos internos, que **não** fica no
+> repositório. Este aqui usa só as **contas de visitante**, que existem apenas no perfil `visitante`.
 
-- conferir que tudo funciona antes de abrir um PR que mexe em regra de negócio;
-- o **Felipe** (QA e primeiro cliente) validar o MVP;
-- quem está chegando entender o fluxo real do banco.
+Todas as respostas são reais (capturadas em 20/10/2026, contrato 2.1). Ao repetir, só mudam `id`s gerados,
+`dataHora`, `timestamp` e o `token`.
 
-> Rotas e formatos oficiais: [README_CONTRATO_API.md](README_CONTRATO_API.md).
-> Este roteiro chama o **backend direto** (`http://localhost:8080`, **sem** `/api`).
-> Resultado da última execução completa (38/38 ✅): [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md).
-
-**Todas as respostas abaixo são reais e completas**, capturadas executando este roteiro na ordem, num banco vazio,
-com Java 25. Ao repetir, só mudam os valores gerados: `id`s (UUID), `dataHora` e `timestamp`.
-
-> 🔒 **Desde o contrato 2.0 a API exige login.** As seções 1 e 2 foram capturadas antes disso e continuam valendo
-> com dois ajustes: o cadastro leva `"senha"` e toda chamada fora `POST /clientes` e `POST /auth/login` leva o header
-> `Authorization: Bearer <token>`. Como obter o token e os cenários de segurança: [seção 7](#7-login-perfis-e-dados-sensíveis-spring-security--jwt).
-
----
-
-## 0. Preparação
-
-1. Confira o JDK: `java -version` deve mostrar **25.x** (o Maven recusa outra versão).
-2. Suba banco e API (seção "Como rodar" do [backend/README.md](README.md)).
-   Sem Docker, dá para rodar com H2 em memória: `./mvnw spring-boot:run -Dspring-boot.run.profiles=test`
-   (os dados somem ao parar a API; a seção 5 não se aplica).
-   Com o MySQL (perfil padrão), o `.env` precisa ter `JWT_SEGREDO` (seção 7.2), senão a API não sobe. O perfil `test`
-   já traz um segredo só para testes.
-   As tabelas são criadas pelo **Flyway** na subida da API (migrações `V1`, `V2`... em `src/main/resources/db/migration`);
-   no log aparece `Successfully applied N migrations` num banco vazio, ou `Schema ... is up to date` num banco já migrado.
-3. Opcional, para começar do zero: `docker compose down -v && docker compose up -d` (**apaga todos os dados**).
-   **Obrigatório uma vez** se a API recusar subir com *Found non-empty schema(s) ... but no schema history table*
-   (o banco local foi criado pelo Hibernate antes do Flyway).
-
-> **Atalho automático:** com a API no ar, `node scripts/smoke-e2e.mjs` faz uma versão resumida deste roteiro
-> (cadastro e login, caminho feliz, `401`/`403` e 5 erros: 29 verificações) em segundos e pode rodar várias vezes no
-> mesmo banco. Com `ADMIN_CPF` e `ADMIN_SENHA` no ambiente (os mesmos da API), confere também o admin. O roteiro manual
-> continua valendo para o QA e para conferir as respostas completas. Qual teste rodar para cada tipo de mudança:
-> ["Mudei algo: quais testes rodar?"](README.md#-mudei-algo-quais-testes-rodar).
-4. No Postman/Insomnia, crie um ambiente com estas variáveis e use o header `Content-Type: application/json`:
-
-| Variável | Valor inicial |
+| Quero... | Vá para |
 |---|---|
-| `baseUrl` | `http://localhost:8080` |
-| `clienteOrigemId` | (preenchido no passo 1) |
-| `contaOrigemId` | (preenchido no passo 2) |
-| `clienteDestinoId` | (preenchido no passo 3) |
-| `contaDestinoId` | (preenchido no passo 4) |
-
-**CPFs válidos para teste:** `52998224725`, `16899535009`, `39053344705`, `11144477735`.
-**CEPs reais:** `01001000` (Praça da Sé – SP), `30140071` (Belo Horizonte – MG).
-
-> Banco já com dados? CPF, e-mail e número de conta são únicos: se algum já existir, o passo devolve `409`.
-> Use outro CPF válido (qualquer gerador de CPF serve), outro e-mail e outro `numeroConta` — ou comece do zero (item 3).
+| subir a API | [1. Subir](#1-subir-a-aplicação-perfil-visitante) |
+| saber com quem entrar | [2. Contas de visitante](#2-contas-de-visitante) |
+| entender login, JWT, Spring Security e OAuth2 | [3. Segurança](#3-como-a-segurança-funciona-spring-security--oauth2--jwt) |
+| entender por que toda movimentação pede uma chave | [3.6 Idempotência](#36-idempotência-por-que-toda-movimentação-pede-uma-chave) |
+| testar | [5. Caminho feliz](#5-caminho-feliz-t01-a-t12) → [6. Segurança](#6-cenários-de-segurança-s01-a-s13) → [7. Erros](#7-cenários-de-erro-e01-a-e20) |
 
 ---
 
-## 1. Caminho feliz
+## 1. Subir a aplicação (perfil `visitante`)
 
-```mermaid
-flowchart LR
-    A[1. Cliente origem] --> B[2. Conta origem]
-    C[3. Cliente destino] --> D[4. Conta destino]
-    B --> E[5. Depósito R$150]
-    E --> F[6. Saque R$20]
-    F --> G[7. Transferência R$50]
-    D --> G
-    G --> H[8. Extratos]
-    H --> I[9. Listagens]
+Pré-requisito único: **JDK 25** (`java -version` → `25.x`). Na raiz do repositório:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante
 ```
 
-### Passo 1 — Criar cliente origem
-
-`POST {{baseUrl}}/clientes`
-
-```json
-{
-  "nomeCompleto": "Joao Silva",
-  "cpf": "52998224725",
-  "email": "joao.silva@rkfbank.com",
-  "telefone": "11999998888",
-  "cep": "01001000",
-  "numero": "123",
-  "complemento": "Apto 45"
-}
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=visitante"
 ```
 
-✅ Response — CPF/telefone/CEP voltam formatados e o endereço vem do ViaCEP:
-
-**`201 Created`**
-
-```json
-{
-  "id": "0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-  "nomeCompleto": "Joao Silva",
-  "cpf": "529.982.247-25",
-  "email": "joao.silva@rkfbank.com",
-  "telefone": "(11) 99999-8888",
-  "endereco": {
-    "cep": "01001-000",
-    "logradouro": "Praça da Sé",
-    "bairro": "Sé",
-    "cidade": "São Paulo",
-    "uf": "SP",
-    "ibge": "3550308",
-    "numero": "123",
-    "complemento": "Apto 45"
-  }
-}
-```
-
-➡️ Salve `id` em `clienteOrigemId`.
-
-### Passo 2 — Abrir conta origem
-
-`POST {{baseUrl}}/contas/clientes/{{clienteOrigemId}}`
-
-```json
-{ "agencia": "0001", "numeroConta": "12345678", "tipoContaEnum": "CORRENTE" }
-```
-
-✅ Response — `saldo` zerado, conta ativa e `clienteId` igual ao do passo 1:
-
-**`201 Created`**
-
-```json
-{
-  "id": "0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d",
-  "clienteId": "0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-  "agencia": "0001",
-  "numeroConta": "12345678",
-  "tipoContaEnum": "CORRENTE",
-  "saldo": 0.00,
-  "ativa": true
-}
-```
-
-➡️ Salve `id` em `contaOrigemId`.
-
-### Passo 3 — Criar cliente destino
-
-`POST {{baseUrl}}/clientes`
-
-```json
-{
-  "nomeCompleto": "Maria Souza",
-  "cpf": "16899535009",
-  "email": "maria.souza@rkfbank.com",
-  "telefone": "31999997777",
-  "cep": "30140071",
-  "numero": "500",
-  "complemento": "Sala 10"
-}
-```
-
-✅ Response:
-
-**`201 Created`**
-
-```json
-{
-  "id": "d974d93b-b9a7-4f18-bd49-73602380bbcf",
-  "nomeCompleto": "Maria Souza",
-  "cpf": "168.995.350-09",
-  "email": "maria.souza@rkfbank.com",
-  "telefone": "(31) 99999-7777",
-  "endereco": {
-    "cep": "30140-071",
-    "logradouro": "Rua dos Aimorés",
-    "bairro": "Boa Viagem",
-    "cidade": "Belo Horizonte",
-    "uf": "MG",
-    "ibge": "3106200",
-    "numero": "500",
-    "complemento": "Sala 10"
-  }
-}
-```
-
-➡️ Salve `id` em `clienteDestinoId`.
-
-### Passo 4 — Abrir conta destino
-
-`POST {{baseUrl}}/contas/clientes/{{clienteDestinoId}}`
-
-```json
-{ "agencia": "0001", "numeroConta": "87654321", "tipoContaEnum": "POUPANCA" }
-```
-
-✅ Response:
-
-**`201 Created`**
-
-```json
-{
-  "id": "e8c54972-70ab-4c43-8dda-cd4a15d3944f",
-  "clienteId": "d974d93b-b9a7-4f18-bd49-73602380bbcf",
-  "agencia": "0001",
-  "numeroConta": "87654321",
-  "tipoContaEnum": "POUPANCA",
-  "saldo": 0.00,
-  "ativa": true
-}
-```
-
-➡️ Salve `id` em `contaDestinoId`.
-
-### Passo 5 — Depositar R$ 150,00 na origem
-
-`POST {{baseUrl}}/contas/{{contaOrigemId}}/deposito`
-
-```json
-{ "valor": 150.00, "descricao": "Deposito inicial" }
-```
-
-✅ Response: **`204 No Content`** — sem corpo. Saldo da origem: **150.00**.
-
-### Passo 6 — Sacar R$ 20,00 da origem
-
-`POST {{baseUrl}}/contas/{{contaOrigemId}}/saque`
-
-```json
-{ "valor": 20.00, "descricao": "Saque teste" }
-```
-
-✅ Response: **`204 No Content`** — sem corpo. Saldo da origem: **130.00**.
-
-### Passo 7 — Transferir R$ 50,00 da origem para o destino
-
-`POST {{baseUrl}}/contas/transferencia`
-
-```json
-{
-  "contaOrigemId": "{{contaOrigemId}}",
-  "contaDestinoId": "{{contaDestinoId}}",
-  "valor": 50.00,
-  "descricao": "Transferencia aluguel"
-}
-```
-
-✅ Response: **`204 No Content`** — sem corpo. Saldos: origem **80.00**, destino **50.00**.
-
-### Passo 8 — Extratos
-
-`GET {{baseUrl}}/contas/{{contaOrigemId}}/lancamentos`
-
-✅ Response — 3 lançamentos, do mais novo para o mais antigo. Repare nos vínculos: a transferência tem origem e
-destino; o saque só tem origem (saída); o depósito só tem destino (entrada):
-
-**`200 OK`**
-
-```json
-[
-  {
-    "id": "8f03630d-c698-40a6-adf8-203732576df6",
-    "tipoLancamento": "TRANSFERENCIA",
-    "valor": 50.00,
-    "contaOrigemId": "0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d",
-    "contaDestinoId": "e8c54972-70ab-4c43-8dda-cd4a15d3944f",
-    "descricao": "Transferencia aluguel",
-    "dataHora": "2026-10-14T01:57:45.263209Z"
-  },
-  {
-    "id": "576c92eb-7c72-40a5-9950-567cb9d3ea56",
-    "tipoLancamento": "SAQUE",
-    "valor": 20.00,
-    "contaOrigemId": "0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d",
-    "contaDestinoId": null,
-    "descricao": "Saque teste",
-    "dataHora": "2026-10-14T01:57:45.247471Z"
-  },
-  {
-    "id": "f4025a27-00a4-4163-a48e-22144cb8915a",
-    "tipoLancamento": "DEPOSITO",
-    "valor": 150.00,
-    "contaOrigemId": null,
-    "contaDestinoId": "0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d",
-    "descricao": "Deposito inicial",
-    "dataHora": "2026-10-14T01:57:45.224409Z"
-  }
-]
-```
-
-`GET {{baseUrl}}/contas/{{contaDestinoId}}/lancamentos`
-
-✅ Response — 1 lançamento, a transferência recebida (`contaDestinoId` é a conta destino):
-
-**`200 OK`**
-
-```json
-[
-  {
-    "id": "8f03630d-c698-40a6-adf8-203732576df6",
-    "tipoLancamento": "TRANSFERENCIA",
-    "valor": 50.00,
-    "contaOrigemId": "0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d",
-    "contaDestinoId": "e8c54972-70ab-4c43-8dda-cd4a15d3944f",
-    "descricao": "Transferencia aluguel",
-    "dataHora": "2026-10-14T01:57:45.263209Z"
-  }
-]
-```
-
-### Passo 9 — Listagens
-
-`GET {{baseUrl}}/clientes` (o mesmo que `?paginado=false`)
-
-✅ Response — array com os 2 clientes:
-
-**`200 OK`**
-
-```json
-[
-  {
-    "id": "0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-    "nomeCompleto": "Joao Silva",
-    "cpf": "529.982.247-25",
-    "email": "joao.silva@rkfbank.com",
-    "telefone": "(11) 99999-8888",
-    "endereco": {
-      "cep": "01001-000",
-      "logradouro": "Praça da Sé",
-      "bairro": "Sé",
-      "cidade": "São Paulo",
-      "uf": "SP",
-      "ibge": "3550308",
-      "numero": "123",
-      "complemento": "Apto 45"
-    }
-  },
-  {
-    "id": "d974d93b-b9a7-4f18-bd49-73602380bbcf",
-    "nomeCompleto": "Maria Souza",
-    "cpf": "168.995.350-09",
-    "email": "maria.souza@rkfbank.com",
-    "telefone": "(31) 99999-7777",
-    "endereco": {
-      "cep": "30140-071",
-      "logradouro": "Rua dos Aimorés",
-      "bairro": "Boa Viagem",
-      "cidade": "Belo Horizonte",
-      "uf": "MG",
-      "ibge": "3106200",
-      "numero": "500",
-      "complemento": "Sala 10"
-    }
-  }
-]
-```
-
-`GET {{baseUrl}}/clientes?paginado=true&page=0&size=1`
-
-✅ Response — página com 1 item, `totalElements: 2`, `totalPages: 2`:
-
-**`200 OK`**
-
-```json
-{
-  "content": [
-    {
-      "id": "0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-      "nomeCompleto": "Joao Silva",
-      "cpf": "529.982.247-25",
-      "email": "joao.silva@rkfbank.com",
-      "telefone": "(11) 99999-8888",
-      "endereco": {
-        "cep": "01001-000",
-        "logradouro": "Praça da Sé",
-        "bairro": "Sé",
-        "cidade": "São Paulo",
-        "uf": "SP",
-        "ibge": "3550308",
-        "numero": "123",
-        "complemento": "Apto 45"
-      }
-    }
-  ],
-  "empty": false,
-  "first": true,
-  "last": false,
-  "number": 0,
-  "numberOfElements": 1,
-  "pageable": {
-    "offset": 0,
-    "pageNumber": 0,
-    "pageSize": 1,
-    "paged": true,
-    "sort": {
-      "empty": true,
-      "sorted": false,
-      "unsorted": true
-    },
-    "unpaged": false
-  },
-  "size": 1,
-  "sort": {
-    "empty": true,
-    "sorted": false,
-    "unsorted": true
-  },
-  "totalElements": 2,
-  "totalPages": 2
-}
-```
-
-`GET {{baseUrl}}/contas` (o mesmo que `?paginado=false`)
-
-✅ Response — array com as 2 contas (origem com `saldo: 80.00`, destino com `50.00`):
-
-**`200 OK`**
-
-```json
-[
-  {
-    "id": "0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d",
-    "clienteId": "0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-    "agencia": "0001",
-    "numeroConta": "12345678",
-    "tipoContaEnum": "CORRENTE",
-    "saldo": 80.00,
-    "ativa": true
-  },
-  {
-    "id": "e8c54972-70ab-4c43-8dda-cd4a15d3944f",
-    "clienteId": "d974d93b-b9a7-4f18-bd49-73602380bbcf",
-    "agencia": "0001",
-    "numeroConta": "87654321",
-    "tipoContaEnum": "POUPANCA",
-    "saldo": 50.00,
-    "ativa": true
-  }
-]
-```
-
-`GET {{baseUrl}}/contas?paginado=true&page=0&size=10`
-
-✅ Response — página com as 2 contas:
-
-**`200 OK`**
-
-```json
-{
-  "content": [
-    {
-      "id": "0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d",
-      "clienteId": "0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-      "agencia": "0001",
-      "numeroConta": "12345678",
-      "tipoContaEnum": "CORRENTE",
-      "saldo": 80.00,
-      "ativa": true
-    },
-    {
-      "id": "e8c54972-70ab-4c43-8dda-cd4a15d3944f",
-      "clienteId": "d974d93b-b9a7-4f18-bd49-73602380bbcf",
-      "agencia": "0001",
-      "numeroConta": "87654321",
-      "tipoContaEnum": "POUPANCA",
-      "saldo": 50.00,
-      "ativa": true
-    }
-  ],
-  "empty": false,
-  "first": true,
-  "last": true,
-  "number": 0,
-  "numberOfElements": 2,
-  "pageable": {
-    "offset": 0,
-    "pageNumber": 0,
-    "pageSize": 10,
-    "paged": true,
-    "sort": {
-      "empty": true,
-      "sorted": false,
-      "unsorted": true
-    },
-    "unpaged": false
-  },
-  "size": 10,
-  "sort": {
-    "empty": true,
-    "sorted": false,
-    "unsorted": true
-  },
-  "totalElements": 2,
-  "totalPages": 1
-}
-```
-
----
-
-## 2. Cenários de erro
-
-Rode depois do caminho feliz (alguns dependem dos dados criados). Todo erro devolve o mesmo formato
-(`timestamp`, `status`, `error`, `message`, `path`, `campos`) — ver [contrato, seção 6](README_CONTRATO_API.md#6-erros).
-
-| # | Cenário | Esperado |
-|---|---|---|
-| E1 | CPF inválido | `400`, `campos[0].campo = "cpf"` |
-| E2 | Campo obrigatório vazio | `400`, campo `nomeCompleto` |
-| E3 | CPF repetido | `409` `CPF ja cadastrado` |
-| E4 | E-mail repetido | `409` `Email ja cadastrado` |
-| E5 | CEP inexistente | `422` `CEP não encontrado` |
-| E6 | Cliente inexistente | `404` `Cliente não encontrado` |
-| E7 | Número de conta repetido | `409` `Numero de conta ja existe` |
-| E8 | Agência inválida | `400`, campo `agencia` |
-| E9 | Tipo de conta inválido | `400` `JSON invalido ou tipo de campo incompativel` |
-| E10 | Valor zero | `400`, campo `valor` |
-| E11 | Três casas decimais | `400`, campo `valor` |
-| E12 | Saldo insuficiente (saque) | `422` `Saldo insuficiente` |
-| E13 | Saldo insuficiente (transferência) | `422` `Saldo insuficiente para transferencia` |
-| E14 | Mesma conta | `422` `Conta de origem e destino nao podem ser iguais` |
-| E15 | Conta inexistente | `404` `Conta nao encontrada` |
-| E16 | ID inválido na URL | `400` `Parametro de URL invalido` |
-| E17 | Paginação inválida | `400`, campo `size` |
-| E18 | JSON quebrado | `400` `JSON invalido ou tipo de campo incompativel` |
-
-Nenhum desses erros altera saldo: no fim, a origem continua com **80.00**.
-
-### E1 — CPF inválido
-
-`POST {{baseUrl}}/clientes`
-
-```json
-{
-  "nomeCompleto": "Pedro Lima",
-  "cpf": "11111111111",
-  "email": "pedro.lima@rkfbank.com",
-  "telefone": "11988887777",
-  "cep": "01001000",
-  "numero": "10"
-}
-```
-
-**`400 Bad Request`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.366270600Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Requisicao invalida",
-  "path": "/clientes",
-  "campos": [
-    {
-      "campo": "cpf",
-      "mensagem": "cpf inválido"
-    }
-  ]
-}
-```
-
-### E2 — Campo obrigatório vazio
-
-`POST {{baseUrl}}/clientes` — mesmo corpo do E1, com CPF válido e nome vazio:
-
-```json
-{
-  "nomeCompleto": "",
-  "cpf": "39053344705",
-  "email": "pedro.lima@rkfbank.com",
-  "telefone": "11988887777",
-  "cep": "01001000",
-  "numero": "10"
-}
-```
-
-**`400 Bad Request`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.376268400Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Requisicao invalida",
-  "path": "/clientes",
-  "campos": [
-    {
-      "campo": "nomeCompleto",
-      "mensagem": "nomeCompleto e obrigatório"
-    }
-  ]
-}
-```
-
-### E3 — CPF repetido
-
-`POST {{baseUrl}}/clientes` — repita o corpo do passo 1.
-
-**`409 Conflict`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.384984800Z",
-  "status": 409,
-  "error": "Conflict",
-  "message": "CPF ja cadastrado",
-  "path": "/clientes",
-  "campos": []
-}
-```
-
-### E4 — E-mail repetido
-
-`POST {{baseUrl}}/clientes` — CPF novo, e-mail do passo 1:
-
-```json
-{
-  "nomeCompleto": "Pedro Lima",
-  "cpf": "39053344705",
-  "email": "joao.silva@rkfbank.com",
-  "telefone": "11988887777",
-  "cep": "01001000",
-  "numero": "10"
-}
-```
-
-**`409 Conflict`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.396567200Z",
-  "status": 409,
-  "error": "Conflict",
-  "message": "Email ja cadastrado",
-  "path": "/clientes",
-  "campos": []
-}
-```
-
-### E5 — CEP inexistente
-
-`POST {{baseUrl}}/clientes` — CPF e e-mail novos, CEP que não existe:
-
-```json
-{
-  "nomeCompleto": "Pedro Lima",
-  "cpf": "39053344705",
-  "email": "pedro.lima@rkfbank.com",
-  "telefone": "11988887777",
-  "cep": "99999999",
-  "numero": "10"
-}
-```
-
-**`422 Unprocessable Entity`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.555185300Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "message": "CEP não encontrado",
-  "path": "/clientes",
-  "campos": []
-}
-```
-
-### E6 — Cliente inexistente
-
-`POST {{baseUrl}}/contas/clientes/00000000-0000-0000-0000-000000000000`
-
-```json
-{ "agencia": "0001", "numeroConta": "11112222", "tipoContaEnum": "CORRENTE" }
-```
-
-**`404 Not Found`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.561189100Z",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Cliente não encontrado",
-  "path": "/contas/clientes/00000000-0000-0000-0000-000000000000",
-  "campos": []
-}
-```
-
-### E7 — Número de conta repetido
-
-`POST {{baseUrl}}/contas/clientes/{{clienteOrigemId}}` — repita o corpo do passo 2.
-
-**`409 Conflict`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.567751Z",
-  "status": 409,
-  "error": "Conflict",
-  "message": "Numero de conta ja existe",
-  "path": "/contas/clientes/0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-  "campos": []
-}
-```
-
-### E8 — Agência inválida
-
-`POST {{baseUrl}}/contas/clientes/{{clienteOrigemId}}`
-
-```json
-{ "agencia": "1", "numeroConta": "11112222", "tipoContaEnum": "CORRENTE" }
-```
-
-**`400 Bad Request`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.572761Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Requisicao invalida",
-  "path": "/contas/clientes/0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-  "campos": [
-    {
-      "campo": "agencia",
-      "mensagem": "agencia deve ter 4 digitos"
-    }
-  ]
-}
-```
-
-### E9 — Tipo de conta inválido
-
-`POST {{baseUrl}}/contas/clientes/{{clienteOrigemId}}`
-
-```json
-{ "agencia": "0001", "numeroConta": "11112222", "tipoContaEnum": "SALARIO" }
-```
-
-**`400 Bad Request`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.576761900Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "JSON invalido ou tipo de campo incompativel",
-  "path": "/contas/clientes/0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-  "campos": []
-}
-```
-
-### E10 — Valor zero
-
-`POST {{baseUrl}}/contas/{{contaOrigemId}}/deposito`
-
-```json
-{ "valor": 0 }
-```
-
-**`400 Bad Request`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.581994400Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Requisicao invalida",
-  "path": "/contas/0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d/deposito",
-  "campos": [
-    {
-      "campo": "valor",
-      "mensagem": "valor deve ser maior que zero"
-    }
-  ]
-}
-```
-
-### E11 — Três casas decimais
-
-`POST {{baseUrl}}/contas/{{contaOrigemId}}/deposito`
-
-```json
-{ "valor": 10.555 }
-```
-
-**`400 Bad Request`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.588995600Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Requisicao invalida",
-  "path": "/contas/0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d/deposito",
-  "campos": [
-    {
-      "campo": "valor",
-      "mensagem": "valor deve ter no maximo 2 casas decimais"
-    }
-  ]
-}
-```
-
-### E12 — Saldo insuficiente (saque)
-
-`POST {{baseUrl}}/contas/{{contaOrigemId}}/saque`
-
-```json
-{ "valor": 999999.00 }
-```
-
-**`422 Unprocessable Entity`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.595615100Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "message": "Saldo insuficiente",
-  "path": "/contas/0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d/saque",
-  "campos": []
-}
-```
-
-### E13 — Saldo insuficiente (transferência)
-
-`POST {{baseUrl}}/contas/transferencia`
-
-```json
-{
-  "contaOrigemId": "{{contaOrigemId}}",
-  "contaDestinoId": "{{contaDestinoId}}",
-  "valor": 999999.00
-}
-```
-
-**`422 Unprocessable Entity`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.603542700Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "message": "Saldo insuficiente para transferencia",
-  "path": "/contas/transferencia",
-  "campos": []
-}
-```
-
-### E14 — Transferência para a mesma conta
-
-`POST {{baseUrl}}/contas/transferencia`
-
-```json
-{
-  "contaOrigemId": "{{contaOrigemId}}",
-  "contaDestinoId": "{{contaOrigemId}}",
-  "valor": 10.00
-}
-```
-
-**`422 Unprocessable Entity`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.607062800Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "message": "Conta de origem e destino nao podem ser iguais",
-  "path": "/contas/transferencia",
-  "campos": []
-}
-```
-
-### E15 — Conta inexistente
-
-`POST {{baseUrl}}/contas/00000000-0000-0000-0000-000000000000/deposito`
-
-```json
-{ "valor": 10.00 }
-```
-
-**`404 Not Found`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.612382600Z",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Conta nao encontrada",
-  "path": "/contas/00000000-0000-0000-0000-000000000000/deposito",
-  "campos": []
-}
-```
-
-### E16 — ID inválido na URL
-
-`GET {{baseUrl}}/contas/abc/lancamentos`
-
-**`400 Bad Request`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.616381700Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Parametro de URL invalido",
-  "path": "/contas/abc/lancamentos",
-  "campos": [
-    {
-      "campo": "contaId",
-      "mensagem": "Tipo invalido para o parametro contaId"
-    }
-  ]
-}
-```
-
-### E17 — Paginação inválida
-
-`GET {{baseUrl}}/clientes?paginado=true&size=0`
-
-**`400 Bad Request`**
-
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.620383800Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Requisicao invalida",
-  "path": "/clientes",
-  "campos": [
-    {
-      "campo": "size",
-      "mensagem": "deve estar entre 1 e 100"
-    }
-  ]
-}
-```
-
-### E18 — JSON quebrado
-
-`POST {{baseUrl}}/contas/{{contaOrigemId}}/deposito` com o corpo (propositalmente incompleto):
+| O perfil `visitante`... | Por quê |
+|---|---|
+| usa H2 em memória | sem Docker; **os dados somem ao parar a API** (cada subida começa limpa) |
+| cria só as contas da Ana e do Bruno | dá para testar sem cadastrar nada |
+| sorteia o segredo do JWT a cada subida | ninguém conhece a chave, então ninguém forja token |
+| não cria admin e ignora o `.env` para segredos | nada de acesso privilegiado em um perfil público |
+| dá token de 60 min | sobra tempo para seguir o guia |
+
+No log, confira:
 
 ```text
-{ "valor": 
+The following 1 profile is active: "visitante"
+Successfully applied 8 migrations to schema "PUBLIC", now at version v8
+Executing SQL callback: afterMigrate - dados visitantes
+Tomcat started on port 8080
 ```
 
-**`400 Bad Request`**
+E `curl -s http://localhost:8080/actuator/health` → `{"groups":["liveness","readiness"],"status":"UP"}`.
 
-```json
-{
-  "timestamp": "2026-10-14T01:57:45.626459800Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "JSON invalido ou tipo de campo incompativel",
-  "path": "/contas/0a9a618b-f1a3-41ca-9ef7-a935eecf6b2d/deposito",
-  "campos": []
-}
-```
+> Quer rodar com MySQL? Veja [backend/README.md → Como rodar](README.md). O perfil padrão (MySQL) não tem as contas
+> de visitante; nele você cria as suas pelo cadastro (T11).
 
 ---
 
-## 3. Mesmo fluxo via curl (Git Bash)
+## 2. Contas de visitante
+
+Criadas pelo Flyway (`db/seed/visitante/afterMigrate__dados_visitantes.sql`) a cada subida do perfil `visitante`.
+
+| | 🟠 Conta de **origem** | 🔵 Conta de **destino** |
+|---|---|---|
+| Quem | **Ana Visitante** | **Bruno Visitante** |
+| CPF (login) | `246.813.579-28` | `975.318.642-82` |
+| Senha | `Visitante@2026` | `Visitante@2026` |
+| `clienteId` | `a0000000-0000-4000-8000-000000000112` | `a0000000-0000-4000-8000-000000000122` |
+| `contaId` | `a0000000-0000-4000-8000-000000000114` | `a0000000-0000-4000-8000-000000000124` |
+| Agência / conta | `0001` / `900001` — corrente | `0001` / `900002` — corrente |
+| Saldo ao nascer | **R$ 1.000,00** | **R$ 500,00** |
+
+Nomes, CPFs (válidos pelos dígitos verificadores), e-mails e endereços são fictícios. A senha só existe neste
+perfil, que só roda na sua máquina.
+
+---
+
+## 3. Como a segurança funciona (Spring Security + OAuth2 + JWT)
+
+### 3.1 Os quatro conceitos
+
+| Conceito | Pergunta que responde | No RKF Bank |
+|---|---|---|
+| **Autenticação** | *quem é você?* | CPF + senha em `POST /auth/login`, conferida contra o hash **BCrypt** em `tb_usuario` |
+| **Token (JWT)** | *como provo quem sou nas próximas chamadas?* | o login devolve um **JWT** assinado (HS256), enviado em `Authorization: Bearer <token>` |
+| **Autorização por perfil** | *o seu tipo de usuário pode usar esta rota?* | `ADMIN` lista clientes e vê todas as contas; `CLIENTE` não (`403`) |
+| **Autorização por dono** | *este dado é seu?* | cliente só mexe nas **próprias** contas (`403`); o `clienteId` vem **do token**, nunca do corpo |
+
+`401` = "não sei quem você é". `403` = "sei quem você é, mas você não pode". `429` = "você tentou demais".
+
+### 3.2 Onde entra o OAuth2 (e onde não entra)
+
+| Papel no OAuth2 | O que faz | No RKF Bank |
+|---|---|---|
+| *Resource Owner* | dono dos dados | o cliente (Ana, Bruno) |
+| *Client* | app que pede acesso | o site Next.js (ou o seu Postman) |
+| *Authorization Server* | confere a identidade e **emite** o token | a própria API, no `POST /auth/login` |
+| *Resource Server* | **valida** o token e protege as rotas | a própria API, com `spring-boot-starter-security-oauth2-resource-server` |
+
+Usamos a metade **Resource Server** do OAuth2 de verdade — a parte oficial do Spring Security que valida assinatura,
+algoritmo, expiração e emissor do JWT — em vez de um filtro caseiro. A emissão é um login próprio com CPF + senha.
+Fluxos completos do OAuth2 (*authorization code*, *refresh token*, login social) entram quando houver mais de um app
+consumindo a API (3.7).
+
+### 3.3 O caminho de uma requisição
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor V as Visitante (Postman ou site)
+    participant L as POST /auth/login
+    participant SEC as Spring Security<br/>(BearerTokenAuthenticationFilter)
+    participant AZ as AuthorizationFilter
+    participant S as IdempotenciaService + ContaService
+    V->>L: { cpf, senha }
+    alt 5 senhas erradas em 15 min
+        L-->>V: 429 Too Many Requests (Retry-After)
+    else senha confere (BCrypt)
+        L-->>V: 200 { token (JWT HS256), perfil, clienteId }
+    end
+    V->>SEC: POST /contas/transferencia + Bearer eyJ... + Idempotency-Key
+    alt sem token, assinatura errada ou vencido
+        SEC-->>V: 401 Unauthorized
+    else token válido
+        SEC->>AZ: ROLE_CLIENTE ou ROLE_ADMIN (claim "perfil")
+        AZ->>S: controller → serviços
+        alt chave já usada nesta mesma operação
+            S-->>V: 204 + Idempotency-Replayed: true (nada movimenta)
+        else conta de outro cliente
+            S-->>V: 403 Forbidden
+        else tudo certo
+            S-->>V: 204 (dinheiro e chave gravados na mesma transação)
+        end
+    end
+```
+
+### 3.4 O que vai dentro do token
+
+`header.payload.assinatura`; as duas primeiras partes são **só Base64** (qualquer um lê). Por isso o payload não
+leva CPF, nome nem senha. Exemplo real:
+
+```json
+{"iss":"rkfbank","sub":"<id do usuário>","clienteId":"<id do cliente>","exp":1792532005,"iat":1792531105,"perfil":"CLIENTE"}
+```
+
+`sub` é o id do **usuário** (não o CPF); `clienteId` é de onde sai a regra de dono; `perfil` vira `ROLE_CLIENTE` ou
+`ROLE_ADMIN`; `exp - iat` é a validade. Quem garante que ninguém trocou `CLIENTE` por `ADMIN` é a **assinatura**
+(HMAC-SHA256): mudou uma letra, não bate → `401`.
+
+### 3.5 Quem é quem no código
+
+| Arquivo | Papel |
+|---|---|
+| `config/ConfiguracaoSeguranca.java` | rotas públicas, rota de admin, *stateless*, Resource Server com JWT, BCrypt, chave HS256 |
+| `services/AuthService.java` + `security/LimitadorTentativasLogin.java` | confere CPF + senha (mesma resposta para CPF inexistente e senha errada) e o limite de tentativas |
+| `services/TokenService.java` | monta e assina o JWT |
+| `services/IdempotenciaService.java` | garante que cada movimentação acontece uma vez só por `Idempotency-Key` |
+| `security/ConversorTokenUsuario.java` | a cada requisição, confere se o usuário do token ainda existe, está ativo e tem o mesmo perfil (senão `401`): é o que faz desativar ou rebaixar alguém valer na hora |
+| `config/RespostaErroSeguranca.java` | 401/403 do Spring no formato de erro da API |
+
+Rotas públicas: `POST /clientes`, `POST /auth/login`, `GET /actuator/health`, `/error` e
+`GET /.well-known/oauth-protected-resource` (metadado do RFC 9728). Todo o resto exige token.
+
+### 3.6 Idempotência: por que toda movimentação pede uma chave
+
+Em dinheiro, **repetir** uma chamada é perigoso: a rede cai depois do débito, o app tenta de novo, e sem proteção o
+valor sai duas vezes. Por isso depósito, saque e transferência exigem o header `Idempotency-Key`:
+
+| Situação | Resposta |
+|---|---|
+| chave nova | movimenta, `204` |
+| mesma chave + mesmo corpo (repetição) | `204` + `Idempotency-Replayed: true`, **nada** movimenta |
+| mesma chave + corpo diferente | `422` (a chave já foi usada para outra operação) |
+| sem chave | `400` |
+
+Regra para quem chama: gere um UUID novo **por operação** e reuse o mesmo **só** para repetir aquela operação.
+
+### 3.7 Próximos passos de segurança
+
+| Passo | Para quê |
+|---|---|
+| Refresh token | sessão longa sem token de acesso longo |
+| RS256 + JWKS | quem só valida não precisa do segredo que assina |
+| Authorization Server dedicado (Spring Authorization Server / Keycloak) | vários apps, login social, MFA |
+
+---
+
+## 4. Preparar a ferramenta
+
+### 4.1 Postman / Insomnia
+
+| Variável | Valor |
+|---|---|
+| `baseUrl` | `http://localhost:8080` |
+| `contaAna` / `contaBruno` | `a0000000-0000-4000-8000-000000000114` / `a0000000-0000-4000-8000-000000000124` |
+| `clienteAna` / `clienteBruno` | `a0000000-0000-4000-8000-000000000112` / `a0000000-0000-4000-8000-000000000122` |
+| `tokenAna`, `tokenBruno`, `chave` | preenchidos pelos scripts abaixo |
+
+Login → **Scripts → Post-response**: `pm.environment.set("tokenAna", pm.response.json().token);`
+Movimentações → **Scripts → Pre-request**: `pm.environment.set("chave", crypto.randomUUID());` e header
+`Idempotency-Key: {{chave}}`. Para testar a repetição, desligue o pre-request e envie de novo.
+
+### 4.2 Git Bash (curl)
 
 ```bash
 API=http://localhost:8080
 H='Content-Type: application/json'
-
-CLIENTE_ID=$(curl -s -X POST $API/clientes -H "$H" -d '{
-  "nomeCompleto":"Joao Silva","cpf":"39053344705","email":"joao.curl@rkfbank.com",
-  "telefone":"11999998888","cep":"01001000","numero":"123","senha":"senha-curl-123"}' | sed -E 's/.*"id":"([^"]+)".*/\1/')
-
-# Login: guarda o token e manda em toda chamada protegida
-TOKEN=$(curl -s -X POST $API/auth/login -H "$H" -d '{"cpf":"39053344705","senha":"senha-curl-123"}' \
-  | sed -E 's/.*"token":"([^"]+)".*/\1/')
-AUTH="Authorization: Bearer $TOKEN"
-
-CONTA_ID=$(curl -s -X POST $API/contas/clientes/$CLIENTE_ID -H "$H" -H "$AUTH" \
-  -d '{"agencia":"0001","numeroConta":"55555555","tipoContaEnum":"CORRENTE"}' | sed -E 's/.*"id":"([^"]+)".*/\1/')
-
-curl -i -X POST $API/contas/$CONTA_ID/deposito -H "$H" -H "$AUTH" -d '{"valor":150.00}'
-curl -i -X POST $API/contas/$CONTA_ID/saque    -H "$H" -H "$AUTH" -d '{"valor":20.00}'
-curl -s $API/contas/$CONTA_ID/lancamentos -H "$AUTH"
-
-# Sem o header → 401
-curl -s $API/contas/$CONTA_ID/lancamentos
+CA=a0000000-0000-4000-8000-000000000114   # conta da Ana
+CB=a0000000-0000-4000-8000-000000000124   # conta do Bruno
+login() { curl -s -X POST $API/auth/login -H "$H" -d "{\"cpf\":\"$1\",\"senha\":\"Visitante@2026\"}" | sed -E 's/.*"token":"([^"]+)".*/\1/'; }
+TA=$(login 24681357928); AA="Authorization: Bearer $TA"
+TB=$(login 97531864282); AB="Authorization: Bearer $TB"
+chave() { echo "Idempotency-Key: $(node -e 'console.log(crypto.randomUUID())')"; }
 ```
 
-> O `sed` extrai o campo da resposta. Com `jq` instalado, prefira `| jq -r .id` e `| jq -r .token`.
-> O token vale 15 min: passou disso, rode o login de novo. Nunca cole um token real em issue, recado ou chat.
+### 4.3 PowerShell
+
+```powershell
+$API = "http://localhost:8080"; $CA = "a0000000-0000-4000-8000-000000000114"; $CB = "a0000000-0000-4000-8000-000000000124"
+function Login($cpf) { (Invoke-RestMethod -Method Post "$API/auth/login" -ContentType "application/json" -Body (@{cpf=$cpf; senha="Visitante@2026"} | ConvertTo-Json)).token }
+$TA = Login "24681357928"; $TB = Login "97531864282"
+function Mov($token) { @{ Authorization = "Bearer $token"; "Idempotency-Key" = [guid]::NewGuid().ToString() } }
+Invoke-RestMethod -Method Post "$API/contas/$CA/deposito" -Headers (Mov $TA) -ContentType "application/json" -Body '{"valor":150.00}'
+```
 
 ---
 
-## 4. Acompanhando pelos logs
+## 5. Caminho feliz (T01 a T12)
 
-Cada requisição recebe um id, devolvido no header `X-Request-Id` da resposta e impresso entre colchetes em
-**todas** as linhas de log daquela chamada (inclusive o SQL do Hibernate). Para achar uma chamada específica no
-console, envie o seu próprio id (letras, números e `-`, até 64 caracteres):
-
-```bash
-curl -i -X POST $API/contas/transferencia -H "$H" -H "X-Request-Id: e2e-transf-001" -d '{ ... }'
+```mermaid
+flowchart LR
+    A["T01-T03 Ana entra<br/>R$ 1.000,00"] --> B["T04 depósito +150<br/>R$ 1.150,00"]
+    B --> C["T05 saque −50<br/>R$ 1.100,00"]
+    C --> D["T06 transferência −200<br/>Ana R$ 900,00"]
+    D --> E["T07 repetição da T06<br/>continua R$ 900,00"]
+    E --> F["T08-T09 Bruno<br/>R$ 500 → R$ 700,00"]
+    F --> G["T10-T12 extrato, poupança, cadastro"]
 ```
 
-```text
-INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.s.ContaService : Transferencia de 50.00 da conta 672e4ddf-... para 83af15fb-...
-INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.c.FiltroLogRequisicao : POST /contas/transferencia -> 204 (15 ms)
-```
-
-O que conferir durante o roteiro:
-
-- toda chamada gera uma linha `FiltroLogRequisicao` com método, rota, status e duração;
-- operações concluídas (cadastro, abertura, depósito, saque, transferência) aparecem em `INFO`;
-- recusas de regra de negócio (E3–E7, E12–E15) e erros de entrada (E1, E2, E8–E11, E16–E18) aparecem em `WARN`;
-- **CPF e e-mail nunca aparecem no log.** Senha, hash e token JWT também não (seção 7.6).
-
-Configuração: [log4j2-spring.xml](src/main/resources/log4j2-spring.xml).
-
----
-
-## 5. Conferindo no banco
-
-Depois do caminho feliz, rode as consultas da seção **Banco de dados** do [backend/README.md](README.md)
-e confira: 2 clientes, 2 endereços, 2 contas (80.00 e 50.00) e 4 lançamentos.
-
----
-
-## 6. Checklist de validação do MVP (QA)
-
-O checklist detalhado, item a item, com o resultado da última execução fica em
-[CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md). Ao retestar, atualize a data e os resultados lá.
-Resumo para a validação do MVP:
-
-| ✔ | Item |
-|:---:|---|
-| ☐ | Passos 1 a 9 do caminho feliz com o resultado esperado |
-| ☐ | Cenários E1 a E18 com o status esperado |
-| ☐ | Saldos finais batem (origem 80.00, destino 50.00) |
-| ☐ | Logs com `X-Request-Id` em cada linha e sem CPF/e-mail (seção 4) |
-| ☐ | Mensagens de erro fazem sentido para um usuário final |
-| ☐ | Cadastro pela tela (`http://localhost:3000/cadastro`) com sucesso e com erro de CPF repetido |
-
----
-
-## 7. Login, perfis e dados sensíveis (Spring Security + JWT)
-
-> ✅ **Implementado** na feature 2 (branch `feature/spring-security-jwt`, contrato 2.0). Decisões em
-> [planing/decisoes.md](../planing/decisoes.md) → "Login com CPF + senha e JWT": login por CPF + senha, JWT HS256
-> validado pelo OAuth2 Resource Server do Spring, `GET /clientes` só para `ADMIN`, admin inicial pelo `.env`.
-> Os mesmos cenários rodam automaticamente em `SegurancaIntegracaoTest` e no `scripts/smoke-e2e.mjs`.
-
-### 7.1 O que muda para quem testa
-
-| Antes | Depois |
-|---|---|
-| Qualquer chamada funciona sem identificação | Só `POST /clientes` (cadastro) e `POST /auth/login` são públicas |
-| Cadastro sem senha | Cadastro exige `senha` (8 a 72 caracteres); ela **nunca** volta no response |
-| Qualquer um movimenta qualquer conta | Depósito, saque, transferência, extrato e abertura de conta só nas contas **do dono do token** |
-| `GET /clientes` aberto | Só perfil `ADMIN` |
-| `GET /contas` lista todas | `CLIENTE` vê só as suas; `ADMIN` vê todas |
-
-Toda rota protegida recebe o header:
-
-```
-Authorization: Bearer <token>
-```
-
-No Postman/Insomnia, acrescente ao ambiente da seção 0:
-
-| Variável | Valor inicial |
-|---|---|
-| `tokenCliente` | (preenchido no passo 7.3) |
-| `tokenAdmin` | (preenchido no passo 7.4) |
-
-E use **Auth → Bearer Token → `{{tokenCliente}}`** na coleção (ou `{{tokenAdmin}}` só nas chamadas de admin).
-
-### 7.2 Configurar o segredo do JWT (uma vez por máquina)
-
-O token é assinado com um segredo que fica **só no `.env`**, nunca no código nem no Git.
-
-```bash
-# gera 32 bytes aleatórios em Base64 (Git Bash)
-openssl rand -base64 32
-```
-
-Coloque no `.env` (o `.env.example` traz as chaves com valores de exemplo):
-
-```
-JWT_SEGREDO=<valor gerado>
-JWT_EXPIRACAO=15m
-```
-
-Depois carregue o `.env` no terminal antes do `./mvnw spring-boot:run`, como as variáveis do banco.
-- Sem `JWT_SEGREDO`, ou com menos de 32 bytes, a API **não sobe** e diz por quê (de propósito: chave fraca é pior que nenhuma).
-- `JWT_EXPIRACAO` é opcional (padrão `15m`); aceita `30s`, `15m`, `1h`...
-- ⚠️ Trocou o `JWT_SEGREDO`? Todos os tokens emitidos antes deixam de valer (`401`). Basta fazer login de novo.
-
-### 7.3 Cadastrar e logar um usuário comum (perfil `CLIENTE`)
-
-Todo cadastro pela API nasce com perfil **`CLIENTE`**. Não existe campo para escolher o perfil: se existisse,
-qualquer pessoa se cadastraria como admin.
-
-**1. Cadastro:** `POST {{baseUrl}}/clientes` (o mesmo JSON do passo 1, com `senha`)
-
-```json
-{
-  "nomeCompleto": "Joao Silva",
-  "cpf": "52998224725",
-  "email": "joao.silva@rkfbank.com",
-  "telefone": "11999998888",
-  "cep": "01001000",
-  "numero": "123",
-  "complemento": "Apto 45",
-  "senha": "Senha@Forte123"
-}
-```
-
-✅ `201 Created` com o mesmo corpo do passo 1. **Confira que não existe campo `senha` na resposta.**
-
-**2. Login:** `POST {{baseUrl}}/auth/login`
-
-```json
-{ "cpf": "52998224725", "senha": "Senha@Forte123" }
-```
-
-✅ `200 OK`
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJya2ZiYW5rIiwic3ViIjoiNDhmNTQyMTktLi4uIiwicGVyZmlsIjoiQ0xJRU5URSIsImNsaWVudGVJZCI6IjAxMThjYjljLS4uLiIsImV4cCI6MTc2MDYxNTAwMH0.<assinatura>",
-  "tipo": "Bearer",
-  "expiraEmSegundos": 900,
-  "clienteId": "0118cb9c-7e71-4f02-8fc3-ef513e1b9149",
-  "perfil": "CLIENTE"
-}
-```
-
-➡️ Salve `token` em `tokenCliente`. `expiraEmSegundos` = 900 (15 min). O `clienteId` é o mesmo `id` do cadastro e é o
-que vai em `POST /contas/clientes/{clienteId}`.
-
-> 💡 **Salvar o token sozinho:** na aba **Scripts → Post-response** (Postman) da requisição de login, cole
-> `pm.environment.set("tokenCliente", pm.response.json().token);` (na de admin, troque para `tokenAdmin`).
-> Token expirou (`401` no meio do roteiro)? É só rodar o login de novo; não precisa cadastrar outra vez.
-
-**3. Usar o token:** a partir daqui os passos 2 a 8 da seção 1 rodam iguais, só que com o header
-`Authorization: Bearer {{tokenCliente}}`. Para a transferência do passo 7, o **destino** pode ser de outro
-cliente (é assim num banco de verdade). Só a **origem** precisa ser do dono do token.
-
-> 💡 Quer ver o que tem dentro do token? Cole em [jwt.io](https://jwt.io) (só tokens de teste!). O payload
-> **não é criptografado**, só assinado: qualquer um lê. Por isso o token leva só `iss` (`rkfbank`), `sub` (id do
-> usuário), `perfil`, `clienteId`, `iat` e `exp`; nunca CPF, e-mail ou senha.
-
-### 7.4 Cadastrar um administrador (perfil `ADMIN`)
-
-Não existe rota para criar admin, de propósito. O primeiro admin nasce **na subida da API**, a partir de duas
-variáveis do `.env` (como o Keycloak faz). Assim nenhuma senha de admin fica escrita no código, numa migração ou no Git.
-
-**Por que assim, e não de outro jeito:**
-
-| Alternativa | Por que foi descartada |
-|---|---|
-| Campo `perfil` no `POST /clientes` | Rota pública: qualquer pessoa mandaria `"perfil": "ADMIN"` (*escalada de privilégio*) |
-| Rota `POST /admin/usuarios` | Precisa de um admin para criar o primeiro admin (problema do ovo e da galinha) e é mais uma superfície de ataque |
-| Admin criado numa migração Flyway (`INSERT` com hash) | O hash vai para o Git e o **mesmo** admin com a **mesma** senha existiria em todo ambiente, inclusive produção |
-| ✅ Admin inicial por variável de ambiente (`ADMIN_CPF`/`ADMIN_SENHA`) | **Escolhida**: cada ambiente tem o seu, a senha só existe no `.env` e no banco vai só o hash |
-
-**1. Configure no `.env`** (CPF que **não** seja de cliente cadastrado; o admin não é cliente e não tem contas):
-
-```
-ADMIN_CPF=16899535009
-ADMIN_SENHA=<senha só de teste>
-```
-
-**2. Suba (ou reinicie) a API.** No log aparece uma vez:
-
-```text
-INFO  ... c.b.r.s.UsuarioService : Usuario admin 273a6fdf-... criado a partir do .env
-```
-
-Nas subidas seguintes: `Usuario admin ja existe; nada a fazer`. Regras:
-- Sem as duas variáveis: `ADMIN_CPF/ADMIN_SENHA nao definidos; nenhum admin criado` (a API sobe normal).
-- `ADMIN_CPF` já é de um cliente: o admin **não** é criado (`WARN`); um cliente nunca é promovido em silêncio.
-- Trocar `ADMIN_SENHA` depois **não** muda a senha do admin que já existe (a variável só vale na criação).
-
-**3. Faça login** (`POST /auth/login` com `ADMIN_CPF`/`ADMIN_SENHA`) e salve em `tokenAdmin`. A resposta vem com
-`"perfil": "ADMIN"` e `"clienteId": null`.
-
-O `ADMIN` lista clientes e todas as contas, mas **não** movimenta, não vê extrato e não abre conta de ninguém (`403`).
-
-**Alternativa: promover um cliente no banco.** Também funciona (o perfil é lido de `tb_usuario`), útil para testar
-um admin que também é cliente:
-
-MySQL (Docker), no Git Bash com o `.env` carregado:
-
-```bash
-docker exec -i rkfbank-mysql mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "
-  UPDATE tb_usuario SET perfil = 'ADMIN'
-  WHERE cliente_id = (SELECT id FROM tb_cliente WHERE cpf = '16899535009');"
-```
-
-H2 (perfil `test`): o console `http://localhost:8080/h2-console` fica **bloqueado** pelo Spring Security (`401`).
-Para ter um admin no H2, use `ADMIN_CPF`/`ADMIN_SENHA` (passos 1 a 3) em vez do `UPDATE`.
-
-Conferir que a promoção pegou:
-
-```sql
-SELECT c.cpf, u.perfil FROM tb_usuario u JOIN tb_cliente c ON c.id = u.cliente_id;
-```
-
-Depois da promoção, **faça login de novo** e salve em `tokenAdmin`.
-
-⚠️ **Pegadinha:** o perfil vai **dentro** do token no momento do login. Um token emitido antes da promoção continua
-dizendo `CLIENTE` até expirar. Promoveu ou rebaixou alguém? Novo login.
-
-**Rebaixar** um admin: o mesmo `UPDATE` com `perfil = 'CLIENTE'`.
-
-> Simplificação do MVP: num banco real, o funcionário do *back-office* (área interna) tem login corporativo com
-> 2 fatores, e cada ação dele vai para uma trilha de auditoria. Aqui o admin é só CPF + senha. 2 fatores e auditoria
-> estão na lista de ideias futuras de [débitos técnicos](../planing/debitos-tecnicos.md).
-
-### 7.5 Lidando com os dados de cada perfil
-
-| Dado | Onde fica | Quem vê | Cuidado |
+| # | O que fazer | Request | Esperado |
 |---|---|---|---|
-| Senha | `tb_usuario.senha_hash`, em **BCrypt** (`$2a$10$...`) | ninguém, nem o admin | Nunca volta em response nem aparece em log. Esqueceu? Não há como "ler" a senha: só redefinir (fora do MVP) |
-| CPF, e-mail, telefone, endereço | `tb_cliente` / `tb_endereco` | o próprio cliente; o `ADMIN` via `GET /clientes` | São dados pessoais (LGPD): não cole em issue, print ou recado |
-| Perfil (`CLIENTE`/`ADMIN`) | `tb_usuario.perfil` e dentro do token | quem tem o token | Admin nasce pelo `.env`; fora isso só muda pelo banco (7.4) |
-| Token JWT | só com quem fez login (header `Authorization`) | quem tem o token age como o dono | É uma credencial: não logar, não commitar, não mandar em chat. Vale até expirar (15 min) |
-| `JWT_SEGREDO` | `.env` de cada máquina | ninguém além do servidor | Quem tem o segredo emite token de qualquer um. Vazou? Troque no `.env` e reinicie: todos os tokens caem |
-| `ADMIN_SENHA` | `.env` (e o hash em `tb_usuario`) | ninguém além de quem administra o ambiente | Senha só de teste; nunca a mesma em dois ambientes |
+| T01 | Login da Ana | `POST /auth/login` `{"cpf":"246.813.579-28","senha":"Visitante@2026"}` | `200` · `perfil CLIENTE` · `clienteId …112` · `expiraEmSegundos 3600` |
+| T02 | Contas da Ana | `GET /contas` (token Ana) | `200`, **1** conta `900001`, `saldo 1000.00` |
+| T03 | Extrato inicial | `GET /contas/{{contaAna}}/lancamentos` | `DEPOSITO 1000.00` "Saldo de boas-vindas do visitante" |
+| T04 | Depósito R$ 150 | `POST /contas/{{contaAna}}/deposito` + chave nova · `{"valor":150.00,"descricao":"Freela"}` | `204`; saldo `1150.00` |
+| T05 | Saque R$ 50 | `POST /contas/{{contaAna}}/saque` + chave nova · `{"valor":50.00,"descricao":"Pastel"}` | `204`; saldo `1100.00` |
+| T06 | Transferir R$ 200 ao Bruno | `POST /contas/transferencia` + chave **K** · `{"contaOrigemId":"{{contaAna}}","contaDestinoId":"{{contaBruno}}","valor":200.00,"descricao":"Aluguel"}` | `204`, sem `Idempotency-Replayed`; Ana `900.00` |
+| T07 | **Repetir a T06** com a mesma **K** | idem | `204` **com** `Idempotency-Replayed: true`; Ana continua `900.00` |
+| T08 | Login do Bruno | `{"cpf":"97531864282","senha":"Visitante@2026"}` | `200` · `clienteId …122` |
+| T09 | Bruno vê o dinheiro | `GET /contas` e extrato (token Bruno) | `saldo 700.00`; **um** `TRANSFERENCIA 200.00` |
+| T10 | Extrato da Ana | `GET /contas/{{contaAna}}/lancamentos` | `TRANSFERENCIA 200` → `SAQUE 50` → `DEPOSITO 150` → `DEPOSITO 1000`; soma = **900** |
+| T11 | Poupança com número gerado | `POST /contas/clientes/{{clienteAna}}` `{"tipoContaEnum":"POUPANCA"}` | `201` · agência `0001` · número de **8 dígitos** (o último é dígito verificador) · `saldo 0.00` |
+| T12 | Cadastro de cliente novo (público, ViaCEP) | `POST /clientes` sem token (corpo abaixo) | `201`, CPF/telefone formatados, endereço do ViaCEP, **sem** senha na resposta |
 
-Conferindo no banco que a senha **não** está em texto puro:
+Corpo da T12 (precisa de internet; outros CPFs válidos: `16899535009`, `39053344705`):
 
-```sql
-SELECT c.cpf, u.perfil, u.senha_hash
-FROM tb_usuario u JOIN tb_cliente c ON c.id = u.cliente_id;
--- senha_hash deve começar com $2a$ (ou $2b$) e ter 60 caracteres; nunca a senha digitada
+```json
+{"nomeCompleto":"Joao Silva","cpf":"52998224725","email":"joao.silva@rkfbank.com","telefone":"11999998888","cep":"01001000","numero":"123","complemento":"Apto 45","senha":"senha-forte-1"}
 ```
 
-Dois clientes com a **mesma** senha têm hashes **diferentes**: é o *salt* (um valor aleatório guardado dentro do
-próprio hash). Se der igual, a senha não está passando pelo BCrypt.
+Respostas reais de referência:
 
-**Boas práticas com os dados de teste:**
-- Use só os CPFs de teste da seção 0 ou de um gerador; **nunca** CPF, e-mail ou telefone de pessoa real.
-- Senha de teste é só de teste: não reaproveite uma senha sua.
-- Esqueceu a senha de um usuário de teste? Não dá para recuperar (o hash é de mão única). Cadastre outro CPF ou
-  comece do zero (seção 0, item 3: `docker compose down -v` apaga usuários, clientes e contas juntos).
+```text
+T06 → HTTP/1.1 204
+T07 → HTTP/1.1 204
+      Idempotency-Replayed: true
+```
 
-### 7.6 Cenários de erro de segurança
+```json
+// T11
+{"id":"4d7532a3-...","clienteId":"a0000000-0000-4000-8000-000000000112","agencia":"0001","numeroConta":"95143998","tipoContaEnum":"POUPANCA","saldo":0.00,"ativa":true}
+```
+
+No Git Bash (depois da 4.2):
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST $API/contas/$CA/deposito -H "$H" -H "$AA" -H "$(chave)" -d '{"valor":150.00,"descricao":"Freela"}'
+curl -s -o /dev/null -w "%{http_code}\n" -X POST $API/contas/$CA/saque    -H "$H" -H "$AA" -H "$(chave)" -d '{"valor":50.00,"descricao":"Pastel"}'
+K="$(chave)"
+curl -s -i -X POST $API/contas/transferencia -H "$H" -H "$AA" -H "$K" -d "{\"contaOrigemId\":\"$CA\",\"contaDestinoId\":\"$CB\",\"valor\":200.00,\"descricao\":\"Aluguel\"}" | grep -E "^HTTP|^Idempotency"
+curl -s -i -X POST $API/contas/transferencia -H "$H" -H "$AA" -H "$K" -d "{\"contaOrigemId\":\"$CA\",\"contaDestinoId\":\"$CB\",\"valor\":200.00,\"descricao\":\"Aluguel\"}" | grep -E "^HTTP|^Idempotency"
+curl -s $API/contas -H "$AA"; echo; curl -s $API/contas -H "$AB"; echo
+```
+
+---
+
+## 6. Cenários de segurança (S01 a S13)
 
 | # | Cenário | Como provocar | Esperado |
 |---|---|---|---|
-| E19 | Cadastro sem senha | passo 7.3.1 sem o campo `senha` | `400`, campo `senha` |
-| E20 | Senha curta | `"senha": "123"` | `400`, campo `senha` |
-| E20b | Senha acima de 72 bytes | 40 vezes `ç` (cabe nos 72 caracteres, mas ocupa 80 bytes). Pelo Postman; no curl do Git Bash mande o corpo por arquivo (`--data-binary @corpo.json`): acento direto no `-d` chega quebrado e vira `JSON invalido` | `400`, campo `senha`: `senha deve ter no maximo 72 bytes` |
-| E21 | Senha errada | login com senha diferente | `401` `CPF ou senha invalidos` |
-| E22 | CPF não cadastrado | login com `11144477735` sem cadastro | `401` com a **mesma** mensagem do E21 |
-| E23 | Sem token | `GET /contas` sem o header `Authorization` | `401` `Autenticacao necessaria: envie o token no header Authorization (Bearer)` |
-| E24 | Token adulterado | troque 1 letra no meio do `token` | `401` `Token invalido ou expirado; faca login novamente` |
-| E25 | Token expirado | `JWT_EXPIRACAO=1m`, reinicie, faça login e espere **2 min** (o Spring tolera 60 s de diferença de relógio) | `401` (mesma mensagem do E24) |
-| E26 | Conta de outro cliente | depósito, saque, extrato ou transferência saindo de uma conta de outro CPF | `403` `Conta nao pertence ao usuario logado` |
-| E27 | Abrir conta para outro cliente | `POST /contas/clientes/{id de outro cliente}` | `403` `Voce so pode abrir conta no seu proprio cadastro` |
-| E28 | Cliente comum lista clientes | `GET /clientes` com `tokenCliente` | `403` `Acesso negado para o seu perfil` |
-| E29 | Admin lista clientes | `GET /clientes` com `tokenAdmin` | `200` com todos |
+| S01 | Sem token | `curl -i $API/contas` | `401` · `Autenticacao necessaria: envie o token no header Authorization (Bearer)` |
+| S02 | Senha errada | login da Ana com `"senha":"errada123"` | `401` · `CPF ou senha invalidos` |
+| S03 | CPF sem cadastro | login com `39053344705` | `401` com a **mesma** mensagem do S02 |
+| S04 | Token que não é JWT | `Authorization: Bearer isso-nao-e-um-jwt` | `401` · `Token invalido ou expirado; faca login novamente` |
+| S05 | Token adulterado | troque uma letra do meio do token | `401` · mesma do S04 |
+| S06 | Token de outra execução | faça login, **reinicie** a API e use o token antigo | `401`: o segredo foi sorteado de novo |
+| S07 | Bruno saca da conta da Ana | `POST /contas/{{contaAna}}/saque` + chave, token Bruno | `403` · `Conta nao pertence ao usuario logado` |
+| S08 | Bruno vê o extrato da Ana | `GET /contas/{{contaAna}}/lancamentos`, token Bruno | `403` |
+| S09 | Bruno transfere saindo da Ana | transferência com origem = conta da Ana, token Bruno | `403` |
+| S10 | Ana abre conta no cadastro do Bruno | `POST /contas/clientes/{{clienteBruno}}`, token Ana | `403` · `Voce so pode abrir conta no seu proprio cadastro` |
+| S11 | Cliente lista clientes | `GET /clientes`, token Ana | `403` · `Acesso negado para o seu perfil` |
+| S13 | Trocar a própria senha | `PATCH /auth/senha` (token da Ana) com `{"senhaAtual":"Visitante@2026","novaSenha":"senha-nova-da-ana"}`, depois use o token antigo | `204`; token antigo → `401` `Seu acesso foi alterado ou desativado; faca login novamente`; login com a nova → `200` (reinicie a API para voltar à senha pública) |
+| S12 | Força bruta | 5 logins errados para o Bruno, depois a senha **certa** | 5 × `401`, depois `429` com `Retry-After` (≈900 s) **mesmo com a senha certa** |
 
-Por que E21 e E22 têm a **mesma** mensagem: se a API dissesse "CPF não cadastrado", qualquer um descobriria quem
-é cliente do banco testando CPFs (*enumeração de usuários*).
+Por que S02 e S03 respondem igual: senão daria para descobrir quem é cliente testando CPFs. Por que S07 é `403` e não
+`404`: o dono é conferido antes de qualquer coisa que revele o estado da conta. Rode o S12 por último (ou reinicie a
+API depois): o Bruno fica 15 min sem entrar.
 
-**`401` × `403`:** `401 Unauthorized` = "não sei quem você é" (sem token, token inválido ou expirado).
-`403 Forbidden` = "sei quem você é, mas você não pode fazer isso" (conta de outro, rota de admin).
-Os dois saem no mesmo formato de erro da seção 2.
+---
 
-Nos logs (seção 4), confira que **não aparecem** senha, token nem `JWT_SEGREDO`, e que as recusas `401`/`403`
-saem em `WARN` com o `X-Request-Id`:
+## 7. Cenários de erro (E01 a E20)
 
-```text
-WARN  ... [smoke-e2e-123456] c.b.r.c.RespostaErroSeguranca : 401 em /contas: InsufficientAuthenticationException
-WARN  ... [smoke-e2e-654321] c.b.r.s.ContaService : Operacao recusada: usuario 6f93a7b0-... nao e dono da conta 2d1e...
-```
+Token da Ana e conta dela, salvo quando dito; toda movimentação com `Idempotency-Key` nova.
 
-Prova automática: depois de `scripts/validar.sh backend`, `grep -c eyJ .validar/backend.log` deve dar `0`
-(todo JWT começa com `eyJ`).
+| # | Cenário | Request | Esperado (`status` · `message` · `campos`) |
+|---|---|---|---|
+| E01 | CPF inválido | T12 com `"cpf":"12345678900"` | `400` · `cpf: cpf inválido` |
+| E02 | Campo vazio | T12 com CPF novo e `"nomeCompleto":""` | `400` · `nomeCompleto: nomeCompleto e obrigatório` |
+| E03 | CPF repetido | T12 com `"cpf":"24681357928"` | `409` · `CPF ja cadastrado` |
+| E04 | E-mail repetido | CPF novo, `"email":"ana.visitante@exemplo.test"` | `409` · `Email ja cadastrado` |
+| E05 | CEP inexistente | `"cep":"99999999"` | `422` · `CEP não encontrado` |
+| E06 | Cliente inexistente | `POST /contas/clientes/00000000-0000-0000-0000-000000000000` | `403` (regra de dono antes do `404`) |
+| E07 | Número de conta repetido | T11 com `"numeroConta":"900002"` | `409` · `Numero de conta ja existe` |
+| E08 | Agência inválida | T11 com `"agencia":"1"` | `400` · `agencia: agencia deve ter 4 digitos` |
+| E09 | Tipo inválido | `{"tipoContaEnum":"SALARIO"}` | `400` · `JSON invalido ou tipo de campo incompativel` |
+| E10 | Valor zero | depósito `{"valor":0}` | `400` · `valor: valor deve ser maior que zero` |
+| E11 | Três casas | depósito `{"valor":10.555}` | `400` · `valor: valor deve ter no maximo 2 casas decimais` |
+| E12 | Saldo insuficiente (saque) | `{"valor":999999.00}` | `422` · `Saldo insuficiente` |
+| E13 | Saldo insuficiente (transferência) | T06 com `999999.00` | `422` · `Saldo insuficiente para transferencia` |
+| E14 | Mesma conta | T06 com destino = conta da Ana | `422` · `Conta de origem e destino nao podem ser iguais` |
+| E15 | Conta inexistente | depósito em `00000000-0000-0000-0000-000000000000` | `404` · `Conta nao encontrada` |
+| E16 | Id inválido | `GET /contas/abc/lancamentos` | `400` · `contaId: Tipo invalido para o parametro contaId` |
+| E17 | Paginação inválida | `GET /contas?paginado=true&size=0` | `400` · `size: deve estar entre 1 e 100` |
+| E18 | JSON quebrado | corpo `{ "valor": ` | `400` · `JSON invalido ou tipo de campo incompativel` |
+| E19 | Sem `Idempotency-Key` | depósito sem o header | `400` · `Idempotency-Key: header Idempotency-Key e obrigatorio nas movimentacoes (gere um UUID novo por operacao)` |
+| E20 | Chave reaproveitada com outro valor | repita a chave da T06 com `"valor":999.00` | `422` · `Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao` |
 
-### 7.7 Testar sozinho, do zero (passo a passo)
+Depois de E10–E20, o saldo da Ana **não muda**. Mapa de status: `400` entrada · `401` identidade · `403` permissão ·
+`404` não existe · `409` conflito · `422` regra · `429` tentativas demais · `503` ViaCEP fora.
 
-Roteiro para conferir a feature inteira sem ajuda, em ~15 minutos. Cada passo diz o que você deve ver; se não vir,
-pare ali. Comandos no **Git Bash**, na raiz do repositório.
+---
 
-**Passo 0. Pré-requisitos (uma vez)**
+## 8. Conferindo nos logs
 
-| O quê | Como conferir |
+Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em todas as linhas de log dela). Mande o seu
+(`-H "X-Request-Id: meu-teste-001"`) e procure no console. Operações concluídas saem em `INFO`, recusas em `WARN`, e
+**nunca** aparece CPF, e-mail, senha, hash ou token.
+
+---
+
+## 9. Checklist
+
+| ✔ | Item | Seção |
+|:-:|---|---|
+| ☐ | API subiu com 8 migrações e o callback dos visitantes | 1 |
+| ☐ | Ana e Bruno entram e cada um vê só a própria conta | T01–T09 |
+| ☐ | Movimentações `204`; saldos finais Ana 900.00 / Bruno 700.00 | T04–T09 |
+| ☐ | Repetir a transferência **não** debita duas vezes | T07 |
+| ☐ | Extrato soma igual ao saldo | T10 |
+| ☐ | Conta nova com número gerado | T11 |
+| ☐ | S01–S13 e E01–E20 com o status esperado | 6, 7 |
+
+---
+
+## 10. O que roda sozinho
+
+| Comando | O que prova |
 |---|---|
-| JDK 25 | `java -version` → `25.x` |
-| Docker Desktop aberto | `docker info` responde sem erro |
-| `.env` com `JWT_SEGREDO` (e, opcional, `ADMIN_CPF`/`ADMIN_SENHA`) | `cut -d= -f1 .env` lista as chaves (nunca dê `cat .env` em tela compartilhada) |
+| `scripts/validar.sh backend` | 237 testes (regras, segurança, idempotência, repositórios, seeds) |
+| `node scripts/smoke-e2e.mjs` | o fluxo inteiro contra a API no ar (no perfil `visitante`: 32 verificações) |
 
-Sem `JWT_SEGREDO`: `echo "JWT_SEGREDO=$(openssl rand -base64 48)" >> .env`.
+---
 
-**Passo 1. Testes automáticos no H2 (rápido, sem Docker)**
+## 11. Problemas comuns
 
-```bash
-scripts/validar.sh backend
-```
-
-✅ `Tests run: 163, Failures: 0` (ou mais, se alguém acrescentou testes) e `BUILD SUCCESS`.
-
-**Passo 2. Banco limpo** (⚠️ **apaga o MySQL local**)
-
-```bash
-./run-test.sh
-```
-
-✅ `MySQL healthy!` e de novo `Tests run: ..., Failures: 0`. Os testes aqui **ainda rodam no H2**: o script
-só garante um MySQL vazio para os próximos passos.
-
-**Passo 3. Testes de integração no MySQL real** (não apaga nada)
-
-```bash
-scripts/testar-no-mysql.sh
-```
-
-✅ Precisa aparecer `Database dialect: MySQLDialect` e `(MySQL 8.4)`. É a prova de que o teste rodou no MySQL, não no H2.
-
-**Passo 4. Subir a API de verdade** (deixe este terminal aberto)
-
-```bash
-set -a && source <(tr -d '\r' < .env) && set +a
-./mvnw spring-boot:run
-```
-
-✅ No log: `Successfully applied 3 migrations ... now at version v3` (banco vazio) e, se configurou o admin,
-`Usuario admin <id> criado a partir do .env`.
-
-**Passo 5. Fluxo completo + segurança** (em outro terminal)
-
-```bash
-set -a && source <(tr -d '\r' < .env) && set +a   # para o smoke conhecer o ADMIN
-node scripts/smoke-e2e.mjs
-```
-
-✅ `29/29 verificações OK` (com o admin; sem ele, 28/28 e um `⏭️`).
-
-**Passo 6. Engenharia reversa e ataques ao token**
-
-```bash
-node scripts/engenharia-reversa-jwt.mjs
-```
-
-✅ `15/15 verificações OK` com o `.env` carregado (14/14 sem ele). Entenda cada linha na [seção 7.8](#78-engenharia-reversa-o-que-dá-para-descobrir-sem-o-código).
-
-**Passo 7. Na mão, para fixar** (Postman, Insomnia ou curl da [seção 3](#3-mesmo-fluxo-via-curl-git-bash))
-
-1. Cadastre com senha → `201`, sem `senha` na resposta.
-2. Login → copie o `token`.
-3. `GET /contas` **sem** header → `401`; **com** `Authorization: Bearer <token>` → `200`.
-4. Cadastre um segundo cliente, abra uma conta para ele e tente sacar dela com o **primeiro** token → `403`.
-5. `GET /clientes` com token de cliente → `403`; com token do admin → `200`.
-6. Espere 16 minutos e repita o passo 3 com o mesmo token → `401` (expirou).
-
-**Passo 8. No IntelliJ**
-
-- `SegurancaIntegracaoTest` → ▶ ao lado da classe (já tem `@ActiveProfiles("test")`, roda sem configurar nada).
-- Para **ver** a regra de dono acontecendo: breakpoint em `ContaService.buscarDoDono`, clique em 🐞 Debug no teste
-  `contaDeOutroClienteDa403EmTodasAsOperacoes` e observe `usuario.clienteId()` × `conta.getCliente().getId()`.
-
-**Se algo falhar:** tabela "Problemas comuns" do [backend/README.md](README.md#-problemas-comuns).
-
-### 7.8 Engenharia reversa: o que dá para descobrir sem o código
-
-*Engenharia reversa* é descobrir como um sistema funciona olhando o que ele **produz** (token, banco, bytecode, logs),
-sem confiar no que o código-fonte ou a documentação **dizem**. Aqui ela serve para duas coisas: entender por dentro
-e provar que um atacante, fazendo o mesmo, não consegue nada.
-
-#### a) Abrindo o JWT sem a chave
-
-Header e payload são só Base64. Qualquer um decodifica, sem segredo nenhum:
-
-```bash
-TOKEN=<cole o token do login>
-echo "$TOKEN" | cut -d. -f1 | tr '_-' '/+' | base64 -d 2>/dev/null; echo
-echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null; echo
-```
-
-Saída real (o `base64` pode reclamar do *padding* no fim; o conteúdo aparece mesmo assim):
-
-```text
-{"alg":"HS256"}
-{"iss":"rkfbank","sub":"65cd923c-ba48-4107-85f5-004081c2ba37","clienteId":"3c97b992-7aea-443a-a1e7-515fc938c368","exp":1792169896,"iat":1792168996,"perfil":"CLIENTE"}
-```
-
-O que isso ensina: `exp - iat = 900` (15 min); `sub` é o id do usuário e **não** o CPF; e qualquer coisa colocada no
-payload é pública. A **assinatura** (terceira parte) é que não dá para refazer sem o `JWT_SEGREDO`.
-
-#### b) Tentando forjar acesso (`scripts/engenharia-reversa-jwt.mjs`)
-
-O script faz o que um atacante faria com o token na mão. Saída real contra o MySQL:
-
-```text
-✅ Payload adulterado (perfil CLIENTE → ADMIN) mantendo a assinatura original → 401
-✅ "alg":"none" (token sem assinatura, ataque clássico) → 401
-✅ Assinatura removida (header.payload.) → 401
-✅ Assinado com chave chutada ("secret") → 401
-✅ Assinado com chave chutada (o valor de exemplo do .env.example) → 401
-✅ Expiração esticada para daqui a 10 anos → 401
-✅ clienteId trocado pelo de outra pessoa → 401
-✅ Token de ADMIN forjado com o segredo real → 200 (por isso o segredo nunca vai para o Git)
-```
-
-A última linha é a prova de controle: com a chave certa, a mesma forja **funciona**. Então os `401` vieram da
-assinatura, e não de um token mal montado. E ela mostra o tamanho do estrago se o `JWT_SEGREDO` vazar.
-O `alg:none` e o payload adulterado também viraram testes permanentes em `SegurancaIntegracaoTest`.
-
-#### c) Desmontando o hash BCrypt no banco
-
-```bash
-set -a && source <(tr -d '\r' < .env) && set +a
-docker exec -i rkfbank-mysql mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" --table -e "
-  SELECT SUBSTRING(senha_hash,1,4) versao, SUBSTRING(senha_hash,5,2) custo,
-         SUBSTRING(senha_hash,8,22) salt, LENGTH(senha_hash) tamanho
-  FROM tb_usuario WHERE perfil = 'CLIENTE' LIMIT 2;"
-```
-
-```text
-+--------+-------+------------------------+---------+
-| versao | custo | salt                   | tamanho |
-+--------+-------+------------------------+---------+
-| $2a$   | 10    | tt5zpI5CK0yxE46enp9ubu |      60 |
-| $2a$   | 10    | kALqLzJke5dnFXZyj7UWyO |      60 |
-+--------+-------+------------------------+---------+
-```
-
-Esses dois clientes foram criados pelo smoke com **a mesma senha**, e mesmo assim o salt e o hash saíram diferentes.
-É isso que derruba as *rainbow tables* (tabelas prontas de hash → senha). O `custo 10` significa 2¹⁰ rodadas: lento de
-propósito.
-
-#### d) Conferindo o schema real (e não o que a migração diz)
-
-```bash
-docker exec -i rkfbank-mysql mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SHOW CREATE TABLE tb_usuario\G"
-```
-
-O MySQL devolve a tabela como ele a guardou: `varchar(60)` no hash, os dois `UNIQUE KEY`, a `FOREIGN KEY` e o
-`CHECK`, que ele reescreve como `(perfil in (_utf8mb4'CLIENTE',_utf8mb4'ADMIN'))`.
-
-#### e) Desmontando o bytecode com `javap` (vem no JDK)
-
-Pergunta: o `toString()` que esconde a senha está mesmo no `.class` que roda? Compare um record comum com o nosso:
-
-```bash
-javap -c -p target/classes/com/br/rkfbank/dto/request/conta/AbrirContaRequestDto.class | grep -A2 "String toString"
-javap -c -p target/classes/com/br/rkfbank/dto/request/auth/LoginRequestDto.class      | grep -A3 "String toString"
-```
-
-```text
-public final java.lang.String toString();
-     1: invokedynamic #20,  0   // InvokeDynamic #0:toString:(L.../AbrirContaRequestDto;)Ljava/lang/String;
-
-public java.lang.String toString();
-     0: ldc           #16       // String LoginRequestDto[cpf=***, senha=***]
-     2: areturn
-```
-
-O record comum delega a um `invokedynamic` (`ObjectMethods.bootstrap`), que monta o texto com **todos** os campos em
-tempo de execução: se fosse o `LoginRequestDto`, a senha iria junto. O nosso virou uma constante (`ldc`): não existe
-caminho no bytecode que leia o campo `senha`. (Sem `javap` no PATH: `$JAVA_HOME/bin/javap`.)
-
-No IntelliJ dá para fazer o mesmo sem terminal: abra qualquer `.class` (inclusive das bibliotecas, com **Ctrl+N** →
-`BearerTokenAuthenticationFilter`) e ele mostra o código **descompilado** (decompilador Fernflower embutido), ou use
-**View → Show Bytecode** num arquivo do projeto.
-
-#### f) Pedindo ao Spring a lista de filtros que ele montou
-
-```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=test \
-  "-Dspring-boot.run.arguments=--server.port=8081 --logging.level.org.springframework.security.web.DefaultSecurityFilterChain=DEBUG"
-```
-
-Na subida aparece `Will secure any request with filters:`, seguido de 13 filtros na ordem em que rodam:
-
-```text
-DisableEncodeUrlFilter → WebAsyncManagerIntegrationFilter → SecurityContextHolderFilter → HeaderWriterFilter →
-LogoutFilter → OAuth2ProtectedResourceMetadataFilter → BearerTokenAuthenticationFilter → RequestCacheAwareFilter →
-SecurityContextHolderAwareRequestFilter → AnonymousAuthenticationFilter → SessionManagementFilter →
-ExceptionTranslationFilter → AuthorizationFilter
-```
-
-Os três que importam aqui: `BearerTokenAuthenticationFilter` lê e valida o token (o `401` de token inválido nasce
-nele); `ExceptionTranslationFilter` transforma "não autenticado" e "sem permissão" em `401`/`403`, chamando o nosso
-`RespostaErroSeguranca`; e `AuthorizationFilter` aplica as regras da `SecurityFilterChain` (o `403` do `GET /clientes`).
-
-**Achado desta investigação:** o `OAuth2ProtectedResourceMetadataFilter` publica, sem token,
-`GET /.well-known/oauth-protected-resource` (padrão RFC 9728, novo no Spring Security 7):
-
-```text
-{"resource":"http://localhost:8081","bearer_methods_supported":["header"],"tls_client_certificate_bound_access_tokens":true}
-```
-
-Não vaza nada sensível, mas é uma terceira rota pública que não estava no contrato. Foi documentada e ganhou um
-teste (`metadadoDoRecursoProtegidoEPublicoESoDizComoMandarOToken`) que falha se um dia ela passar a expor mais coisa.
+| Sintoma | Causa | Solução |
+|---|---|---|
+| `RequireJavaVersion failed` | JDK diferente do 25 | instale o JDK 25 |
+| Login da Ana dá `401` | a API não está no perfil `visitante` | suba com `-Dspring-boot.run.profiles=visitante` |
+| `400` em toda movimentação | faltou `Idempotency-Key` | 3.6 |
+| `429` no login | 5 senhas erradas seguidas | espere 15 min ou reinicie a API |
+| `401` depois de reiniciar | o segredo do JWT é sorteado a cada subida | faça login de novo |
+| `Port 8080 was already in use` | outra API rodando | feche a outra ou use `--server.port=8081` |
+| Cadastro `503` | ViaCEP fora ou sem internet | os testes com Ana e Bruno não dependem dele |
+| Acento vira `JSON invalido` no curl | Git Bash quebra UTF-8 no `-d` | `--data-binary @corpo.json` |

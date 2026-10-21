@@ -76,9 +76,7 @@ public class ClienteService {
         }
 
         // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Checado antes de chamar o ViaCEP.
-        if (request.senha().getBytes(StandardCharsets.UTF_8).length > MAX_BYTES_SENHA) {
-            throw new RequisicaoInvalidaException("senha", "senha deve ter no maximo " + MAX_BYTES_SENHA + " bytes");
-        }
+        garantirLimiteDoBcrypt("senha", request.senha());
 
         // Normaliza o CEP para manter somente dígitos antes de chamar o ViaCEP.
         String cep = request.cep().replaceAll("\\D", "");
@@ -119,6 +117,13 @@ public class ClienteService {
 
         log.info("Cliente {} cadastrado (cidade={}/{})", salvo.getId(), viaCep.localidade(), viaCep.uf());
         return toResponse(salvo);
+    }
+
+    // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Usado no cadastro e nas trocas de senha.
+    static void garantirLimiteDoBcrypt(String campo, String senha) {
+        if (senha.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES_SENHA) {
+            throw new RequisicaoInvalidaException(campo, campo + " deve ter no maximo " + MAX_BYTES_SENHA + " bytes");
+        }
     }
 
     public Cliente buscar(UUID id) {

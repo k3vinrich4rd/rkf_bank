@@ -13,7 +13,7 @@
 [![Java](https://img.shields.io/badge/Java-25_LTS-0A0F1C?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/25/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-0A0F1C?logo=springboot&logoColor=6DB33F)](https://spring.io/projects/spring-boot)
 [![Spring Security](https://img.shields.io/badge/Spring_Security-JWT-0A0F1C?logo=springsecurity&logoColor=6DB33F)](https://docs.spring.io/spring-security/reference/)
-[![Flyway](https://img.shields.io/badge/Flyway-V1→V3-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
+[![Flyway](https://img.shields.io/badge/Flyway-V1→V8_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![Testes](https://img.shields.io/badge/testes-163_✔-22C55E)](#-qualidade-e-testes)
@@ -32,7 +32,7 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 163 testes, 9 rotas REST, 3 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 237 testes, 9 rotas REST, 8 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -98,7 +98,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Felipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **163 testes**, CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **237 testes**, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -116,7 +116,8 @@ Sugestão de leitura, do mais simples ao mais interessante:
 | [`Conta.java`](backend/src/main/java/com/br/rkfbank/entities/Conta.java) | `@Version` para lock otimista |
 | [`ConfiguracaoSeguranca.java`](backend/src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java) | `SecurityFilterChain`, JWT HS256 com algoritmo fixo, BCrypt |
 | [`AuthService.java`](backend/src/main/java/com/br/rkfbank/services/AuthService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
-| [`db/migration/`](backend/src/main/resources/db/migration) | `V1` schema, `V2` migração de dados, `V3` usuários |
+| [`db/migration/`](backend/src/main/resources/db/migration) | `V1` a `V5`: uma tabela por versão (endereço, cliente, conta, lançamento, usuário) |
+| [`db/seed/`](backend/src/main/resources/db/seed) | callbacks `afterMigrate`: `equipe/` (Felipe e Renan, login só pelo `.env`) e `visitante/` (Ana e Bruno, contas públicas) |
 | [`FiltroLogRequisicao.java`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) | `X-Request-Id` em todas as linhas de log, com proteção contra log forjado |
 | [`SegurancaIntegracaoTest.java`](backend/src/test/java/com/br/rkfbank/SegurancaIntegracaoTest.java) | ataques ao token (`alg: none`, payload adulterado) |
 | [`planing/decisoes.md`](planing/decisoes.md) | por que cada escolha foi feita |
@@ -131,7 +132,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 2. Suba tudo: [rodando o projeto](#-rodando-o-projeto).
 3. Branch nova **sempre** da `origin/develop` atualizada: `git switch -c feature/minha-tarefa origin/develop`.
 4. Antes do PR: `scripts/validar.sh backend` (ou `frontend` / `tudo`).
-5. **Felipe:** o roteiro de testes de aceite está em [README_TESTES_E2E.md](backend/README_TESTES_E2E.md) e o checklist em [CHECKLIST_TESTES_E2E.md](backend/CHECKLIST_TESTES_E2E.md).
+5. **Felipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); o resultado vai para o [CHECKLIST_TESTES_E2E.md](backend/CHECKLIST_TESTES_E2E.md).
 6. Recados entre o time: [planing/recados.md](planing/recados.md).
 
 </details>
@@ -199,6 +200,58 @@ Sugestão de leitura, do mais simples ao mais interessante:
 🔐 **`401 Unauthorized`**: o JWT vence em 15 minutos. O site leva você ao login e depois **volta para o extrato**.
 
 **Sexta-feira.** 🏁 Você fechou a semana com R$ 100,00, um extrato certinho e nenhum dado pessoal nos logs. **Missão cumprida!** Agora é a vez do [roteiro E2E de verdade](backend/README_TESTES_E2E.md).
+
+<details>
+<summary>🔥 <b>Fase bônus: o fim de semana</b> (desbloqueada! clique)</summary>
+<br/>
+
+**Sábado.** Você está no ônibus, manda **R$ 30,00** para o Renan e o 4G cai no meio. O app não sabe se deu certo.
+
+<details>
+<summary>📶 Apertar "Transferir" de novo quando o sinal voltar</summary>
+<br/>
+
+✅ **`204`** com o header **`Idempotency-Replayed: true`**: o banco reconheceu a mesma `Idempotency-Key` e **não debitou de novo**. Saldo: **R$ 70,00**, não R$ 40,00. A chave foi gravada na mesma transação do dinheiro da primeira tentativa.
+
+</details>
+
+<details>
+<summary>✏️ Mudar o valor para R$ 35,00 e reenviar com a mesma chave</summary>
+<br/>
+
+❌ **`422`**: `Idempotency-Key ja usada em outra requisicao`. A chave pertence à operação de R$ 30,00; para outra operação, outra chave. O site faz isso sozinho: editou o campo, chave nova.
+
+</details>
+
+**Domingo.** Você desconfia que alguém viu você digitando a senha.
+
+<details>
+<summary>🔑 Trocar a senha pelo app</summary>
+<br/>
+
+✅ **`204`**: `PATCH /auth/senha` pediu a senha atual (um token roubado não basta) e gravou a nova. **Todo token emitido antes** caiu na hora: quem estivesse com o seu acesso recebe **`401`** na próxima chamada. Você entra de novo com a senha nova.
+
+</details>
+
+<details>
+<summary>🎲 Errar a senha atual cinco vezes seguidas</summary>
+<br/>
+
+🧱 **`429 Too Many Requests`** com `Retry-After`: o mesmo freio do login. Quem tenta adivinhar a sua senha espera 15 minutos a cada 5 chutes.
+
+</details>
+
+**Segunda de novo.** O Kevin te promove a **ADMIN** para você aprovar o MVP.
+
+<details>
+<summary>🛡️ Continuar usando o app com o token de antes</summary>
+<br/>
+
+🔄 **`401`** `Seu acesso foi alterado ou desativado; faca login novamente`: o perfil no banco mudou e o token antigo dizia `CLIENTE`. Você entra de novo e o token novo já vem com `ADMIN`, abrindo `GET /clientes` e a gestão de usuários. 🏆 **Zerou o RKF Bank!**
+
+</details>
+
+</details>
 
 </details>
 
@@ -311,7 +364,7 @@ Uma passa e a outra recebe `409 Conflict`: a `Conta` tem `@Version` (lock otimis
 </details>
 <details><summary>🔁 ...cadastrar o mesmo CPF ou e-mail duas vezes?</summary>
 
-`409 Conflict`. E-mail é comparado sem diferenciar maiúsculas (`Joao@x.com` = `joao@x.com`, migração `V2`).
+`409 Conflict`. E-mail é comparado sem diferenciar maiúsculas (`Joao@x.com` = `joao@x.com`: o `ClienteService` guarda tudo em minúsculas).
 
 </details>
 <details><summary>📮 ...cadastrar com o ViaCEP fora do ar?</summary>
@@ -337,9 +390,54 @@ Timeout de 3 s e `503 Service Unavailable` com mensagem clara, em vez de travar.
 
 | Quem pode o quê | Rota |
 |---|---|
-| 🌍 qualquer pessoa | `POST /clientes` (cadastro) · `POST /auth/login` |
+| 🌍 qualquer pessoa | `POST /clientes` (cadastro) · `POST /auth/login` · `GET /actuator/health` |
 | 👤 cliente logado | só as **próprias** contas: abrir, listar, depositar, sacar, transferir (origem), extrato |
-| 🛠️ `ADMIN` | `GET /clientes` e todas as contas em `GET /contas` (o primeiro admin nasce do `.env`) |
+| 🛠️ `ADMIN` | `GET /clientes`, todas as contas em `GET /contas` e a gestão de usuários em `/admin/usuarios` (promover, rebaixar, desativar, redefinir senha; vale na hora). O primeiro admin nasce do `.env` |
+
+<details open>
+<summary><b>🛡️ Spring Security por dentro: toda requisição passa por 4 portões</b></summary>
+<br/>
+
+```mermaid
+flowchart LR
+    R(["📨 Requisição<br/>Bearer eyJ..."]) --> P1{"🔏 Portão 1<br/>assinatura HS256<br/>e validade"}
+    P1 -- "adulterado, alg:none,<br/>vencido" --> X1["401<br/>Token invalido"]
+    P1 -- ok --> P2{"🗄️ Portão 2<br/>usuário existe, ativo,<br/>mesmo perfil e<br/>mesma versão de senha?"}
+    P2 -- "desativado, rebaixado,<br/>trocou a senha" --> X2["401<br/>acesso alterado"]
+    P2 -- ok --> P3{"🎫 Portão 3<br/>a rota exige ADMIN?"}
+    P3 -- "CLIENTE em /admin/**" --> X3["403<br/>perfil sem acesso"]
+    P3 -- ok --> P4{"🏠 Portão 4<br/>a conta é sua?"}
+    P4 -- "conta de outro" --> X4["403<br/>não é dono"]
+    P4 -- ok --> OK(["✅ 200 / 201 / 204"])
+```
+
+| Portão | Quem faz | Por que existe |
+|---|---|---|
+| 1 | `BearerTokenAuthenticationFilter` (OAuth2 Resource Server do Spring) | ninguém fabrica token sem o `JWT_SEGREDO` |
+| 2 | `ConversorTokenUsuario` (nosso) | JWT é *stateless*: sem este portão, rebaixar ou desativar alguém só valeria quando o token vencesse |
+| 3 | `AuthorizationFilter` + `SecurityFilterChain` | perfis `CLIENTE` e `ADMIN` |
+| 4 | `ContaService` | o `clienteId` vem do **token assinado**, nunca da URL ou do corpo |
+
+**E antes de tudo, no login:** 5 senhas erradas para o mesmo CPF em 15 min → **`429`** (nem a senha certa entra), e
+CPF inexistente e senha errada dão a **mesma** resposta, no mesmo tempo.
+
+<details>
+<summary>🎛️ O que o admin muda e quando passa a valer (clique)</summary>
+<br/>
+
+| Ação | Rota | Token antigo da pessoa | Novo login |
+|---|---|:-:|---|
+| Promover a ADMIN | `PATCH /admin/usuarios/{id}/perfil` | ❌ `401` na hora | ✅ já vem como ADMIN |
+| Rebaixar a CLIENTE | `PATCH /admin/usuarios/{id}/perfil` | ❌ `401` na hora | ✅ volta a CLIENTE |
+| Desativar ("remover") | `PATCH /admin/usuarios/{id}/acesso` | ❌ `401` na hora | ❌ `CPF ou senha invalidos` |
+| Redefinir a senha de quem esqueceu | `PATCH /admin/usuarios/{id}/senha` | ❌ `401` na hora | ✅ com a senha nova |
+| Trocar a **própria** senha | `PATCH /auth/senha` (pede a atual) | ❌ `401` na hora | ✅ com a senha nova |
+
+Ninguém mexe no **próprio** perfil ou acesso: o admin não se tranca para fora e sempre sobra um ADMIN ativo.
+
+</details>
+
+</details>
 
 <details>
 <summary><b>🔑 Como funciona o login, passo a passo</b></summary>
@@ -367,6 +465,64 @@ sequenceDiagram
 </details>
 
 <details>
+<summary><b>🧪 Laboratório: tente quebrar o banco (adivinhe a resposta antes de abrir)</b></summary>
+<br/>
+
+Suba o perfil `visitante` ([VISITANTES.md](VISITANTES.md)), entre como a Ana e tente cada ataque. Pense na resposta, depois clique.
+
+<details>
+<summary>1. Trocar <code>"perfil":"CLIENTE"</code> por <code>"ADMIN"</code> dentro do token</summary>
+<br/>
+
+**`401`**: o payload do JWT é só Base64 (qualquer um lê e edita), mas a assinatura HMAC-SHA256 deixa de bater. Sem o segredo, não existe token de admin.
+
+</details>
+
+<details>
+<summary>2. Mandar um token com <code>"alg":"none"</code> e sem assinatura</summary>
+<br/>
+
+**`401`**: o decoder aceita **só** HS256. É um ataque clássico que derrubou muitas APIs; aqui virou teste automatizado permanente.
+
+</details>
+
+<details>
+<summary>3. Ver o extrato do Bruno trocando o id na URL</summary>
+<br/>
+
+**`403`**: a regra de dono usa o `clienteId` do **token assinado**, nunca o da URL ou do corpo. E o `403` vem antes de qualquer regra que revele se a conta tem saldo.
+
+</details>
+
+<details>
+<summary>4. Repetir uma transferência dez vezes com a mesma <code>Idempotency-Key</code></summary>
+<br/>
+
+**Uma** transferência e nove `204` com `Idempotency-Replayed: true`. Duas chamadas exatamente ao mesmo tempo? O `UNIQUE (usuario_id, chave)` deixa só uma gravar; a outra leva `409`.
+
+</details>
+
+<details>
+<summary>5. Chutar a senha do Bruno até acertar</summary>
+<br/>
+
+**`429`** na sexta tentativa, e nem a senha certa entra por 15 minutos. CPF inexistente e senha errada dão a **mesma** resposta: não dá nem para descobrir quem é cliente.
+
+</details>
+
+<details>
+<summary>6. Sacar mais do que o saldo, ou com três casas decimais</summary>
+<br/>
+
+**`422`** `Saldo insuficiente` e **`400`** `valor deve ter no maximo 2 casas decimais`. Dinheiro é `BigDecimal` com 2 casas e lock otimista: nenhum centavo aparece ou some.
+
+</details>
+
+**Placar:** 6 de 6 ataques barrados. Quer o roteiro completo, com cada resposta? [Guia de testes](backend/README_TESTES_E2E.md).
+
+</details>
+
+<details>
 <summary><b>🛡️ Status da LGPD no backend (análise de 19/10/2026)</b></summary>
 <br/>
 
@@ -378,14 +534,16 @@ sequenceDiagram
 - ✅ Dados de todos os clientes só para `ADMIN`.
 - ✅ O `sub` do JWT é o id do usuário, não o CPF (o payload do JWT é só Base64).
 - ✅ Frontend mascara CPF, e-mail e telefone nos logs; token fora do alcance do JavaScript.
+- ✅ Limite de tentativas de login (`429` depois de 5 erros) e movimentações idempotentes (`Idempotency-Key`).
+- ✅ Nenhuma senha real no repositório: contas da equipe e admin ganham login só pelo `.env`; o perfil público `visitante` tem contas fictícias e segredo do JWT sorteado.
 
 **Falta antes de colocar no ar** (bloqueia o deploy, não o desenvolvimento):
 
 - ⏳ Política de privacidade e termos de uso de verdade (o cadastro já cita os dois).
-- ⏳ Registrar o aceite dos termos (versão + data) numa migração `V4`.
+- ⏳ Registrar o aceite dos termos (versão + data) numa migração `V7`.
 - ⏳ Encarregado e canal de contato do titular.
 
-**Depois do MVP:** rota "meus dados" (`GET /clientes/me`), correção de dados, encerramento de conta com retenção e anonimização, limite de tentativas de login e auditoria.
+**Depois do MVP:** rota "meus dados" (`GET /clientes/me`), correção de dados, encerramento de conta com retenção e anonimização e auditoria.
 Detalhes e prioridades em [planing/debitos-tecnicos.md](planing/debitos-tecnicos.md) e [planing/decisoes.md](planing/decisoes.md).
 
 </details>
@@ -586,7 +744,7 @@ flowchart LR
 
 | Antes | Depois |
 |---|---|
-| o Hibernate "adivinhava" o schema: FKs com nome aleatório e sem índice no extrato | `V1`, `V2` e `V3` versionados, revisados em PR e iguais em todo ambiente |
+| o Hibernate "adivinhava" o schema: FKs com nome aleatório e sem índice no extrato | `V1` a `V5` versionados (uma tabela por versão), revisados em PR e iguais em todo ambiente |
 | renomear um campo criava uma coluna nova e deixava os dados na velha | `ALTER TABLE ... RENAME COLUMN` numa migração nova |
 
 </details>
@@ -615,8 +773,72 @@ flowchart LR
 
 </details>
 
+<details open>
+<summary><b>🛫 Flyway: do banco vazio à API no ar</b></summary>
+<br/>
+
+```mermaid
+timeline
+    title O banco do RKF Bank, versão a versão
+    V1 a V5 : endereço, cliente, conta, lançamento, usuário : uma tabela por versão
+    V6 : idempotência : o dinheiro nunca sai duas vezes
+    V7 : usuário ativo : desativar alguém vale na hora
+    V8 : versão da senha : trocar a senha derruba os tokens antigos
+    a cada subida : callback afterMigrate : contas da equipe ou de visitante, sem duplicar
+```
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant API as Spring Boot
+    participant F as Flyway
+    participant DB as MySQL
+    participant H as Hibernate
+    API->>F: subir
+    F->>DB: o que já rodou? (flyway_schema_history)
+    F->>DB: aplica só as versões que faltam (V1…V8)
+    F->>DB: afterMigrate: contas prontas, só o que falta
+    API->>H: ddl-auto=validate
+    H->>DB: as entidades batem com as tabelas?
+    alt alguém mudou a entidade e esqueceu a migração
+        H-->>API: ❌ a API nem sobe
+    else tudo bate
+        API->>DB: CriadorAdmin e CriadorAcessoEquipe (logins do .env)
+        API-->>API: ✅ Tomcat no ar
+    end
+```
+
 <details>
-<summary><b>🗃️ Modelo de dados (migrações V1, V2 e V3)</b></summary>
+<summary>🤔 E se... (clique em cada um)</summary>
+<br/>
+
+<details><summary>...alguém editar a <code>V1</code> depois de aplicada?</summary>
+
+❌ `Migration checksum mismatch`: o Flyway guarda o checksum de cada versão e a API recusa subir. Mudou algo? **Versão nova** (`V9__...`).
+
+</details>
+<details><summary>...alguém criar um campo na entidade e esquecer a migração?</summary>
+
+❌ O Hibernate em `validate` compara entidade × tabela e a API **não sobe**: o erro aparece no seu computador, não em produção.
+
+</details>
+<details><summary>...a API reiniciar dez vezes?</summary>
+
+✅ As versões rodam uma vez só; o callback `afterMigrate` roda nas dez, mas só insere o que falta. Nada duplica e saldo movimentado nunca é resetado.
+
+</details>
+<details><summary>...subir em produção?</summary>
+
+✅ `FLYWAY_LOCATIONS=classpath:db/migration`: só o schema, **nenhuma** conta de teste.
+
+</details>
+
+</details>
+
+</details>
+
+<details>
+<summary><b>🗃️ Modelo de dados (migrações V1 a V8)</b></summary>
 <br/>
 
 ```mermaid
@@ -717,6 +939,28 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 | [Node.js](https://nodejs.org/) + [pnpm](https://pnpm.io/installation) | 20+ e 10 (`corepack enable`) |
 
 <details open>
+<summary><b>⚡ Visitante: API em 1 comando, sem Docker (perfil <code>visitante</code>)</b></summary>
+<br/>
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante   # PowerShell: .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=visitante"
+```
+
+Sobe com H2 em memória, sem `.env`, com duas contas fictícias prontas e segredo do JWT sorteado (ninguém forja token).
+Não existe admin nem conta da equipe nesse perfil. Guia de 5 minutos: **[VISITANTES.md](VISITANTES.md)**.
+
+| Quem | CPF (login) | Senha | Conta |
+|---|---|---|---|
+| **Ana Visitante** (origem) | `246.813.579-28` | `Visitante@2026` | 0001 / 900001 · R$ 1.000,00 |
+| **Bruno Visitante** (destino) | `975.318.642-82` | `Visitante@2026` | 0001 / 900002 · R$ 500,00 |
+
+Roteiro completo (caminho feliz, idempotência, 401/403/429, erros, Spring Security + OAuth2):
+[guia de testes manuais](backend/README_TESTES_E2E.md). Quando usar cada perfil:
+[backend/README.md → Perfis](backend/README.md#-perfis-qual-usar-e-quando).
+
+</details>
+
+<details open>
 <summary><b>1️⃣ Banco (MySQL no Docker)</b></summary>
 <br/>
 
@@ -732,23 +976,17 @@ docker compose ps             # espere "healthy"
 <summary><b>2️⃣ Backend (porta 8080)</b></summary>
 <br/>
 
-O Spring **não lê o `.env` sozinho**: carregue as variáveis no terminal.
+O Spring **lê o `.env` da raiz sozinho** (desde 20/10/2026): basta rodar da raiz do repositório.
 
 ```bash
-# Git Bash / Linux / macOS
-set -a && source <(tr -d '\r' < .env) && set +a
-./mvnw spring-boot:run
+./mvnw spring-boot:run        # PowerShell: .\mvnw.cmd spring-boot:run
 ```
 
-```powershell
-# PowerShell
-Get-Content .env | Where-Object { $_ -match '^\s*[^#].*=' } | ForEach-Object {
-  $nome, $valor = $_ -split '=', 2; Set-Item "env:$nome" $valor
-}
-.\mvnw.cmd spring-boot:run
-```
-
-As tabelas nascem pelo **Flyway** na primeira subida. Se a API recusar com *Found non-empty schema(s)*, o seu MySQL é anterior ao Flyway: rode `docker compose down -v && docker compose up -d` uma vez (apaga os dados locais).
+As tabelas nascem pelo **Flyway** (`V1` a `V8`) e, a cada subida, o callback `afterMigrate` garante as contas da
+equipe (Felipe = origem, Renan = destino). O login delas vem da `EQUIPE_SENHA` do `.env`: os acessos ficam no guia
+privado da equipe, fora do repositório. As migrações foram reorganizadas em 20/10/2026: se a API recusar com
+*Migration checksum mismatch* ou *applied migration not resolved locally*, rode
+`docker compose down -v && docker compose up -d` **uma vez** (apaga os dados locais).
 
 </details>
 
@@ -763,7 +1001,7 @@ pnpm install
 pnpm dev
 ```
 
-Abra <http://localhost:3000>, crie a conta em `/cadastro` e entre em `/login`.
+Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitante, equipe) ou crie uma em `/cadastro`.
 
 </details>
 
@@ -774,10 +1012,13 @@ Abra <http://localhost:3000>, crie a conta em `/cadastro` e entre em `/login`.
 | Sintoma | Causa provável | Solução |
 |---|---|---|
 | `Rule 0: RequireJavaVersion failed` | JDK diferente do 25 | instale o JDK 25 e aponte o `JAVA_HOME` |
-| `JWT_SEGREDO ausente ou curto` | `.env` sem segredo ou não carregado | gere com `openssl rand -base64 48` e carregue o `.env` |
-| `Access denied for user` | variáveis do `.env` não carregadas | carregue o `.env` antes do `mvnw` |
+| `JWT_SEGREDO ausente ou curto` | `.env` sem segredo, ou rodou fora da raiz | gere com `openssl rand -base64 48` e rode da raiz |
+| `Access denied for user` | rodou fora da raiz (o `.env` não foi achado) | rode da raiz do repositório |
 | `Communications link failure` | MySQL desligado ou subindo | `docker compose ps` e espere o `healthy` |
-| `Validate failed: Migration checksum mismatch` | uma migração já aplicada foi editada | nunca edite `V<n>__`; crie uma nova versão |
+| `Validate failed: Migration checksum mismatch` | MySQL de antes da reorganização de 20/10, ou uma migração aplicada foi editada | 1x por máquina: `docker compose down -v && docker compose up -d`; fora isso, nunca edite `V<n>__`, crie uma nova versão |
+| Login da Ana dá `401` | a API não está no perfil `visitante` | suba com `-Dspring-boot.run.profiles=visitante` |
+| Toda movimentação dá `400` | faltou o header `Idempotency-Key` | gere um UUID por operação ([contrato](backend/README_CONTRATO_API.md#idempotência-idempotency-key)) |
+| Login dá `429` | 5 senhas erradas seguidas | espere 15 min ou reinicie a API |
 | Cadastro devolve `503` | ViaCEP fora do ar | tente de novo em alguns segundos |
 | Volta para o login toda hora | token de 15 min venceu | esperado: ainda não há refresh token |
 
@@ -788,7 +1029,7 @@ Abra <http://localhost:3000>, crie a conta em `/cadastro` e entre em `/login`.
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 163 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 237 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -810,7 +1051,10 @@ node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no 
 | `ContaServiceTest` | abertura, depósito, saque, transferência, extrato e regra de dono (`403`) |
 | `TokenServiceTest` / `AuthServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login sem enumeração |
 | `UsuarioServiceTest` / `CriadorAdminTest` | primeiro `ADMIN` pelo `.env` |
-| `SegurancaIntegracaoTest` | Spring inteiro com tokens reais: `401`, `403`, perfis, `alg: none` |
+| `SegurancaIntegracaoTest` | Spring inteiro com tokens reais: `401`, `403`, `429`, perfis, `alg: none` |
+| `IdempotenciaServiceTest` / `DadosEquipeIntegracaoTest` | dinheiro nunca sai duas vezes (`Idempotency-Key`) e saldo sempre bate com o extrato |
+| `GestaoUsuariosIntegracaoTest` | promover, rebaixar, desativar e trocar senha valendo na hora |
+| `PerfilVisitanteIntegracaoTest` | o perfil público não expõe nada da equipe |
 | `ClienteControllerTest` / `ContaControllerTest` | status de cada rota e limites da paginação |
 | `ControllerExceptionHandlerTest` | cada exceção no formato de erro |
 | `ClienteViaCepTest` | CEP encontrado, inexistente (`422`) e ViaCEP fora (`503`) |
@@ -868,18 +1112,19 @@ gantt
     dateFormat YYYY-MM-DD
     axisFormat %d/%m
     section Feito
-    Flyway V1 a V3                 :done,   f1, 2026-10-15, 2d
-    Spring Security + JWT          :done,   f2, 2026-10-16, 2d
-    Telas da conta e login         :done,   f0, 2026-10-14, 4d
+    Telas da conta e login               :done,   f0, 2026-10-14, 4d
+    Flyway V1 a V3                       :done,   f1, 2026-10-15, 2d
+    Spring Security + JWT                :done,   f2, 2026-10-16, 2d
+    Idempotência, gestão de usuários, Flyway V1 a V8 :done, f3, 2026-10-20, 1d
     section MVP
-    GET conta e contas do cliente  :active, m1, 2026-10-20, 3d
-    LGPD mínimo                    :        m2, 2026-10-22, 2d
-    Testes do Felipe              :        m3, 2026-10-26, 3d
-    Colocar no ar                  :crit,   m4, 2026-10-29, 3d
+    Testcontainers (MySQL real)          :active, m0, 2026-10-21, 2d
+    GET conta e contas do cliente        :        m1, after m0, 1d
+    LGPD mínimo                          :        m2, after m1, 2d
+    Deploy (Docker, perfil prod, banco)  :crit,   m4, after m2, 3d
+    Testes do Felipe e correções         :        m3, after m4, 2d
     section Depois
-    Testcontainers                 :        p1, 2026-10-20, 4d
-    Swagger / OpenAPI              :        p2, after p1, 2d
-    Pix, boleto e cartão (simulados) :      p3, 2026-11-05, 20d
+    Swagger / OpenAPI                    :        p2, 2026-11-02, 2d
+    Pix, boleto e cartão (simulados)     :        p3, 2026-11-05, 20d
 ```
 
 <details open>
@@ -888,13 +1133,16 @@ gantt
 
 - [x] Cadastro com ViaCEP, abertura de conta, depósito, saque, transferência e extrato
 - [x] Logs rastreáveis, CI, CodeQL e Dependabot
-- [x] Banco versionado com Flyway (V1, V2, V3)
+- [x] Banco versionado com Flyway (V1 a V8), contas da equipe (Felipe e Renan) e perfil público de visitante
+- [x] Idempotência nas movimentações, número de conta gerado pelo banco, limite de tentativas no login e health check
 - [x] Login com Spring Security + JWT, perfis e regra de dono
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
+- [x] Gestão de usuários pelo ADMIN (promover, rebaixar, desativar) e troca de senha, valendo na hora
+- [ ] Testes de integração com Testcontainers + MySQL real (protege o deploy)
 - [ ] Backend: `GET /contas/{id}` e `GET /clientes/{id}/contas`
 - [ ] LGPD mínimo: política de privacidade, aceite dos termos e encarregado
 - [ ] Felipe testa tudo como primeiro cliente e os bugs são corrigidos
-- [ ] Colocar no ar e atualizar este README com link e prints
+- [ ] Colocar no ar (Docker, perfil `prod` sem dados de teste, banco gerenciado) e atualizar este README com link e prints
 
 </details>
 
@@ -902,9 +1150,9 @@ gantt
 <summary><b>🔭 Depois do MVP</b></summary>
 <br/>
 
-- [ ] Testes de integração com Testcontainers + MySQL e `MockMvc` ([checklist](planing/checklist-features.md))
+- [ ] `MockMvc` em todos os controllers e teste de concorrência ([checklist](planing/checklist-features.md))
 - [ ] Swagger UI com o botão *Authorize* (springdoc-openapi)
-- [ ] Refresh token, limite de tentativas de login e 2FA
+- [ ] Refresh token e 2FA (limite de tentativas e revogação já existem)
 - [ ] "Meus dados", editar perfil e encerrar conta (direitos do titular)
 - [ ] CI do frontend
 - [ ] Pix, boleto, QR Code e cartão virtual (simulados) — [funcionalidades futuras](planing/debitos-tecnicos.md#funcionalidades-futuras-)
@@ -927,29 +1175,62 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
 <table>
   <tr>
     <td align="center" valign="top" width="33%">
-      <a href="https://github.com/k3vinrich4rd"><img src="https://github.com/k3vinrich4rd.png" width="96" alt="Kevin Richard"/></a>
+      <a href="https://www.linkedin.com/in/kevin-richard-b68a54203/"><img src="https://github.com/k3vinrich4rd.png" width="96" alt="Kevin Richard"/></a>
       <h3>Kevin Richard</h3>
+      <a href="https://www.linkedin.com/in/kevin-richard-b68a54203/"><img src="https://img.shields.io/badge/LinkedIn-Kevin_Richard-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn de Kevin Richard"/></a>
+      <br/>
       <img src="https://img.shields.io/badge/Idealizador-Backend-3B82F6?logo=springboot&logoColor=white" alt="Idealizador e responsável pelo backend"/>
-      <p align="left"><sub><b>Idealizador</b> do RKF Bank e responsável pelo <b>backend</b>: API REST em Java e Spring Boot, banco MySQL e Flyway, Spring Security e JWT, integração com o ViaCEP, logs e testes. Objetivo: o dinheiro de cada cliente sempre certo e nenhum dado pessoal vazando.</sub></p>
+      <p align="left"><sub><i>“Conhecimento nunca é demais.”</i> Movido pela vontade de aprender e de acumular experiências, quer crescer como pessoa e como profissional de forma <b>honesta e constante</b>, com determinação, foco, persistência, ambição, espírito de time e empatia.</sub></p>
+      <p align="left"><sub><b>No RKF Bank:</b> <b>idealizador</b> e responsável pelo <b>backend</b>: API REST em Java e Spring Boot, MySQL com Flyway, Spring Security + JWT, ViaCEP, logs e testes. Objetivo: o dinheiro de cada cliente sempre certo e nenhum dado pessoal vazando.</sub></p>
       <a href="mailto:kevinrichardve@gmail.com"><img src="https://img.shields.io/badge/E--mail-kevinrichardve-3B82F6?logo=gmail&logoColor=white" alt="E-mail de Kevin"/></a>
       <a href="https://github.com/k3vinrich4rd"><img src="https://img.shields.io/badge/GitHub-k3vinrich4rd-181717?logo=github&logoColor=white" alt="GitHub de Kevin"/></a>
     </td>
     <td align="center" valign="top" width="33%">
       <h3>Felipe Santana</h3>
+      <img src="https://img.shields.io/badge/LinkedIn-em_breve-6B7280?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn de Felipe Santana: em breve"/>
+      <br/>
       <img src="https://img.shields.io/badge/Idealizador-PO_%26_QA-E2C98A" alt="Idealizador, PO e QA"/>
-      <p align="left"><sub><b>Idealizador</b> do RKF Bank e <b>PO & QA</b>: define o que o produto precisa e é o <b>primeiro cliente</b>, com acesso antes de todo mundo para os primeiros testes. Valida o MVP pelo roteiro E2E antes do lançamento.</sub></p>
-      <img src="https://img.shields.io/badge/1º_cliente-acesso_antecipado-0A0F1C" alt="Primeiro cliente"/>
+      <p align="left"><sub><i>“Se não funciona para o cliente, não está pronto.”</i> Olha o banco pelos olhos de quem usa: transforma ideia em prioridade, prioridade em critério de aceite e só dá o ok quando o fluxo funciona de ponta a ponta.</sub></p>
+      <p align="left"><sub><b>No RKF Bank:</b> <b>idealizador</b> e <b>PO & QA</b>: define o que o produto precisa e é o <b>primeiro cliente</b> — a conta de origem que nasce pronta em todo ambiente é a dele. Valida o MVP pelo guia de testes antes do lançamento.</sub></p>
+      <img src="https://img.shields.io/badge/1º_cliente-conta_0001%2F100001-0A0F1C" alt="Primeiro cliente: agência 0001, conta 100001"/>
     </td>
     <td align="center" valign="top" width="33%">
-      <a href="https://github.com/renanbarrostech-cmd"><img src="https://github.com/renanbarrostech-cmd.png" width="96" alt="Renan Barros"/></a>
+      <a href="https://www.linkedin.com/in/renan-costa-barros/"><img src="https://github.com/renanbarrostech-cmd.png" width="96" alt="Renan Barros"/></a>
       <h3>Renan Barros</h3>
+      <a href="https://www.linkedin.com/in/renan-costa-barros/"><img src="https://img.shields.io/badge/LinkedIn-Renan_Barros-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn de Renan Barros"/></a>
+      <br/>
       <img src="https://img.shields.io/badge/Idealizador-Frontend-06B6D4?logo=nextdotjs&logoColor=white" alt="Idealizador e responsável pelo frontend"/>
-      <p align="left"><sub><b>Idealizador</b> do RKF Bank e responsável pelo <b>frontend</b>: site em Next.js, React e TypeScript, identidade visual RKF, telas da conta, login com cookie <code>httpOnly</code> e logs com máscara. Objetivo: parecer e funcionar como um banco digital de verdade.</sub></p>
+      <p align="left"><sub><i>“Transformar problemas em soluções.”</i> Do administrativo para a tecnologia: de Jovem Aprendiz a Assistente Financeiro em três anos, com <b>quatro promoções</b>, e já entregou na empresa um sistema em Next.js + PostgreSQL que automatizou a triagem de notas fiscais. Cursa GTI e a formação Full Stack da DevClub.</sub></p>
+      <p align="left"><sub><b>No RKF Bank:</b> <b>idealizador</b> e responsável pelo <b>frontend</b>: site em Next.js, React e TypeScript, identidade visual RKF, telas da conta, login com cookie <code>httpOnly</code> e logs com máscara. Objetivo: parecer e funcionar como um banco digital de verdade.</sub></p>
       <a href="mailto:renanbarros.tech@gmail.com"><img src="https://img.shields.io/badge/E--mail-renanbarros.tech-06B6D4?logo=gmail&logoColor=white" alt="E-mail de Renan"/></a>
       <a href="https://github.com/renanbarrostech-cmd"><img src="https://img.shields.io/badge/GitHub-renanbarrostech--cmd-181717?logo=github&logoColor=white" alt="GitHub de Renan"/></a>
     </td>
   </tr>
 </table>
+
+<details>
+<summary><b>📖 A história de cada um, em detalhe</b></summary>
+<br/>
+
+**Kevin Richard — backend.** Acredita que conhecimento nunca é demais e vive buscando informação nova e momentos de
+aprendizado para evoluir no pessoal e no profissional. O jeito de crescer é o de quem não pula etapa: determinação,
+foco, persistência e ambição, sem perder a coletividade e a empatia com quem está do lado. No RKF Bank isso aparece em
+cada PR: teste antes de entregar, decisão registrada e documentação que ensina quem vem depois.
+
+**Renan Barros — frontend.** Desde criança queria entender como as coisas funcionavam, mas a carreira começou no
+administrativo: entrou como Jovem Aprendiz na Expresso Salomé em 2023 e, em três anos, conquistou quatro promoções
+(Auxiliar de Escritório, Auxiliar Financeiro, Assistente Financeiro). Dali vieram organização, análise de processos e
+melhoria contínua. Em transição para tecnologia, cursa Gestão da Tecnologia da Informação na Estácio e a formação Full
+Stack da DevClub (140h+), e já gerou resultado real: um sistema de triagem de notas fiscais (Next.js, React,
+TypeScript, Tailwind, Drizzle e PostgreSQL) que trocou um processo manual e sujeito a erro por um automatizado. Também
+faz freelas de sites, landing pages, dashboards e automações para pequenas empresas. Meta: primeira vaga como Dev Full
+Stack Júnior, rumo a Engenheiro de Software.
+
+**Felipe Santana — produto e qualidade.** É quem garante que o banco resolve o problema de quem usa: decide prioridade,
+escreve o que "pronto" significa e testa como cliente — por isso a conta de origem que nasce em todo ambiente é a dele.
+<sub>(Texto provisório, montado a partir do papel dele no time; será trocado pelo "Sobre" do LinkedIn assim que o Felipe enviar o link.)</sub>
+
+</details>
 
 <div align="center">
 
@@ -1050,7 +1331,7 @@ Qualquer script que rode na página (um XSS, uma dependência comprometida) cons
 <summary><b>Por que Flyway em vez de deixar o Hibernate criar as tabelas?</b></summary>
 <br/>
 
-Com `ddl-auto=update` o Hibernate "adivinha" o schema, não remove nem renomeia nada e não deixa histórico. Com Flyway, cada mudança é um SQL versionado (`V1__`, `V2__`, `V3__`), revisado no PR e igual em todo ambiente; o Hibernate só **valida**. Migração aplicada nunca se edita: o checksum muda e a API não sobe.
+Com `ddl-auto=update` o Hibernate "adivinha" o schema, não remove nem renomeia nada e não deixa histórico. Com Flyway, cada mudança é um SQL versionado (`V1__` a `V8__`), revisado no PR e igual em todo ambiente; o Hibernate só **valida**. Migração aplicada nunca se edita: o checksum muda e a API não sobe.
 
 </details>
 
@@ -1108,6 +1389,45 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 
 </details>
 
+**4. A rede cai no meio da transferência e o app manda a mesma de novo. O dinheiro sai duas vezes?**
+
+<details><summary>A) Sai: a API não tem como saber</summary>
+
+❌ Tem sim: o app manda um `Idempotency-Key` por operação.
+
+</details>
+<details><summary>B) Não: a repetição volta 204 com <code>Idempotency-Replayed: true</code></summary>
+
+✅ **Isso!** A chave foi gravada na mesma transação do dinheiro (`tb_idempotencia`, V6). A repetição só confirma.
+
+</details>
+
+**5. O admin rebaixa alguém que está logado com um token de ADMIN válido por mais 50 minutos. E aí?**
+
+<details><summary>A) Continua admin até o token vencer</summary>
+
+❌ Seria assim com JWT puro, que é *stateless*.
+
+</details>
+<details><summary>B) A próxima requisição dele dá 401</summary>
+
+✅ **Isso!** O `ConversorTokenUsuario` confere o banco a cada requisição: o perfil do token não bate mais.
+
+</details>
+
+**6. Qual versão do Flyway criou a coluna que faz a troca de senha derrubar os tokens antigos?**
+
+<details><summary>A) V5</summary>
+
+❌ A V5 criou a `tb_usuario`.
+
+</details>
+<details><summary>B) V8</summary>
+
+✅ **Isso!** `versao_credencial`: sobe a cada troca e vai dentro do token.
+
+</details>
+
 <img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
 ## 📚 Documentação
@@ -1119,7 +1439,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | API | [Contrato da API (2.0)](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
-| Backend | [Roteiro E2E](backend/README_TESTES_E2E.md) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) | testes de aceite do Felipe |
+| Backend | [Guia de testes (visitante)](backend/README_TESTES_E2E.md) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) · [Visitantes](VISITANTES.md) | testar a API na sua máquina; aceite do MVP |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
 | Planejamento | [planing/](planing/README.md) | roadmap, decisões, checklist de features, débitos e recados |
 

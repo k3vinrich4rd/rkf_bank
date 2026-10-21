@@ -20,6 +20,9 @@ function mensagemDeErro(error: unknown): string {
     // A API responde igual para CPF sem cadastro e senha errada, de propósito (não revela quem tem conta).
     case 401:
       return "CPF ou senha inválidos.";
+    // 5 senhas erradas para o mesmo CPF em 15 min: a API bloqueia aquele CPF (contrato 2.1, R17).
+    case 429:
+      return "Muitas tentativas seguidas. Por segurança, aguarde alguns minutos e tente de novo.";
     default:
       return "Algo deu errado. Tente novamente.";
   }

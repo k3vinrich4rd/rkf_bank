@@ -55,8 +55,8 @@
     <circle cx="600" cy="160" r="74" fill="#e2c98a" fill-opacity=".1" stroke="#e2c98a" stroke-opacity=".4"/>
     <g class="acena" style="animation-delay:0.4s">
       <g transform="translate(540 96) scale(1.2)"><ellipse cx="50" cy="121" rx="30" ry="3" fill="#000" opacity=".35"/>
-      <path d="M12 120 C12 92 27 80 50 80 C73 80 88 92 88 120 Z" fill="#e8ecef"/>
-      <path d="M40 80.5 Q50 89 60 80.5" fill="none" stroke="#cfd6dc" stroke-width="2.6"/>
+      <path d="M12 120 C12 92 27 80 50 80 C73 80 88 92 88 120 Z" fill="#c62828"/>
+      <path d="M40 80.5 Q50 89 60 80.5" fill="none" stroke="#8e1b1b" stroke-width="2.6"/>
       <rect x="42" y="62" width="16" height="18" rx="5" fill="#8a5a3a"/>
       <ellipse cx="28" cy="47" rx="5" ry="6" fill="#8a5a3a"/>
       <ellipse cx="72" cy="47" rx="5" ry="6" fill="#8a5a3a"/>

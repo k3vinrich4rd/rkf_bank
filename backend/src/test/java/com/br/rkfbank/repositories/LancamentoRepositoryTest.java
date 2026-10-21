@@ -18,8 +18,11 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
+// Perfil test explicito: roda igual no IDE e no Maven (H2, sem seed, sem o .env de quem roda).
+@ActiveProfiles("test")
 class LancamentoRepositoryTest {
 
     private static final Instant BASE = Instant.parse("2026-01-10T12:00:00Z");

@@ -160,6 +160,38 @@ class SegurancaIntegracaoTest {
     }
 
     @Test
+    void healthCheckEPublicoESoDizSeEstaNoAr() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"))
+                // show-details=never: nada de banco, disco ou versao para quem nao esta logado.
+                .andExpect(jsonPath("$.components").doesNotExist());
+    }
+
+    @Test
+    void outrosEndpointsDoActuatorNaoFicamExpostos() throws Exception {
+        mockMvc.perform(get("/actuator/env").header("Authorization", "Bearer " + login(ADMIN_CPF, ADMIN_SENHA)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void cincoSenhasErradasBloqueiamOCpfCom429ERetryAfter() throws Exception {
+        String cpf = cpfAleatorio();
+        cadastrar(cpf);
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson(cpf, "senha-errada-" + i)))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        // Nem a senha certa entra enquanto o bloqueio dura: o atacante nao descobre se acertou.
+        mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson(cpf, SENHA)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.message").value("Muitas tentativas de login; aguarde alguns minutos e tente de novo"));
+    }
+
+    @Test
     void metadadoDoRecursoProtegidoEPublicoESoDizComoMandarOToken() throws Exception {
         // Publicado pelo Spring Security 7 (RFC 9728); achado listando a cadeia de filtros. Nao pode vazar nada alem disso.
         mockMvc.perform(get("/.well-known/oauth-protected-resource"))
@@ -250,11 +282,13 @@ class SegurancaIntegracaoTest {
 
         // A dona movimenta a propria conta.
         mockMvc.perform(post("/contas/" + contaAna + "/deposito").header("Authorization", "Bearer " + tokenAna)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\": 100.00, \"descricao\": \"salario\"}"))
                 .andExpect(status().isNoContent());
 
         // Beto, com token valido, tenta mexer na conta da Ana.
         mockMvc.perform(post("/contas/" + contaAna + "/saque").header("Authorization", "Bearer " + tokenBeto)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\": 50.00}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
@@ -263,6 +297,7 @@ class SegurancaIntegracaoTest {
                 .andExpect(jsonPath("$.path").value("/contas/" + contaAna + "/saque"));
 
         mockMvc.perform(post("/contas/" + contaAna + "/deposito").header("Authorization", "Bearer " + tokenBeto)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\": 1.00}"))
                 .andExpect(status().isForbidden());
 
@@ -270,6 +305,7 @@ class SegurancaIntegracaoTest {
                 .andExpect(status().isForbidden());
 
         mockMvc.perform(post("/contas/transferencia").header("Authorization", "Bearer " + tokenBeto)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contaOrigemId\": \"" + contaAna + "\", \"contaDestinoId\": \"" + contaBeto + "\", \"valor\": 10.00}"))
                 .andExpect(status().isForbidden());
@@ -280,6 +316,7 @@ class SegurancaIntegracaoTest {
 
         // Transferir PARA a conta de outro cliente e permitido: so a origem precisa ser sua.
         mockMvc.perform(post("/contas/transferencia").header("Authorization", "Bearer " + tokenAna)
+                        .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contaOrigemId\": \"" + contaAna + "\", \"contaDestinoId\": \"" + contaBeto + "\", \"valor\": 10.00}"))
                 .andExpect(status().isNoContent());

@@ -15,7 +15,7 @@ discordarem, um dos dois está errado e precisa ser corrigido.
 |---|---|
 | **Backend** | Kevin |
 | **Frontend** | Renan |
-| **Versão** | 2.0 (16/10/2026) — login com JWT; **quebra o frontend** (ver [histórico](#8-histórico-de-versões)) |
+| **Versão** | 2.3 (20/10/2026) — troca de senha (`PATCH /auth/senha`) e redefinição pelo ADMIN; não quebra o frontend (ver [histórico](#8-histórico-de-versões)) |
 
 ---
 
@@ -68,6 +68,25 @@ chame o backend direto, sem `/api`.
 - Não guarde o token em lugar que outro site leia; não coloque o token na URL nem no log.
 - O payload do token é só Base64 (não é segredo). Use os campos da **resposta do login**, não decodifique o token.
 - **Perfis:** `CLIENTE` (todo cadastro) e `ADMIN` (criado pela configuração do servidor, não por rota).
+- **Limite de tentativas:** 5 logins errados para o mesmo CPF em 15 min → `429` com header `Retry-After` (segundos).
+  Enquanto durar, **nem a senha certa entra**. Mostre "aguarde alguns minutos".
+
+### Idempotência (`Idempotency-Key`)
+
+Depósito, saque e transferência **exigem** o header `Idempotency-Key`: um valor que o cliente gera **por operação**
+(use `crypto.randomUUID()`; aceita 8 a 100 caracteres `A-Z a-z 0-9 - _`).
+
+| Situação | Resposta |
+|---|---|
+| chave nova | movimenta e responde `204` |
+| **mesma chave e mesmo corpo** (repetição: rede caiu, clique duplo, retry) | `204` com header `Idempotency-Replayed: true` e **nada é movimentado de novo** |
+| mesma chave, corpo diferente (outro valor, conta ou descrição) | `422` `Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao` |
+| duas chamadas iguais ao mesmo tempo | uma movimenta; a outra recebe `409` e, repetida com a mesma chave, vira `204` com `Idempotency-Replayed` |
+| sem o header ou fora do formato | `400` com `campos[0].campo = "Idempotency-Key"` |
+
+Regra para o front: gere a chave ao enviar o formulário e **reuse a mesma** se o usuário tentar de novo depois de erro
+de rede; troque quando ele editar um campo ou quando a operação der certo. A chave vale por usuário. Uma chamada
+recusada (ex.: `422` de saldo) não grava a chave.
 
 ---
 
@@ -84,8 +103,14 @@ chame o backend direto, sem `/api`.
 | `POST` | `/contas/{contaId}/saque` | saca | dono da conta | `204` | [4.3](#43-depositar-e-sacar) |
 | `POST` | `/contas/transferencia` | transfere entre contas | dono da conta de **origem** | `204` | [4.4](#44-transferir) |
 | `GET` | `/contas/{contaId}/lancamentos` | extrato da conta | dono da conta | `200` | [4.5](#45-extrato) |
+| `GET` | `/admin/usuarios` | lista usuários (CPF mascarado) | só `ADMIN` | `200` | [3.4](#34-gestão-de-usuários-admin) |
+| `PATCH` | `/admin/usuarios/{usuarioId}/perfil` | promove a `ADMIN` ou rebaixa a `CLIENTE` | só `ADMIN` | `200` | [3.4](#34-gestão-de-usuários-admin) |
+| `PATCH` | `/admin/usuarios/{usuarioId}/acesso` | desativa ou reativa o login | só `ADMIN` | `200` | [3.4](#34-gestão-de-usuários-admin) |
+| `PATCH` | `/admin/usuarios/{usuarioId}/senha` | redefine a senha de quem esqueceu | só `ADMIN` | `204` | [3.4](#34-gestão-de-usuários-admin) |
+| `PATCH` | `/auth/senha` | troca a **própria** senha (com a atual) | qualquer usuário logado | `204` | [3.5](#35-trocar-a-própria-senha) |
+| `GET` | `/actuator/health` | a API está no ar? (`{"status":"UP"}`, sem detalhes) | **público** | `200` | — |
 
-> Fora as duas rotas públicas, **toda chamada sem token válido → `401`**. Token válido, mas recurso de outro
+> Fora as rotas públicas, **toda chamada sem token válido → `401`**. Token válido, mas recurso de outro
 > cliente ou perfil sem acesso → `403`. O `ADMIN` lista, mas não movimenta conta de ninguém.
 >
 > O Spring Security 7 também publica sozinho `GET /.well-known/oauth-protected-resource` (público, padrão RFC 9728):
@@ -220,8 +245,53 @@ Formato da página (campos que o frontend usa):
 - `clienteId` é o que vai na URL de [abrir conta](#41-abrir-conta). Para o `ADMIN` vem `null`.
 - Calcule quando o token vence com `expiraEmSegundos` (a partir do momento do login).
 
-**Erros possíveis:** `400` (campo vazio), `401` com `CPF ou senha invalidos`. A mensagem é **a mesma** para CPF sem
+**Erros possíveis:** `400` (campo vazio), `401` com `CPF ou senha invalidos`, `429` (5 erros seguidos para o mesmo CPF; ver [limite](#autenticação-jwt)). A mensagem é **a mesma** para CPF sem
 cadastro e senha errada, de propósito: não revela quais CPFs têm conta.
+
+### 3.4 Gestão de usuários (ADMIN)
+
+🔒 Só `ADMIN` (`CLIENTE` → `403`). Sem tela no frontend: uso pelo Postman/curl.
+
+`GET /admin/usuarios` → `200`, admins primeiro:
+
+```json
+[{"id":"9744fa24-8034-4c38-b20f-ce3a0cfe40c7","cpf":"***.792.468-**","nome":null,"perfil":"ADMIN","ativo":true,"clienteId":null},
+ {"id":"f3155e34-57f9-410e-8900-a1139202fe2f","cpf":"***.456.789-**","nome":"Felipe Santana","perfil":"CLIENTE","ativo":true,"clienteId":"5eed0000-0000-4000-8000-000000000012"}]
+```
+
+`PATCH /admin/usuarios/{usuarioId}/perfil` com `{"perfil":"ADMIN"}` ou `{"perfil":"CLIENTE"}` · `PATCH /admin/usuarios/{usuarioId}/acesso`
+com `{"ativo":false}` ou `{"ativo":true}` → `200` com o usuário no formato acima.
+
+- `usuarioId` é o `id` da lista (de `tb_usuario`), **não** o `clienteId`.
+- A mudança vale na **próxima requisição**: o token emitido antes dela responde `401`
+  `Seu acesso foi alterado ou desativado; faca login novamente`. Desativado não faz login (`401` `CPF ou senha invalidos`).
+- "Remover" = desativar: usuário não é apagado (o histórico aponta para ele).
+- `PATCH /admin/usuarios/{usuarioId}/senha` com `{"novaSenha":"..."}` (8 a 72) → `204`. Os tokens da pessoa caem na hora. O ADMIN
+  não redefine a própria senha por aqui (`422` `Para trocar a sua propria senha use PATCH /auth/senha`).
+
+**Erros possíveis:** `400` (perfil fora de `CLIENTE`/`ADMIN`, `ativo` ausente, id não é UUID), `401`, `403` (não é ADMIN),
+`404` `Usuario nao encontrado`, `422` `Voce nao pode alterar o seu proprio perfil ou acesso; peca a outro ADMIN` ou
+`Usuario sem cadastro de cliente nao pode virar CLIENTE; desative o acesso`.
+
+### 3.5 Trocar a própria senha
+
+`PATCH /auth/senha` (🔒 qualquer usuário logado)
+
+```json
+{ "senhaAtual": "senha-de-hoje", "novaSenha": "senha-nova-123" }
+```
+
+| Campo | Obrigatório | Regra |
+|---|:---:|---|
+| `senhaAtual` | ✅ | a senha de agora (prova que é o dono, e não alguém com um token roubado) |
+| `novaSenha` | ✅ | 8 a 72 caracteres (até 72 bytes), diferente da atual |
+
+**Resposta `204 No Content`.** Todo token emitido antes da troca, **inclusive o usado nesta chamada**, passa a responder
+`401` `Seu acesso foi alterado ou desativado; faca login novamente`: o front deve mandar para o login.
+Por dentro: o token leva a claim `versaoCredencial`; a troca sobe a versão no banco e o token antigo deixa de bater.
+
+**Erros possíveis:** `400` (validação; `novaSenha` acima de 72 bytes), `401`, `422` `Senha atual incorreta` ou
+`A nova senha precisa ser diferente da atual`, `429` (senha atual errada conta no mesmo limite do login).
 
 ---
 
@@ -235,17 +305,15 @@ cadastro e senha errada, de propósito: não revela quais CPFs têm conta.
 
 ```json
 {
-  "agencia": "0001",
-  "numeroConta": "12345678",
   "tipoContaEnum": "CORRENTE"
 }
 ```
 
 | Campo | Obrigatório | Regra |
 |---|:---:|---|
-| `agencia` | ✅ | exatamente 4 dígitos |
-| `numeroConta` | ✅ | 5 a 12 dígitos, único no banco |
 | `tipoContaEnum` | ✅ | `CORRENTE` ou `POUPANCA` |
+| `agencia` | — | 4 dígitos. **Omita:** o banco usa `0001` |
+| `numeroConta` | — | 5 a 12 dígitos, único. **Omita:** o banco gera 8 dígitos (7 aleatórios + dígito verificador módulo 11) |
 
 **Resposta `201 Created`:**
 
@@ -263,7 +331,7 @@ cadastro e senha errada, de propósito: não revela quais CPFs têm conta.
 
 - Toda conta nasce com **saldo zero** e **ativa**.
 - Um cliente pode ter **mais de uma conta**.
-- Hoje quem escolhe `agencia` e `numeroConta` é quem chama a API (ver [débitos técnicos](../planing/debitos-tecnicos.md)).
+- Desde a 2.1 o banco gera agência e número; mandar os dois ainda funciona (compatibilidade), mas o front não deve.
 
 **Erros possíveis:** `400` (validação ou `clienteId` não é UUID), `401` (sem token), `403` (`clienteId` de outro
 cliente), `404` (cliente não encontrado), `409` (número de conta já existe).
@@ -291,11 +359,14 @@ Cada item tem o formato da resposta da 4.1.
 |---|:---:|---|
 | `valor` | ✅ | mínimo `0.01`, no máximo 2 casas decimais |
 | `descricao` | — | até 140 caracteres |
+| header `Idempotency-Key` | ✅ | uma por operação ([idempotência](#idempotência-idempotency-key)) |
 
-**Resposta `204 No Content`** (sem corpo). Para mostrar o novo saldo, busque a conta de novo.
+**Resposta `204 No Content`** (sem corpo; repetição com a mesma chave traz `Idempotency-Replayed: true`). Para mostrar o
+novo saldo, busque a conta de novo.
 
 **Erros possíveis:** `400` (validação), `401` (sem token), `403` (conta de outro cliente), `404` (conta não encontrada),
-`409` (conta alterada ao mesmo tempo), `422` (conta inativa ou, no saque, saldo insuficiente).
+`409` (conta alterada ao mesmo tempo ou mesma chave em uso), `422` (conta inativa, no saque saldo insuficiente, ou chave
+reaproveitada com outro corpo).
 A ordem de checagem é `404` → `403` → `422`: conta de outro cliente dá `403` antes de qualquer regra de saldo.
 
 ### 4.4 Transferir
@@ -317,8 +388,9 @@ A ordem de checagem é `404` → `403` → `422`: conta de outro cliente dá `40
 | `contaDestinoId` | ✅ | UUID de conta existente e ativa, diferente da origem (pode ser de outro cliente) |
 | `valor` | ✅ | mínimo `0.01`, no máximo 2 casas decimais |
 | `descricao` | — | até 140 caracteres |
+| header `Idempotency-Key` | ✅ | uma por operação ([idempotência](#idempotência-idempotency-key)) |
 
-**Resposta `204 No Content`.** Débito e crédito acontecem **na mesma transação**: ou os dois acontecem, ou nenhum.
+**Resposta `204 No Content`** (com `Idempotency-Replayed: true` quando for repetição). Débito e crédito acontecem **na mesma transação**: ou os dois acontecem, ou nenhum.
 
 **Erros possíveis:** `400`, `401`, `403` (origem de outro cliente), `404`, `409`, `422` (mesma conta, conta inativa,
 saldo insuficiente).
@@ -383,10 +455,19 @@ saldo insuficiente).
 | R8 | Saque e transferência precisam de saldo suficiente | `422` |
 | R9 | Não dá para transferir para a mesma conta | `422` |
 | R10 | Duas operações simultâneas na mesma conta não se sobrescrevem (lock otimista) | `409` |
-| R11 | Fora `POST /clientes` e `POST /auth/login`, toda rota exige token válido | `401` |
+| R11 | Fora `POST /clientes`, `POST /auth/login` e `GET /actuator/health`, toda rota exige token válido | `401` |
 | R12 | Só o dono movimenta, vê extrato e abre conta (na transferência, o dono da **origem**) | `403` |
 | R13 | `GET /clientes` é só do `ADMIN`; em `GET /contas` o `CLIENTE` vê só as dele | `403` |
 | R14 | Senha guardada só como hash BCrypt; nunca volta em resposta nem aparece em log | — |
+| R15 | Cada movimentação acontece **uma vez** por `Idempotency-Key`; repetir a chave não movimenta de novo | `400` sem chave · `422` chave com outro corpo |
+| R16 | Agência e número da conta são definidos pelo banco quando não enviados (`0001` + 8 dígitos com DV) | `409` se não houver número livre |
+| R17 | 5 logins errados para o mesmo CPF em 15 min bloqueiam aquele CPF até a janela acabar | `429` |
+| R18 | Conta não é apagada: cliente com conta não pode ser excluído; conta é encerrada (`ativa = false`) | — |
+| R19 | Só `ADMIN` promove, rebaixa, desativa e reativa usuários; ninguém altera o próprio perfil ou acesso | `403` / `422` |
+| R20 | Token de usuário desativado ou com perfil alterado depois do login deixa de valer na hora | `401` |
+| R21 | Usuário desativado não faz login (mesma resposta de senha errada) | `401` |
+| R22 | Trocar a própria senha exige a atual; erro conta no limite de tentativas | `422` / `429` |
+| R23 | Troca ou redefinição de senha derruba na hora todos os tokens emitidos antes | `401` |
 
 ---
 
@@ -422,22 +503,29 @@ Todo erro **tratado** volta assim:
 | `400` | ID da URL não é UUID | `Parametro de URL invalido` (+ `campos`) |
 | `400` | `page`/`size` fora do limite | `Requisicao invalida` (+ `campos`) |
 | `400` | senha acima de 72 bytes (acentos) | `Requisicao invalida` (+ `campos` com `senha`) |
+| `400` | movimentação sem `Idempotency-Key` ou fora do formato | `Requisicao invalida` (+ `campos` com `Idempotency-Key`) |
 | `401` | sem header `Authorization` | `Autenticacao necessaria: envie o token no header Authorization (Bearer)` |
 | `401` | token mal formado, de outra chave ou vencido | `Token invalido ou expirado; faca login novamente` |
+| `401` | token válido, mas o usuário foi desativado, mudou de perfil ou trocou a senha depois do login | `Seu acesso foi alterado ou desativado; faca login novamente` |
 | `401` | login com CPF ou senha errados | `CPF ou senha invalidos` |
 | `403` | conta (ou `clienteId`) de outro cliente | `Conta nao pertence ao usuario logado` / `Voce so pode abrir conta no seu proprio cadastro` |
 | `403` | perfil sem acesso à rota (`CLIENTE` em `GET /clientes`) | `Acesso negado para o seu perfil` |
 | `404` | cliente não existe | `Cliente não encontrado` |
 | `404` | conta não existe | `Conta nao encontrada` |
+| `404` | usuário não existe (gestão) | `Usuario nao encontrado` |
 | `409` | CPF repetido | `CPF ja cadastrado` |
 | `409` | e-mail repetido | `Email ja cadastrado` |
 | `409` | número de conta repetido | `Numero de conta ja existe` |
 | `409` | conflito de concorrência | `A conta foi alterada por outra operacao; tente novamente` |
+| `409` | mesma `Idempotency-Key` em duas chamadas simultâneas | `Esta operacao ja esta sendo processada; repita com a mesma Idempotency-Key para ver o resultado` |
 | `422` | CEP inexistente | `CEP não encontrado` |
 | `422` | conta inativa | `Conta inativa` |
 | `422` | saque sem saldo | `Saldo insuficiente` |
 | `422` | transferência sem saldo | `Saldo insuficiente para transferencia` |
 | `422` | transferência para a mesma conta | `Conta de origem e destino nao podem ser iguais` |
+| `422` | troca de senha com a senha atual errada / nova igual à atual | `Senha atual incorreta` / `A nova senha precisa ser diferente da atual` |
+| `422` | `Idempotency-Key` reaproveitada com outro corpo | `Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao` |
+| `429` | 5 logins errados seguidos para o mesmo CPF | `Muitas tentativas de login; aguarde alguns minutos e tente de novo` (+ header `Retry-After`) |
 | `503` | ViaCEP fora do ar / timeout | `ViaCEP indisponível` ou `Falha ao consultar ViaCEP` |
 
 > `401` e `403` também vêm no **formato padrão** (com `campos: []`); o `401` traz ainda o header `WWW-Authenticate: Bearer`.
@@ -467,6 +555,9 @@ Proposta de resposta do `GET /contas/{contaId}`: mesmo formato da [4.1](#41-abri
 
 | Versão | Data | Mudança |
 |---|---|---|
+| 2.3 | 20/10/2026 | `PATCH /auth/senha` (troca da própria senha) e `PATCH /admin/usuarios/{id}/senha` (redefinição pelo ADMIN); claim `versaoCredencial` no token e `tb_usuario.versao_credencial` (V8). Regras R22–R23. Não quebra o frontend |
+| 2.2 | 20/10/2026 | Gestão de usuários: `GET /admin/usuarios`, `PATCH .../perfil` e `.../acesso` (só `ADMIN`); `tb_usuario.ativo` (V7); token de quem foi desativado ou mudou de perfil → `401` com mensagem própria. Regras R19–R21. Não quebra o frontend |
+| 2.1 | 20/10/2026 | **Quebra o frontend (ajustado no mesmo PR).** `Idempotency-Key` obrigatório em depósito, saque e transferência (`400` sem ele, `422` reaproveitada, header `Idempotency-Replayed` na repetição); `agencia` e `numeroConta` opcionais na abertura (o banco gera); `429` no login após 5 erros; `GET /actuator/health` público |
 | 2.0 | 16/10/2026 | **Quebra o frontend.** Login com JWT: `senha` obrigatória no cadastro, `POST /auth/login` novo, `Authorization: Bearer` em todas as outras rotas (`401`), regra de dono (`403`), `GET /clientes` só `ADMIN`, `GET /contas` do `CLIENTE` traz só as dele. Regras R11–R14 |
 | 1.3 | 15/10/2026 | e-mail salvo e devolvido em minúsculas; R2 sem diferenciar maiúsculas. Sem mudança de campo ou status (não quebra o frontend) |
 | 1.2 | 13/10/2026 | tabela de mensagens de erro reais, regras numeradas, erros por endpoint, propostas priorizadas |

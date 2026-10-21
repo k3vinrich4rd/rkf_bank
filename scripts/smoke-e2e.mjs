@@ -3,6 +3,7 @@
 // Cria dados novos a cada execução (CPF, e-mail e número de conta aleatórios), então pode rodar
 // várias vezes no mesmo banco. Segue o roteiro de backend/README_TESTES_E2E.md em versão resumida.
 // Login: cada cliente se cadastra com senha e entra em POST /auth/login; as rotas de conta vão com o token.
+// Contas do seed (só leitura): visitantes Ana e Bruno no perfil visitante; Felipe e Renan com EQUIPE_SENHA no ambiente.
 // Admin (opcional): com ADMIN_CPF e ADMIN_SENHA no ambiente (os mesmos da API), também confere GET /clientes.
 // Sai com código 0 se todas as verificações passaram e 1 se alguma falhou.
 
@@ -23,9 +24,14 @@ function cpfValido() {
 
 const aleatorio = (digitos) => String(Math.floor(Math.random() * 10 ** digitos)).padStart(digitos, "0");
 
-async function chamar(metodo, caminho, corpo, token) {
+const MOVIMENTACAO = /\/(deposito|saque|transferencia)$/;
+
+// Movimentações levam Idempotency-Key (contrato 2.1): uma chave nova por chamada, salvo quando o teste passa
+// a própria em `chave` (para repetir de propósito) ou `chave: null` (para mandar sem).
+async function chamar(metodo, caminho, corpo, token, { chave } = {}) {
   const headers = { "Content-Type": "application/json", "X-Request-Id": "smoke-e2e-" + aleatorio(6) };
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (metodo === "POST" && MOVIMENTACAO.test(caminho) && chave !== null) headers["Idempotency-Key"] = chave ?? crypto.randomUUID();
   const resposta = await fetch(BASE + caminho, {
     method: metodo,
     headers,
@@ -34,7 +40,7 @@ async function chamar(metodo, caminho, corpo, token) {
   const texto = await resposta.text();
   let json = null;
   try { json = texto ? JSON.parse(texto) : null; } catch { /* corpo não é JSON */ }
-  return { status: resposta.status, json };
+  return { status: resposta.status, json, headers: resposta.headers };
 }
 
 function verificar(nome, condicao, detalhe = "") {
@@ -63,8 +69,11 @@ async function novoCliente(nome) {
 }
 
 async function novaConta(cliente) {
-  const r = await chamar("POST", `/contas/clientes/${cliente.id}`, { agencia: "0001", numeroConta: aleatorio(8), tipoContaEnum: "CORRENTE" }, cliente.token);
-  verificar("Abrir conta → 201, saldo 0.00 e ativa", r.status === 201 && Number(r.json?.saldo) === 0 && r.json?.ativa === true, `status ${r.status} ${JSON.stringify(r.json)}`);
+  // Sem agência nem número: a API gera (contrato 2.1).
+  const r = await chamar("POST", `/contas/clientes/${cliente.id}`, { tipoContaEnum: "CORRENTE" }, cliente.token);
+  verificar("Abrir conta sem número → 201, número gerado (8 dígitos), saldo 0.00 e ativa",
+      r.status === 201 && /^\d{8}$/.test(r.json?.numeroConta ?? "") && r.json?.agencia === "0001"
+      && Number(r.json?.saldo) === 0 && r.json?.ativa === true, `status ${r.status} ${JSON.stringify(r.json)}`);
   return r.json;
 }
 
@@ -114,12 +123,53 @@ try {
   verificar("GET /contas mostra só as contas do dono do token", Array.isArray(r.json) && r.json.length === 1 && r.json[0].id === contaDestino.id, JSON.stringify(r.json));
   r = await chamar("GET", "/clientes", undefined, origem.token);
   verificar("GET /clientes com perfil CLIENTE → 403", r.status === 403, `status ${r.status}`);
-  if (process.env.ADMIN_CPF && process.env.ADMIN_SENHA) {
+  // O perfil visitante nao tem admin de proposito: la, ADMIN_CPF do ambiente nao vale.
+  const perfilVisitante = (await login("24681357928", "Visitante@2026")).status === 200;
+  if (perfilVisitante) {
+    console.log("⏭️  GET /clientes com ADMIN pulado (perfil visitante nao tem admin)");
+  } else if (process.env.ADMIN_CPF && process.env.ADMIN_SENHA) {
     const admin = await login(process.env.ADMIN_CPF, process.env.ADMIN_SENHA);
     r = await chamar("GET", "/clientes?paginado=true", undefined, admin.json?.token);
     verificar("GET /clientes com perfil ADMIN → 200", admin.json?.perfil === "ADMIN" && r.status === 200, `login ${admin.status}, listagem ${r.status}`);
   } else {
     console.log("⏭️  GET /clientes com ADMIN pulado (defina ADMIN_CPF e ADMIN_SENHA para conferir)");
+  }
+
+  console.log("\nIdempotência (Idempotency-Key)");
+  const chave = crypto.randomUUID();
+  const antes = await saldoDe(contaOrigem.id, origem.token);
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 1.0, descricao: "smoke idempotente" }, origem.token, { chave });
+  const repetida = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 1.0, descricao: "smoke idempotente" }, origem.token, { chave });
+  verificar("Repetir o saque com a mesma chave → 204 com Idempotency-Replayed, debitado uma vez só",
+      r.status === 204 && repetida.status === 204 && repetida.headers.get("idempotency-replayed") === "true"
+      && (await saldoDe(contaOrigem.id, origem.token)) === antes - 1, `status ${r.status}/${repetida.status}`);
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 5.0, descricao: "smoke idempotente" }, origem.token, { chave });
+  verificar("Mesma chave com outro valor → 422", r.status === 422, `status ${r.status}`);
+  r = await chamar("POST", `/contas/${contaOrigem.id}/deposito`, { valor: 1.0 }, origem.token, { chave: null });
+  verificar("Movimentação sem Idempotency-Key → 400", r.status === 400 && (r.json?.campos ?? []).some((c) => c.campo === "Idempotency-Key"), `status ${r.status}`);
+
+  // Contas que o Flyway (db/seed) cria a cada subida. Só leitura: o smoke nunca mexe no saldo delas.
+  // Perfil visitante: Ana e Bruno com a senha pública. Perfil padrão/equipe: Felipe e Renan com a EQUIPE_SENHA do ambiente.
+  console.log("\nContas pré-criadas pelo seed");
+  const ana = await login("24681357928", "Visitante@2026");
+  if (ana.status === 200) {
+    r = await chamar("GET", "/contas", undefined, ana.json.token);
+    verificar("Visitante Ana vê só a conta 0001/900001", r.json?.length >= 1 && r.json.every((c) => c.clienteId === ana.json.clienteId)
+        && r.json.some((c) => c.numeroConta === "900001"), JSON.stringify(r.json));
+  } else if (process.env.EQUIPE_SENHA) {
+    const felipe = await login("12345678909", process.env.EQUIPE_SENHA);
+    const renan = await login("98765432100", process.env.EQUIPE_SENHA);
+    if (verificar("Login do Felipe e do Renan com a EQUIPE_SENHA → 200", felipe.status === 200 && renan.status === 200,
+        `Felipe ${felipe.status}, Renan ${renan.status} (a API leu a mesma EQUIPE_SENHA? db/seed/equipe ligado?)`)) {
+      r = await chamar("GET", "/contas", undefined, felipe.json.token);
+      verificar("Felipe vê só as próprias contas, entre elas a 0001/100001", r.json?.length >= 1
+          && r.json.every((c) => c.clienteId === felipe.json.clienteId)
+          && r.json.some((c) => c.id === "5eed0000-0000-4000-8000-000000000014" && c.numeroConta === "100001"), JSON.stringify(r.json));
+      r = await chamar("GET", "/contas/5eed0000-0000-4000-8000-000000000014/lancamentos", undefined, renan.json.token);
+      verificar("Renan não vê o extrato do Felipe → 403", r.status === 403, `status ${r.status}`);
+    }
+  } else {
+    console.log("⏭️  Contas do seed puladas (perfil visitante não está no ar e EQUIPE_SENHA não está no ambiente)");
   }
 
   console.log("\nCenários de erro");

@@ -5,7 +5,9 @@ description: Revisa migrações Flyway novas ou alteradas do RKF Bank (backend/s
 
 # /revisar-migracao
 
-Pasta das migrações: `backend/src/main/resources/db/migration`. Se ela não existir, diga que o Flyway ainda não foi implementado (feature 1 do `planing/checklist-features.md`) e pare.
+Pastas: `backend/src/main/resources/db/migration` (schema, `V<n>__*.sql`, roda em todo ambiente) e `backend/src/main/resources/db/seed/{equipe,visitante}` (callbacks `afterMigrate__*.sql`: contas da equipe e de visitante, rodam a cada subida, fora do perfil `test` e de produção). Se `db/migration` não existir, diga que o Flyway ainda não foi implementado e pare.
+
+> A reestruturação de 20/10/2026 (V1–V3 antigos → V1–V5, uma tabela por versão; V6 = idempotência) foi decidida e registrada em `planing/decisoes.md`; não aponte como edição indevida. Daqui para frente a regra do item 1 vale normalmente.
 
 Modo **revisão**: aponte problemas e sugira a correção; só edite se o usuário pedir.
 
@@ -26,9 +28,11 @@ Modo **revisão**: aponte problemas e sugira a correção; só edite se o usuár
 | 7 | A migração bate com as entidades JPA (`backend/src/main/java/com/br/rkfbank/entities`)? Coluna, tipo, tamanho e nulabilidade. Com `ddl-auto=validate`, divergência derruba a aplicação na subida. | 🔴 |
 | 8 | Migração de **dados** (ex.: e-mail em minúsculas) é idempotente e não depende da ordem das linhas? | 🟡 |
 | 9 | Índices para colunas usadas em busca (`WHERE`, `JOIN`, `ORDER BY` do extrato)? | 🟢 |
+| 10 | Mudou tabela/coluna usada pelo `db/seed`? O seed foi ajustado no mesmo PR e continua **idempotente** (`INSERT ... SELECT ... WHERE NOT EXISTS` pelo id e pela chave natural) e sem senha real? O seed da **equipe** não pode ter `tb_usuario` (login vem do `.env`); só o de **visitante** tem hash, e da senha pública `Visitante@2026`. | 🔴 |
+| 11 | Algum dado de demonstração foi parar em `db/migration`? Lá ele iria para produção. Dado de demo só em `db/seed`. | 🔴 |
 
 ## 3. Validar de verdade
-- `scripts/validar.sh backend` (testes em H2 aplicam as migrações).
+- `scripts/validar.sh backend` (testes em H2 aplicam as migrações; o `DadosEquipeIntegracaoTest` aplica o `db/seed/equipe` e roda o `migrate` duas vezes para provar a idempotência; o `PerfilVisitanteIntegracaoTest` sobe o perfil `visitante`).
 - Se o usuário permitir apagar o MySQL local: `./run-test.sh`, depois subir a API e conferir `select version, description, success from flyway_schema_history;`.
 
 ## 4. Saída

@@ -84,6 +84,13 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<!-- Actuator so para o health check (GET /actuator/health): Docker e deploy sabem se a API esta viva.
+		     Nenhum outro endpoint exposto (management.endpoints.web.exposure.include=health). -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
@@ -181,6 +188,11 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<configuration>
 					<argLine>@{argLine} -javaagent:"${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar"</argLine>
+					<!-- O application.properties importa o .env da raiz; nos testes, um arquivo que nao existe: o .env de quem
+					     roda (EQUIPE_SENHA, ADMIN_*) nao pode mudar o resultado dos testes. -->
+					<systemPropertyVariables>
+						<RKFBANK_ENV>target/sem-env-nos-testes</RKFBANK_ENV>
+					</systemPropertyVariables>
 				</configuration>
 			</plugin>
 			<plugin>

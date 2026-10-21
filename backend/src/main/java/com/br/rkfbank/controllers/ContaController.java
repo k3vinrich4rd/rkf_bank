@@ -6,9 +6,12 @@ import com.br.rkfbank.dto.request.conta.SaqueRequestDto;
 import com.br.rkfbank.dto.request.conta.TransferirRequestDto;
 import com.br.rkfbank.dto.response.conta.ContaResponseDto;
 import com.br.rkfbank.dto.response.conta.LancamentoResponseDto;
+import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
 import com.br.rkfbank.security.UsuarioLogado;
 import com.br.rkfbank.services.ContaService;
+import com.br.rkfbank.services.IdempotenciaService;
 import jakarta.validation.Valid;
+import java.math.BigDecimal;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Page;
@@ -19,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,9 +39,11 @@ public class ContaController {
     private static final Logger log = LogManager.getLogger(ContaController.class);
 
     private final ContaService contaService;
+    private final IdempotenciaService idempotenciaService;
 
-    public ContaController(ContaService contaService) {
+    public ContaController(ContaService contaService, IdempotenciaService idempotenciaService) {
         this.contaService = contaService;
+        this.idempotenciaService = idempotenciaService;
     }
 
     @PostMapping("/clientes/{clienteId}")
@@ -48,31 +54,56 @@ public class ContaController {
         return ResponseEntity.status(201).body(contaService.abrir(clienteId, request, UsuarioLogado.de(jwt)));
     }
 
+    // Movimentacoes exigem o header Idempotency-Key: repetir a chamada com a mesma chave nao movimenta de novo.
     @PostMapping("/{contaId}/deposito")
     public ResponseEntity<Void> depositar(@PathVariable UUID contaId, @Valid @RequestBody DepositarRequestDto request,
+                                          @RequestHeader(name = IdempotenciaService.HEADER, required = false) String chave,
                                           @AuthenticationPrincipal Jwt jwt) {
-        // Operação sem payload de saída: apenas confirma 204.
         log.debug("Recebido deposito de {} na conta {}", request.valor(), contaId);
-        contaService.depositar(contaId, request, UsuarioLogado.de(jwt));
-        return ResponseEntity.noContent().build();
+        UsuarioLogado usuario = UsuarioLogado.de(jwt);
+        boolean repetida = idempotenciaService.executarUmaVez(usuario, chave, TipoLancamentoEnum.DEPOSITO,
+                assinatura(contaId, null, request.valor(), request.descricao()),
+                () -> contaService.depositar(contaId, request, usuario));
+        return semConteudo(repetida);
     }
 
     @PostMapping("/{contaId}/saque")
     public ResponseEntity<Void> sacar(@PathVariable UUID contaId, @Valid @RequestBody SaqueRequestDto request,
+                                      @RequestHeader(name = IdempotenciaService.HEADER, required = false) String chave,
                                       @AuthenticationPrincipal Jwt jwt) {
-        // Operação sem payload de saída: apenas confirma 204.
         log.debug("Recebido saque de {} na conta {}", request.valor(), contaId);
-        contaService.sacar(contaId, request, UsuarioLogado.de(jwt));
-        return ResponseEntity.noContent().build();
+        UsuarioLogado usuario = UsuarioLogado.de(jwt);
+        boolean repetida = idempotenciaService.executarUmaVez(usuario, chave, TipoLancamentoEnum.SAQUE,
+                assinatura(contaId, null, request.valor(), request.descricao()),
+                () -> contaService.sacar(contaId, request, usuario));
+        return semConteudo(repetida);
     }
 
     @PostMapping("/transferencia")
-    public ResponseEntity<Void> transferir(@Valid @RequestBody TransferirRequestDto request, @AuthenticationPrincipal Jwt jwt) {
-        // Operação sem payload de saída: apenas confirma 204.
+    public ResponseEntity<Void> transferir(@Valid @RequestBody TransferirRequestDto request,
+                                           @RequestHeader(name = IdempotenciaService.HEADER, required = false) String chave,
+                                           @AuthenticationPrincipal Jwt jwt) {
         log.debug("Recebida transferencia de {} da conta {} para {}",
                 request.valor(), request.contaOrigemId(), request.contaDestinoId());
-        contaService.transferir(request, UsuarioLogado.de(jwt));
-        return ResponseEntity.noContent().build();
+        UsuarioLogado usuario = UsuarioLogado.de(jwt);
+        boolean repetida = idempotenciaService.executarUmaVez(usuario, chave, TipoLancamentoEnum.TRANSFERENCIA,
+                assinatura(request.contaOrigemId(), request.contaDestinoId(), request.valor(), request.descricao()),
+                () -> contaService.transferir(request, usuario));
+        return semConteudo(repetida);
+    }
+
+    // 204 nos dois casos; a repeticao avisa pelo header, para o cliente saber que nada foi movimentado agora.
+    private static ResponseEntity<Void> semConteudo(boolean repetida) {
+        ResponseEntity.HeadersBuilder<?> resposta = ResponseEntity.noContent();
+        if (repetida) {
+            resposta.header(IdempotenciaService.HEADER_REPETIDA, "true");
+        }
+        return resposta.build();
+    }
+
+    // "10.0" e "10.00" sao o mesmo valor: stripTrailingZeros evita que a repeticao pareca outra operacao.
+    private static String assinatura(UUID conta, UUID destino, BigDecimal valor, String descricao) {
+        return conta + "|" + destino + "|" + valor.stripTrailingZeros().toPlainString() + "|" + (descricao == null ? "" : descricao);
     }
 
     @GetMapping("/{contaId}/lancamentos")
