@@ -16,7 +16,7 @@
 [![Flyway](https://img.shields.io/badge/Flyway-V1→V8_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-163_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-237_✔-22C55E)](#-qualidade-e-testes)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
 <a href="#-conheça-o-rkf-bank"><img src="assets/readme/botoes/abrir-conta.svg" alt="🏦 Conheça o banco" height="46"/></a>
@@ -32,7 +32,7 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 237 testes, 9 rotas REST, 8 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 237 testes, 14 rotas REST, 8 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -558,7 +558,8 @@ Contrato completo (versão 2.0): [backend/README_CONTRATO_API.md](backend/README
 | Método | Rota | O que faz | Quem pode | Sucesso |
 |---|---|---|---|---|
 | `POST` | `/clientes` | cadastra cliente (com senha) | público | `201` |
-| `POST` | `/auth/login` | login com CPF + senha | público | `200` + token |
+| `POST` | `/auth/login` | login com CPF + senha (5 erros em 15 min → `429`) | público | `200` + token |
+| `PATCH` | `/auth/senha` | troca a própria senha (pede a atual; derruba os tokens antigos) | logado | `204` |
 | `GET` | `/clientes` | lista clientes (`?paginado=true&page=0&size=10`) | `ADMIN` | `200` |
 | `POST` | `/contas/clientes/{clienteId}` | abre conta | o próprio cliente | `201` |
 | `GET` | `/contas` | lista contas | `ADMIN`: todas · `CLIENTE`: as dele | `200` |
@@ -566,6 +567,10 @@ Contrato completo (versão 2.0): [backend/README_CONTRATO_API.md](backend/README
 | `POST` | `/contas/{contaId}/saque` | saca | dono da conta | `204` |
 | `POST` | `/contas/transferencia` | transfere | dono da conta de origem | `204` |
 | `GET` | `/contas/{contaId}/lancamentos` | extrato (mais recente primeiro) | dono da conta | `200` |
+| `GET` | `/admin/usuarios` | lista os usuários (perfil, ativo) | `ADMIN` | `200` |
+| `PATCH` | `/admin/usuarios/{usuarioId}/perfil` | promove a `ADMIN` ou rebaixa a `CLIENTE` | `ADMIN` (não em si mesmo) | `200` |
+| `PATCH` | `/admin/usuarios/{usuarioId}/acesso` | desativa ou reativa o acesso | `ADMIN` (não em si mesmo) | `200` |
+| `PATCH` | `/admin/usuarios/{usuarioId}/senha` | redefine a senha de quem esqueceu | `ADMIN` | `204` |
 
 <details>
 <summary><b>👤 <code>POST /clientes</code> — cadastrar</b></summary>
@@ -1436,7 +1441,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 |---|---|---|
 | Time | [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, PRs e revisão |
 | Time e IA | [CLAUDE.md](CLAUDE.md) | regras do projeto para pessoas e agentes de IA |
-| API | [Contrato da API (2.0)](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
+| API | [Contrato da API (2.3)](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
 | Backend | [Guia de testes (visitante)](backend/README_TESTES_E2E.md) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) · [Visitantes](VISITANTES.md) | testar a API na sua máquina; aceite do MVP |
