@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.br.rkfbank.dto.comum.PaginaResponse;
 import com.br.rkfbank.dto.request.conta.AbrirContaRequestDto;
 import com.br.rkfbank.dto.request.conta.DepositarRequestDto;
 import com.br.rkfbank.dto.request.conta.SaqueRequestDto;
@@ -34,7 +35,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -182,7 +182,10 @@ class ContaControllerTest {
         ResponseEntity<?> response = contaController.listarContas(true, 0, 10, JWT);
 
         assertEquals(200, response.getStatusCode().value());
-        assertInstanceOf(Page.class, response.getBody());
+        PaginaResponse<?> pagina = assertInstanceOf(PaginaResponse.class, response.getBody());
+        assertEquals(1, pagina.content().size());
+        assertEquals(1, pagina.totalElements());
+        assertEquals(0, pagina.number());
     }
 
     @Test
