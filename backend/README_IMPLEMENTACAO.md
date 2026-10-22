@@ -54,7 +54,7 @@ Raiz: `backend/src/main/java/com/br/rkfbank/`
 | `clients/viacep` | chamar o ViaCEP e traduzir falhas em exceções nossas | `RestClient`, timeouts | regra de negócio de cliente |
 | `exceptions` | exceções de domínio (cada uma mapeia um status) | — | — |
 | `validation` | validações customizadas (`@CpfValido`) | — | — |
-| `config` | beans de configuração (CORS) | — | — |
+| `config` | beans de configuração (segurança, CORS para `/**` com origens de `CORS_ORIGENS`, log, admin) | — | — |
 
 ---
 
