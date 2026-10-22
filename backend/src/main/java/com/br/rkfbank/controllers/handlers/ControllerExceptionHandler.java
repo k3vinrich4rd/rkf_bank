@@ -1,5 +1,7 @@
 package com.br.rkfbank.controllers.handlers;
 
+import com.br.rkfbank.config.LogSeguro;
+
 import com.br.rkfbank.dto.comum.ErroCampoResponse;
 import com.br.rkfbank.dto.comum.ErroResponse;
 import com.br.rkfbank.exceptions.AcessoNegadoException;
@@ -45,15 +47,16 @@ public class ControllerExceptionHandler {
                 .map(erro -> new ErroCampoResponse(erro.getField(), erro.getDefaultMessage()))
                 .toList();
         // So os nomes dos campos: os valores rejeitados podem ser dados pessoais.
-        log.warn("Validacao falhou em {}: campos {}", request.getRequestURI(),
-                campos.stream().map(ErroCampoResponse::campo).toList());
+        log.warn("Validacao falhou em {}: campos {}", LogSeguro.texto(request.getRequestURI()),
+                LogSeguro.texto(campos.stream().map(ErroCampoResponse::campo).toList()));
         return montar(HttpStatus.BAD_REQUEST, "Requisicao invalida", request.getRequestURI(), campos);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErroResponse jsonInvalido(HttpMessageNotReadableException ex, HttpServletRequest request) {
-        log.warn("JSON invalido em {}: {}", request.getRequestURI(), ex.getMostSpecificCause().getMessage());
+        // So o TIPO do erro: a mensagem do Jackson pode trazer um trecho do valor enviado (dado pessoal, LGPD).
+        log.warn("JSON invalido em {}: {}", LogSeguro.texto(request.getRequestURI()), ex.getMostSpecificCause().getClass().getSimpleName());
         return montar(HttpStatus.BAD_REQUEST, "JSON invalido ou tipo de campo incompativel", request.getRequestURI(), List.of());
     }
 
@@ -62,14 +65,14 @@ public class ControllerExceptionHandler {
     public ErroResponse parametroInvalido(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         // Nome do parametro invalido da URL para orientar quem consome a API.
         String campo = ex.getName();
-        log.warn("Parametro de URL invalido em {}: {}", request.getRequestURI(), campo);
+        log.warn("Parametro de URL invalido em {}: {}", LogSeguro.texto(request.getRequestURI()), LogSeguro.texto(campo));
         return montar(HttpStatus.BAD_REQUEST, "Parametro de URL invalido", request.getRequestURI(), List.of(new ErroCampoResponse(campo, "Tipo invalido para o parametro " + campo)));
     }
 
     @ExceptionHandler(RequisicaoInvalidaException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErroResponse requisicaoInvalida(RequisicaoInvalidaException ex, HttpServletRequest request) {
-        log.warn("Requisicao invalida em {}: {} {}", request.getRequestURI(), ex.getCampo(), ex.getMessage());
+        log.warn("Requisicao invalida em {}: {} {}", LogSeguro.texto(request.getRequestURI()), LogSeguro.texto(ex.getCampo()), LogSeguro.texto(ex.getMessage()));
         return montar(HttpStatus.BAD_REQUEST, "Requisicao invalida", request.getRequestURI(),
                 List.of(new ErroCampoResponse(ex.getCampo(), ex.getMessage())));
     }
@@ -125,7 +128,7 @@ public class ControllerExceptionHandler {
     @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErroResponse conflitoConcorrencia(RuntimeException ex, HttpServletRequest request) {
-        log.warn("Conflito de concorrencia em {}: {}", request.getRequestURI(), ex.getClass().getSimpleName());
+        log.warn("Conflito de concorrencia em {}: {}", LogSeguro.texto(request.getRequestURI()), ex.getClass().getSimpleName());
         return montar(HttpStatus.CONFLICT, "A conta foi alterada por outra operacao; tente novamente",
                 request.getRequestURI(), List.of());
     }
@@ -143,7 +146,8 @@ public class ControllerExceptionHandler {
     }
 
     private ErroResponse montarELogar(Level nivel, HttpStatus status, String mensagem, HttpServletRequest request) {
-        log.log(nivel, "{} {} em {}: {}", status.value(), status.getReasonPhrase(), request.getRequestURI(), mensagem);
+        log.log(nivel, "{} {} em {}: {}", status.value(), status.getReasonPhrase(), LogSeguro.texto(request.getRequestURI()),
+                LogSeguro.texto(mensagem));
         return montar(status, mensagem, request.getRequestURI(), List.of());
     }
 

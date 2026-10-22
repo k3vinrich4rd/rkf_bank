@@ -353,6 +353,26 @@ class SegurancaIntegracaoTest {
                 .andExpect(jsonPath("$.content").isArray());
     }
 
+    @Test
+    void paginaTemSoOsCamposDoContratoENaoOPageDoSpring() throws Exception {
+        String tokenAdmin = login(ADMIN_CPF, ADMIN_SENHA);
+
+        mockMvc.perform(get("/clientes").param("paginado", "true").param("size", "1")
+                        .header("Authorization", "Bearer " + tokenAdmin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").isNumber())
+                .andExpect(jsonPath("$.totalPages").isNumber())
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").isBoolean())
+                // Campos internos do PageImpl nao podem vazar para o contrato.
+                .andExpect(jsonPath("$.pageable").doesNotExist())
+                .andExpect(jsonPath("$.sort").doesNotExist())
+                .andExpect(jsonPath("$.numberOfElements").doesNotExist());
+    }
+
     // ---------- apoio ----------
 
     private String cadastrar(String cpf) throws Exception {

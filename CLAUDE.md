@@ -63,7 +63,6 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 ## Armadilhas conhecidas
 
 - H2 está fixado em **2.3.232** (o 2.4.240 quebra o `CHECK ... IN` das colunas de enum).
-- Tomcat e Jackson estão **sobrescritos** no `pom.xml` por causa de CVEs; remover quando o Spring Boot alcançar.
 - `@DataJpaTest` troca o datasource por H2 embutido em qualquer perfil.
 - Testes Spring têm `@ActiveProfiles("test")` e o `application-test.properties` fica em `src/test/resources` (fora do jar). O `pom.xml` aponta `RKFBANK_ENV` para um arquivo inexistente: o `.env` de quem roda não entra nos testes.
 - O Mockito é carregado como `-javaagent` no surefire (Java 21+); não remova o `argLine`.

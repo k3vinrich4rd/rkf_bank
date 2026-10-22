@@ -41,7 +41,9 @@ public class FiltroLogRequisicao extends OncePerRequestFilter {
             chain.doFilter(request, response);
         } finally {
             long duracaoMs = (System.nanoTime() - inicio) / 1_000_000;
-            log.info("{} {} -> {} ({} ms)", request.getMethod(), request.getRequestURI(), response.getStatus(), duracaoMs);
+            // URI e metodo vem do cliente: passam pelo LogSeguro para nao forjarem linhas no log.
+            log.info("{} {} -> {} ({} ms)", LogSeguro.texto(request.getMethod()), LogSeguro.texto(request.getRequestURI()),
+                    response.getStatus(), duracaoMs);
             // Threads do Tomcat sao reaproveitadas: sem limpar, o id vazaria para a proxima requisicao.
             ThreadContext.remove(CHAVE_REQUEST_ID);
         }
