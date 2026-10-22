@@ -14,8 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.clients.viacep.ClienteViaCep;
-import com.br.rkfbank.clients.viacep.ResponseViaCepDto;
+import com.br.rkfbank.clients.viacep.ViaCepClient;
+import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.services.TokenService;
@@ -76,11 +76,11 @@ class SegurancaIntegracaoTest {
 
     // ViaCEP e externo: fora do teste de seguranca.
     @MockitoBean
-    private ClienteViaCep clienteViaCep;
+    private ViaCepClient viaCepClient;
 
     @BeforeEach
     void setUp() {
-        when(clienteViaCep.buscarPorCep(anyString())).thenReturn(new ResponseViaCepDto(
+        when(viaCepClient.buscarPorCep(anyString())).thenReturn(new ViaCepResponseDto(
                 "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false));
     }
 

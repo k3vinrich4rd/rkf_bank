@@ -2,8 +2,8 @@ package com.br.rkfbank.services;
 
 import com.br.rkfbank.entities.RegistroIdempotencia;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
-import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
+import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.IdempotenciaRepository;
 import com.br.rkfbank.security.UsuarioLogado;
@@ -56,7 +56,7 @@ public class IdempotenciaService {
             RegistroIdempotencia registro = existente.get();
             if (registro.getOperacao() != operacao || !registro.getHashRequisicao().equals(hash)) {
                 log.warn("Idempotency-Key reutilizada com outra requisicao pelo usuario {} ({})", usuario.usuarioId(), operacao);
-                throw new NaoProcessavelException("Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao");
+                throw new RegraNegocioException("Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao");
             }
             log.info("Repeticao de {} ignorada pela Idempotency-Key (usuario {})", operacao, usuario.usuarioId());
             return true;
@@ -76,7 +76,7 @@ public class IdempotenciaService {
         } catch (DataIntegrityViolationException ex) {
             // Outra chamada com a mesma chave gravou primeiro (corrida). Lancar aqui desfaz a movimentacao desta.
             log.warn("Idempotency-Key em uso por outra chamada simultanea do usuario {} ({})", usuario.usuarioId(), operacao);
-            throw new NegocioException("Esta operacao ja esta sendo processada; repita com a mesma Idempotency-Key para ver o resultado");
+            throw new ConflitoException("Esta operacao ja esta sendo processada; repita com a mesma Idempotency-Key para ver o resultado");
         }
         return false;
     }

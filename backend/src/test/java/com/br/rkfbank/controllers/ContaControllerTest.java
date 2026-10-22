@@ -12,10 +12,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.br.rkfbank.dto.comum.PaginaResponse;
-import com.br.rkfbank.dto.request.conta.AbrirContaRequestDto;
-import com.br.rkfbank.dto.request.conta.DepositarRequestDto;
+import com.br.rkfbank.dto.request.conta.AberturaContaRequestDto;
+import com.br.rkfbank.dto.request.conta.DepositoRequestDto;
 import com.br.rkfbank.dto.request.conta.SaqueRequestDto;
-import com.br.rkfbank.dto.request.conta.TransferirRequestDto;
+import com.br.rkfbank.dto.request.conta.TransferenciaRequestDto;
 import com.br.rkfbank.dto.response.conta.ContaResponseDto;
 import com.br.rkfbank.dto.response.conta.LancamentoResponseDto;
 import com.br.rkfbank.entities.enums.PerfilEnum;
@@ -67,7 +67,7 @@ class ContaControllerTest {
     @Test
     void deveRetornar201AoAbrirConta() {
         UUID clienteId = UUID.fromString("d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e");
-        AbrirContaRequestDto request = new AbrirContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
+        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
         when(contaService.abrir(clienteId, request, USUARIO)).thenReturn(contaResponse());
 
         ResponseEntity<ContaResponseDto> response = contaController.abrir(clienteId, request, JWT);
@@ -79,7 +79,7 @@ class ContaControllerTest {
     @Test
     void deveDepositarUmaVezPelaIdempotenciaERetornar204() {
         UUID contaId = UUID.randomUUID();
-        DepositarRequestDto request = new DepositarRequestDto(new BigDecimal("10.00"), "Deposito");
+        DepositoRequestDto request = new DepositoRequestDto(new BigDecimal("10.00"), "Deposito");
         executaAMovimentacao();
 
         ResponseEntity<Void> response = contaController.depositar(contaId, request, "chave-deposito-1", JWT);
@@ -107,7 +107,7 @@ class ContaControllerTest {
     void deveTransferirComOrigemEDestinoNaAssinatura() {
         UUID origem = UUID.randomUUID();
         UUID destino = UUID.randomUUID();
-        TransferirRequestDto request = new TransferirRequestDto(origem, destino, new BigDecimal("50.00"), null);
+        TransferenciaRequestDto request = new TransferenciaRequestDto(origem, destino, new BigDecimal("50.00"), null);
         executaAMovimentacao();
 
         ResponseEntity<Void> response = contaController.transferir(request, "chave-transf-1", JWT);
@@ -125,7 +125,7 @@ class ContaControllerTest {
         when(idempotenciaService.executarUmaVez(any(), any(), any(), any(), any())).thenReturn(true);
 
         ResponseEntity<Void> response = contaController.depositar(contaId,
-                new DepositarRequestDto(new BigDecimal("10.00"), null), "chave-repetida-1", JWT);
+                new DepositoRequestDto(new BigDecimal("10.00"), null), "chave-repetida-1", JWT);
 
         assertEquals(204, response.getStatusCode().value());
         assertEquals("true", response.getHeaders().getFirst(IdempotenciaService.HEADER_REPETIDA));
@@ -137,8 +137,8 @@ class ContaControllerTest {
         UUID contaId = UUID.randomUUID();
         executaAMovimentacao();
 
-        contaController.depositar(contaId, new DepositarRequestDto(new BigDecimal("10.0"), "x"), "chave-a-12345", JWT);
-        contaController.depositar(contaId, new DepositarRequestDto(new BigDecimal("10.00"), "x"), "chave-a-12345", JWT);
+        contaController.depositar(contaId, new DepositoRequestDto(new BigDecimal("10.0"), "x"), "chave-a-12345", JWT);
+        contaController.depositar(contaId, new DepositoRequestDto(new BigDecimal("10.00"), "x"), "chave-a-12345", JWT);
 
         ArgumentCaptor<String> assinaturas = ArgumentCaptor.forClass(String.class);
         verify(idempotenciaService, times(2)).executarUmaVez(any(), any(), any(), assinaturas.capture(), any());
@@ -158,7 +158,7 @@ class ContaControllerTest {
         UUID contaId = UUID.randomUUID();
         when(contaService.listarLancamentos(contaId, USUARIO)).thenReturn(List.of(lancamentoResponse()));
 
-        ResponseEntity<List<LancamentoResponseDto>> response = contaController.listar(contaId, JWT);
+        ResponseEntity<List<LancamentoResponseDto>> response = contaController.extrato(contaId, JWT);
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals(1, response.getBody().size());
@@ -168,7 +168,7 @@ class ContaControllerTest {
     void deveListarContasSemPaginacao() {
         when(contaService.listarTodas(USUARIO)).thenReturn(List.of(contaResponse()));
 
-        ResponseEntity<?> response = contaController.listarContas(false, 0, 10, JWT);
+        ResponseEntity<?> response = contaController.listar(false, 0, 10, JWT);
 
         assertEquals(200, response.getStatusCode().value());
         assertInstanceOf(List.class, response.getBody());
@@ -179,7 +179,7 @@ class ContaControllerTest {
         when(contaService.listarPaginado(PageRequest.of(0, 10), USUARIO))
                 .thenReturn(new PageImpl<>(List.of(contaResponse()), PageRequest.of(0, 10), 1));
 
-        ResponseEntity<?> response = contaController.listarContas(true, 0, 10, JWT);
+        ResponseEntity<?> response = contaController.listar(true, 0, 10, JWT);
 
         assertEquals(200, response.getStatusCode().value());
         PaginaResponse<?> pagina = assertInstanceOf(PaginaResponse.class, response.getBody());
@@ -192,7 +192,7 @@ class ContaControllerTest {
     void deveRejeitarPaginacaoComPaginaNegativa() {
         RequisicaoInvalidaException exception = assertThrows(
                 RequisicaoInvalidaException.class,
-                () -> contaController.listarContas(true, -1, 10, JWT)
+                () -> contaController.listar(true, -1, 10, JWT)
         );
 
         assertEquals("page", exception.getCampo());
@@ -202,7 +202,7 @@ class ContaControllerTest {
     void deveRejeitarPaginacaoComTamanhoNaoPositivo() {
         RequisicaoInvalidaException exception = assertThrows(
                 RequisicaoInvalidaException.class,
-                () -> contaController.listarContas(true, 0, 0, JWT)
+                () -> contaController.listar(true, 0, 0, JWT)
         );
 
         assertEquals("size", exception.getCampo());

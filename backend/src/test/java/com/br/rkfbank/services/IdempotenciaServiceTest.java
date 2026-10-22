@@ -12,8 +12,8 @@ import static org.mockito.Mockito.when;
 import com.br.rkfbank.entities.RegistroIdempotencia;
 import com.br.rkfbank.entities.enums.PerfilEnum;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
-import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
+import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.IdempotenciaRepository;
 import com.br.rkfbank.security.UsuarioLogado;
@@ -75,7 +75,7 @@ class IdempotenciaServiceTest {
         when(repository.findByUsuarioIdAndChave(USUARIO.usuarioId(), CHAVE))
                 .thenReturn(Optional.of(registro(TipoLancamentoEnum.SAQUE, "conta|null|20|")));
 
-        assertThrows(NaoProcessavelException.class, () -> service.executarUmaVez(USUARIO, CHAVE, TipoLancamentoEnum.SAQUE,
+        assertThrows(RegraNegocioException.class, () -> service.executarUmaVez(USUARIO, CHAVE, TipoLancamentoEnum.SAQUE,
                 "conta|null|2000|", movimentacoes::incrementAndGet));
         assertEquals(0, movimentacoes.get());
     }
@@ -85,7 +85,7 @@ class IdempotenciaServiceTest {
         when(repository.findByUsuarioIdAndChave(USUARIO.usuarioId(), CHAVE))
                 .thenReturn(Optional.of(registro(TipoLancamentoEnum.DEPOSITO, "conta|null|20|")));
 
-        assertThrows(NaoProcessavelException.class, () -> service.executarUmaVez(USUARIO, CHAVE, TipoLancamentoEnum.SAQUE,
+        assertThrows(RegraNegocioException.class, () -> service.executarUmaVez(USUARIO, CHAVE, TipoLancamentoEnum.SAQUE,
                 "conta|null|20|", movimentacoes::incrementAndGet));
     }
 
@@ -112,7 +112,7 @@ class IdempotenciaServiceTest {
         when(repository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("uk_idempotencia_usuario_chave"));
 
         // A excecao desfaz a transacao inteira: a movimentacao desta chamada nao fica.
-        assertThrows(NegocioException.class, () -> service.executarUmaVez(USUARIO, CHAVE, TipoLancamentoEnum.DEPOSITO,
+        assertThrows(ConflitoException.class, () -> service.executarUmaVez(USUARIO, CHAVE, TipoLancamentoEnum.DEPOSITO,
                 "x", movimentacoes::incrementAndGet));
     }
 

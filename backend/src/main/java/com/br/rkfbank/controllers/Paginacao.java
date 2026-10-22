@@ -9,6 +9,14 @@ final class Paginacao {
     // Teto para impedir que um unico request carregue a tabela inteira.
     static final int MAX_PAGE_SIZE = 100;
 
+    // Tamanho quando so o page vem na URL.
+    static final int TAMANHO_PADRAO = 10;
+
+    // Quer pagina? paginado (forma antiga) manda quando vier; senao, basta ter page ou size (padrao de mercado).
+    static boolean querPagina(Boolean paginado, Integer page, Integer size) {
+        return paginado != null ? paginado : page != null || size != null;
+    }
+
     private Paginacao() {
     }
 

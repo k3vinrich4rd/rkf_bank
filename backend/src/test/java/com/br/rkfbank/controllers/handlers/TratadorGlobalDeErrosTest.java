@@ -6,10 +6,10 @@ import static org.mockito.Mockito.mock;
 import com.br.rkfbank.dto.comum.ErroResponse;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
-import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
+import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
-import com.br.rkfbank.exceptions.ServicoExternoException;
+import com.br.rkfbank.exceptions.ServicoExternoIndisponivelException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
@@ -24,13 +24,13 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-class ControllerExceptionHandlerTest {
+class TratadorGlobalDeErrosTest {
 
-    private ControllerExceptionHandler handler;
+    private TratadorGlobalDeErros handler;
 
     @BeforeEach
     void setUp() {
-        handler = new ControllerExceptionHandler();
+        handler = new TratadorGlobalDeErros();
     }
 
     @Test
@@ -131,19 +131,19 @@ class ControllerExceptionHandlerTest {
 
     @Test
     void deveMapearConflitoPara409() {
-        ErroResponse response = handler.conflito(new NegocioException("conflito"), request("/api/clientes"));
+        ErroResponse response = handler.conflito(new ConflitoException("conflito"), request("/api/clientes"));
         assertEquals(409, response.status());
     }
 
     @Test
     void deveMapearNaoProcessavelPara422() {
-        ErroResponse response = handler.naoProcessavel(new NaoProcessavelException("regra"), request("/api/contas"));
+        ErroResponse response = handler.naoProcessavel(new RegraNegocioException("regra"), request("/api/contas"));
         assertEquals(422, response.status());
     }
 
     @Test
     void deveMapearServicoExternoPara503() {
-        ErroResponse response = handler.servicoExterno(new ServicoExternoException("via cep"), request("/api/clientes"));
+        ErroResponse response = handler.servicoExterno(new ServicoExternoIndisponivelException("via cep"), request("/api/clientes"));
         assertEquals(503, response.status());
     }
 

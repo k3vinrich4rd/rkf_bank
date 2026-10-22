@@ -1,7 +1,7 @@
 package com.br.rkfbank.services;
 
-import com.br.rkfbank.clients.viacep.ClienteViaCep;
-import com.br.rkfbank.clients.viacep.ResponseViaCepDto;
+import com.br.rkfbank.clients.viacep.ViaCepClient;
+import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
 import com.br.rkfbank.config.LgpdPropriedades;
 import com.br.rkfbank.dto.request.cliente.AtualizarClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
@@ -10,8 +10,8 @@ import com.br.rkfbank.entities.Cliente;
 import com.br.rkfbank.entities.Conta;
 import com.br.rkfbank.entities.Endereco;
 import com.br.rkfbank.entities.Usuario;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
-import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
+import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.ClienteRepository;
 import com.br.rkfbank.repositories.ContaRepository;
@@ -48,18 +48,18 @@ public class TitularService {
     private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
     private final ContaRepository contaRepository;
-    private final ClienteViaCep clienteViaCep;
+    private final ViaCepClient viaCepClient;
     private final ClienteService clienteService;
     private final PasswordEncoder passwordEncoder;
     private final LgpdPropriedades lgpd;
 
     public TitularService(ClienteRepository clienteRepository, UsuarioRepository usuarioRepository,
-                          ContaRepository contaRepository, ClienteViaCep clienteViaCep, ClienteService clienteService,
+                          ContaRepository contaRepository, ViaCepClient viaCepClient, ClienteService clienteService,
                           PasswordEncoder passwordEncoder, LgpdPropriedades lgpd) {
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
         this.contaRepository = contaRepository;
-        this.clienteViaCep = clienteViaCep;
+        this.viaCepClient = viaCepClient;
         this.clienteService = clienteService;
         this.passwordEncoder = passwordEncoder;
         this.lgpd = lgpd;
@@ -68,7 +68,7 @@ public class TitularService {
     // Direito de acesso: tudo o que o banco guarda do cadastro do titular.
     @Transactional(readOnly = true)
     public ClienteResponseDto meusDados(UsuarioLogado usuario) {
-        return clienteService.toResponse(titular(usuario));
+        return clienteService.paraResponse(titular(usuario));
     }
 
     // Direito de correcao. Cada campo e opcional; a validacao de formato ja passou no DTO.
@@ -93,7 +93,7 @@ public class TitularService {
             String email = request.email().trim().toLowerCase(Locale.ROOT);
             if (!email.equals(cliente.getEmail()) && clienteRepository.existsByEmail(email)) {
                 log.warn("Correcao do cliente {} recusada: email ja cadastrado", cliente.getId());
-                throw new NegocioException("Email ja cadastrado");
+                throw new ConflitoException("Email ja cadastrado");
             }
             cliente.setEmail(email);
             corrigidos.add("email");
@@ -113,11 +113,11 @@ public class TitularService {
         } catch (DataIntegrityViolationException ex) {
             // Outro cadastro pegou o mesmo e-mail entre a checagem e o UPDATE. O valor nao entra no log.
             log.warn("Correcao do cliente {} recusada: violacao de unicidade no banco", cliente.getId());
-            throw new NegocioException("Email ja cadastrado");
+            throw new ConflitoException("Email ja cadastrado");
         }
         // So o nome dos campos: os valores sao dados pessoais.
         log.info("Cliente {} corrigiu o cadastro (campos={})", cliente.getId(), corrigidos);
-        return clienteService.toResponse(cliente);
+        return clienteService.paraResponse(cliente);
     }
 
     private void corrigirEndereco(Endereco endereco, AtualizarClienteRequestDto request, List<String> corrigidos) {
@@ -125,7 +125,7 @@ public class TitularService {
             if (request.numero() == null) {
                 throw new RequisicaoInvalidaException("numero", "numero e obrigatorio quando o cep muda");
             }
-            ResponseViaCepDto viaCep = clienteViaCep.buscarPorCep(request.cep().replaceAll("\\D", ""));
+            ViaCepResponseDto viaCep = viaCepClient.buscarPorCep(request.cep().replaceAll("\\D", ""));
             String cep = viaCep.cep() != null && viaCep.cep().matches("\\d{8}")
                     ? viaCep.cep().replaceAll("(\\d{5})(\\d{3})", "$1-$2")
                     : viaCep.cep();
@@ -153,12 +153,12 @@ public class TitularService {
     public EncerramentoResponseDto encerrar(String senha, UsuarioLogado usuario) {
         Cliente cliente = titular(usuario);
         Usuario credencial = usuarioRepository.findById(usuario.usuarioId())
-                .orElseThrow(() -> new NaoProcessavelException("Seu usuario nao tem cadastro de cliente"));
+                .orElseThrow(() -> new RegraNegocioException("Seu usuario nao tem cadastro de cliente"));
 
         ClienteService.garantirLimiteDoBcrypt("senha", senha);
         if (!passwordEncoder.matches(senha, credencial.getSenhaHash())) {
             log.warn("Encerramento do cliente {} recusado: senha incorreta", cliente.getId());
-            throw new NaoProcessavelException("Senha incorreta");
+            throw new RegraNegocioException("Senha incorreta");
         }
 
         List<Conta> contas = contaRepository.findByClienteId(cliente.getId());
@@ -166,7 +166,7 @@ public class TitularService {
         if (saldo.signum() != 0) {
             // Dinheiro nao some: o titular transfere o saldo antes. Valor fora do log (e dado financeiro dele).
             log.warn("Encerramento do cliente {} recusado: contas com saldo", cliente.getId());
-            throw new NaoProcessavelException("Transfira o saldo das suas contas antes de encerrar o cadastro");
+            throw new RegraNegocioException("Transfira o saldo das suas contas antes de encerrar o cadastro");
         }
 
         Instant agora = Instant.now();
@@ -214,7 +214,7 @@ public class TitularService {
     private Cliente titular(UsuarioLogado usuario) {
         if (usuario.clienteId() == null) {
             // ADMIN criado pelo .env nao tem cadastro de cliente.
-            throw new NaoProcessavelException("Seu usuario nao tem cadastro de cliente");
+            throw new RegraNegocioException("Seu usuario nao tem cadastro de cliente");
         }
         return clienteService.buscar(usuario.clienteId());
     }

@@ -12,8 +12,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.clients.viacep.ClienteViaCep;
-import com.br.rkfbank.clients.viacep.ResponseViaCepDto;
+import com.br.rkfbank.clients.viacep.ViaCepClient;
+import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
 import com.br.rkfbank.entities.Cliente;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.repositories.ClienteRepository;
@@ -79,7 +79,7 @@ class TitularIntegracaoTest {
 
     // ViaCEP e externo: a correcao de endereco usa a resposta simulada.
     @MockitoBean
-    private ClienteViaCep clienteViaCep;
+    private ViaCepClient viaCepClient;
 
     // ---------- ver ----------
 
@@ -118,8 +118,8 @@ class TitularIntegracaoTest {
     @Test
     void novoCepBuscaOEnderecoNoViaCepEExigeONumero() throws Exception {
         String token = login(CPF_FELIPE, SENHA_EQUIPE);
-        when(clienteViaCep.buscarPorCep(anyString())).thenReturn(
-                new ResponseViaCepDto("01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", null));
+        when(viaCepClient.buscarPorCep(anyString())).thenReturn(
+                new ViaCepResponseDto("01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", null));
 
         corrigir(token, "{\"cep\":\"01001000\"}")
                 .andExpect(status().isBadRequest())

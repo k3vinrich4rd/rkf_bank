@@ -19,7 +19,7 @@ import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.entities.enums.PerfilEnum;
 import com.br.rkfbank.exceptions.CredenciaisInvalidasException;
 import com.br.rkfbank.exceptions.MuitasTentativasException;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.security.LimitadorTentativasLogin;
@@ -35,7 +35,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class AuthServiceTest {
+class AutenticacaoServiceTest {
 
     private static final String HASH_FALSO = "$2a$10$hash-da-senha-que-ninguem-tem";
     private static final String HASH_JOAO = "$2a$10$hash-da-senha-do-joao";
@@ -52,13 +52,13 @@ class AuthServiceTest {
     @Mock
     private LimitadorTentativasLogin limitador;
 
-    private AuthService authService;
+    private AutenticacaoService autenticacaoService;
 
     @BeforeEach
     void setUp() {
         // O construtor gera o hash falso usado quando o CPF nao existe.
         when(passwordEncoder.encode(anyString())).thenReturn(HASH_FALSO);
-        authService = new AuthService(usuarioRepository, passwordEncoder, tokenService, limitador);
+        autenticacaoService = new AutenticacaoService(usuarioRepository, passwordEncoder, tokenService, limitador);
     }
 
     @Test
@@ -67,10 +67,10 @@ class AuthServiceTest {
         Usuario joao = usuario(PerfilEnum.CLIENTE, clienteId);
         when(usuarioRepository.findByLogin("52998224725")).thenReturn(Optional.of(joao));
         when(passwordEncoder.matches("senha-forte-1", HASH_JOAO)).thenReturn(true);
-        when(tokenService.gerar(joao)).thenReturn(new TokenService.TokenGerado("token.jwt.assinado", 3600));
+        when(tokenService.emitir(joao)).thenReturn(new TokenService.TokenEmitido("token.jwt.assinado", 3600));
 
         // CPF com mascara: o login normaliza para so digitos, igual ao cadastro.
-        LoginResponseDto response = authService.login(new LoginRequestDto("529.982.247-25", "senha-forte-1"));
+        LoginResponseDto response = autenticacaoService.login(new LoginRequestDto("529.982.247-25", "senha-forte-1"));
 
         assertEquals("token.jwt.assinado", response.token());
         assertEquals("Bearer", response.tipo());
@@ -86,9 +86,9 @@ class AuthServiceTest {
         Usuario admin = usuario(PerfilEnum.ADMIN, null);
         when(usuarioRepository.findByLogin("11144477735")).thenReturn(Optional.of(admin));
         when(passwordEncoder.matches("senha-do-admin", HASH_JOAO)).thenReturn(true);
-        when(tokenService.gerar(admin)).thenReturn(new TokenService.TokenGerado("token", 3600));
+        when(tokenService.emitir(admin)).thenReturn(new TokenService.TokenEmitido("token", 3600));
 
-        LoginResponseDto response = authService.login(new LoginRequestDto("11144477735", "senha-do-admin"));
+        LoginResponseDto response = autenticacaoService.login(new LoginRequestDto("11144477735", "senha-do-admin"));
 
         assertNull(response.clienteId());
         assertEquals(PerfilEnum.ADMIN, response.perfil());
@@ -104,7 +104,7 @@ class AuthServiceTest {
         when(passwordEncoder.matches("senha-nova-123", HASH_JOAO)).thenReturn(false);
         when(passwordEncoder.encode("senha-nova-123")).thenReturn("$2a$10$hash-novo");
 
-        authService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("senha-forte-1", "senha-nova-123"));
+        autenticacaoService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("senha-forte-1", "senha-nova-123"));
 
         assertEquals("$2a$10$hash-novo", joao.getSenhaHash());
         assertEquals(1, joao.getVersaoCredencial());
@@ -117,8 +117,8 @@ class AuthServiceTest {
         when(usuarioRepository.findById(joao.getId())).thenReturn(Optional.of(joao));
         when(passwordEncoder.matches("chute", HASH_JOAO)).thenReturn(false);
 
-        NaoProcessavelException ex = assertThrows(NaoProcessavelException.class,
-                () -> authService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("chute", "senha-nova-123")));
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
+                () -> autenticacaoService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("chute", "senha-nova-123")));
 
         assertEquals("Senha atual incorreta", ex.getMessage());
         assertEquals(HASH_JOAO, joao.getSenhaHash());
@@ -131,8 +131,8 @@ class AuthServiceTest {
         when(usuarioRepository.findById(joao.getId())).thenReturn(Optional.of(joao));
         when(passwordEncoder.matches("senha-forte-1", HASH_JOAO)).thenReturn(true);
 
-        NaoProcessavelException ex = assertThrows(NaoProcessavelException.class,
-                () -> authService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("senha-forte-1", "senha-forte-1")));
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
+                () -> autenticacaoService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("senha-forte-1", "senha-forte-1")));
 
         assertEquals("A nova senha precisa ser diferente da atual", ex.getMessage());
         assertEquals(0, joao.getVersaoCredencial());
@@ -145,7 +145,7 @@ class AuthServiceTest {
         doThrow(new MuitasTentativasException(300)).when(limitador).conferir("52998224725");
 
         assertThrows(MuitasTentativasException.class,
-                () -> authService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("senha-forte-1", "senha-nova-123")));
+                () -> autenticacaoService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("senha-forte-1", "senha-nova-123")));
         verify(passwordEncoder, never()).matches(eq("senha-forte-1"), anyString());
     }
 
@@ -154,7 +154,7 @@ class AuthServiceTest {
         Usuario joao = usuario(PerfilEnum.CLIENTE, UUID.randomUUID());
 
         assertThrows(RequisicaoInvalidaException.class,
-                () -> authService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("senha-forte-1", "ç".repeat(40))));
+                () -> autenticacaoService.trocarSenha(logado(joao), new TrocarSenhaRequestDto("senha-forte-1", "ç".repeat(40))));
         verifyNoInteractions(usuarioRepository);
     }
 
@@ -170,7 +170,7 @@ class AuthServiceTest {
         when(passwordEncoder.matches("senha-forte-1", HASH_JOAO)).thenReturn(true);
 
         CredenciaisInvalidasException ex = assertThrows(CredenciaisInvalidasException.class,
-                () -> authService.login(new LoginRequestDto("52998224725", "senha-forte-1")));
+                () -> autenticacaoService.login(new LoginRequestDto("52998224725", "senha-forte-1")));
 
         // Mesma mensagem de senha errada: de fora nao da para saber que a conta existe e foi desativada.
         assertEquals("CPF ou senha invalidos", ex.getMessage());
@@ -183,7 +183,7 @@ class AuthServiceTest {
         when(passwordEncoder.matches("senha-errada", HASH_JOAO)).thenReturn(false);
 
         CredenciaisInvalidasException ex = assertThrows(CredenciaisInvalidasException.class,
-                () -> authService.login(new LoginRequestDto("52998224725", "senha-errada")));
+                () -> autenticacaoService.login(new LoginRequestDto("52998224725", "senha-errada")));
 
         assertEquals("CPF ou senha invalidos", ex.getMessage());
         verifyNoInteractions(tokenService);
@@ -195,7 +195,7 @@ class AuthServiceTest {
         doThrow(new MuitasTentativasException(600)).when(limitador).conferir("52998224725");
 
         MuitasTentativasException ex = assertThrows(MuitasTentativasException.class,
-                () -> authService.login(new LoginRequestDto("529.982.247-25", "senha-forte-1")));
+                () -> autenticacaoService.login(new LoginRequestDto("529.982.247-25", "senha-forte-1")));
 
         assertEquals(600, ex.getSegundosParaLiberar());
         // Bloqueado nao gasta BCrypt nem descobre se a senha estava certa.
@@ -208,7 +208,7 @@ class AuthServiceTest {
         when(usuarioRepository.findByLogin("11144477735")).thenReturn(Optional.empty());
 
         CredenciaisInvalidasException ex = assertThrows(CredenciaisInvalidasException.class,
-                () -> authService.login(new LoginRequestDto("11144477735", "qualquer-senha")));
+                () -> autenticacaoService.login(new LoginRequestDto("11144477735", "qualquer-senha")));
 
         assertEquals("CPF ou senha invalidos", ex.getMessage());
         // Confere contra o hash falso para gastar o mesmo tempo de um CPF que existe.
@@ -222,7 +222,7 @@ class AuthServiceTest {
         String senhaLonga = "ç".repeat(40);
 
         assertThrows(CredenciaisInvalidasException.class,
-                () -> authService.login(new LoginRequestDto("52998224725", senhaLonga)));
+                () -> autenticacaoService.login(new LoginRequestDto("52998224725", senhaLonga)));
 
         verify(passwordEncoder, never()).matches(eq(senhaLonga), anyString());
     }

@@ -10,22 +10,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CriadorAdminTest {
+class InicializadorAdminTest {
 
     @Mock
     private UsuarioService usuarioService;
 
     @Test
     void criaAdminQuandoCpfESenhaEstaoNoEnv() {
-        new CriadorAdmin(new AdminPropriedades("11144477735", "senha-do-admin"), usuarioService).run(null);
+        new InicializadorAdmin(new AdminPropriedades("11144477735", "senha-do-admin"), usuarioService).run(null);
 
         verify(usuarioService).criarAdminSeNaoExistir("11144477735", "senha-do-admin");
     }
 
     @Test
     void naoFazNadaSemAsVariaveis() {
-        new CriadorAdmin(new AdminPropriedades("", ""), usuarioService).run(null);
-        new CriadorAdmin(new AdminPropriedades(null, "senha-do-admin"), usuarioService).run(null);
+        new InicializadorAdmin(new AdminPropriedades("", ""), usuarioService).run(null);
+        new InicializadorAdmin(new AdminPropriedades(null, "senha-do-admin"), usuarioService).run(null);
 
         verifyNoInteractions(usuarioService);
     }

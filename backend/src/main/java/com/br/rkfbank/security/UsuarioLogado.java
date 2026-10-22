@@ -25,7 +25,7 @@ public record UsuarioLogado(UUID usuarioId, UUID clienteId, PerfilEnum perfil) {
     }
 
     // ADMIN nao tem clienteId, entao nunca e dono de conta.
-    public boolean ehDonoDoCliente(UUID idDoCliente) {
+    public boolean ehDono(UUID idDoCliente) {
         return clienteId != null && clienteId.equals(idDoCliente);
     }
 }
