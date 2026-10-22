@@ -7,7 +7,7 @@
 > 🔒 A equipe (Kevin, Renan e Felipe) tem um guia próprio, com as contas e os acessos internos, que **não** fica no
 > repositório. Este aqui usa só as **contas de visitante**, que existem apenas no perfil `visitante`.
 
-Todas as respostas são reais (capturadas em 20/10/2026, contrato 2.1). Ao repetir, só mudam `id`s gerados,
+Todas as respostas são reais (capturadas entre 20 e 22/10/2026; contrato **2.6**). Ao repetir, só mudam `id`s gerados,
 `dataHora`, `timestamp` e o `token`.
 
 | Quero... | Vá para |
@@ -17,7 +17,9 @@ Todas as respostas são reais (capturadas em 20/10/2026, contrato 2.1). Ao repet
 | entender login, JWT, Spring Security e OAuth2 | [3. Segurança](#3-como-a-segurança-funciona-spring-security--oauth2--jwt) |
 | entender por que toda movimentação pede uma chave | [3.6 Idempotência](#36-idempotência-por-que-toda-movimentação-pede-uma-chave) |
 | testar | [5. Caminho feliz](#5-caminho-feliz-t01-a-t12) → [6. Segurança](#6-cenários-de-segurança-s01-a-s13) → [7. Erros](#7-cenários-de-erro-e01-a-e20) |
-| validar usuários e promover alguém a ADMIN | [8. Administração](#8-administração-validar-um-usuário-e-torná-lo-admin-a01-a-a23) |
+| ver as rotas novas, as obsoletas, a paginação e o CORS | [🔁 Contrato 2.6](#-rotas-novas-rotas-obsoletas-paginação-e-cors-contrato-26) |
+| validar usuários e promover alguém a ADMIN | [8. Administração](#8-administração-validar-um-usuário-e-torná-lo-admin-a01-a-a24) |
+| ver, corrigir e encerrar os próprios dados (LGPD) | [🛡️ Meus dados](#️-meus-dados-direitos-do-titular-l01-a-l13) |
 | entender o que cada camada faz e por quê | [9. Por dentro](#9-por-dentro-cada-camada-o-que-faz-e-por-que-é-assim) |
 
 ---
@@ -342,7 +344,67 @@ Depois de E10–E20, o saldo da Ana **não muda**. Mapa de status: `400` entrada
 
 ---
 
-## 8. Administração: validar um usuário e torná-lo ADMIN (A01 a A23)
+## 🔁 Rotas novas, rotas obsoletas, paginação e CORS (contrato 2.6)
+
+O contrato 2.6 trouxe as rotas para o padrão de mercado. As antigas **continuam funcionando** (ninguém quebra) e avisam
+pelos headers `Deprecation: true` (RFC 9745) e `Link: <rota nova>; rel="successor-version"` (RFC 8288). Saem só num
+contrato 3.0. Respostas reais de 22/10/2026, com o terminal da [4.2](#42-git-bash-curl).
+
+| Antiga | Nova |
+|---|---|
+| `POST /contas/clientes/{clienteId}` | `POST /contas` (o cliente vem do token) |
+| `POST /contas/{contaId}/deposito` · `/saque` | `POST /contas/{contaId}/depositos` · `/saques` |
+| `POST /contas/transferencia` | `POST /transferencias` |
+| `PATCH /auth/senha` | `PATCH /usuarios/me/senha` |
+| `?paginado=true&page=0&size=10` | `?page=0&size=10` |
+
+### Rotas obsoletas (R01 a R05)
+
+```bash
+curl -s -D - -o /dev/null -X POST $API/contas/$CA/deposito -H "$H" -H "$AA" -H "$(chave)" -d '{"valor":5.00}' | grep -iE "^HTTP|^deprecation|^link"
+```
+
+| # | Rota antiga | Esperado |
+|---|---|---|
+| R01 | `POST /contas/{contaAna}/deposito` | `204` · `Deprecation: true` · `Link: </contas/{contaAna}/depositos>; rel="successor-version"` |
+| R02 | `POST /contas/{contaAna}/saque` | `204` · `Link: </contas/{contaAna}/saques>; ...` |
+| R03 | `POST /contas/transferencia` | `204` · `Link: </transferencias>; ...` |
+| R04 | `POST /contas/clientes/{clienteAna}` `{"tipoContaEnum":"POUPANCA"}` | `201` · `Link: </contas>; ...` |
+| R05 | a **nova** `POST /contas/{contaAna}/depositos` | `204` **sem** `Deprecation` |
+
+Por que assim: quem consome a API (o front, um app, um parceiro) não quebra no dia da mudança; ferramentas e o próprio
+front conseguem detectar o header e migrar com calma. É como as APIs públicas grandes evoluem.
+
+### Paginação (P01 a P03)
+
+| # | Chamada | Esperado |
+|---|---|---|
+| P01 | `GET /contas?page=0&size=1` (token Ana) | `{"content":[...],"totalElements":2,"totalPages":2,"number":0,"size":1,"first":true,"last":false}`: **só** esses 7 campos |
+| P02 | `GET /contas?paginado=true` (forma antiga) | página com `"size":10` (o padrão) |
+| P03 | `GET /contas` (sem nada) | **array** simples, sem paginação |
+
+Basta `page` **ou** `size` na URL para vir a página. O formato é um DTO próprio (`PaginaResponse`), e não o `Page` do
+Spring: não muda quando o Spring Data muda.
+
+### CORS (C01 a C03)
+
+O site de hoje passa pelo proxy do Next e nem usa CORS. Isto vale para um navegador chamando a API **direto** (outro
+front, deploy em domínio separado). As origens permitidas vêm de `CORS_ORIGENS` (padrão `http://localhost:3000`).
+
+```bash
+curl -s -D - -o /dev/null -X OPTIONS $API/transferencias -H "Origin: http://localhost:3000" \
+  -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization,content-type,idempotency-key"
+```
+
+| # | Cenário | Esperado |
+|---|---|---|
+| C01 | *preflight* (`OPTIONS`, sem token) de `http://localhost:3000` | `200` · `Access-Control-Allow-Origin: http://localhost:3000` · `Access-Control-Expose-Headers: X-Request-Id, Idempotency-Replayed, Retry-After` |
+| C02 | *preflight* de `https://site-estranho.example` | `403` |
+| C03 | `GET /contas` com token e `Origin: http://localhost:3000` | `200` com os mesmos headers do C01 |
+
+---
+
+## 8. Administração: validar um usuário e torná-lo ADMIN (A01 a A24)
 
 O perfil `visitante` **nunca** tem admin (de propósito: é público). Para testar a gestão de usuários, suba o perfil
 `equipe` com um admin **só seu**, criado na hora pelas variáveis do terminal. Nada vai para o Git e o banco é H2 em
@@ -416,6 +478,7 @@ O João é cadastrado no A02; os ids `<joao>` e `<admin>` saem da lista do A06.
 | A21 | Gestão sem token | `GET /admin/usuarios` | `401` |
 | A22 | Admin vê todas as contas | `GET /contas` (token admin) | `200` com as contas de todos (mas não movimenta nenhuma: `403`) |
 | A23 | Senha curta na redefinição | `{"novaSenha":"curta"}` | `400` · `novaSenha: novaSenha deve ter entre 8 e 72 caracteres` |
+| A24 | Admin tenta abrir conta pela rota nova | `POST /contas` `{"tipoConta":"CORRENTE"}` (token admin) | `422` · `Seu usuario nao tem cadastro de cliente` (o admin do `.env` não é cliente) |
 
 No Git Bash, o atalho para pegar o id do João:
 
@@ -479,6 +542,17 @@ Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em tod
 (`-H "X-Request-Id: meu-teste-001"`) e procure no console. Operações concluídas saem em `INFO`, recusas em `WARN`, e
 **nunca** aparece CPF, e-mail, senha, hash ou token.
 
+**Tentativa de forjar uma linha de log (injeção de log):** uma URL com quebra de linha codificada tenta escrever uma
+linha falsa no console.
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" "$API/contas%0d%0a2026-10-22%20INFO%20Login%20concluido" -H "$AA"
+```
+
+✅ `400`, e o log mostra **uma** linha só, com o texto ainda codificado (`GET /contas%0d%0a2026-10-22%20INFO...`):
+nenhuma linha falsa "Login concluido" aparece. Quem protege: o `LogSeguro` (troca quebra de linha por `_` em tudo que
+vem da requisição) e o `%enc{%m}{CRLF}` do `log4j2-spring.xml`.
+
 ---
 
 ## 11. Checklist
@@ -492,7 +566,8 @@ Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em tod
 | ☐ | Extrato soma igual ao saldo | T10 |
 | ☐ | Conta nova com número gerado | T11 |
 | ☐ | S01–S13 e E01–E20 com o status esperado | 6, 7 |
-| ☐ | Admin lista usuários com CPF mascarado, promove, rebaixa, desativa e redefine senha; token antigo cai na hora | A01–A23 |
+| ☐ | Admin lista usuários com CPF mascarado, promove, rebaixa, desativa e redefine senha; token antigo cai na hora | A01–A24 |
+| ☐ | Rotas antigas funcionam com `Deprecation` + `Link`; paginação por `page`/`size`; CORS só para a origem permitida | R01–R05, P01–P03, C01–C03 |
 | ☐ | Sei dizer em qual camada cada cenário foi barrado | 9 |
 
 ---
