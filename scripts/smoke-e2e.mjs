@@ -24,7 +24,7 @@ function cpfValido() {
 
 const aleatorio = (digitos) => String(Math.floor(Math.random() * 10 ** digitos)).padStart(digitos, "0");
 
-const MOVIMENTACAO = /\/(deposito|saque|transferencia)$/;
+const MOVIMENTACAO = /\/(depositos?|saques?|transferencias?)$/;
 
 // Movimentações levam Idempotency-Key (contrato 2.1): uma chave nova por chamada, salvo quando o teste passa
 // a própria em `chave` (para repetir de propósito) ou `chave: null` (para mandar sem).
@@ -70,7 +70,7 @@ async function novoCliente(nome) {
 
 async function novaConta(cliente) {
   // Sem agência nem número: a API gera (contrato 2.1).
-  const r = await chamar("POST", `/contas/clientes/${cliente.id}`, { tipoContaEnum: "CORRENTE" }, cliente.token);
+  const r = await chamar("POST", "/contas", { tipoConta: "CORRENTE" }, cliente.token);
   verificar("Abrir conta sem número → 201, número gerado (8 dígitos), saldo 0.00 e ativa",
       r.status === 201 && /^\d{8}$/.test(r.json?.numeroConta ?? "") && r.json?.agencia === "0001"
       && Number(r.json?.saldo) === 0 && r.json?.ativa === true, `status ${r.status} ${JSON.stringify(r.json)}`);
@@ -91,11 +91,11 @@ try {
   const contaOrigem = await novaConta(origem);
   const contaDestino = await novaConta(destino);
 
-  let r = await chamar("POST", `/contas/${contaOrigem.id}/deposito`, { valor: 150.0, descricao: "smoke deposito" }, origem.token);
+  let r = await chamar("POST", `/contas/${contaOrigem.id}/depositos`, { valor: 150.0, descricao: "smoke deposito" }, origem.token);
   verificar("Depósito de 150.00 → 204", r.status === 204, `status ${r.status}`);
-  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 20.0, descricao: "smoke saque" }, origem.token);
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saques`, { valor: 20.0, descricao: "smoke saque" }, origem.token);
   verificar("Saque de 20.00 → 204", r.status === 204, `status ${r.status}`);
-  r = await chamar("POST", "/contas/transferencia", { contaOrigemId: contaOrigem.id, contaDestinoId: contaDestino.id, valor: 50.0, descricao: "smoke transferencia" }, origem.token);
+  r = await chamar("POST", "/transferencias", { contaOrigemId: contaOrigem.id, contaDestinoId: contaDestino.id, valor: 50.0, descricao: "smoke transferencia" }, origem.token);
   verificar("Transferência de 50.00 → 204", r.status === 204, `status ${r.status}`);
 
   verificar("Saldo da origem = 80.00", (await saldoDe(contaOrigem.id, origem.token)) === 80);
@@ -115,7 +115,7 @@ try {
   verificar("Token inválido → 401", r.status === 401, `status ${r.status}`);
   r = await login(origem.cpf, "senha-errada");
   verificar("Senha errada → 401 'CPF ou senha invalidos'", r.status === 401 && r.json?.message === "CPF ou senha invalidos", `status ${r.status}`);
-  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 1.0, descricao: "smoke" }, destino.token);
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saques`, { valor: 1.0, descricao: "smoke" }, destino.token);
   verificar("Saque na conta de outro cliente → 403", r.status === 403 && r.json?.status === 403, `status ${r.status}`);
   r = await chamar("GET", `/contas/${contaOrigem.id}/lancamentos`, undefined, destino.token);
   verificar("Extrato da conta de outro cliente → 403", r.status === 403, `status ${r.status}`);
@@ -138,14 +138,14 @@ try {
   console.log("\nIdempotência (Idempotency-Key)");
   const chave = crypto.randomUUID();
   const antes = await saldoDe(contaOrigem.id, origem.token);
-  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 1.0, descricao: "smoke idempotente" }, origem.token, { chave });
-  const repetida = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 1.0, descricao: "smoke idempotente" }, origem.token, { chave });
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saques`, { valor: 1.0, descricao: "smoke idempotente" }, origem.token, { chave });
+  const repetida = await chamar("POST", `/contas/${contaOrigem.id}/saques`, { valor: 1.0, descricao: "smoke idempotente" }, origem.token, { chave });
   verificar("Repetir o saque com a mesma chave → 204 com Idempotency-Replayed, debitado uma vez só",
       r.status === 204 && repetida.status === 204 && repetida.headers.get("idempotency-replayed") === "true"
       && (await saldoDe(contaOrigem.id, origem.token)) === antes - 1, `status ${r.status}/${repetida.status}`);
-  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 5.0, descricao: "smoke idempotente" }, origem.token, { chave });
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saques`, { valor: 5.0, descricao: "smoke idempotente" }, origem.token, { chave });
   verificar("Mesma chave com outro valor → 422", r.status === 422, `status ${r.status}`);
-  r = await chamar("POST", `/contas/${contaOrigem.id}/deposito`, { valor: 1.0 }, origem.token, { chave: null });
+  r = await chamar("POST", `/contas/${contaOrigem.id}/depositos`, { valor: 1.0 }, origem.token, { chave: null });
   verificar("Movimentação sem Idempotency-Key → 400", r.status === 400 && (r.json?.campos ?? []).some((c) => c.campo === "Idempotency-Key"), `status ${r.status}`);
 
   // Contas que o Flyway (db/seed) cria a cada subida. Só leitura: o smoke nunca mexe no saldo delas.
@@ -175,11 +175,11 @@ try {
   console.log("\nCenários de erro");
   r = await chamar("POST", "/clientes", { nomeCompleto: "X", cpf: "11111111111", email: "x@x.com", telefone: "11999999999", cep: "01001000", numero: "1", senha: SENHA });
   verificar("CPF inválido → 400 com campo cpf", r.status === 400 && (r.json?.campos ?? []).some((c) => c.campo === "cpf"), `status ${r.status}`);
-  r = await chamar("POST", `/contas/${contaOrigem.id}/saque`, { valor: 1000000, descricao: "smoke" }, origem.token);
+  r = await chamar("POST", `/contas/${contaOrigem.id}/saques`, { valor: 1000000, descricao: "smoke" }, origem.token);
   verificar("Saque maior que o saldo → 422", r.status === 422, `status ${r.status}`);
-  r = await chamar("POST", "/contas/transferencia", { contaOrigemId: contaOrigem.id, contaDestinoId: contaOrigem.id, valor: 1, descricao: "smoke" }, origem.token);
+  r = await chamar("POST", "/transferencias", { contaOrigemId: contaOrigem.id, contaDestinoId: contaOrigem.id, valor: 1, descricao: "smoke" }, origem.token);
   verificar("Transferência para a mesma conta → 422", r.status === 422, `status ${r.status}`);
-  r = await chamar("POST", "/contas/00000000-0000-0000-0000-000000000000/deposito", { valor: 10, descricao: "smoke" }, origem.token);
+  r = await chamar("POST", "/contas/00000000-0000-0000-0000-000000000000/depositos", { valor: 10, descricao: "smoke" }, origem.token);
   verificar("Depósito em conta inexistente → 404", r.status === 404, `status ${r.status}`);
   r = await chamar("POST", "/clientes", "{invalido");
   verificar("JSON inválido → 400", r.status === 400, `status ${r.status}`);

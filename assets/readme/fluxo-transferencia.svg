@@ -14,7 +14,7 @@
     @keyframes acende { 0% { opacity: 0; } 8% { opacity: 1; } 22%, 100% { opacity: 0; } }
   </style>
   <rect width="1200" height="250" rx="20" fill="#0A0F1C" stroke="#1E293B"/>
-  <text x="40" y="46" style="font: 700 20px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🔁 POST /contas/transferencia</text>
+  <text x="40" y="46" style="font: 700 20px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🔁 POST /transferencias</text>
   <text x="350" y="46" style="font: 400 14px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">débito, crédito e lançamento: tudo ou nada</text>
   <path d="M120 124 H1080" stroke="url(#marca)" stroke-width="2" stroke-dasharray="6 8" opacity=".5"/>
   

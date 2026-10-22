@@ -10,24 +10,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CriadorAcessoEquipeTest {
+class InicializadorAcessoEquipeTest {
 
     @Mock
     private UsuarioService usuarioService;
 
     @Test
     void daLoginAsDuasContasDaEquipeQuandoAEquipeSenhaEstaNoEnv() {
-        new CriadorAcessoEquipe(new EquipePropriedades("senha-da-equipe-de-teste"), usuarioService).run(null);
+        new InicializadorAcessoEquipe(new EquipePropriedades("senha-da-equipe-de-teste"), usuarioService).run(null);
 
-        for (var clienteId : CriadorAcessoEquipe.CLIENTES_DA_EQUIPE) {
+        for (var clienteId : InicializadorAcessoEquipe.CLIENTES_DA_EQUIPE) {
             verify(usuarioService).garantirAcessoDaEquipe(clienteId, "senha-da-equipe-de-teste");
         }
     }
 
     @Test
     void semEquipeSenhaNinguemEntraNasContasDaEquipe() {
-        new CriadorAcessoEquipe(new EquipePropriedades(""), usuarioService).run(null);
-        new CriadorAcessoEquipe(new EquipePropriedades(null), usuarioService).run(null);
+        new InicializadorAcessoEquipe(new EquipePropriedades(""), usuarioService).run(null);
+        new InicializadorAcessoEquipe(new EquipePropriedades(null), usuarioService).run(null);
 
         verifyNoInteractions(usuarioService);
     }

@@ -10,14 +10,14 @@ import org.springframework.stereotype.Component;
 // Roda uma vez na subida (depois do Flyway) e cria o primeiro ADMIN a partir do .env.
 // Senha de admin em migracao ficaria no Git para sempre; aqui ela so existe no ambiente.
 @Component
-public class CriadorAdmin implements ApplicationRunner {
+public class InicializadorAdmin implements ApplicationRunner {
 
-    private static final Logger log = LogManager.getLogger(CriadorAdmin.class);
+    private static final Logger log = LogManager.getLogger(InicializadorAdmin.class);
 
     private final AdminPropriedades propriedades;
     private final UsuarioService usuarioService;
 
-    public CriadorAdmin(AdminPropriedades propriedades, UsuarioService usuarioService) {
+    public InicializadorAdmin(AdminPropriedades propriedades, UsuarioService usuarioService) {
         this.propriedades = propriedades;
         this.usuarioService = usuarioService;
     }

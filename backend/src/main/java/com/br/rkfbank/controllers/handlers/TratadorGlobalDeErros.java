@@ -9,10 +9,10 @@ import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.CredenciaisInvalidasException;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
 import com.br.rkfbank.exceptions.MuitasTentativasException;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
-import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
+import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
-import com.br.rkfbank.exceptions.ServicoExternoException;
+import com.br.rkfbank.exceptions.ServicoExternoIndisponivelException;
 import com.br.rkfbank.exceptions.UsuarioNaoEncontradoException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,9 +35,9 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 // Erros de entrada e de concorrencia so aparecem aqui, entao saem em WARN. Os de negocio e de servico externo
 // ja foram registrados com contexto (ids, valores) no service/client que os lancou, entao aqui ficam em DEBUG.
 @RestControllerAdvice
-public class ControllerExceptionHandler {
+public class TratadorGlobalDeErros {
 
-    private static final Logger log = LogManager.getLogger(ControllerExceptionHandler.class);
+    private static final Logger log = LogManager.getLogger(TratadorGlobalDeErros.class);
 
     // 400 do Bean Validation: @Valid no controller falhou. Junta TODOS os campos com erro numa resposta so,
     // para o front marcar todos os inputs de uma vez (e nao um por tentativa).
@@ -83,7 +83,7 @@ public class ControllerExceptionHandler {
     }
 
     // 401 do login (CPF ou senha errados). O 401 de token ausente/invalido nasce no filtro e sai pelo
-    // RespostaErroSeguranca, porque o filtro roda antes do controller e este advice nao o enxerga.
+    // TratadorErrosSeguranca, porque o filtro roda antes do controller e este advice nao o enxerga.
     @ExceptionHandler(CredenciaisInvalidasException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ErroResponse credenciaisInvalidas(CredenciaisInvalidasException ex, HttpServletRequest request) {
@@ -128,9 +128,9 @@ public class ControllerExceptionHandler {
     }
 
     // 409: o pedido colide com algo que ja existe (CPF, e-mail ou numero de conta repetidos).
-    @ExceptionHandler(NegocioException.class)
+    @ExceptionHandler(ConflitoException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
-    public ErroResponse conflito(NegocioException ex, HttpServletRequest request) {
+    public ErroResponse conflito(ConflitoException ex, HttpServletRequest request) {
         return montarELogar(Level.DEBUG, HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
@@ -147,16 +147,16 @@ public class ControllerExceptionHandler {
 
     // 422: regra de negocio recusou (saldo insuficiente, conta inativa, mesma conta...). A mensagem e escrita
     // para o cliente ler, entao vai na resposta como esta.
-    @ExceptionHandler(NaoProcessavelException.class)
+    @ExceptionHandler(RegraNegocioException.class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public ErroResponse naoProcessavel(NaoProcessavelException ex, HttpServletRequest request) {
+    public ErroResponse naoProcessavel(RegraNegocioException ex, HttpServletRequest request) {
         return montarELogar(Level.DEBUG, HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
 
-    // 503: o ViaCEP falhou. A causa tecnica ja foi logada no ClienteViaCep; aqui sai so a mensagem generica.
-    @ExceptionHandler(ServicoExternoException.class)
+    // 503: o ViaCEP falhou. A causa tecnica ja foi logada no ViaCepClient; aqui sai so a mensagem generica.
+    @ExceptionHandler(ServicoExternoIndisponivelException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    public ErroResponse servicoExterno(ServicoExternoException ex, HttpServletRequest request) {
+    public ErroResponse servicoExterno(ServicoExternoIndisponivelException ex, HttpServletRequest request) {
         return montarELogar(Level.DEBUG, HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), request);
     }
 

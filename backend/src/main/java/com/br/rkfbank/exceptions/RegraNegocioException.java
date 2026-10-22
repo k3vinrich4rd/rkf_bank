@@ -3,8 +3,8 @@ package com.br.rkfbank.exceptions;
 // Regra de negocio recusou a operacao -> 422 (Unprocessable Content): o pedido esta bem formado, mas nao pode
 // ser cumprido. Ex.: saldo insuficiente, conta inativa, transferir para a mesma conta, CEP inexistente.
 // Diferente do 400 (formato errado) e do 409 (conflito com o que ja existe).
-public class NaoProcessavelException extends RuntimeException {
-    public NaoProcessavelException(String mensagem) {
+public class RegraNegocioException extends RuntimeException {
+    public RegraNegocioException(String mensagem) {
         super(mensagem);
     }
 }

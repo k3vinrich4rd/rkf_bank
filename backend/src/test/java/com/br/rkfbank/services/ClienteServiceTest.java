@@ -9,8 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.br.rkfbank.clients.viacep.ClienteViaCep;
-import com.br.rkfbank.clients.viacep.ResponseViaCepDto;
+import com.br.rkfbank.clients.viacep.ViaCepClient;
+import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
 import com.br.rkfbank.dto.request.cliente.CadastroClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.entities.Cliente;
@@ -18,7 +18,7 @@ import com.br.rkfbank.entities.Endereco;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.entities.enums.PerfilEnum;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
-import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.ClienteRepository;
 import com.br.rkfbank.repositories.UsuarioRepository;
@@ -44,7 +44,7 @@ class ClienteServiceTest {
     private ClienteRepository clienteRepository;
 
     @Mock
-    private ClienteViaCep clienteViaCep;
+    private ViaCepClient viaCepClient;
 
     @Mock
     private UsuarioRepository usuarioRepository;
@@ -62,7 +62,7 @@ class ClienteServiceTest {
         );
         when(clienteRepository.existsByCpf("52998224725")).thenReturn(false);
         when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(false);
-        when(clienteViaCep.buscarPorCep("01001000")).thenReturn(new ResponseViaCepDto(
+        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
                 "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
         ));
         when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -93,7 +93,7 @@ class ClienteServiceTest {
                 () -> clienteService.cadastrar(request));
 
         assertEquals("senha", ex.getCampo());
-        verifyNoInteractions(clienteViaCep, usuarioRepository, passwordEncoder);
+        verifyNoInteractions(viaCepClient, usuarioRepository, passwordEncoder);
     }
 
     @Test
@@ -123,7 +123,7 @@ class ClienteServiceTest {
 
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(false);
-        when(clienteViaCep.buscarPorCep("01001000")).thenReturn(new ResponseViaCepDto(
+        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
                 "01001-000",
                 "Praca da Se",
                 "Se",
@@ -154,7 +154,7 @@ class ClienteServiceTest {
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(true);
 
-        assertThrows(NegocioException.class, () -> clienteService.cadastrar(request));
+        assertThrows(ConflitoException.class, () -> clienteService.cadastrar(request));
     }
 
     @Test
@@ -165,7 +165,7 @@ class ClienteServiceTest {
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(true);
 
-        assertThrows(NegocioException.class, () -> clienteService.cadastrar(request));
+        assertThrows(ConflitoException.class, () -> clienteService.cadastrar(request));
     }
 
     @Test
@@ -175,7 +175,7 @@ class ClienteServiceTest {
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail("joao.silva@email.com")).thenReturn(false);
-        when(clienteViaCep.buscarPorCep("01001000")).thenReturn(new ResponseViaCepDto(
+        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
                 "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
         ));
         when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -193,7 +193,7 @@ class ClienteServiceTest {
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(true);
 
-        assertThrows(NegocioException.class, () -> clienteService.cadastrar(request));
+        assertThrows(ConflitoException.class, () -> clienteService.cadastrar(request));
     }
 
     @Test
@@ -280,14 +280,14 @@ class ClienteServiceTest {
 
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(false);
-        when(clienteViaCep.buscarPorCep("01001000")).thenReturn(new ResponseViaCepDto(
+        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
                 "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
         ));
         when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         clienteService.cadastrar(request);
 
-        verify(clienteViaCep).buscarPorCep("01001000");
+        verify(viaCepClient).buscarPorCep("01001000");
     }
 
     @Test
@@ -297,12 +297,12 @@ class ClienteServiceTest {
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(false);
-        when(clienteViaCep.buscarPorCep("01001000")).thenReturn(new ResponseViaCepDto(
+        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
                 "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
         ));
         when(clienteRepository.saveAndFlush(any(Cliente.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate CPF"));
 
-        assertThrows(NegocioException.class, () -> clienteService.cadastrar(request));
+        assertThrows(ConflitoException.class, () -> clienteService.cadastrar(request));
     }
 }

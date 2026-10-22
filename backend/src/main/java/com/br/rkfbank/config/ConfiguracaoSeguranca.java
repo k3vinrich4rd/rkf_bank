@@ -39,7 +39,7 @@ public class ConfiguracaoSeguranca {
 
     // Quem pode o que, por rota. Regra de dono (conta de outro cliente) nao cabe aqui: fica no ContaService.
     @Bean
-    public SecurityFilterChain cadeiaDeSeguranca(HttpSecurity http, RespostaErroSeguranca respostaErro,
+    public SecurityFilterChain cadeiaDeSeguranca(HttpSecurity http, TratadorErrosSeguranca respostaErro,
                                                  ConversorTokenUsuario conversorToken) {
         http
                 // CSRF desligado DE PROPOSITO (o CodeQL avisa "java/spring-disabled-csrf-protection"; alerta revisado

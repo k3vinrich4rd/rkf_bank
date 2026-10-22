@@ -1,7 +1,7 @@
 package com.br.rkfbank.config;
 
 import com.br.rkfbank.dto.comum.ErroResponse;
-import com.br.rkfbank.security.AcessoAlteradoException;
+import com.br.rkfbank.exceptions.AcessoAlteradoException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -20,18 +20,18 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
-// 401 e 403 barrados pelos filtros do Spring Security, no mesmo formato do ControllerExceptionHandler.
+// 401 e 403 barrados pelos filtros do Spring Security, no mesmo formato do TratadorGlobalDeErros.
 // O advice nao serve aqui: o filtro recusa a requisicao antes de ela chegar ao DispatcherServlet.
 @Component
-public class RespostaErroSeguranca implements AuthenticationEntryPoint, AccessDeniedHandler {
+public class TratadorErrosSeguranca implements AuthenticationEntryPoint, AccessDeniedHandler {
 
-    private static final Logger log = LogManager.getLogger(RespostaErroSeguranca.class);
+    private static final Logger log = LogManager.getLogger(TratadorErrosSeguranca.class);
 
     // Poe o header "WWW-Authenticate: Bearer ..." exigido pela RFC 6750; o corpo JSON e nosso.
     private final BearerTokenAuthenticationEntryPoint cabecalhoBearer = new BearerTokenAuthenticationEntryPoint();
     private final JsonMapper jsonMapper;
 
-    public RespostaErroSeguranca(JsonMapper jsonMapper) {
+    public TratadorErrosSeguranca(JsonMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
     }
 

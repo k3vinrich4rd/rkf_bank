@@ -3,7 +3,7 @@ package com.br.rkfbank.services;
 import com.br.rkfbank.dto.response.usuario.UsuarioAdminResponseDto;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.entities.enums.PerfilEnum;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.UsuarioNaoEncontradoException;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.security.UsuarioLogado;
@@ -44,7 +44,7 @@ public class GestaoUsuarioService {
         Usuario alvo = buscarOutro(usuarioId, quem);
         if (perfil == PerfilEnum.CLIENTE && alvo.getCliente() == null) {
             // Admin criado pelo .env nao tem cadastro: como CLIENTE ele nao teria conta nem dados. Desative em vez disso.
-            throw new NaoProcessavelException("Usuario sem cadastro de cliente nao pode virar CLIENTE; desative o acesso");
+            throw new RegraNegocioException("Usuario sem cadastro de cliente nao pode virar CLIENTE; desative o acesso");
         }
         if (alvo.getPerfil() != perfil) {
             log.info("Usuario {} mudou o perfil do usuario {} de {} para {}", quem.usuarioId(), alvo.getId(), alvo.getPerfil(), perfil);
@@ -61,7 +61,7 @@ public class GestaoUsuarioService {
         if (ativo && alvo.getCliente() != null && alvo.getCliente().isEncerrado()) {
             // LGPD: o titular encerrou o cadastro. Reativar seria reabrir uma relacao que ele pediu para acabar.
             log.warn("Usuario {} tentou reativar o usuario {}, cujo cadastro foi encerrado", quem.usuarioId(), alvo.getId());
-            throw new NaoProcessavelException("O titular encerrou o cadastro; o acesso nao pode ser reativado");
+            throw new RegraNegocioException("O titular encerrou o cadastro; o acesso nao pode ser reativado");
         }
         if (alvo.isAtivo() != ativo) {
             log.info("Usuario {} {} o acesso do usuario {}", quem.usuarioId(), ativo ? "reativou" : "desativou", alvo.getId());
@@ -75,7 +75,7 @@ public class GestaoUsuarioService {
     @Transactional
     public void redefinirSenha(UUID usuarioId, String novaSenha, UsuarioLogado quem) {
         if (usuarioId.equals(quem.usuarioId())) {
-            throw new NaoProcessavelException("Para trocar a sua propria senha use PATCH /auth/senha");
+            throw new RegraNegocioException("Para trocar a sua propria senha use PATCH /auth/senha");
         }
         ClienteService.garantirLimiteDoBcrypt("novaSenha", novaSenha);
         Usuario alvo = buscarOutro(usuarioId, quem);
@@ -88,7 +88,7 @@ public class GestaoUsuarioService {
     private Usuario buscarOutro(UUID usuarioId, UsuarioLogado quem) {
         if (usuarioId.equals(quem.usuarioId())) {
             log.warn("Usuario {} tentou alterar o proprio perfil ou acesso", quem.usuarioId());
-            throw new NaoProcessavelException("Voce nao pode alterar o seu proprio perfil ou acesso; peca a outro ADMIN");
+            throw new RegraNegocioException("Voce nao pode alterar o seu proprio perfil ou acesso; peca a outro ADMIN");
         }
         return usuarioRepository.findById(usuarioId).orElseThrow(() -> {
             log.warn("Usuario {} nao encontrado na gestao de usuarios", usuarioId);

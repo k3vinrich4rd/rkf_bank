@@ -10,12 +10,12 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 // Roda na subida, depois do Flyway: da login as contas da equipe criadas pelo db/seed/equipe, com a senha do .env.
-// Mesmo motivo do CriadorAdmin: senha em migracao ficaria no Git (repositorio publico) para sempre.
+// Mesmo motivo do InicializadorAdmin: senha em migracao ficaria no Git (repositorio publico) para sempre.
 // Trocou EQUIPE_SENHA? Na proxima subida a senha nova passa a valer (a antiga para de funcionar).
 @Component
-public class CriadorAcessoEquipe implements ApplicationRunner {
+public class InicializadorAcessoEquipe implements ApplicationRunner {
 
-    private static final Logger log = LogManager.getLogger(CriadorAcessoEquipe.class);
+    private static final Logger log = LogManager.getLogger(InicializadorAcessoEquipe.class);
 
     // Ids fixos do afterMigrate__dados_equipe.sql: "Felipe Santana (Teste Origem)" e "Renan Barros (Teste Destino)".
     static final List<UUID> CLIENTES_DA_EQUIPE = List.of(
@@ -25,7 +25,7 @@ public class CriadorAcessoEquipe implements ApplicationRunner {
     private final EquipePropriedades propriedades;
     private final UsuarioService usuarioService;
 
-    public CriadorAcessoEquipe(EquipePropriedades propriedades, UsuarioService usuarioService) {
+    public InicializadorAcessoEquipe(EquipePropriedades propriedades, UsuarioService usuarioService) {
         this.propriedades = propriedades;
         this.usuarioService = usuarioService;
     }

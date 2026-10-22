@@ -12,7 +12,7 @@ import com.br.rkfbank.dto.response.usuario.UsuarioAdminResponseDto;
 import com.br.rkfbank.entities.Cliente;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.entities.enums.PerfilEnum;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.UsuarioNaoEncontradoException;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.security.UsuarioLogado;
@@ -69,7 +69,7 @@ class GestaoUsuarioServiceTest {
         Usuario adminDoEnv = usuario(PerfilEnum.ADMIN, "13579246828", null);
         when(usuarioRepository.findById(adminDoEnv.getId())).thenReturn(Optional.of(adminDoEnv));
 
-        assertThrows(NaoProcessavelException.class, () -> service.alterarPerfil(adminDoEnv.getId(), PerfilEnum.CLIENTE, ADMIN));
+        assertThrows(RegraNegocioException.class, () -> service.alterarPerfil(adminDoEnv.getId(), PerfilEnum.CLIENTE, ADMIN));
         assertEquals(PerfilEnum.ADMIN, adminDoEnv.getPerfil());
     }
 
@@ -87,8 +87,8 @@ class GestaoUsuarioServiceTest {
     @Test
     void ninguemMexeNoProprioPerfilOuAcesso() {
         // Garante que o admin nao se tranca para fora e que sempre sobra um ADMIN ativo.
-        assertThrows(NaoProcessavelException.class, () -> service.alterarPerfil(ADMIN.usuarioId(), PerfilEnum.CLIENTE, ADMIN));
-        assertThrows(NaoProcessavelException.class, () -> service.alterarAcesso(ADMIN.usuarioId(), false, ADMIN));
+        assertThrows(RegraNegocioException.class, () -> service.alterarPerfil(ADMIN.usuarioId(), PerfilEnum.CLIENTE, ADMIN));
+        assertThrows(RegraNegocioException.class, () -> service.alterarAcesso(ADMIN.usuarioId(), false, ADMIN));
         verifyNoInteractions(usuarioRepository);
     }
 
@@ -106,7 +106,7 @@ class GestaoUsuarioServiceTest {
 
     @Test
     void adminNaoRedefineAPropriaSenhaPorAqui() {
-        NaoProcessavelException ex = assertThrows(NaoProcessavelException.class,
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class,
                 () -> service.redefinirSenha(ADMIN.usuarioId(), "senha-temporaria-1", ADMIN));
 
         assertEquals("Para trocar a sua propria senha use PATCH /auth/senha", ex.getMessage());

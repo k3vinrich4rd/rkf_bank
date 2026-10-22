@@ -6,6 +6,18 @@ Escreva seu recado no topo. Quando resolver, marque `[x]` e escreva a resposta e
 
 ---
 
+- [ ] Kevin → Renan (22/10): **contrato 2.6 — rotas no padrão de mercado.** Nada quebra no front: as rotas antigas continuam respondendo igual, só ganham os headers `Deprecation: true` e `Link: <rota nova>; rel="successor-version"`. Elas saem só num contrato 3.0, que a gente combina na reunião. O que mudou (seção "Rotas obsoletas" do contrato):
+  | Antiga | Nova |
+  |---|---|
+  | `POST /contas/clientes/{clienteId}` | `POST /contas` (o cliente vem do token; corpo igual) |
+  | `POST /contas/{contaId}/deposito` · `/saque` | `/contas/{contaId}/depositos` · `/saques` |
+  | `POST /contas/transferencia` | `POST /transferencias` |
+  | `PATCH /auth/senha` | `PATCH /usuarios/me/senha` |
+  | `?paginado=true&page=0&size=10` | `?page=0&size=10` (basta `page` ou `size`) |
+  1. **Já ajustei no front** (só as URLs, nenhuma tela): `lib/api/contas.ts` (depósito, saque e transferência nas rotas novas) e `app/api/auth/senha/route.ts` (o Route Handler chama `/usuarios/me/senha`). `scripts/validar.sh frontend` passou (lint, typecheck e build).
+  2. **Fica para você, quando quiser:** `contasApi.abrir(clienteId, ...)` → `POST /contas` sem o `clienteId` (o `use-abrir-conta` deixa de precisar da sessão para isso) e tirar o `paginado: true` das listagens (`page`/`size` já bastam).
+  3. O pedido de abertura aceita `tipoConta` além de `tipoContaEnum`; a **resposta** continua `tipoContaEnum` até a 3.0.
+  4. Nomes de classe do backend mudaram (ex.: `ClienteViaCep` → `ViaCepClient`, `NaoProcessavelException` → `RegraNegocioException`); lista em `planing/proposta-de-nomes.md`. No front nada referencia esses nomes.
 - [ ] Kevin → Renan (22/10): dois PRs do backend tocam o contrato, **nenhum quebra o frontend**, mas dá para aproveitar:
   1. **Contrato 2.4** (`fix/debitos-paginacao-cors-dependencias`): `?paginado=true` agora devolve um DTO próprio (`PaginaResponse`) com **os mesmos campos** que o `Page<T>` de `frontend/lib/api/types.ts` já lê (`content`, `totalElements`, `totalPages`, `number`, `size`, `first`, `last`). O comentário do `types.ts` que avisa "serializar `PageImpl` não é estável" ficou velho: pode trocar por "formato fixo do contrato 2.4" e, se quiser, acrescentar `first` e `last` no tipo. CORS agora vale nas rotas reais (`/**`, origens em `CORS_ORIGENS`); o proxy `/api` do Next continua igual.
   ⚠️ **Mexi no `frontend/` nessa mesma branch, por segurança (22/10):** a varredura achou duas falhas **críticas** de execução remota de código no Next 16.3.8. Subi `next` e `eslint-config-next` para **16.4.2** e pus *overrides* no `frontend/pnpm-workspace.yaml` para `hono` (alerta #17) e `ip-address`, que vêm pelo `shadcn`. `scripts/validar.sh frontend` passou (lint, typecheck e build), mas vale você abrir as telas e conferir. O `braces` (alerta #7) segue sem correção publicada: descartei no GitHub como risco tolerável, com a justificativa.

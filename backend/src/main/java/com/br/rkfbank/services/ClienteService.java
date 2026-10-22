@@ -1,7 +1,7 @@
 package com.br.rkfbank.services;
 
-import com.br.rkfbank.clients.viacep.ClienteViaCep;
-import com.br.rkfbank.clients.viacep.ResponseViaCepDto;
+import com.br.rkfbank.clients.viacep.ViaCepClient;
+import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
 import com.br.rkfbank.dto.request.cliente.CadastroClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.dto.response.cliente.EnderecoResponseDto;
@@ -10,7 +10,7 @@ import com.br.rkfbank.entities.Endereco;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.entities.enums.PerfilEnum;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
-import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.ClienteRepository;
 import com.br.rkfbank.repositories.UsuarioRepository;
@@ -39,18 +39,18 @@ public class ClienteService {
     static final int MAX_BYTES_SENHA = 72;
 
     private final ClienteRepository clienteRepository;
-    private final ClienteViaCep clienteViaCep;
+    private final ViaCepClient viaCepClient;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
     public ClienteService(
             ClienteRepository clienteRepository,
-            ClienteViaCep clienteViaCep,
+            ViaCepClient viaCepClient,
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder
     ) {
         this.clienteRepository = clienteRepository;
-        this.clienteViaCep = clienteViaCep;
+        this.viaCepClient = viaCepClient;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -66,7 +66,7 @@ public class ClienteService {
         // CPF e email ficam fora dos logs por serem dados pessoais.
         if (clienteRepository.existsByCpf(cpfSanitizado)) {
             log.warn("Cadastro de cliente recusado: CPF ja cadastrado");
-            throw new NegocioException("CPF ja cadastrado");
+            throw new ConflitoException("CPF ja cadastrado");
         }
 
         // Email guardado sempre em minúsculas e sem espaços nas pontas (a V2 do Flyway fez o mesmo com os já salvos).
@@ -76,7 +76,7 @@ public class ClienteService {
         // Regra de unicidade de email para evitar conflito de cadastro.
         if (clienteRepository.existsByEmail(emailNormalizado)) {
             log.warn("Cadastro de cliente recusado: email ja cadastrado");
-            throw new NegocioException("Email ja cadastrado");
+            throw new ConflitoException("Email ja cadastrado");
         }
 
         // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Checado antes de chamar o ViaCEP.
@@ -86,10 +86,10 @@ public class ClienteService {
         String cep = request.cep().replaceAll("\\D", "");
 
         // Camada de integração externa: resolve dados oficiais do endereço.
-        ResponseViaCepDto viaCep = clienteViaCep.buscarPorCep(cep);
+        ViaCepResponseDto viaCep = viaCepClient.buscarPorCep(cep);
 
         // Montagem da entidade de domínio com dados da request + resposta do ViaCEP.
-        Cliente cliente = getCliente(request, viaCep);
+        Cliente cliente = montarCliente(request, viaCep);
 
         // Altera o CPF da entidade para salvar a versão puramente numérica no banco de dados.
         cliente.setCpf(cpfSanitizado);
@@ -107,7 +107,7 @@ public class ClienteService {
             // Cadastro concorrente passou pelas checagens acima e esbarrou na constraint unica do banco.
             // A mensagem do driver traz o valor duplicado (CPF/email), por isso nao entra no log.
             log.warn("Cadastro de cliente recusado: violacao de unicidade no banco");
-            throw new NegocioException("CPF ou email ja cadastrado");
+            throw new ConflitoException("CPF ou email ja cadastrado");
         }
 
         // Credencial de acesso na mesma transacao: se falhar, o cliente tambem e desfeito (rollback).
@@ -120,7 +120,7 @@ public class ClienteService {
         usuarioRepository.save(usuario);
 
         log.info("Cliente {} cadastrado (cidade={}/{})", salvo.getId(), viaCep.localidade(), viaCep.uf());
-        return toResponse(salvo);
+        return paraResponse(salvo);
     }
 
     // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Usado no cadastro e nas trocas de senha.
@@ -143,7 +143,7 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public List<ClienteResponseDto> listarTodos() {
         // Leitura sem paginação para telas simples.
-        List<ClienteResponseDto> clientes = clienteRepository.findAll().stream().map(this::toResponse).toList();
+        List<ClienteResponseDto> clientes = clienteRepository.findAll().stream().map(this::paraResponse).toList();
         log.debug("Listagem de clientes retornou {} registros", clientes.size());
         return clientes;
     }
@@ -152,13 +152,13 @@ public class ClienteService {
     @Transactional(readOnly = true)
     public Page<ClienteResponseDto> listarPaginado(Pageable pageable) {
         // Leitura paginada para reduzir payload em listas grandes.
-        Page<ClienteResponseDto> pagina = clienteRepository.findAll(pageable).map(this::toResponse);
+        Page<ClienteResponseDto> pagina = clienteRepository.findAll(pageable).map(this::paraResponse);
         log.debug("Listagem paginada de clientes: pagina {} com {} de {} registros",
                 pageable.getPageNumber(), pagina.getNumberOfElements(), pagina.getTotalElements());
         return pagina;
     }
 
-    private static Cliente getCliente(CadastroClienteRequestDto request, ResponseViaCepDto viaCep) {
+    private static Cliente montarCliente(CadastroClienteRequestDto request, ViaCepResponseDto viaCep) {
         Endereco endereco = new Endereco();
         // Garante que o CEP salvo no banco de dados esteja com hífen conforme o padrão do ViaCEP/README
         String cepComHifen = viaCep.cep() != null && !viaCep.cep().contains("-") && viaCep.cep().length() == 8
@@ -184,7 +184,7 @@ public class ClienteService {
     }
 
     // Pacote: o TitularService devolve o cadastro no mesmo formato.
-    ClienteResponseDto toResponse(Cliente cliente) {
+    ClienteResponseDto paraResponse(Cliente cliente) {
         Endereco endereco = cliente.getEndereco();
         EnderecoResponseDto enderecoResponse = new EnderecoResponseDto(
                 endereco.getCep(),
@@ -197,8 +197,8 @@ public class ClienteService {
                 endereco.getComplemento()
         );
 
-        String cpfFormatado = getCpfFormatado(cliente);
-        String telefoneFormatado = getTelefoneFormatado(cliente);
+        String cpfFormatado = formatarCpf(cliente);
+        String telefoneFormatado = formatarTelefone(cliente);
 
         return new ClienteResponseDto(
                 cliente.getId(),
@@ -210,7 +210,7 @@ public class ClienteService {
         );
     }
 
-    private static String getCpfFormatado(Cliente cliente) {
+    private static String formatarCpf(Cliente cliente) {
         String cpfFormatado = cliente.getCpf();
         if (cpfFormatado != null && cpfFormatado.length() == 11) {
             cpfFormatado = cpfFormatado.replaceAll("(\\d{3})(\\d{3})(\\d{3})(\\d{2})", "$1.$2.$3-$4");
@@ -218,7 +218,7 @@ public class ClienteService {
         return cpfFormatado;
     }
 
-    private static String getTelefoneFormatado(Cliente cliente) {
+    private static String formatarTelefone(Cliente cliente) {
         String tel = cliente.getTelefone();
         if (tel != null) {
             if (tel.length() == 11) {

@@ -12,10 +12,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.br.rkfbank.dto.request.conta.AbrirContaRequestDto;
-import com.br.rkfbank.dto.request.conta.DepositarRequestDto;
+import com.br.rkfbank.dto.request.conta.AberturaContaRequestDto;
+import com.br.rkfbank.dto.request.conta.DepositoRequestDto;
 import com.br.rkfbank.dto.request.conta.SaqueRequestDto;
-import com.br.rkfbank.dto.request.conta.TransferirRequestDto;
+import com.br.rkfbank.dto.request.conta.TransferenciaRequestDto;
 import com.br.rkfbank.dto.response.conta.ContaResponseDto;
 import com.br.rkfbank.dto.response.conta.LancamentoResponseDto;
 import com.br.rkfbank.entities.Cliente;
@@ -26,8 +26,8 @@ import com.br.rkfbank.entities.enums.TipoContaEnum;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
 import com.br.rkfbank.exceptions.AcessoNegadoException;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
-import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
+import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.repositories.ContaRepository;
 import com.br.rkfbank.repositories.LancamentoRepository;
 import com.br.rkfbank.security.UsuarioLogado;
@@ -75,7 +75,7 @@ class ContaServiceTest {
     @Test
     void deveRecusarAberturaDeContaParaOutroCliente() {
         UUID clienteDeOutro = UUID.randomUUID();
-        AbrirContaRequestDto request = new AbrirContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
+        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
 
         assertThrows(AcessoNegadoException.class, () -> contaService.abrir(clienteDeOutro, request, DONO));
 
@@ -85,7 +85,7 @@ class ContaServiceTest {
 
     @Test
     void adminNaoAbreContaPorNinguem() {
-        AbrirContaRequestDto request = new AbrirContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
+        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
 
         assertThrows(AcessoNegadoException.class, () -> contaService.abrir(DONO_ID, request, ADMIN));
     }
@@ -97,7 +97,7 @@ class ContaServiceTest {
         when(contaRepository.findById(contaId)).thenReturn(Optional.of(conta));
 
         assertThrows(AcessoNegadoException.class,
-                () -> contaService.depositar(contaId, new DepositarRequestDto(new BigDecimal("5.00"), "x"), OUTRO_CLIENTE));
+                () -> contaService.depositar(contaId, new DepositoRequestDto(new BigDecimal("5.00"), "x"), OUTRO_CLIENTE));
 
         assertEquals(new BigDecimal("10.00"), conta.getSaldo());
         verifyNoInteractions(lancamentoRepository);
@@ -131,7 +131,7 @@ class ContaServiceTest {
         when(contaRepository.findById(origemId)).thenReturn(Optional.of(origem));
 
         assertThrows(AcessoNegadoException.class, () -> contaService.transferir(
-                new TransferirRequestDto(origemId, destinoId, new BigDecimal("30.00"), "x"), OUTRO_CLIENTE));
+                new TransferenciaRequestDto(origemId, destinoId, new BigDecimal("30.00"), "x"), OUTRO_CLIENTE));
 
         assertEquals(new BigDecimal("100.00"), origem.getSaldo());
         verifyNoInteractions(lancamentoRepository);
@@ -147,7 +147,7 @@ class ContaServiceTest {
         when(contaRepository.findById(origemId)).thenReturn(Optional.of(origem));
         when(contaRepository.findById(destinoId)).thenReturn(Optional.of(destino));
 
-        contaService.transferir(new TransferirRequestDto(origemId, destinoId, new BigDecimal("30.00"), "x"), DONO);
+        contaService.transferir(new TransferenciaRequestDto(origemId, destinoId, new BigDecimal("30.00"), "x"), DONO);
 
         assertEquals(new BigDecimal("30.00"), destino.getSaldo());
     }
@@ -206,7 +206,7 @@ class ContaServiceTest {
         Cliente cliente = new Cliente();
         ReflectionTestUtils.setField(cliente, "id", clienteId);
 
-        AbrirContaRequestDto request = new AbrirContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
+        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
 
         when(clienteService.buscar(clienteId)).thenReturn(cliente);
         when(contaRepository.existsByNumeroConta("12345678")).thenReturn(false);
@@ -232,7 +232,7 @@ class ContaServiceTest {
         when(contaRepository.saveAndFlush(any(Conta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ContaResponseDto response = contaService.abrir(clienteId,
-                new AbrirContaRequestDto(null, null, TipoContaEnum.POUPANCA), donoDe(clienteId));
+                new AberturaContaRequestDto(null, null, TipoContaEnum.POUPANCA), donoDe(clienteId));
 
         assertEquals(ContaService.AGENCIA_PADRAO, response.agencia());
         String numero = response.numeroConta();
@@ -248,7 +248,7 @@ class ContaServiceTest {
         when(contaRepository.existsByNumeroConta(any())).thenReturn(true, false);
         when(contaRepository.saveAndFlush(any(Conta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        contaService.abrir(clienteId, new AbrirContaRequestDto(null, null, TipoContaEnum.CORRENTE), donoDe(clienteId));
+        contaService.abrir(clienteId, new AberturaContaRequestDto(null, null, TipoContaEnum.CORRENTE), donoDe(clienteId));
 
         verify(contaRepository, times(3)).existsByNumeroConta(any());
     }
@@ -264,25 +264,25 @@ class ContaServiceTest {
     @Test
     void deveImpedirAberturaComNumeroContaDuplicado() {
         UUID clienteId = UUID.randomUUID();
-        AbrirContaRequestDto request = new AbrirContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
+        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
 
         when(clienteService.buscar(clienteId)).thenReturn(new Cliente());
         when(contaRepository.existsByNumeroConta("12345678")).thenReturn(true);
 
-        assertThrows(NegocioException.class, () -> contaService.abrir(clienteId, request, donoDe(clienteId)));
+        assertThrows(ConflitoException.class, () -> contaService.abrir(clienteId, request, donoDe(clienteId)));
     }
 
     @Test
     void deveConverterConflitoDeNumeroContaNoInsertEm409() {
         UUID clienteId = UUID.randomUUID();
-        AbrirContaRequestDto request = new AbrirContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
+        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
 
         when(clienteService.buscar(clienteId)).thenReturn(new Cliente());
         when(contaRepository.existsByNumeroConta("12345678")).thenReturn(false);
         when(contaRepository.saveAndFlush(any(Conta.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate account number"));
 
-        assertThrows(NegocioException.class, () -> contaService.abrir(clienteId, request, donoDe(clienteId)));
+        assertThrows(ConflitoException.class, () -> contaService.abrir(clienteId, request, donoDe(clienteId)));
     }
 
     @Test
@@ -291,7 +291,7 @@ class ContaServiceTest {
         Conta conta = novaConta(contaId, new BigDecimal("10.00"), true);
         when(contaRepository.findById(contaId)).thenReturn(Optional.of(conta));
 
-        contaService.depositar(contaId, new DepositarRequestDto(new BigDecimal("5.00"), "Deposito"), DONO);
+        contaService.depositar(contaId, new DepositoRequestDto(new BigDecimal("5.00"), "Deposito"), DONO);
 
         assertEquals(new BigDecimal("15.00"), conta.getSaldo());
         verify(lancamentoRepository).save(any(Lancamento.class));
@@ -303,8 +303,8 @@ class ContaServiceTest {
         Conta conta = novaConta(contaId, new BigDecimal("10.00"), true);
         when(contaRepository.findById(contaId)).thenReturn(Optional.of(conta));
 
-        assertThrows(NaoProcessavelException.class,
-                () -> contaService.depositar(contaId, new DepositarRequestDto(BigDecimal.ZERO, "Deposito"), DONO));
+        assertThrows(RegraNegocioException.class,
+                () -> contaService.depositar(contaId, new DepositoRequestDto(BigDecimal.ZERO, "Deposito"), DONO));
     }
 
     @Test
@@ -313,7 +313,7 @@ class ContaServiceTest {
         when(contaRepository.findById(contaId)).thenReturn(Optional.empty());
 
         assertThrows(ContaNaoEncontradaException.class,
-                () -> contaService.depositar(contaId, new DepositarRequestDto(new BigDecimal("1.00"), "Deposito"), DONO));
+                () -> contaService.depositar(contaId, new DepositoRequestDto(new BigDecimal("1.00"), "Deposito"), DONO));
     }
 
     @Test
@@ -334,7 +334,7 @@ class ContaServiceTest {
         Conta conta = novaConta(contaId, new BigDecimal("10.00"), true);
         when(contaRepository.findById(contaId)).thenReturn(Optional.of(conta));
 
-        assertThrows(NaoProcessavelException.class,
+        assertThrows(RegraNegocioException.class,
                 () -> contaService.sacar(contaId, new SaqueRequestDto(new BigDecimal("15.00"), "Saque"), DONO));
 
         verify(lancamentoRepository, never()).save(any(Lancamento.class));
@@ -346,7 +346,7 @@ class ContaServiceTest {
         Conta conta = novaConta(contaId, new BigDecimal("10.00"), false);
         when(contaRepository.findById(contaId)).thenReturn(Optional.of(conta));
 
-        assertThrows(NaoProcessavelException.class,
+        assertThrows(RegraNegocioException.class,
                 () -> contaService.sacar(contaId, new SaqueRequestDto(new BigDecimal("1.00"), "Saque"), DONO));
     }
 
@@ -361,7 +361,7 @@ class ContaServiceTest {
         when(contaRepository.findById(eq(origemId))).thenReturn(Optional.of(origem));
         when(contaRepository.findById(eq(destinoId))).thenReturn(Optional.of(destino));
 
-        contaService.transferir(new TransferirRequestDto(origemId, destinoId, new BigDecimal("30.00"), "Transferencia"), DONO);
+        contaService.transferir(new TransferenciaRequestDto(origemId, destinoId, new BigDecimal("30.00"), "Transferencia"), DONO);
 
         assertEquals(new BigDecimal("70.00"), origem.getSaldo());
         assertEquals(new BigDecimal("50.00"), destino.getSaldo());
@@ -372,8 +372,8 @@ class ContaServiceTest {
     void deveRecusarTransferenciaParaMesmaConta() {
         UUID contaId = UUID.randomUUID();
 
-        assertThrows(NaoProcessavelException.class,
-                () -> contaService.transferir(new TransferirRequestDto(contaId, contaId, new BigDecimal("10.00"), "x"), DONO));
+        assertThrows(RegraNegocioException.class,
+                () -> contaService.transferir(new TransferenciaRequestDto(contaId, contaId, new BigDecimal("10.00"), "x"), DONO));
     }
 
     @Test
@@ -387,8 +387,8 @@ class ContaServiceTest {
         when(contaRepository.findById(eq(origemId))).thenReturn(Optional.of(origem));
         when(contaRepository.findById(eq(destinoId))).thenReturn(Optional.of(destino));
 
-        assertThrows(NaoProcessavelException.class,
-                () -> contaService.transferir(new TransferirRequestDto(origemId, destinoId, new BigDecimal("30.00"), "x"), DONO));
+        assertThrows(RegraNegocioException.class,
+                () -> contaService.transferir(new TransferenciaRequestDto(origemId, destinoId, new BigDecimal("30.00"), "x"), DONO));
     }
 
     @Test
@@ -396,8 +396,8 @@ class ContaServiceTest {
         UUID origemId = UUID.randomUUID();
         UUID destinoId = UUID.randomUUID();
 
-        assertThrows(NaoProcessavelException.class,
-                () -> contaService.transferir(new TransferirRequestDto(origemId, destinoId, null, "x"), DONO));
+        assertThrows(RegraNegocioException.class,
+                () -> contaService.transferir(new TransferenciaRequestDto(origemId, destinoId, null, "x"), DONO));
     }
 
     @Test

@@ -49,7 +49,7 @@ export const contasApi = {
    */
   async depositar(contaId: Uuid, data: MovimentacaoRequest, chaveIdempotencia: string) {
     logContas.info("Depositando", { contaId, valor: data.valor });
-    await apiRequest<void>(`/contas/${contaId}/deposito`, {
+    await apiRequest<void>(`/contas/${contaId}/depositos`, {
       method: "POST",
       body: data,
       headers: { [HEADER_IDEMPOTENCIA]: chaveIdempotencia },
@@ -59,7 +59,7 @@ export const contasApi = {
 
   async sacar(contaId: Uuid, data: MovimentacaoRequest, chaveIdempotencia: string) {
     logContas.info("Sacando", { contaId, valor: data.valor });
-    await apiRequest<void>(`/contas/${contaId}/saque`, {
+    await apiRequest<void>(`/contas/${contaId}/saques`, {
       method: "POST",
       body: data,
       headers: { [HEADER_IDEMPOTENCIA]: chaveIdempotencia },
@@ -70,7 +70,7 @@ export const contasApi = {
   async transferir(data: TransferenciaRequest, chaveIdempotencia: string) {
     const contexto = { contaOrigemId: data.contaOrigemId, contaDestinoId: data.contaDestinoId };
     logContas.info("Transferindo", { ...contexto, valor: data.valor });
-    await apiRequest<void>("/contas/transferencia", {
+    await apiRequest<void>("/transferencias", {
       method: "POST",
       body: data,
       headers: { [HEADER_IDEMPOTENCIA]: chaveIdempotencia },

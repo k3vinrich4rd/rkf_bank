@@ -35,18 +35,19 @@ public class ClienteController {
         return ResponseEntity.status(201).body(clienteService.cadastrar(request));
     }
 
-    // So ADMIN (regra na ConfiguracaoSeguranca). Sem "paginado", devolve a lista inteira; com paginado=true,
-    // uma pagina por vez. ResponseEntity<?> porque o corpo muda de formato conforme o parametro.
+    // So ADMIN (regra na ConfiguracaoSeguranca). Sem page/size na URL, devolve a lista inteira; com page ou size,
+    // uma pagina por vez. ResponseEntity<?> porque o corpo muda de formato conforme os parametros.
     @GetMapping
-    public ResponseEntity<?> listarClientes(
-            @RequestParam(defaultValue = "false") boolean paginado,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+    public ResponseEntity<?> listar(
+            @RequestParam(required = false) Boolean paginado,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
     ) {
         log.debug("Listagem de clientes (paginado={}, page={}, size={})", paginado, page, size);
-        // Quando paginado=true, retorna a pagina no formato do contrato (PaginaResponse), nunca o Page do Spring.
-        if (paginado) {
-            Page<ClienteResponseDto> pagina = clienteService.listarPaginado(Paginacao.criar(page, size));
+        // A pagina sai no formato do contrato (PaginaResponse), nunca o Page do Spring.
+        // page ou size na URL ja pede a pagina (padrao do Spring Data); paginado=true/false continua valendo (obsoleto).
+        if (Paginacao.querPagina(paginado, page, size)) {
+            Page<ClienteResponseDto> pagina = clienteService.listarPaginado(Paginacao.criar(page == null ? 0 : page, size == null ? Paginacao.TAMANHO_PADRAO : size));
             return ResponseEntity.ok(PaginaResponse.de(pagina));
         }
 
