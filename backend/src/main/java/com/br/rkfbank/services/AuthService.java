@@ -19,6 +19,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Autenticacao: confere CPF + senha e emite o token. Tres cuidados de seguranca de banco:
+//  1. mesma resposta e mesmo tempo para CPF inexistente e senha errada (nao revela quem e cliente);
+//  2. limite de tentativas por CPF (LimitadorTentativasLogin) contra chute de senha;
+//  3. senha so comparada com o hash BCrypt (passwordEncoder.matches); a senha em texto nunca e guardada.
 @Service
 public class AuthService {
 
@@ -42,6 +46,7 @@ public class AuthService {
         this.hashFalso = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
+    // readOnly = true: o login so le o banco; o Hibernate pula a checagem de mudancas e o banco pode otimizar.
     @Transactional(readOnly = true)
     public LoginResponseDto login(LoginRequestDto request) {
         String cpf = request.cpf().replaceAll("\\D", "");

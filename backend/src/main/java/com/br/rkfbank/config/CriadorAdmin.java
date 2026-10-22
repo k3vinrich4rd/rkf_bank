@@ -22,6 +22,7 @@ public class CriadorAdmin implements ApplicationRunner {
         this.usuarioService = usuarioService;
     }
 
+    // Roda uma vez na subida. "SeNaoExistir": reiniciar a API 100 vezes cria o admin uma vez so (idempotente).
     @Override
     public void run(ApplicationArguments args) {
         if (!propriedades.configurado()) {

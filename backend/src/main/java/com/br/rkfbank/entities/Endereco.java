@@ -8,6 +8,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.util.UUID;
 
+// Endereco do cliente (tb_endereco), um por cliente (OneToOne em Cliente, com UNIQUE no endereco_id).
+// CEP, logradouro, bairro, cidade, UF e IBGE vem do ViaCEP no cadastro: o cliente digita so o CEP e o numero,
+// e o banco guarda o endereco oficial (sem "Av. Paulsta" escrito errado). IBGE e o codigo do municipio.
 @Entity
 @Table(name = "tb_endereco")
 public class Endereco {
@@ -37,6 +40,7 @@ public class Endereco {
     @Column(nullable = false)
     private String numero;
 
+    // Unico campo opcional: nem todo endereco tem apartamento ou bloco.
     private String complemento;
 
     public UUID getId() {

@@ -16,7 +16,8 @@ import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-// Credencial de acesso. Fica fora do Cliente para que dado cadastral e segredo nao andem juntos (V3).
+// Credencial de acesso (tb_usuario, V5). Fica fora do Cliente para que dado cadastral e segredo nao andem juntos:
+// quem le o cadastro nao carrega o hash da senha, e o ADMIN pode existir sem ser cliente (cliente_id nulo).
 @Entity
 @Table(name = "tb_usuario", uniqueConstraints = {
     @UniqueConstraint(name = "uk_usuario_login", columnNames = "login"),

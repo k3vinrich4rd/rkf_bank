@@ -1,5 +1,7 @@
 package com.br.rkfbank.dto.response.cliente;
 
+// Endereco do cliente: CEP, logradouro, bairro, cidade, UF e codigo IBGE vem do ViaCEP; numero e complemento,
+// do proprio cliente no cadastro.
 public record EnderecoResponseDto(
     String cep,
     String logradouro,

@@ -12,6 +12,10 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 
+// Cliente HTTP do ViaCEP (servico publico que devolve o endereco a partir do CEP).
+// Abordagem: a integracao externa fica isolada numa classe so. O ClienteService nao sabe que existe HTTP,
+// timeout ou JSON do ViaCEP; ele so pede "o endereco deste CEP". Trocar de fornecedor ou simular nos testes
+// (@MockitoBean) mexe so aqui. RestClient e o cliente HTTP sincrono e fluente do Spring 6+, sucessor do RestTemplate.
 @Component
 public class ClienteViaCep {
 
@@ -27,6 +31,9 @@ public class ClienteViaCep {
         this.restClient = RestClient.builder().baseUrl(baseUrl).requestFactory(factory).build();
     }
 
+    // Traduz cada resultado do ViaCEP para a linguagem da API: achou -> endereco; CEP inexistente -> 422;
+    // fora do ar, 5xx ou demorou mais que o timeout -> 503. O tempo de cada consulta vai para o log (DEBUG/WARN),
+    // o que ajuda a descobrir se a lentidao e nossa ou do servico externo.
     public ResponseViaCepDto buscarPorCep(String cep) {
         long inicio = System.nanoTime();
         try {

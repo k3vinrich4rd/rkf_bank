@@ -30,6 +30,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Regras de negocio das contas: abrir, depositar, sacar, transferir e extrato.
+// Toda operacao comeca descobrindo QUEM pede (UsuarioLogado, vindo do token) e checando se a conta e dele
+// (regra de dono -> 403). Toda escrita e @Transactional: saldo e lancamento sao gravados juntos ou nenhum.
+// Nao conhece HTTP: recebe DTOs e o usuario, devolve DTOs ou lanca excecoes que o handler traduz em status.
 @Service
 public class ContaService {
 
@@ -53,6 +57,8 @@ public class ContaService {
         this.clienteService = clienteService;
     }
 
+    // Abre conta para o proprio cadastro. Agencia padrao 0001 e numero gerado pelo banco (com digito verificador)
+    // quando o cliente nao manda: numero de conta e identidade do banco, nao escolha de quem abre.
     @Transactional
     public ContaResponseDto abrir(UUID clienteId, AbrirContaRequestDto request, UsuarioLogado usuario) {
         // Regra de dono: so abre conta no proprio cadastro (o clienteId da URL tem que ser o do token).
@@ -96,6 +102,7 @@ public class ContaService {
         return paraContaResponse(salva);
     }
 
+    // Deposito: so na propria conta e ativa. Soma no saldo e grava um lancamento DEPOSITO (so com destino).
     @Transactional
     public void depositar(UUID contaId, DepositarRequestDto request, UsuarioLogado usuario) {
         // Só movimenta conta existente, do usuário logado e ativa.
@@ -111,6 +118,8 @@ public class ContaService {
         log.info("Deposito de {} na conta {}", valor, contaId);
     }
 
+    // Saque: confere o saldo antes de subtrair (422 se faltar). BigDecimal.compareTo, e nao equals: 10.0 e 10.00
+    // sao iguais em valor, mas equals os acha diferentes por causa da escala.
     @Transactional
     public void sacar(UUID contaId, SaqueRequestDto request, UsuarioLogado usuario) {
         Conta conta = buscarDoDono(contaId, usuario);
@@ -130,6 +139,8 @@ public class ContaService {
         log.info("Saque de {} na conta {}", valor, contaId);
     }
 
+    // Transferencia: debito na origem, credito no destino e UM lancamento com as duas contas, na mesma transacao.
+    // Se qualquer passo falhar (inclusive o lock otimista no commit), nada acontece: dinheiro nao some nem aparece.
     @Transactional
     public void transferir(TransferirRequestDto request, UsuarioLogado usuario) {
         // Regra para impedir transferência para a mesma conta.
@@ -162,6 +173,7 @@ public class ContaService {
         log.info("Transferencia de {} da conta {} para {}", valor, origem.getId(), destino.getId());
     }
 
+    // Extrato: tudo que entrou ou saiu da conta, do mais novo para o mais antigo. So o dono ve.
     @Transactional(readOnly = true)
     public List<LancamentoResponseDto> listarLancamentos(UUID contaId, UsuarioLogado usuario) {
         // Valida conta (e o dono) antes de consultar extrato.
@@ -176,6 +188,7 @@ public class ContaService {
         return lancamentos;
     }
 
+    // GET /contas: o ADMIN ve todas; o CLIENTE ve so as dele. A mesma rota muda o resultado conforme o perfil.
     @Transactional(readOnly = true)
     public List<ContaResponseDto> listarTodas(UsuarioLogado usuario) {
         // ADMIN ve todas; CLIENTE so as dele.
@@ -187,6 +200,7 @@ public class ContaService {
         return contas;
     }
 
+    // Versao paginada: o banco devolve so uma fatia (LIMIT/OFFSET) e o total, em vez da tabela inteira.
     @Transactional(readOnly = true)
     public Page<ContaResponseDto> listarPaginado(Pageable pageable, UsuarioLogado usuario) {
         Page<Conta> encontradas = usuario.isAdmin()

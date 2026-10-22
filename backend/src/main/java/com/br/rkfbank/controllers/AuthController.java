@@ -33,6 +33,8 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    // Rota publica (permitAll na ConfiguracaoSeguranca): e aqui que se consegue o token. O corpo nunca vai para o
+    // log; o toString do LoginRequestDto esconde CPF e senha.
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginRequestDto request) {
         return ResponseEntity.ok(authService.login(request));
