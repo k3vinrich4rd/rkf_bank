@@ -29,6 +29,9 @@ public class FiltroLogRequisicao extends OncePerRequestFilter {
     // O id vindo de fora vai parar no log; restringir o formato impede quebra de linha e injecao de texto.
     private static final Pattern REQUEST_ID_VALIDO = Pattern.compile("[A-Za-z0-9-]{1,64}");
 
+    // OncePerRequestFilter garante uma execucao por requisicao (mesmo com forward/erro interno).
+    // ThreadContext e o MDC do Log4j2: um mapa preso a thread atual. O padrao de log do log4j2-spring.xml imprime
+    // %X{requestId}, entao TODA linha de log desta requisicao (controller, service, SQL) sai com o mesmo id.
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {

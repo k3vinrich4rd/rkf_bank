@@ -14,6 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Cria credenciais que dependem do ambiente (.env): o primeiro ADMIN e o login das contas da equipe.
+// Senha nunca em migracao ou seed: o repositorio e publico, e o que entra no Git fica no historico para sempre.
 @Service
 public class UsuarioService {
 

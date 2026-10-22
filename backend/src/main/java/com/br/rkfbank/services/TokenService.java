@@ -27,6 +27,10 @@ public class TokenService {
         this.propriedades = propriedades;
     }
 
+    // Emite o token depois que o AuthService conferiu CPF e senha. Claims (dados dentro do token):
+    //  iss = quem emitiu ("rkfbank") · sub = id do USUARIO (nao o CPF) · iat/exp = emitido em / vence em
+    //  perfil = CLIENTE ou ADMIN · clienteId = de quem sao as contas · versaoCredencial = muda quando a senha muda.
+    // Quem garante que ninguem trocou "CLIENTE" por "ADMIN" no payload e a assinatura HMAC-SHA256 com o segredo.
     public TokenGerado gerar(Usuario usuario) {
         Instant agora = Instant.now();
         JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
@@ -48,6 +52,7 @@ public class TokenService {
         return new TokenGerado(token, propriedades.expiracao().toSeconds());
     }
 
+    // O token e quantos segundos ele vale, para o front saber quando a sessao vai cair.
     public record TokenGerado(String token, long expiraEmSegundos) {
     }
 }

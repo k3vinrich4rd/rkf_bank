@@ -1,7 +1,7 @@
 -- Contas de VISITANTE: so no perfil visitante (H2 em memoria), para quem chega pelo GitHub testar a API.
 --
---   Ana Visitante   -> conta ORIGEM  0001 / 900001, saldo inicial R$ 1.000,00
---   Bruno Visitante -> conta DESTINO 0001 / 900002, saldo inicial R$ 500,00
+--   Ana Visitante (Origem)    -> conta ORIGEM  0001 / 900001, saldo inicial R$ 1.000,00
+--   Bruno Visitante (Destino) -> conta DESTINO 0001 / 900002, saldo inicial R$ 500,00
 --   Login dos dois: CPF + senha Visitante@2026 (PUBLICA, esta no VISITANTES.md; o banco guarda so o hash BCrypt).
 --
 -- Senha publica aqui e aceitavel porque: (1) o perfil visitante so roda na maquina de quem testa, com H2 em memoria
@@ -19,7 +19,7 @@ WHERE NOT EXISTS (SELECT 1 FROM tb_endereco WHERE id = X'a0000000000040008000000
   AND NOT EXISTS (SELECT 1 FROM tb_cliente WHERE cpf = '24681357928');
 
 INSERT INTO tb_cliente (id, nome_completo, cpf, email, telefone, endereco_id)
-SELECT X'a0000000000040008000000000000112', 'Ana Visitante', '24681357928', 'ana.visitante@exemplo.test', '11900000001',
+SELECT X'a0000000000040008000000000000112', 'Ana Visitante (Origem)', '24681357928', 'ana.visitante@exemplo.test', '11900000001',
        X'a0000000000040008000000000000111'
 FROM (SELECT 1 AS um) unica
 WHERE NOT EXISTS (SELECT 1 FROM tb_cliente
@@ -57,7 +57,7 @@ WHERE NOT EXISTS (SELECT 1 FROM tb_endereco WHERE id = X'a0000000000040008000000
   AND NOT EXISTS (SELECT 1 FROM tb_cliente WHERE cpf = '97531864282');
 
 INSERT INTO tb_cliente (id, nome_completo, cpf, email, telefone, endereco_id)
-SELECT X'a0000000000040008000000000000122', 'Bruno Visitante', '97531864282', 'bruno.visitante@exemplo.test', '31900000002',
+SELECT X'a0000000000040008000000000000122', 'Bruno Visitante (Destino)', '97531864282', 'bruno.visitante@exemplo.test', '31900000002',
        X'a0000000000040008000000000000121'
 FROM (SELECT 1 AS um) unica
 WHERE NOT EXISTS (SELECT 1 FROM tb_cliente
@@ -85,3 +85,5 @@ SELECT X'a0000000000040008000000000000125', 'DEPOSITO', 500.00, NULL, X'a0000000
 FROM (SELECT 1 AS um) unica
 WHERE NOT EXISTS (SELECT 1 FROM tb_lancamento WHERE id = X'a0000000000040008000000000000125')
   AND EXISTS (SELECT 1 FROM tb_conta WHERE id = X'a0000000000040008000000000000124');
+
+-- Bancos H2 do perfil visitante somem ao parar a API, entao nao precisam de UPDATE: cada subida ja nasce com o nome novo.

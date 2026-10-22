@@ -39,6 +39,8 @@ public class ControllerExceptionHandler {
 
     private static final Logger log = LogManager.getLogger(ControllerExceptionHandler.class);
 
+    // 400 do Bean Validation: @Valid no controller falhou. Junta TODOS os campos com erro numa resposta so,
+    // para o front marcar todos os inputs de uma vez (e nao um por tentativa).
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErroResponse campoInvalido(MethodArgumentNotValidException ex, HttpServletRequest request) {
@@ -52,6 +54,7 @@ public class ControllerExceptionHandler {
         return montar(HttpStatus.BAD_REQUEST, "Requisicao invalida", request.getRequestURI(), campos);
     }
 
+    // 400 quando o Jackson nem consegue ler o corpo: JSON quebrado, texto onde era numero, enum que nao existe.
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErroResponse jsonInvalido(HttpMessageNotReadableException ex, HttpServletRequest request) {
@@ -60,6 +63,7 @@ public class ControllerExceptionHandler {
         return montar(HttpStatus.BAD_REQUEST, "JSON invalido ou tipo de campo incompativel", request.getRequestURI(), List.of());
     }
 
+    // 400 quando um parametro da URL nao converte para o tipo esperado (ex.: "abc" onde era UUID).
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErroResponse parametroInvalido(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
@@ -69,6 +73,7 @@ public class ControllerExceptionHandler {
         return montar(HttpStatus.BAD_REQUEST, "Parametro de URL invalido", request.getRequestURI(), List.of(new ErroCampoResponse(campo, "Tipo invalido para o parametro " + campo)));
     }
 
+    // 400 das validacoes feitas no codigo (page/size, Idempotency-Key, senha em bytes), no mesmo formato do @Valid.
     @ExceptionHandler(RequisicaoInvalidaException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErroResponse requisicaoInvalida(RequisicaoInvalidaException ex, HttpServletRequest request) {
@@ -101,30 +106,37 @@ public class ControllerExceptionHandler {
         return montarELogar(Level.DEBUG, HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+    // 404: o recurso pedido nao existe. Os tres "nao encontrado" ficam separados para cada um ter a sua mensagem.
     @ExceptionHandler(ClienteNaoEncontradoException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErroResponse clienteNaoEncontrado(ClienteNaoEncontradoException ex, HttpServletRequest request) {
         return montarELogar(Level.DEBUG, HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
+    // 404 de conta inexistente.
     @ExceptionHandler(ContaNaoEncontradaException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErroResponse contaNaoEncontrada(ContaNaoEncontradaException ex, HttpServletRequest request) {
         return montarELogar(Level.DEBUG, HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
+    // 404 de usuario inexistente (gestao de usuarios do ADMIN).
     @ExceptionHandler(UsuarioNaoEncontradoException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErroResponse usuarioNaoEncontrado(UsuarioNaoEncontradoException ex, HttpServletRequest request) {
         return montarELogar(Level.DEBUG, HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
+    // 409: o pedido colide com algo que ja existe (CPF, e-mail ou numero de conta repetidos).
     @ExceptionHandler(NegocioException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErroResponse conflito(NegocioException ex, HttpServletRequest request) {
         return montarELogar(Level.DEBUG, HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
+    // 409 do lock otimista (@Version): duas operacoes mexeram na mesma conta ao mesmo tempo e esta perdeu.
+    // Nada foi gravado (rollback); repetir a operacao resolve. Mensagem propria porque a causa e diferente do 409
+    // de duplicidade, e a do Hibernate (com SQL e nomes de classe) nao pode ir para fora.
     @ExceptionHandler({OptimisticLockingFailureException.class, OptimisticLockException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErroResponse conflitoConcorrencia(RuntimeException ex, HttpServletRequest request) {
@@ -133,12 +145,15 @@ public class ControllerExceptionHandler {
                 request.getRequestURI(), List.of());
     }
 
+    // 422: regra de negocio recusou (saldo insuficiente, conta inativa, mesma conta...). A mensagem e escrita
+    // para o cliente ler, entao vai na resposta como esta.
     @ExceptionHandler(NaoProcessavelException.class)
     @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
     public ErroResponse naoProcessavel(NaoProcessavelException ex, HttpServletRequest request) {
         return montarELogar(Level.DEBUG, HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request);
     }
 
+    // 503: o ViaCEP falhou. A causa tecnica ja foi logada no ClienteViaCep; aqui sai so a mensagem generica.
     @ExceptionHandler(ServicoExternoException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
     public ErroResponse servicoExterno(ServicoExternoException ex, HttpServletRequest request) {

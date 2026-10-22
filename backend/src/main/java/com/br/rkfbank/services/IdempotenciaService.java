@@ -39,12 +39,12 @@ public class IdempotenciaService {
         this.repository = repository;
     }
 
-    /**
-     * Executa a movimentacao uma unica vez por chave.
-     *
-     * @param assinatura o que identifica a operacao (contas, valor, descricao); repetir a chave com outra assinatura e erro
-     * @return true quando a chave ja tinha sido usada para esta mesma operacao (nada foi movimentado agora)
-     */
+    // Executa a movimentacao uma unica vez por chave. Tres casos:
+    //  1. chave nova: roda a movimentacao e grava a chave (mesma transacao) -> devolve false;
+    //  2. chave ja usada para a MESMA operacao (mesma assinatura): nao movimenta de novo -> devolve true, e o
+    //     controller responde 204 com Idempotency-Replayed: true, como se tivesse acabado de fazer;
+    //  3. chave ja usada para OUTRA operacao (assinatura diferente): 422, porque o cliente reaproveitou a chave errado.
+    // "assinatura" = o que identifica a operacao (contas, valor, descricao). So o SHA-256 dela vai para o banco.
     @Transactional
     public boolean executarUmaVez(UsuarioLogado usuario, String chave, TipoLancamentoEnum operacao, String assinatura,
                                   Runnable movimentacao) {
@@ -62,6 +62,8 @@ public class IdempotenciaService {
             return true;
         }
 
+        // Primeira vez com esta chave: movimenta. Se a movimentacao lancar excecao (saldo insuficiente...), a chave
+        // nao e gravada, e o cliente pode tentar de novo com a mesma chave depois de corrigir.
         movimentacao.run();
 
         RegistroIdempotencia novo = new RegistroIdempotencia();
@@ -90,6 +92,8 @@ public class IdempotenciaService {
         }
     }
 
+    // Resumo de tamanho fixo (64 caracteres hex) da operacao: compara "e a mesma requisicao?" sem guardar os
+    // dados dela, e cabe numa coluna pequena qualquer que seja o tamanho da descricao.
     static String sha256(String texto) {
         try {
             byte[] digest = MessageDigest.getInstance("SHA-256").digest(texto.getBytes(StandardCharsets.UTF_8));

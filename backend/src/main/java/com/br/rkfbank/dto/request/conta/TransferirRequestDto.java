@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.UUID;
 
+// Corpo do POST /contas/transferencia. As duas contas vem no corpo porque a operacao envolve duas;
+// o service confere que a de ORIGEM e do usuario logado (403) e que a de destino existe e esta ativa.
 public record TransferirRequestDto(
     @NotNull(message = "contaOrigemId e obrigatoria")
     UUID contaOrigemId,

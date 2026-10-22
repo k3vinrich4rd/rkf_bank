@@ -23,10 +23,13 @@ public class LimitadorTentativasLogin {
     // Teto de CPFs acompanhados: um ataque com milhoes de CPFs diferentes nao esgota a memoria.
     private static final int MAX_CPFS_ACOMPANHADOS = 10_000;
 
+    // Quantas vezes errou e quando foi a primeira: a janela de 15 min conta a partir do primeiro erro.
     private record Falhas(int quantidade, Instant primeira) {
     }
 
     private final Clock clock;
+    // ConcurrentHashMap: varias requisicoes de login rodam ao mesmo tempo (uma thread cada) mexendo no mesmo mapa.
+    // Um HashMap comum poderia perder contagens ou corromper a estrutura nesse caso.
     private final ConcurrentHashMap<String, Falhas> falhas = new ConcurrentHashMap<>();
 
     @Autowired
@@ -34,6 +37,7 @@ public class LimitadorTentativasLogin {
         this(Clock.systemUTC());
     }
 
+    // Construtor dos testes: com um Clock fixo, o teste "avanca o relogio" 15 min sem esperar de verdade.
     LimitadorTentativasLogin(Clock clock) {
         this.clock = clock;
     }
@@ -57,6 +61,8 @@ public class LimitadorTentativasLogin {
         }
     }
 
+    // Senha errada: soma 1 dentro da janela, ou comeca uma janela nova se a anterior ja venceu.
+    // merge() faz ler-somar-gravar de uma vez so (atomico), sem duas threads contarem o mesmo erro.
     public void registrarFalha(String login) {
         if (falhas.size() >= MAX_CPFS_ACOMPANHADOS) {
             limparVencidos();
@@ -68,6 +74,7 @@ public class LimitadorTentativasLogin {
                         : nova);
     }
 
+    // Login certo: esquece os erros daquele CPF.
     public void limpar(String login) {
         falhas.remove(login);
     }

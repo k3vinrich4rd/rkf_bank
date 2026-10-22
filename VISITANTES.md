@@ -19,7 +19,7 @@ Pronto quando o log mostrar `Tomcat started on port 8080`.
 
 ## 2. Contas de visitante
 
-| | Ana Visitante (origem) | Bruno Visitante (destino) |
+| | Ana Visitante (Origem) | Bruno Visitante (Destino) |
 |---|---|---|
 | CPF (login) | `246.813.579-28` | `975.318.642-82` |
 | Senha | `Visitante@2026` | `Visitante@2026` |

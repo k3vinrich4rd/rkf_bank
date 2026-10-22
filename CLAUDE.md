@@ -17,7 +17,7 @@ Este arquivo vale para o projeto inteiro; o frontend tem regras próprias em [fr
 |---|---|
 | `backend/src/main/java/com/br/rkfbank` | API Spring Boot 4.1 / Java 25: `controllers` → `services` → `repositories`, `dto`, `entities`, `exceptions`, `clients/viacep`, `config`, `validation` |
 | `backend/src/test/java/...` | JUnit 5 + Mockito (services, controllers) e `@DataJpaTest` (repositories) |
-| `backend/*.md` | contrato da API, arquitetura, roteiro e checklist E2E |
+| `backend/*.md` | contrato da API, arquitetura, segurança (`README_SEGURANCA.md`), roteiro e checklist E2E |
 | `frontend/` | Next.js 16 + React 19 + TypeScript + Tailwind 4, pnpm (ver `frontend/CLAUDE.md`) |
 | `planing/` | roadmap, decisões, débitos técnicos, recados e o **checklist de features** |
 | `scripts/` | validação, smoke test E2E, varredura de CVEs e hooks de Git |
@@ -78,6 +78,9 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 > Nunca use `git reset`, `revert`, `rebase` ou `push --force` sem pedido explícito.
 
 - `feature/*`, `fix/*`, `chore/*`, `docs/*` → Pull Request para a `develop`. Nunca commit direto em `main` ou `develop`.
+- 📅 **Fluxo de entrega:** o `/entregar` atualiza a branch com a `develop`, abre o PR para a `develop`, espera o CI e
+  **mergeia na `develop`**, deixando o checkout nela. A `main` só recebe o que o Kevin e o Renan aprovarem na **reunião
+  semanal** (fim da semana), com `/notas-de-versao`; nunca abra PR para a `main` sem esse pedido.
 - 🌱 **Branch nova nasce sempre da `origin/develop` atualizada** (`git fetch` + `git switch -c <branch> origin/develop`).
   Nunca empilhe uma branch em outra que ainda não foi mergeada: se a feature depende de algo fora da `develop`
   (confira com `git merge-base --is-ancestor <commit> origin/develop`), **pare e espere o merge**. "Vou mergear" ou
@@ -92,7 +95,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 | Skill | Para quê |
 |---|---|
 | `/implementar-feature <n>` | implementa a feature `n` do `planing/checklist-features.md` explicando cada conceito na prática |
-| `/entregar` | valida, atualiza a documentação afetada, faz commits semânticos, push e escreve a descrição do PR |
+| `/entregar` | atualiza com a `develop`, valida, atualiza a documentação, faz commits semânticos, push, PR para a `develop`, espera o CI e mergeia na `develop` |
 | `/verificar-contrato` | compara controllers/DTOs do backend, o contrato da API e os tipos do frontend, e aponta divergências |
 | `/varrer-vulnerabilidades` | roda a varredura de CVEs e propõe a correção mínima |
 | `/testar-e2e` | sobe o fluxo real (cadastro → extrato) contra a API e interpreta o resultado |
@@ -101,3 +104,4 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 | `/nova-tela <nome>` | cria uma tela no padrão do frontend (página + screen + hook); área do Renan |
 | `/recado` | escreve, responde ou lista recados em `planing/recados.md` |
 | `/notas-de-versao` | notas de versão entre `main` e `develop`, com resumo para o PO e sugestão de versão |
+| `/sugerir-evolucao [área]` | sugere as próximas evoluções com mais valor de portfólio (padrões de projeto, arquitetura, testes, segurança), priorizadas pelo MVP; não altera código. Catálogo em `planing/padroes-de-projeto.md` |

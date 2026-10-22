@@ -17,6 +17,8 @@ Todas as respostas são reais (capturadas em 20/10/2026, contrato 2.1). Ao repet
 | entender login, JWT, Spring Security e OAuth2 | [3. Segurança](#3-como-a-segurança-funciona-spring-security--oauth2--jwt) |
 | entender por que toda movimentação pede uma chave | [3.6 Idempotência](#36-idempotência-por-que-toda-movimentação-pede-uma-chave) |
 | testar | [5. Caminho feliz](#5-caminho-feliz-t01-a-t12) → [6. Segurança](#6-cenários-de-segurança-s01-a-s13) → [7. Erros](#7-cenários-de-erro-e01-a-e20) |
+| validar usuários e promover alguém a ADMIN | [8. Administração](#8-administração-validar-um-usuário-e-torná-lo-admin-a01-a-a23) |
+| entender o que cada camada faz e por quê | [9. Por dentro](#9-por-dentro-cada-camada-o-que-faz-e-por-que-é-assim) |
 
 ---
 
@@ -62,7 +64,7 @@ Criadas pelo Flyway (`db/seed/visitante/afterMigrate__dados_visitantes.sql`) a c
 
 | | 🟠 Conta de **origem** | 🔵 Conta de **destino** |
 |---|---|---|
-| Quem | **Ana Visitante** | **Bruno Visitante** |
+| Quem | **Ana Visitante (Origem)** | **Bruno Visitante (Destino)** |
 | CPF (login) | `246.813.579-28` | `975.318.642-82` |
 | Senha | `Visitante@2026` | `Visitante@2026` |
 | `clienteId` | `a0000000-0000-4000-8000-000000000112` | `a0000000-0000-4000-8000-000000000122` |
@@ -340,7 +342,138 @@ Depois de E10–E20, o saldo da Ana **não muda**. Mapa de status: `400` entrada
 
 ---
 
-## 8. Conferindo nos logs
+## 8. Administração: validar um usuário e torná-lo ADMIN (A01 a A23)
+
+O perfil `visitante` **nunca** tem admin (de propósito: é público). Para testar a gestão de usuários, suba o perfil
+`equipe` com um admin **só seu**, criado na hora pelas variáveis do terminal. Nada vai para o Git e o banco é H2 em
+memória: ao parar a API, tudo some.
+
+```bash
+# Git Bash, na raiz do repositório. Valores de teste, só da sua máquina.
+export JWT_SEGREDO="$(openssl rand -base64 48)"
+export ADMIN_CPF=11144477735          # CPF fictício válido (111.444.777-35)
+export ADMIN_SENHA='admin-local-123'
+./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe
+```
+
+```powershell
+$env:JWT_SEGREDO = [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Max 256 }))
+$env:ADMIN_CPF = "11144477735"; $env:ADMIN_SENHA = "admin-local-123"
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=equipe"
+```
+
+No log, confira `Usuario admin <id> criado a partir do .env`. Variável do terminal vale mais que o `.env`, então o
+admin de teste é sempre o que você definiu acima.
+
+### 8.1 O ciclo de vida de um usuário
+
+```mermaid
+stateDiagram-v2
+    [*] --> Cliente: POST /clientes (público)
+    Cliente --> Admin: PATCH perfil = ADMIN
+    Admin --> Cliente: PATCH perfil = CLIENTE
+    Cliente --> Desativado: PATCH acesso = false
+    Admin --> Desativado: PATCH acesso = false
+    Desativado --> Cliente: PATCH acesso = true
+    note right of Admin
+        Toda mudança derruba na hora
+        os tokens emitidos antes (401).
+        A pessoa entra de novo e o
+        token novo já vem com o perfil novo.
+    end note
+```
+
+Por que o token antigo cai: a cada requisição o `ConversorTokenUsuario` confere em `tb_usuario` se o usuário do token
+ainda existe, está `ativo`, tem o **mesmo perfil** e a mesma `versaoCredencial` (que sobe a cada troca de senha). Sem
+isso, quem foi rebaixado continuaria ADMIN até o token vencer.
+
+### 8.2 Roteiro (respostas reais de 22/10/2026)
+
+O João é cadastrado no A02; os ids `<joao>` e `<admin>` saem da lista do A06.
+
+| # | O que fazer | Request | Esperado |
+|---|---|---|---|
+| A01 | Login do admin | `POST /auth/login` `{"cpf":"11144477735","senha":"admin-local-123"}` | `200` · `perfil ADMIN` · `clienteId null` (admin não é cliente) |
+| A02 | Cadastrar o João (público) | `POST /clientes` com o corpo da T12 | `201` |
+| A03 | Login do João | `{"cpf":"52998224725","senha":"senha-forte-1"}` | `200` · `perfil CLIENTE` |
+| A04 | João lista clientes | `GET /clientes` (token João) | `403` · `Acesso negado para o seu perfil` |
+| A05 | João entra na gestão | `GET /admin/usuarios` (token João) | `403` · mesma mensagem |
+| A06 | **Validar os usuários** | `GET /admin/usuarios` (token admin) | `200`: lista com `id`, `cpf` **mascarado** (`***.982.247-**`), `nome`, `perfil`, `ativo`, `clienteId`; nunca senha nem hash |
+| A07 | **Promover o João** | `PATCH /admin/usuarios/<joao>/perfil` `{"perfil":"ADMIN"}` | `200` · `perfil ADMIN` |
+| A08 | Token antigo do João | `GET /contas` (token do A03) | `401` · `Seu acesso foi alterado ou desativado; faca login novamente` |
+| A09 | João entra de novo | login + `GET /clientes` | `200` · `perfil ADMIN` (e continua dono da própria conta) |
+| A10 | Admin mexe em si mesmo | `PATCH /admin/usuarios/<admin>/perfil` `{"perfil":"CLIENTE"}` (token admin) | `422` · `Voce nao pode alterar o seu proprio perfil ou acesso; peca a outro ADMIN` |
+| A11 | João (agora ADMIN) rebaixa o admin do `.env` | mesma rota, token João | `422` · `Usuario sem cadastro de cliente nao pode virar CLIENTE; desative o acesso` |
+| A12 | Rebaixar o João | `PATCH /admin/usuarios/<joao>/perfil` `{"perfil":"CLIENTE"}` | `200`; o token de ADMIN dele → `401`; novo login → `CLIENTE` |
+| A13 | **Desativar** o João | `PATCH /admin/usuarios/<joao>/acesso` `{"ativo":false}` | `200` · `ativo false`; token dele → `401`; login → `401` `CPF ou senha invalidos` |
+| A14 | Reativar | `{"ativo":true}` | `200`; login volta a funcionar |
+| A15 | **Redefinir a senha** de quem esqueceu | `PATCH /admin/usuarios/<joao>/senha` `{"novaSenha":"senha-temporaria-1"}` | `204`; token dele → `401`; senha velha → `401`; temporária → `200` |
+| A16 | João troca a temporária pela dele | `PATCH /auth/senha` `{"senhaAtual":"senha-temporaria-1","novaSenha":"senha-nova-do-joao"}` | `204` |
+| A17 | Admin redefine a **própria** senha pela gestão | `PATCH /admin/usuarios/<admin>/senha` | `422` · `Para trocar a sua propria senha use PATCH /auth/senha` |
+| A18 | Perfil que não existe | `{"perfil":"GERENTE"}` | `400` · `JSON invalido ou tipo de campo incompativel` |
+| A19 | Usuário que não existe | `PATCH /admin/usuarios/00000000-0000-0000-0000-000000000000/perfil` | `404` · `Usuario nao encontrado` |
+| A20 | Sem o campo | `PATCH .../acesso` `{}` | `400` · `ativo: ativo e obrigatorio (true ou false)` |
+| A21 | Gestão sem token | `GET /admin/usuarios` | `401` |
+| A22 | Admin vê todas as contas | `GET /contas` (token admin) | `200` com as contas de todos (mas não movimenta nenhuma: `403`) |
+| A23 | Senha curta na redefinição | `{"novaSenha":"curta"}` | `400` · `novaSenha: novaSenha deve ter entre 8 e 72 caracteres` |
+
+No Git Bash, o atalho para pegar o id do João:
+
+```bash
+TADM=$(curl -s -X POST $API/auth/login -H "$H" -d '{"cpf":"11144477735","senha":"admin-local-123"}' | sed -E 's/.*"token":"([^"]+)".*/\1/')
+curl -s $API/admin/usuarios -H "Authorization: Bearer $TADM"     # procure o "nome":"Joao Silva" e copie o "id"
+JOAO=<cole o id aqui>
+curl -s -X PATCH $API/admin/usuarios/$JOAO/perfil -H "$H" -H "Authorization: Bearer $TADM" -d '{"perfil":"ADMIN"}'
+```
+
+Regras que estes cenários provam: **ninguém mexe em si mesmo** (o admin não se tranca para fora e sempre sobra um ADMIN
+ativo), **usuário nunca é apagado** (é desativado: o histórico de movimentações aponta para ele) e **mudança vale na
+hora** (sem esperar o token vencer).
+
+---
+
+## 9. Por dentro: cada camada, o que faz e por que é assim
+
+Uma requisição atravessa as camadas sempre na mesma ordem. Cada uma tem **um** trabalho; quando ela recusa, as de
+baixo nem ficam sabendo. É por isso que cada cenário deste guia "morre" num lugar previsível:
+
+```mermaid
+flowchart TB
+    REQ(["📨 Requisição HTTP"]) --> F1
+    F1["1 · FiltroLogRequisicao<br/>X-Request-Id no MDC"] --> F2
+    F2["2 · Spring Security<br/>JWT válido? perfil pode a rota?"] -->|"S01–S06 · A21 → 401<br/>S11 · A04 → 403"| X1(["❌"])
+    F2 --> F3
+    F3["3 · Controller + Bean Validation<br/>formato do JSON e dos campos"] -->|"E01 · E02 · E08–E11 · E16–E19 → 400"| X2(["❌"])
+    F3 --> F4
+    F4["4 · Service<br/>regra de negócio, dono, idempotência,<br/>@Transactional"] -->|"S07–S10 → 403 · E12–E15 → 422/404<br/>T07 → 204 repetido · E20 → 422"| X3(["❌"])
+    F4 --> F5
+    F5["5 · Repository + JPA<br/>@Version (lock otimista)"] -->|"conflito simultâneo → 409"| X4(["❌"])
+    F5 --> F6
+    F6[("6 · MySQL + Flyway<br/>UNIQUE, FK, CHECK")] -->|"E03 · E04 · E07 → 409"| X5(["❌"])
+    F4 -.-> V["ViaCEP<br/>(client com timeout)"] -.->|"E05 → 422 · fora → 503"| X6(["❌"])
+    X1 & X2 & X3 & X4 & X5 & X6 --> EH["ControllerExceptionHandler / RespostaErroSeguranca<br/>mesmo formato de erro para tudo"]
+    F6 --> OK(["✅ 2xx + DTO"])
+```
+
+| # | Camada (onde fica) | O que faz | Por que foi feita assim | Sem ela... | Cenários |
+|:-:|---|---|---|---|---|
+| 1 | **Filtro de log** (`config/FiltroLogRequisicao`) | dá um `X-Request-Id` a cada requisição, põe no MDC e devolve no header; loga método, rota, status e tempo | filtro roda **antes de tudo**, até de uma requisição recusada pela segurança; o id liga todas as linhas de log da mesma chamada | um erro em produção vira "agulha no palheiro": mil linhas sem saber quais são da mesma chamada | seção 10 |
+| 2 | **Segurança** (`config/ConfiguracaoSeguranca`, `security/*`) | valida o JWT (assinatura HS256, validade), confere o usuário no banco e o perfil exigido pela rota | Resource Server oficial do Spring em vez de filtro caseiro; **stateless** (sem sessão), então a API escala; conferir `tb_usuario` a cada chamada faz desativação valer na hora | qualquer um movimenta qualquer conta; token roubado ou de rebaixado vale até expirar | S01–S06, S11–S13, A04–A13, A21 |
+| 3 | **Controller** (`controllers/*`) + **Bean Validation** (`dto/request/*`, `validation/@CpfValido`) | traduz HTTP ↔ Java: lê o JSON, valida o **formato** (`@Valid`), chama o service, escolhe o status (`201`, `204`) | controller fino: **não tem regra de negócio**, então a regra pode ser testada sem HTTP; validação de formato declarada no DTO, num lugar só | regra espalhada entre controllers; dado inválido chegando ao banco | E01, E02, E08–E11, E16–E19, A18, A20, A23 |
+| 4 | **Service** (`services/*`) | as regras do banco: saldo, conta ativa, **dono da conta**, uma movimentação por chave (`IdempotenciaService`), débito + crédito + lançamento numa **transação** | é o "cérebro": não sabe nada de HTTP; o `@Transactional` garante tudo-ou-nada; a regra de dono usa o `clienteId` **do token**, nunca do corpo | transferência pela metade, saque duplicado quando a rede falha, cliente mexendo na conta do outro | T04–T11, S07–S10, E12–E15, E20, A10, A11, A15–A17 |
+| 5 | **Repository + JPA** (`repositories/*`, `entities/*`) | lê e grava; `@Version` na `Conta` detecta duas escritas simultâneas | Spring Data gera o SQL a partir do nome do método; o lock otimista não trava a tabela (bom para conflito raro) | SQL à mão em todo lugar; duas transferências ao mesmo tempo apagando uma à outra (*lost update*) | conflito → `409` (teste `ContaRepositoryTest`) |
+| 6 | **Banco + Flyway** (`db/migration/V1…V8`) | `UNIQUE`, `FK`, `CHECK`, índices do extrato; schema versionado | o banco é a **última linha de defesa**: mesmo com bug no Java, ele recusa CPF repetido; o Flyway deixa o banco igual em toda máquina | bancos diferentes em cada máquina; dado duplicado quando duas chamadas passam juntas pela checagem do service | E03, E04, E07 |
+| ↗ | **Client ViaCEP** (`clients/viacep`) | busca o endereço com timeout de 3 s; "CEP não existe" vira `422`, "ViaCEP fora" vira `503` | integração isolada num client: dá para trocar de fornecedor ou mockar no teste sem mexer no service | uma API externa lenta trava as threads da nossa; endereço `null` gravado | T12, E05 |
+| ⤴ | **Tratamento de erros** (`controllers/handlers/ControllerExceptionHandler`, `config/RespostaErroSeguranca`) | toda exceção vira o **mesmo JSON** (`status`, `message`, `campos`...) com o status certo e log no nível certo | o front decide pelo `status` e mostra o `message`; nenhum stack trace ou SQL vaza para fora | cada erro num formato, `500` para regra de negócio, nome de classe e SQL expostos | todos os cenários de erro |
+| ⇄ | **DTOs** (`dto/*`, `record`) | contrato de entrada e saída, separado das entidades | a entidade pode mudar sem quebrar o front; resposta leva só o necessário (LGPD: nada de senha, CPF mascarado na gestão) | a API devolveria a entidade inteira (hash de senha, relações, *lazy loading*) | A06, T12 |
+
+> 💡 **Para entrevista:** "cada camada tem uma responsabilidade e um tipo de erro". Formato errado é `400` no controller;
+> sem identidade é `401` na segurança; sem permissão é `403` (perfil na segurança, dono no service); regra é `422` no
+> service; conflito é `409` (banco ou `@Version`); dependência fora é `503` no client.
+
+---
+
+## 10. Conferindo nos logs
 
 Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em todas as linhas de log dela). Mande o seu
 (`-H "X-Request-Id: meu-teste-001"`) e procure no console. Operações concluídas saem em `INFO`, recusas em `WARN`, e
@@ -348,7 +481,7 @@ Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em tod
 
 ---
 
-## 9. Checklist
+## 11. Checklist
 
 | ✔ | Item | Seção |
 |:-:|---|---|
@@ -359,10 +492,12 @@ Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em tod
 | ☐ | Extrato soma igual ao saldo | T10 |
 | ☐ | Conta nova com número gerado | T11 |
 | ☐ | S01–S13 e E01–E20 com o status esperado | 6, 7 |
+| ☐ | Admin lista usuários com CPF mascarado, promove, rebaixa, desativa e redefine senha; token antigo cai na hora | A01–A23 |
+| ☐ | Sei dizer em qual camada cada cenário foi barrado | 9 |
 
 ---
 
-## 10. O que roda sozinho
+## 12. O que roda sozinho
 
 | Comando | O que prova |
 |---|---|
@@ -371,7 +506,7 @@ Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em tod
 
 ---
 
-## 11. Problemas comuns
+## 13. Problemas comuns
 
 | Sintoma | Causa | Solução |
 |---|---|---|

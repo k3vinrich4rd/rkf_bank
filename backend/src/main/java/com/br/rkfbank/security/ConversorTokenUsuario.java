@@ -30,6 +30,8 @@ public class ConversorTokenUsuario implements Converter<Jwt, AbstractAuthenticat
         this.usuarioRepository = usuarioRepository;
     }
 
+    // Chamado pelo Resource Server para cada requisicao com token valido. Devolver a autenticacao = deixar passar;
+    // lancar AcessoAlteradoException = 401 com mensagem propria (RespostaErroSeguranca).
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
         Optional<Usuario> usuario = buscar(jwt.getSubject());

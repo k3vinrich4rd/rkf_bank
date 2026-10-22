@@ -5,6 +5,9 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+// Corpo do POST /clientes (cadastro publico). Validacao de FORMATO aqui (Bean Validation); regras que dependem
+// do banco (CPF ou e-mail ja usados) ficam no ClienteService, porque o DTO nao enxerga o banco.
+// O endereco completo nao vem do cliente: so CEP, numero e complemento; o resto vem do ViaCEP.
 public record CadastroClienteRequestDto(
         @NotBlank(message = "nomeCompleto e obrigatório")
         @Size(max = 120, message = "nomeCompleto deve ter no máximo 120 caracteres")

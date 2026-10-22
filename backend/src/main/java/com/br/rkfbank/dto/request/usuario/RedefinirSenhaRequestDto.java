@@ -11,6 +11,7 @@ public record RedefinirSenhaRequestDto(
         String novaSenha
 ) {
 
+    // Record gera um toString com todos os campos. Sobrescrito para a senha nunca aparecer num log ou erro.
     @Override
     public String toString() {
         return "RedefinirSenhaRequestDto[novaSenha=***]";

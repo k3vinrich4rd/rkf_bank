@@ -13,7 +13,7 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
-| 🔴 | **LGPD:** o cadastro diz "você concorda com os Termos de Uso e a Política de Privacidade", mas os documentos não existem e o aceite não é registrado. | Antes de ir ao ar: escrever a política (dados, finalidade, compartilhamento com o ViaCEP, retenção, contato), `V7__` com `termos_versao` e `termos_aceitos_em`, campo obrigatório no cadastro e encarregado definido. |
+| 🔴 | **LGPD:** o cadastro diz "você concorda com os Termos de Uso e a Política de Privacidade", mas os documentos não existem e o aceite não é registrado. | Antes de ir ao ar: escrever a política (dados, finalidade, compartilhamento com o ViaCEP, retenção, contato), migração nova com `termos_versao` e `termos_aceitos_em`, campo obrigatório no cadastro e encarregado definido. |
 | 🟢 | **LGPD:** a anonimização (`TitularService.anonimizarVencidos`) não toca a `descricao` dos lançamentos, que é texto livre e pode ter nome de alguém ("Aluguel do João"). | Limpar a descrição dos lançamentos do titular junto com o resto, ou limitar o texto livre no front. |
 | 🟢 | A rotina de anonimização roda em **toda** instância às 03:00. Hoje há uma só; com várias, duas podem processar o mesmo cliente (o resultado é igual, mas é trabalho repetido). | Trava distribuída (ShedLock) quando houver mais de uma instância. |
 | 🟢 | **LGPD:** o cadastro devolve o CPF completo. | Devolver o CPF mascarado (o log do JSON inválido já registra só o tipo do erro desde 22/10/2026). |
