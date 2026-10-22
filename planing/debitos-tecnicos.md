@@ -13,7 +13,7 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
-| 🔴 | **LGPD:** o cadastro diz "você concorda com os Termos de Uso e a Política de Privacidade", mas os documentos não existem e o aceite não é registrado. | Antes de ir ao ar: escrever a política (dados, finalidade, compartilhamento com o ViaCEP, retenção, contato), `V7__` com `termos_versao` e `termos_aceitos_em`, campo obrigatório no cadastro e encarregado definido. |
+| 🔴 | **LGPD:** o cadastro diz "você concorda com os Termos de Uso e a Política de Privacidade", mas os documentos não existem e o aceite não é registrado. | Antes de ir ao ar: escrever a política (dados, finalidade, compartilhamento com o ViaCEP, retenção, contato), migração nova com `termos_versao` e `termos_aceitos_em`, campo obrigatório no cadastro e encarregado definido. |
 | 🟡 | **LGPD:** o titular não consegue ver, corrigir nem pedir o encerramento dos próprios dados. | `GET /clientes/me`, `PATCH /clientes/me` e encerramento de conta com retenção legal e anonimização no fim do prazo. |
 | 🟢 | **LGPD:** o cadastro devolve o CPF completo e o handler de JSON inválido loga a mensagem do Jackson (pode trazer trecho do valor enviado). | Devolver o CPF mascarado e logar só o tipo da exceção. |
 | 🟢 | O limite de tentativas de login fica em memória: reiniciar zera, e com mais de uma instância cada uma conta a sua parte. | Redis ou tabela quando houver deploy com várias instâncias. |

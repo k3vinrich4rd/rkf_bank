@@ -540,7 +540,7 @@ Suba o perfil `visitante` ([VISITANTES.md](VISITANTES.md)), entre como a Ana e t
 **Falta antes de colocar no ar** (bloqueia o deploy, não o desenvolvimento):
 
 - ⏳ Política de privacidade e termos de uso de verdade (o cadastro já cita os dois).
-- ⏳ Registrar o aceite dos termos (versão + data) numa migração `V7`.
+- ⏳ Registrar o aceite dos termos (versão + data) numa migração nova do Flyway.
 - ⏳ Encarregado e canal de contato do titular.
 
 **Depois do MVP:** rota "meus dados" (`GET /clientes/me`), correção de dados, encerramento de conta com retenção e anonimização e auditoria.
@@ -553,7 +553,7 @@ Detalhes e prioridades em [planing/debitos-tecnicos.md](planing/debitos-tecnicos
 ## 🔌 API REST
 
 Base URL: `http://localhost:8080` · JSON · IDs em UUID · dinheiro com 2 casas (`150.00`) · datas ISO-8601 UTC · rotas privadas com `Authorization: Bearer <token>`.
-Contrato completo (versão 2.0): [backend/README_CONTRATO_API.md](backend/README_CONTRATO_API.md).
+Contrato completo (com a versão atual e o histórico de mudanças): [backend/README_CONTRATO_API.md](backend/README_CONTRATO_API.md).
 
 | Método | Rota | O que faz | Quem pode | Sucesso |
 |---|---|---|---|---|
@@ -956,8 +956,8 @@ Não existe admin nem conta da equipe nesse perfil. Guia de 5 minutos: **[VISITA
 
 | Quem | CPF (login) | Senha | Conta |
 |---|---|---|---|
-| **Ana Visitante** (origem) | `246.813.579-28` | `Visitante@2026` | 0001 / 900001 · R$ 1.000,00 |
-| **Bruno Visitante** (destino) | `975.318.642-82` | `Visitante@2026` | 0001 / 900002 · R$ 500,00 |
+| **Ana Visitante (Origem)** | `246.813.579-28` | `Visitante@2026` | 0001 / 900001 · R$ 1.000,00 |
+| **Bruno Visitante (Destino)** | `975.318.642-82` | `Visitante@2026` | 0001 / 900002 · R$ 500,00 |
 
 Roteiro completo (caminho feliz, idempotência, 401/403/429, erros, Spring Security + OAuth2):
 [guia de testes manuais](backend/README_TESTES_E2E.md). Quando usar cada perfil:
@@ -1441,12 +1441,14 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 |---|---|---|
 | Time | [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, PRs e revisão |
 | Time e IA | [CLAUDE.md](CLAUDE.md) | regras do projeto para pessoas e agentes de IA |
-| API | [Contrato da API (2.3)](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
+| Todos | [🗺️ Atlas de fluxos](FLUXOS.md) | como cada parte se conecta: contexto, telas, árvore da transferência, containers, componentes, rastreabilidade tela → tabela, sessão e fluxo do time |
+| API | [Contrato da API](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
+| Segurança | [Spring Security + OAuth2 + JWT](backend/README_SEGURANCA.md) | como o login, o token, os filtros, a autorização e o cookie do front funcionam, e por que é assim |
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
 | Backend | [Guia de testes (visitante)](backend/README_TESTES_E2E.md) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) · [Visitantes](VISITANTES.md) | testar a API na sua máquina; aceite do MVP |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
-| Planejamento | [planing/](planing/README.md) | roadmap, decisões, checklist de features, débitos e recados |
+| Planejamento | [planing/](planing/README.md) · [Proposta de nomes](planing/proposta-de-nomes.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e nomes a padronizar |
 
 <br/>
 

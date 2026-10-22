@@ -256,7 +256,7 @@ cadastro e senha errada, de propósito: não revela quais CPFs têm conta.
 
 ```json
 [{"id":"9744fa24-8034-4c38-b20f-ce3a0cfe40c7","cpf":"***.792.468-**","nome":null,"perfil":"ADMIN","ativo":true,"clienteId":null},
- {"id":"f3155e34-57f9-410e-8900-a1139202fe2f","cpf":"***.456.789-**","nome":"Felipe Santana","perfil":"CLIENTE","ativo":true,"clienteId":"5eed0000-0000-4000-8000-000000000012"}]
+ {"id":"f3155e34-57f9-410e-8900-a1139202fe2f","cpf":"***.456.789-**","nome":"Felipe Santana (Teste Origem)","perfil":"CLIENTE","ativo":true,"clienteId":"5eed0000-0000-4000-8000-000000000012"}]
 ```
 
 `PATCH /admin/usuarios/{usuarioId}/perfil` com `{"perfil":"ADMIN"}` ou `{"perfil":"CLIENTE"}` · `PATCH /admin/usuarios/{usuarioId}/acesso`
