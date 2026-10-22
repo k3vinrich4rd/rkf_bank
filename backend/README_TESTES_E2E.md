@@ -46,7 +46,7 @@ No log, confira:
 
 ```text
 The following 1 profile is active: "visitante"
-Successfully applied 8 migrations to schema "PUBLIC", now at version v8
+Successfully applied 9 migrations to schema "PUBLIC", now at version v9
 Executing SQL callback: afterMigrate - dados visitantes
 Tomcat started on port 8080
 ```
@@ -120,7 +120,7 @@ sequenceDiagram
     else senha confere (BCrypt)
         L-->>V: 200 { token (JWT HS256), perfil, clienteId }
     end
-    V->>SEC: POST /contas/transferencia + Bearer eyJ... + Idempotency-Key
+    V->>SEC: POST /transferencias + Bearer eyJ... + Idempotency-Key
     alt sem token, assinatura errada ou vencido
         SEC-->>V: 401 Unauthorized
     else token válido
@@ -154,11 +154,11 @@ leva CPF, nome nem senha. Exemplo real:
 | Arquivo | Papel |
 |---|---|
 | `config/ConfiguracaoSeguranca.java` | rotas públicas, rota de admin, *stateless*, Resource Server com JWT, BCrypt, chave HS256 |
-| `services/AuthService.java` + `security/LimitadorTentativasLogin.java` | confere CPF + senha (mesma resposta para CPF inexistente e senha errada) e o limite de tentativas |
+| `services/AutenticacaoService.java` + `security/LimitadorTentativasLogin.java` | confere CPF + senha (mesma resposta para CPF inexistente e senha errada) e o limite de tentativas |
 | `services/TokenService.java` | monta e assina o JWT |
 | `services/IdempotenciaService.java` | garante que cada movimentação acontece uma vez só por `Idempotency-Key` |
 | `security/ConversorTokenUsuario.java` | a cada requisição, confere se o usuário do token ainda existe, está ativo e tem o mesmo perfil (senão `401`): é o que faz desativar ou rebaixar alguém valer na hora |
-| `config/RespostaErroSeguranca.java` | 401/403 do Spring no formato de erro da API |
+| `config/TratadorErrosSeguranca.java` | 401/403 do Spring no formato de erro da API |
 
 Rotas públicas: `POST /clientes`, `POST /auth/login`, `GET /actuator/health`, `/error` e
 `GET /.well-known/oauth-protected-resource` (metadado do RFC 9728). Todo o resto exige token.
@@ -222,7 +222,7 @@ $API = "http://localhost:8080"; $CA = "a0000000-0000-4000-8000-000000000114"; $C
 function Login($cpf) { (Invoke-RestMethod -Method Post "$API/auth/login" -ContentType "application/json" -Body (@{cpf=$cpf; senha="Visitante@2026"} | ConvertTo-Json)).token }
 $TA = Login "24681357928"; $TB = Login "97531864282"
 function Mov($token) { @{ Authorization = "Bearer $token"; "Idempotency-Key" = [guid]::NewGuid().ToString() } }
-Invoke-RestMethod -Method Post "$API/contas/$CA/deposito" -Headers (Mov $TA) -ContentType "application/json" -Body '{"valor":150.00}'
+Invoke-RestMethod -Method Post "$API/contas/$CA/depositos" -Headers (Mov $TA) -ContentType "application/json" -Body '{"valor":150.00}'
 ```
 
 ---
@@ -244,14 +244,14 @@ flowchart LR
 | T01 | Login da Ana | `POST /auth/login` `{"cpf":"246.813.579-28","senha":"Visitante@2026"}` | `200` · `perfil CLIENTE` · `clienteId …112` · `expiraEmSegundos 3600` |
 | T02 | Contas da Ana | `GET /contas` (token Ana) | `200`, **1** conta `900001`, `saldo 1000.00` |
 | T03 | Extrato inicial | `GET /contas/{{contaAna}}/lancamentos` | `DEPOSITO 1000.00` "Saldo de boas-vindas do visitante" |
-| T04 | Depósito R$ 150 | `POST /contas/{{contaAna}}/deposito` + chave nova · `{"valor":150.00,"descricao":"Freela"}` | `204`; saldo `1150.00` |
-| T05 | Saque R$ 50 | `POST /contas/{{contaAna}}/saque` + chave nova · `{"valor":50.00,"descricao":"Pastel"}` | `204`; saldo `1100.00` |
-| T06 | Transferir R$ 200 ao Bruno | `POST /contas/transferencia` + chave **K** · `{"contaOrigemId":"{{contaAna}}","contaDestinoId":"{{contaBruno}}","valor":200.00,"descricao":"Aluguel"}` | `204`, sem `Idempotency-Replayed`; Ana `900.00` |
+| T04 | Depósito R$ 150 | `POST /contas/{{contaAna}}/depositos` + chave nova · `{"valor":150.00,"descricao":"Freela"}` | `204`; saldo `1150.00` |
+| T05 | Saque R$ 50 | `POST /contas/{{contaAna}}/saques` + chave nova · `{"valor":50.00,"descricao":"Pastel"}` | `204`; saldo `1100.00` |
+| T06 | Transferir R$ 200 ao Bruno | `POST /transferencias` + chave **K** · `{"contaOrigemId":"{{contaAna}}","contaDestinoId":"{{contaBruno}}","valor":200.00,"descricao":"Aluguel"}` | `204`, sem `Idempotency-Replayed`; Ana `900.00` |
 | T07 | **Repetir a T06** com a mesma **K** | idem | `204` **com** `Idempotency-Replayed: true`; Ana continua `900.00` |
 | T08 | Login do Bruno | `{"cpf":"97531864282","senha":"Visitante@2026"}` | `200` · `clienteId …122` |
 | T09 | Bruno vê o dinheiro | `GET /contas` e extrato (token Bruno) | `saldo 700.00`; **um** `TRANSFERENCIA 200.00` |
 | T10 | Extrato da Ana | `GET /contas/{{contaAna}}/lancamentos` | `TRANSFERENCIA 200` → `SAQUE 50` → `DEPOSITO 150` → `DEPOSITO 1000`; soma = **900** |
-| T11 | Poupança com número gerado | `POST /contas/clientes/{{clienteAna}}` `{"tipoContaEnum":"POUPANCA"}` | `201` · agência `0001` · número de **8 dígitos** (o último é dígito verificador) · `saldo 0.00` |
+| T11 | Poupança com número gerado | `POST /contas` `{"tipoConta":"POUPANCA"}` (o cliente vem do token) | `201` · agência `0001` · número de **8 dígitos** (o último é dígito verificador) · `saldo 0.00` |
 | T12 | Cadastro de cliente novo (público, ViaCEP) | `POST /clientes` sem token (corpo abaixo) | `201`, CPF/telefone formatados, endereço do ViaCEP, **sem** senha na resposta |
 
 Corpo da T12 (precisa de internet; outros CPFs válidos: `16899535009`, `39053344705`):
@@ -276,11 +276,11 @@ T07 → HTTP/1.1 204
 No Git Bash (depois da 4.2):
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" -X POST $API/contas/$CA/deposito -H "$H" -H "$AA" -H "$(chave)" -d '{"valor":150.00,"descricao":"Freela"}'
-curl -s -o /dev/null -w "%{http_code}\n" -X POST $API/contas/$CA/saque    -H "$H" -H "$AA" -H "$(chave)" -d '{"valor":50.00,"descricao":"Pastel"}'
+curl -s -o /dev/null -w "%{http_code}\n" -X POST $API/contas/$CA/depositos -H "$H" -H "$AA" -H "$(chave)" -d '{"valor":150.00,"descricao":"Freela"}'
+curl -s -o /dev/null -w "%{http_code}\n" -X POST $API/contas/$CA/saques    -H "$H" -H "$AA" -H "$(chave)" -d '{"valor":50.00,"descricao":"Pastel"}'
 K="$(chave)"
-curl -s -i -X POST $API/contas/transferencia -H "$H" -H "$AA" -H "$K" -d "{\"contaOrigemId\":\"$CA\",\"contaDestinoId\":\"$CB\",\"valor\":200.00,\"descricao\":\"Aluguel\"}" | grep -E "^HTTP|^Idempotency"
-curl -s -i -X POST $API/contas/transferencia -H "$H" -H "$AA" -H "$K" -d "{\"contaOrigemId\":\"$CA\",\"contaDestinoId\":\"$CB\",\"valor\":200.00,\"descricao\":\"Aluguel\"}" | grep -E "^HTTP|^Idempotency"
+curl -s -i -X POST $API/transferencias -H "$H" -H "$AA" -H "$K" -d "{\"contaOrigemId\":\"$CA\",\"contaDestinoId\":\"$CB\",\"valor\":200.00,\"descricao\":\"Aluguel\"}" | grep -E "^HTTP|^Idempotency"
+curl -s -i -X POST $API/transferencias -H "$H" -H "$AA" -H "$K" -d "{\"contaOrigemId\":\"$CA\",\"contaDestinoId\":\"$CB\",\"valor\":200.00,\"descricao\":\"Aluguel\"}" | grep -E "^HTTP|^Idempotency"
 curl -s $API/contas -H "$AA"; echo; curl -s $API/contas -H "$AB"; echo
 ```
 
@@ -296,12 +296,12 @@ curl -s $API/contas -H "$AA"; echo; curl -s $API/contas -H "$AB"; echo
 | S04 | Token que não é JWT | `Authorization: Bearer isso-nao-e-um-jwt` | `401` · `Token invalido ou expirado; faca login novamente` |
 | S05 | Token adulterado | troque uma letra do meio do token | `401` · mesma do S04 |
 | S06 | Token de outra execução | faça login, **reinicie** a API e use o token antigo | `401`: o segredo foi sorteado de novo |
-| S07 | Bruno saca da conta da Ana | `POST /contas/{{contaAna}}/saque` + chave, token Bruno | `403` · `Conta nao pertence ao usuario logado` |
+| S07 | Bruno saca da conta da Ana | `POST /contas/{{contaAna}}/saques` + chave, token Bruno | `403` · `Conta nao pertence ao usuario logado` |
 | S08 | Bruno vê o extrato da Ana | `GET /contas/{{contaAna}}/lancamentos`, token Bruno | `403` |
 | S09 | Bruno transfere saindo da Ana | transferência com origem = conta da Ana, token Bruno | `403` |
-| S10 | Ana abre conta no cadastro do Bruno | `POST /contas/clientes/{{clienteBruno}}`, token Ana | `403` · `Voce so pode abrir conta no seu proprio cadastro` |
+| S10 | Ana abre conta no cadastro do Bruno (pela rota **obsoleta**, a única que aceita outro cadastro na URL) | `POST /contas/clientes/{{clienteBruno}}`, token Ana | `403` · `Voce so pode abrir conta no seu proprio cadastro` |
 | S11 | Cliente lista clientes | `GET /clientes`, token Ana | `403` · `Acesso negado para o seu perfil` |
-| S13 | Trocar a própria senha | `PATCH /auth/senha` (token da Ana) com `{"senhaAtual":"Visitante@2026","novaSenha":"senha-nova-da-ana"}`, depois use o token antigo | `204`; token antigo → `401` `Seu acesso foi alterado ou desativado; faca login novamente`; login com a nova → `200` (reinicie a API para voltar à senha pública) |
+| S13 | Trocar a própria senha | `PATCH /usuarios/me/senha` (token da Ana) com `{"senhaAtual":"Visitante@2026","novaSenha":"senha-nova-da-ana"}`, depois use o token antigo | `204`; token antigo → `401` `Seu acesso foi alterado ou desativado; faca login novamente`; login com a nova → `200` (reinicie a API para voltar à senha pública) |
 | S12 | Força bruta | 5 logins errados para o Bruno, depois a senha **certa** | 5 × `401`, depois `429` com `Retry-After` (≈900 s) **mesmo com a senha certa** |
 
 Por que S02 e S03 respondem igual: senão daria para descobrir quem é cliente testando CPFs. Por que S07 é `403` e não
@@ -332,7 +332,7 @@ Token da Ana e conta dela, salvo quando dito; toda movimentação com `Idempoten
 | E14 | Mesma conta | T06 com destino = conta da Ana | `422` · `Conta de origem e destino nao podem ser iguais` |
 | E15 | Conta inexistente | depósito em `00000000-0000-0000-0000-000000000000` | `404` · `Conta nao encontrada` |
 | E16 | Id inválido | `GET /contas/abc/lancamentos` | `400` · `contaId: Tipo invalido para o parametro contaId` |
-| E17 | Paginação inválida | `GET /contas?paginado=true&size=0` | `400` · `size: deve estar entre 1 e 100` |
+| E17 | Paginação inválida | `GET /contas?size=0` | `400` · `size: deve estar entre 1 e 100` |
 | E18 | JSON quebrado | corpo `{ "valor": ` | `400` · `JSON invalido ou tipo de campo incompativel` |
 | E19 | Sem `Idempotency-Key` | depósito sem o header | `400` · `Idempotency-Key: header Idempotency-Key e obrigatorio nas movimentacoes (gere um UUID novo por operacao)` |
 | E20 | Chave reaproveitada com outro valor | repita a chave da T06 com `"valor":999.00` | `422` · `Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao` |
@@ -408,8 +408,8 @@ O João é cadastrado no A02; os ids `<joao>` e `<admin>` saem da lista do A06.
 | A13 | **Desativar** o João | `PATCH /admin/usuarios/<joao>/acesso` `{"ativo":false}` | `200` · `ativo false`; token dele → `401`; login → `401` `CPF ou senha invalidos` |
 | A14 | Reativar | `{"ativo":true}` | `200`; login volta a funcionar |
 | A15 | **Redefinir a senha** de quem esqueceu | `PATCH /admin/usuarios/<joao>/senha` `{"novaSenha":"senha-temporaria-1"}` | `204`; token dele → `401`; senha velha → `401`; temporária → `200` |
-| A16 | João troca a temporária pela dele | `PATCH /auth/senha` `{"senhaAtual":"senha-temporaria-1","novaSenha":"senha-nova-do-joao"}` | `204` |
-| A17 | Admin redefine a **própria** senha pela gestão | `PATCH /admin/usuarios/<admin>/senha` | `422` · `Para trocar a sua propria senha use PATCH /auth/senha` |
+| A16 | João troca a temporária pela dele | `PATCH /usuarios/me/senha` `{"senhaAtual":"senha-temporaria-1","novaSenha":"senha-nova-do-joao"}` | `204` |
+| A17 | Admin redefine a **própria** senha pela gestão | `PATCH /admin/usuarios/<admin>/senha` | `422` · `Para trocar a sua propria senha use PATCH /usuarios/me/senha` |
 | A18 | Perfil que não existe | `{"perfil":"GERENTE"}` | `400` · `JSON invalido ou tipo de campo incompativel` |
 | A19 | Usuário que não existe | `PATCH /admin/usuarios/00000000-0000-0000-0000-000000000000/perfil` | `404` · `Usuario nao encontrado` |
 | A20 | Sem o campo | `PATCH .../acesso` `{}` | `400` · `ativo: ativo e obrigatorio (true ou false)` |
@@ -451,7 +451,7 @@ flowchart TB
     F5 --> F6
     F6[("6 · MySQL + Flyway<br/>UNIQUE, FK, CHECK")] -->|"E03 · E04 · E07 → 409"| X5(["❌"])
     F4 -.-> V["ViaCEP<br/>(client com timeout)"] -.->|"E05 → 422 · fora → 503"| X6(["❌"])
-    X1 & X2 & X3 & X4 & X5 & X6 --> EH["ControllerExceptionHandler / RespostaErroSeguranca<br/>mesmo formato de erro para tudo"]
+    X1 & X2 & X3 & X4 & X5 & X6 --> EH["TratadorGlobalDeErros / TratadorErrosSeguranca<br/>mesmo formato de erro para tudo"]
     F6 --> OK(["✅ 2xx + DTO"])
 ```
 
@@ -464,7 +464,7 @@ flowchart TB
 | 5 | **Repository + JPA** (`repositories/*`, `entities/*`) | lê e grava; `@Version` na `Conta` detecta duas escritas simultâneas | Spring Data gera o SQL a partir do nome do método; o lock otimista não trava a tabela (bom para conflito raro) | SQL à mão em todo lugar; duas transferências ao mesmo tempo apagando uma à outra (*lost update*) | conflito → `409` (teste `ContaRepositoryTest`) |
 | 6 | **Banco + Flyway** (`db/migration/V1…V8`) | `UNIQUE`, `FK`, `CHECK`, índices do extrato; schema versionado | o banco é a **última linha de defesa**: mesmo com bug no Java, ele recusa CPF repetido; o Flyway deixa o banco igual em toda máquina | bancos diferentes em cada máquina; dado duplicado quando duas chamadas passam juntas pela checagem do service | E03, E04, E07 |
 | ↗ | **Client ViaCEP** (`clients/viacep`) | busca o endereço com timeout de 3 s; "CEP não existe" vira `422`, "ViaCEP fora" vira `503` | integração isolada num client: dá para trocar de fornecedor ou mockar no teste sem mexer no service | uma API externa lenta trava as threads da nossa; endereço `null` gravado | T12, E05 |
-| ⤴ | **Tratamento de erros** (`controllers/handlers/ControllerExceptionHandler`, `config/RespostaErroSeguranca`) | toda exceção vira o **mesmo JSON** (`status`, `message`, `campos`...) com o status certo e log no nível certo | o front decide pelo `status` e mostra o `message`; nenhum stack trace ou SQL vaza para fora | cada erro num formato, `500` para regra de negócio, nome de classe e SQL expostos | todos os cenários de erro |
+| ⤴ | **Tratamento de erros** (`controllers/handlers/TratadorGlobalDeErros`, `config/TratadorErrosSeguranca`) | toda exceção vira o **mesmo JSON** (`status`, `message`, `campos`...) com o status certo e log no nível certo | o front decide pelo `status` e mostra o `message`; nenhum stack trace ou SQL vaza para fora | cada erro num formato, `500` para regra de negócio, nome de classe e SQL expostos | todos os cenários de erro |
 | ⇄ | **DTOs** (`dto/*`, `record`) | contrato de entrada e saída, separado das entidades | a entidade pode mudar sem quebrar o front; resposta leva só o necessário (LGPD: nada de senha, CPF mascarado na gestão) | a API devolveria a entidade inteira (hash de senha, relações, *lazy loading*) | A06, T12 |
 
 > 💡 **Para entrevista:** "cada camada tem uma responsabilidade e um tipo de erro". Formato errado é `400` no controller;
@@ -485,7 +485,7 @@ Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em tod
 
 | ✔ | Item | Seção |
 |:-:|---|---|
-| ☐ | API subiu com 8 migrações e o callback dos visitantes | 1 |
+| ☐ | API subiu com 9 migrações e o callback dos visitantes | 1 |
 | ☐ | Ana e Bruno entram e cada um vê só a própria conta | T01–T09 |
 | ☐ | Movimentações `204`; saldos finais Ana 900.00 / Bruno 700.00 | T04–T09 |
 | ☐ | Repetir a transferência **não** debita duas vezes | T07 |
@@ -501,7 +501,7 @@ Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em tod
 
 | Comando | O que prova |
 |---|---|
-| `scripts/validar.sh backend` | 237 testes (regras, segurança, idempotência, repositórios, seeds) |
+| `scripts/validar.sh backend` | 261 testes (regras, segurança, idempotência, repositórios, seeds) |
 | `node scripts/smoke-e2e.mjs` | o fluxo inteiro contra a API no ar (no perfil `visitante`: 32 verificações) |
 
 ---

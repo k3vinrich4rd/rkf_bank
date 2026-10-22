@@ -77,7 +77,7 @@ sequenceDiagram
     actor C as Cliente
     participant AC as AuthController
     participant LIM as LimitadorTentativasLogin
-    participant AS as AuthService
+    participant AS as AutenticacaoService
     participant DB as tb_usuario
     participant TS as TokenService
 
@@ -137,8 +137,8 @@ tenha desativado a pessoa. Aqui, a cada requisição, um `SELECT` pela chave pri
 isso **desativar, rebaixar ou trocar a senha derruba o token na hora** (`401`). Custo: 1 consulta rápida por chamada;
 quando o volume crescer, um cache de poucos segundos resolve (está nos débitos técnicos).
 
-Todo `401`/`403` sai no **mesmo formato de erro** da API (`RespostaErroSeguranca`), porque esses filtros recusam antes
-do `ControllerExceptionHandler` existir para a requisição.
+Todo `401`/`403` sai no **mesmo formato de erro** da API (`TratadorErrosSeguranca`), porque esses filtros recusam antes
+do `TratadorGlobalDeErros` existir para a requisição.
 
 ---
 
@@ -193,7 +193,7 @@ sequenceDiagram
 | Proteção | Como | Onde |
 |---|---|---|
 | Hash de senha | BCrypt (custo 10, salt embutido); limite de 72 bytes conferido em bytes, não em caracteres | `ConfiguracaoSeguranca`, `ClienteService` |
-| Anti-enumeração | CPF inexistente e senha errada: mesma mensagem **e** mesmo tempo (hash falso) | `AuthService` |
+| Anti-enumeração | CPF inexistente e senha errada: mesma mensagem **e** mesmo tempo (hash falso) | `AutenticacaoService` |
 | Força bruta | 5 erros por CPF em 15 min → `429` com `Retry-After` | `LimitadorTentativasLogin` |
 | Revogação imediata | usuário ativo + perfil + `versaoCredencial` conferidos a cada requisição | `ConversorTokenUsuario` |
 | Algoritmo fixo | só HS256; token com outro `alg` (inclusive `none`) é recusado | `jwtDecoder` |
@@ -220,7 +220,7 @@ Comparado com os tutoriais mais comuns de Spring Security + JWT (por exemplo, `U
 
 | Tutorial típico | RKF Bank | Por quê |
 |---|---|---|
-| `UserDetailsService` + `AuthenticationManager` conferem a senha | o `AuthService` confere com `PasswordEncoder.matches` | precisamos de regras no meio do login (limite por CPF, usuário desativado com a mesma resposta, perfil e `clienteId` no token). As duas formas são corretas; a do tutorial é a mais "idiomática" do Spring e vale migrar se o login crescer (o `DaoAuthenticationProvider` já protege contra ataque de tempo) |
+| `UserDetailsService` + `AuthenticationManager` conferem a senha | o `AutenticacaoService` confere com `PasswordEncoder.matches` | precisamos de regras no meio do login (limite por CPF, usuário desativado com a mesma resposta, perfil e `clienteId` no token). As duas formas são corretas; a do tutorial é a mais "idiomática" do Spring e vale migrar se o login crescer (o `DaoAuthenticationProvider` já protege contra ataque de tempo) |
 | `XxxServiceImpl` implementando `UserDetailsService` | sem `Impl` | lá o `Impl` implementa uma **interface do framework**: é o caso certo de usar interface. Aqui não usamos essa interface. Se um dia usar, o nome de mercado é pelo papel (`UsuarioDetailsService`), não `Impl` |
 | claim `scope` → autoridades `SCOPE_x` | claim `perfil` → `ROLE_x` | o RKF Bank tem papéis (cliente, admin), não escopos de API de terceiros |
 | chave RSA (RS256): privada assina, pública confere | chave simétrica HS256 | uma API só, que emite e confere. Com mais serviços validando token, o certo é RS256 + JWKS (próximo passo) |
@@ -241,10 +241,10 @@ dedicado quando houver mais de um app, 2FA, auditoria de quem fez o quê.
 | `config/ConfiguracaoSeguranca.java` | cadeia de filtros, rotas públicas e de admin, stateless, Resource Server, BCrypt, chave e encoder/decoder do JWT |
 | `config/JwtPropriedades.java` | `JWT_SEGREDO`, `JWT_EXPIRACAO`, chave sorteada no perfil visitante |
 | `config/ConfiguracaoCors.java` | origens permitidas e headers expostos |
-| `config/RespostaErroSeguranca.java` | `401`/`403` no formato de erro da API |
+| `config/TratadorErrosSeguranca.java` | `401`/`403` no formato de erro da API |
 | `config/FiltroLogRequisicao.java` · `config/LogSeguro.java` | `X-Request-Id` e log sem injeção |
-| `config/CriadorAdmin.java` · `config/CriadorAcessoEquipe.java` | primeiro admin e login da equipe, a partir do `.env` |
-| `services/AuthService.java` | login e troca da própria senha |
+| `config/InicializadorAdmin.java` · `config/InicializadorAcessoEquipe.java` | primeiro admin e login da equipe, a partir do `.env` |
+| `services/AutenticacaoService.java` | login e troca da própria senha |
 | `services/TokenService.java` | monta e assina o JWT |
 | `services/GestaoUsuarioService.java` | promover, rebaixar, desativar, redefinir senha (admin) |
 | `security/ConversorTokenUsuario.java` | token → usuário logado, conferindo o banco |

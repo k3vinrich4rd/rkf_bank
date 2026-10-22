@@ -39,9 +39,9 @@ Bom para entrevista: saber **nomear** o que já foi feito.
 | **DTO** | `dto/request`, `dto/response` (`record`) | contrato da API separado da entidade |
 | **Repository** | `repositories/*` (Spring Data) | acesso a dados atrás de uma interface; SQL gerado pelo nome do método |
 | **Chain of Responsibility** | cadeia de filtros: `FiltroLogRequisicao` → Spring Security → controller | cada filtro decide se passa adiante ou responde |
-| **Adapter** | `ConversorTokenUsuario` (JWT → autenticação do Spring), `ClienteViaCep` (JSON do ViaCEP → `ResponseViaCepDto`) | traduz um formato de fora para o nosso |
+| **Adapter** | `ConversorTokenUsuario` (JWT → autenticação do Spring), `ViaCepClient` (JSON do ViaCEP → `ViaCepResponseDto`) | traduz um formato de fora para o nosso |
 | **Execute Around** (parente do *Template Method*) | `IdempotenciaService.executarUmaVez(..., Runnable movimentacao)` | o "antes" (checar a chave) e o "depois" (gravar a chave) ficam num lugar; cada operação só passa o miolo |
-| **Exception Translation** | `ControllerExceptionHandler`, `RespostaErroSeguranca` | exceção de domínio vira status HTTP num ponto só |
+| **Exception Translation** | `TratadorGlobalDeErros`, `TratadorErrosSeguranca` | exceção de domínio vira status HTTP num ponto só |
 | **Static Factory** | `PaginaResponse.de(page)`, `UsuarioLogado.de(jwt)` | construção com nome, escondendo a conversão |
 | **Builder** | `JwtClaimsSet.builder()` no `TokenService` | objeto com muitos campos opcionais montado passo a passo |
 | **Optimistic Locking** | `@Version` em `Conta` | concorrência sem travar a linha |
@@ -67,7 +67,7 @@ portfólio. Padrão "porque é bonito" fica de fora.
 **Sem (hoje):**
 ```java
 // ContaService: o service pergunta o estado e decide pela conta
-if (origem.getSaldo().compareTo(valor) < 0) throw new NaoProcessavelException("Saldo insuficiente para transferencia");
+if (origem.getSaldo().compareTo(valor) < 0) throw new RegraNegocioException("Saldo insuficiente para transferencia");
 origem.setSaldo(origem.getSaldo().subtract(valor));
 destino.setSaldo(destino.getSaldo().add(valor));
 ```
@@ -76,7 +76,7 @@ destino.setSaldo(destino.getSaldo().add(valor));
 // Conta: a regra mora com o dado. Ninguem consegue deixar o saldo negativo, nem por engano.
 public void debitar(BigDecimal valor) {
     garantirAtiva();
-    if (saldo.compareTo(valor) < 0) throw new NaoProcessavelException("Saldo insuficiente");
+    if (saldo.compareTo(valor) < 0) throw new RegraNegocioException("Saldo insuficiente");
     saldo = saldo.subtract(valor);
 }
 public void creditar(BigDecimal valor) { garantirAtiva(); saldo = saldo.add(valor); }

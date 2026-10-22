@@ -80,8 +80,8 @@ Arquivo: [`src/main/resources/application.properties`](src/main/resources/applic
 | `viacep.timeout-ms` | `3000` | tempo máximo de conexão e de leitura do ViaCEP |
 | `rkfbank.jwt.segredo` | `${JWT_SEGREDO}` | sem padrão de propósito; o perfil `test` traz um segredo só para testes |
 | `rkfbank.jwt.expiracao` | `${JWT_EXPIRACAO:15m}` | validade do token |
-| `rkfbank.admin.cpf` / `rkfbank.admin.senha` | `${ADMIN_CPF:}` / `${ADMIN_SENHA:}` | admin inicial (`CriadorAdmin`) |
-| `rkfbank.equipe.senha` | `${EQUIPE_SENHA:}` | login das contas da equipe (`CriadorAcessoEquipe`) |
+| `rkfbank.admin.cpf` / `rkfbank.admin.senha` | `${ADMIN_CPF:}` / `${ADMIN_SENHA:}` | admin inicial (`InicializadorAdmin`) |
+| `rkfbank.equipe.senha` | `${EQUIPE_SENHA:}` | login das contas da equipe (`InicializadorAcessoEquipe`) |
 | `spring.config.import` | `optional:file:${RKFBANK_ENV:.env}[.properties]` | lê o `.env` da raiz; nos testes, o `pom.xml` aponta para um arquivo que não existe |
 | `spring.flyway.locations` | `${FLYWAY_LOCATIONS:classpath:db/migration,classpath:db/seed/equipe}` | schema + contas da equipe |
 | `management.endpoints.web.exposure.include` | `health` | só o `/actuator/health` (sem detalhes) |
@@ -91,11 +91,11 @@ Arquivo: [`src/main/resources/application.properties`](src/main/resources/applic
 Regras de rota em [`ConfiguracaoSeguranca`](src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java):
 públicas só `POST /clientes`, `POST /auth/login` e `GET /actuator/health`; `GET /clientes` e `/admin/**` só `ADMIN`; o resto exige
 token. A **regra de dono** (conta de outro cliente → `403`) fica no `ContaService`, porque depende do dado e não só do
-perfil. `401`/`403` barrados nos filtros saem no formato padrão pelo `RespostaErroSeguranca`. Senha em BCrypt em
+perfil. `401`/`403` barrados nos filtros saem no formato padrão pelo `TratadorErrosSeguranca`. Senha em BCrypt em
 `tb_usuario` (`V5`). Login com limite: 5 erros para o mesmo CPF em 15 min → `429` (`LimitadorTentativasLogin`).
 Movimentações exigem `Idempotency-Key` (`IdempotenciaService`, `tb_idempotencia` na `V6`). A cada requisição, o
 `ConversorTokenUsuario` confere em `tb_usuario` se o usuário do token existe, está ativo, tem o mesmo perfil e a mesma versão de senha (senão `401`):
-é o que faz a gestão de usuários do ADMIN (`/admin/usuarios`: promover, rebaixar, desativar, redefinir senha) e a troca de senha (`PATCH /auth/senha`) valerem na hora.
+é o que faz a gestão de usuários do ADMIN (`/admin/usuarios`: promover, rebaixar, desativar, redefinir senha) e a troca de senha (`PATCH /usuarios/me/senha`) valerem na hora.
 
 ---
 
@@ -132,8 +132,8 @@ quem está sem Docker; o `visitante` existe para o repositório público poder s
 ### Por que as contas da equipe não têm senha no Git
 
 O repositório é público. O seed `db/seed/equipe` cria clientes, contas e lançamentos do Felipe e do Renan **sem
-usuário**; na subida, o `CriadorAcessoEquipe` cria o login deles com a `EQUIPE_SENHA` do `.env` (mesmo raciocínio
-do `CriadorAdmin`). Sem `EQUIPE_SENHA`, as contas existem mas ninguém entra. Trocou a senha no `.env`? Na próxima
+usuário**; na subida, o `InicializadorAcessoEquipe` cria o login deles com a `EQUIPE_SENHA` do `.env` (mesmo raciocínio
+do `InicializadorAdmin`). Sem `EQUIPE_SENHA`, as contas existem mas ninguém entra. Trocou a senha no `.env`? Na próxima
 subida a nova vale. Os acessos ficam no **guia privado da equipe**, em `.equipe/` (pasta no `.gitignore`).
 
 ### Os riscos que continuam
@@ -195,10 +195,10 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | Classe de teste | O que cobre | Estilo |
 |---|---|---|
 | `CpfValidoValidatorTest` | algoritmo de CPF | unitário puro |
-| `ClienteViaCepTest` | integração com ViaCEP (sucesso, CEP inexistente, falha) | unitário com mock |
+| `ViaCepClientTest` | integração com ViaCEP (sucesso, CEP inexistente, falha) | unitário com mock |
 | `ClienteServiceTest` / `ContaServiceTest` | regras de negócio | Mockito (`@ExtendWith(MockitoExtension.class)`) |
 | `ClienteControllerTest` / `ContaControllerTest` | status HTTP e delegação ao service | Mockito |
-| `ControllerExceptionHandlerTest` | exceção → status + corpo de erro | unitário |
+| `TratadorGlobalDeErrosTest` | exceção → status + corpo de erro | unitário |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e saneado | unitário |
 | `EntitiesAndEnumsTest` | getters/setters, enums, `@PrePersist` | unitário |
 | `ClienteRepositoryTest` | `existsByCpf`/`existsByEmail`, unicidade, cascata do endereço, **conta nunca apagada** (sem `orphanRemoval`; cliente com conta não se exclui), paginação | `@DataJpaTest` (H2) |
@@ -206,7 +206,7 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | `LancamentoRepositoryTest` | extrato (origem **ou** destino, do mais novo para o mais antigo), `@PrePersist` da `dataHora`, campos obrigatórios | `@DataJpaTest` (H2) |
 | `UsuarioRepositoryTest` | `findByLogin`, admin sem cliente, unicidade de login e de cliente (`V5`), banco de teste começa vazio | `@DataJpaTest` (H2) |
 | `TokenServiceTest` | claims do JWT, HS256, 15 min, payload adulterado, chave errada, segredo curto | unitário com encoder/decoder reais |
-| `AuthServiceTest` / `UsuarioServiceTest` / `CriadorAdminTest` / `CriadorAcessoEquipeTest` | login (mesma resposta e mesmo custo para CPF inexistente), usuário desativado, troca da própria senha, admin e login da equipe pelo `.env` | Mockito |
+| `AutenticacaoServiceTest` / `UsuarioServiceTest` / `InicializadorAdminTest` / `InicializadorAcessoEquipeTest` | login (mesma resposta e mesmo custo para CPF inexistente), usuário desativado, troca da própria senha, admin e login da equipe pelo `.env` | Mockito |
 | `IdempotenciaServiceTest` | `Idempotency-Key`: primeira chamada, repetição, chave com outro corpo (`422`), sem chave (`400`), corrida (`409`) | Mockito |
 | `GestaoUsuarioServiceTest` | promover, rebaixar, desativar, redefinir senha, travas (não mexer em si mesmo, admin sem cadastro) | Mockito |
 | `LimitadorTentativasLoginTest` | 5 erros em 15 min → `429`, janela que expira, acerto zera o contador | unitário com relógio manual |

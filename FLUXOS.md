@@ -72,11 +72,11 @@ flowchart TB
     LOG -.-> A2["POST /auth/login"]:::api
     ABR -.-> A3["POST /contas/clientes/{id}"]:::api
     CONTA -.-> A4["GET /contas"]:::api
-    DEP -.-> A5["POST /contas/{id}/deposito<br/>+ Idempotency-Key"]:::api
-    SAQ -.-> A6["POST /contas/{id}/saque<br/>+ Idempotency-Key"]:::api
-    TRF -.-> A7["POST /contas/transferencia<br/>+ Idempotency-Key"]:::api
+    DEP -.-> A5["POST /contas/{id}/depositos<br/>+ Idempotency-Key"]:::api
+    SAQ -.-> A6["POST /contas/{id}/saques<br/>+ Idempotency-Key"]:::api
+    TRF -.-> A7["POST /transferencias<br/>+ Idempotency-Key"]:::api
     EXT -.-> A8["GET /contas/{id}/lancamentos"]:::api
-    SEN -.-> A9["PATCH /auth/senha"]:::api
+    SEN -.-> A9["PATCH /usuarios/me/senha"]:::api
 ```
 
 O admin não tem tela (decisão do time): usa `GET/PATCH /admin/usuarios` pelo Postman ou curl
@@ -92,7 +92,7 @@ escrito?), o que depende do banco vem depois.
 
 ```mermaid
 flowchart TD
-    S(["POST /contas/transferencia"]) --> Q1{"Tem token válido<br/>e o usuário ainda está ativo?"}
+    S(["POST /transferencias"]) --> Q1{"Tem token válido<br/>e o usuário ainda está ativo?"}
     Q1 -- não --> R401["401<br/>faça login de novo"]
     Q1 -- sim --> Q2{"Corpo bem formado?<br/>valor > 0, 2 casas, UUIDs"}
     Q2 -- não --> R400["400<br/>+ campos com erro"]
@@ -173,7 +173,7 @@ flowchart TB
         FLOG["FiltroLogRequisicao<br/>X-Request-Id"]:::borda
         SEC["ConfiguracaoSeguranca<br/>Resource Server JWT"]:::borda
         CONV["ConversorTokenUsuario<br/>usuário ativo? mesmo perfil?"]:::borda
-        RES["RespostaErroSeguranca<br/>401 / 403"]:::borda
+        RES["TratadorErrosSeguranca<br/>401 / 403"]:::borda
     end
 
     subgraph WEB ["controllers + dto"]
@@ -181,11 +181,11 @@ flowchart TB
         CLIC["ClienteController<br/>/clientes"]:::web
         CONC["ContaController<br/>/contas"]:::web
         ADMC["AdminUsuarioController<br/>/admin/usuarios"]:::web
-        EH["ControllerExceptionHandler<br/>formato único de erro"]:::web
+        EH["TratadorGlobalDeErros<br/>formato único de erro"]:::web
     end
 
     subgraph REGRA ["services"]
-        AUTHS["AuthService + TokenService<br/>+ LimitadorTentativasLogin"]:::regra
+        AUTHS["AutenticacaoService + TokenService<br/>+ LimitadorTentativasLogin"]:::regra
         CLIS["ClienteService"]:::regra
         CONS["ContaService"]:::regra
         IDEM["IdempotenciaService"]:::regra
@@ -201,7 +201,7 @@ flowchart TB
         RIDE["IdempotenciaRepository"]:::dados
     end
 
-    VIA["ClienteViaCep<br/>RestClient + timeout"]:::terceiro
+    VIA["ViaCepClient<br/>RestClient + timeout"]:::terceiro
 
     FLOG --> SEC --> CONV
     SEC -.-> RES
@@ -229,13 +229,13 @@ Para achar rápido **onde mexer**. Cada linha é um caminho completo; a coluna "
 | Tela | Hook (frontend) | `lib/api` | Rota | Controller | Service | Tabelas | Regra principal |
 |---|---|---|---|---|---|---|---|
 | `/cadastro` | `use-cadastro-form` | `clientesApi.cadastrar` → `authApi.login` | `POST /clientes` | `ClienteController.cadastrar` | `ClienteService.cadastrar` (+ ViaCEP) | `tb_endereco`, `tb_cliente`, `tb_usuario` | CPF e e-mail únicos (409), CEP existe (422) |
-| `/login` | `use-login` | `authApi.login` (Route Handler do Next) | `POST /auth/login` | `AuthController.login` | `AuthService.login` + `TokenService` | `tb_usuario` | mesma resposta para CPF inexistente e senha errada; 5 erros → 429 |
+| `/login` | `use-login` | `authApi.login` (Route Handler do Next) | `POST /auth/login` | `AuthController.login` | `AutenticacaoService.login` + `TokenService` | `tb_usuario` | mesma resposta para CPF inexistente e senha errada; 5 erros → 429 |
 | `/conta/abrir` | `use-abrir-conta` | `contasApi.abrir` | `POST /contas/clientes/{id}` | `ContaController.abrir` | `ContaService.abrir` | `tb_conta` | só no próprio cadastro (403); número com DV gerado |
-| `/conta` | `use-conta` | `contasApi.minhas` | `GET /contas` | `ContaController.listarContas` | `ContaService.listarTodas` | `tb_conta` | cliente vê só as dele; admin vê todas |
-| `/conta/depositar` · `/sacar` | `use-movimentacao` | `contasApi.depositar` · `sacar` | `POST /contas/{id}/deposito` · `/saque` | `ContaController.depositar` · `sacar` | `IdempotenciaService` → `ContaService` | `tb_conta`, `tb_lancamento`, `tb_idempotencia` | dono (403), ativa (422), saldo (422), uma vez por chave |
-| `/conta/transferir` | `use-movimentacao` | `contasApi.transferir` | `POST /contas/transferencia` | `ContaController.transferir` | `IdempotenciaService` → `ContaService.transferir` | idem | [árvore da seção 3](#3-uma-transferência-por-dentro-árvore-de-decisão) |
-| `/conta/extrato` | `use-extrato` | `contasApi.extrato` | `GET /contas/{id}/lancamentos` | `ContaController.listar` | `ContaService.listarLancamentos` | `tb_lancamento` | dono (403); mais novo primeiro |
-| `/conta/senha` | `use-trocar-senha` | `authApi.trocarSenha` (Route Handler) | `PATCH /auth/senha` | `AuthController.trocarSenha` | `AuthService.trocarSenha` | `tb_usuario` | pede a atual; derruba todos os tokens |
+| `/conta` | `use-conta` | `contasApi.minhas` | `GET /contas` | `ContaController.listar` | `ContaService.listarTodas` | `tb_conta` | cliente vê só as dele; admin vê todas |
+| `/conta/depositar` · `/sacar` | `use-movimentacao` | `contasApi.depositar` · `sacar` | `POST /contas/{id}/depositos` · `/saque` | `ContaController.depositar` · `sacar` | `IdempotenciaService` → `ContaService` | `tb_conta`, `tb_lancamento`, `tb_idempotencia` | dono (403), ativa (422), saldo (422), uma vez por chave |
+| `/conta/transferir` | `use-movimentacao` | `contasApi.transferir` | `POST /transferencias` | `ContaController.transferir` | `IdempotenciaService` → `ContaService.transferir` | idem | [árvore da seção 3](#3-uma-transferência-por-dentro-árvore-de-decisão) |
+| `/conta/extrato` | `use-extrato` | `contasApi.extrato` | `GET /contas/{id}/lancamentos` | `ContaController.extrato` | `ContaService.listarLancamentos` | `tb_lancamento` | dono (403); mais novo primeiro |
+| `/conta/senha` | `use-trocar-senha` | `authApi.trocarSenha` (Route Handler) | `PATCH /usuarios/me/senha` | `AuthController.trocarSenha` | `AutenticacaoService.trocarSenha` | `tb_usuario` | pede a atual; derruba todos os tokens |
 | — (admin) | — | — | `/admin/usuarios/**` | `AdminUsuarioController` | `GestaoUsuarioService` | `tb_usuario` | ninguém mexe em si mesmo (422) |
 
 ---

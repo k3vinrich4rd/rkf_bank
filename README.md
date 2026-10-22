@@ -16,7 +16,7 @@
 [![Flyway](https://img.shields.io/badge/Flyway-V1→V8_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-237_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-261_✔-22C55E)](#-qualidade-e-testes)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
 <a href="#-conheça-o-rkf-bank"><img src="assets/readme/botoes/abrir-conta.svg" alt="🏦 Conheça o banco" height="46"/></a>
@@ -32,7 +32,7 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 237 testes, 14 rotas REST, 8 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 261 testes, 17 rotas REST, 9 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -98,7 +98,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Felipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **237 testes**, CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **261 testes**, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -115,7 +115,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 | [`ContaService.java`](backend/src/main/java/com/br/rkfbank/services/ContaService.java) | transferência atômica, regra de dono (404 → 403 → 422) e validação de saldo |
 | [`Conta.java`](backend/src/main/java/com/br/rkfbank/entities/Conta.java) | `@Version` para lock otimista |
 | [`ConfiguracaoSeguranca.java`](backend/src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java) | `SecurityFilterChain`, JWT HS256 com algoritmo fixo, BCrypt |
-| [`AuthService.java`](backend/src/main/java/com/br/rkfbank/services/AuthService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
+| [`AutenticacaoService.java`](backend/src/main/java/com/br/rkfbank/services/AutenticacaoService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
 | [`db/migration/`](backend/src/main/resources/db/migration) | `V1` a `V5`: uma tabela por versão (endereço, cliente, conta, lançamento, usuário) |
 | [`db/seed/`](backend/src/main/resources/db/seed) | callbacks `afterMigrate`: `equipe/` (Felipe e Renan, login só pelo `.env`) e `visitante/` (Ana e Bruno, contas públicas) |
 | [`FiltroLogRequisicao.java`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) | `X-Request-Id` em todas as linhas de log, com proteção contra log forjado |
@@ -229,7 +229,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 <summary>🔑 Trocar a senha pelo app</summary>
 <br/>
 
-✅ **`204`**: `PATCH /auth/senha` pediu a senha atual (um token roubado não basta) e gravou a nova. **Todo token emitido antes** caiu na hora: quem estivesse com o seu acesso recebe **`401`** na próxima chamada. Você entra de novo com a senha nova.
+✅ **`204`**: `PATCH /usuarios/me/senha` pediu a senha atual (um token roubado não basta) e gravou a nova. **Todo token emitido antes** caiu na hora: quem estivesse com o seu acesso recebe **`401`** na próxima chamada. Você entra de novo com a senha nova.
 
 </details>
 
@@ -431,7 +431,7 @@ CPF inexistente e senha errada dão a **mesma** resposta, no mesmo tempo.
 | Rebaixar a CLIENTE | `PATCH /admin/usuarios/{id}/perfil` | ❌ `401` na hora | ✅ volta a CLIENTE |
 | Desativar ("remover") | `PATCH /admin/usuarios/{id}/acesso` | ❌ `401` na hora | ❌ `CPF ou senha invalidos` |
 | Redefinir a senha de quem esqueceu | `PATCH /admin/usuarios/{id}/senha` | ❌ `401` na hora | ✅ com a senha nova |
-| Trocar a **própria** senha | `PATCH /auth/senha` (pede a atual) | ❌ `401` na hora | ✅ com a senha nova |
+| Trocar a **própria** senha | `PATCH /usuarios/me/senha` (pede a atual) | ❌ `401` na hora | ✅ com a senha nova |
 
 Ninguém mexe no **próprio** perfil ou acesso: o admin não se tranca para fora e sempre sobra um ADMIN ativo.
 
@@ -560,16 +560,16 @@ Contrato completo (com a versão atual e o histórico de mudanças): [backend/RE
 |---|---|---|---|---|
 | `POST` | `/clientes` | cadastra cliente (com senha) | público | `201` |
 | `POST` | `/auth/login` | login com CPF + senha (5 erros em 15 min → `429`) | público | `200` + token |
-| `PATCH` | `/auth/senha` | troca a própria senha (pede a atual; derruba os tokens antigos) | logado | `204` |
+| `PATCH` | `/usuarios/me/senha` | troca a própria senha (pede a atual; derruba os tokens antigos) | logado | `204` |
 | `GET` | `/clientes/me` | meus dados (LGPD) | o próprio cliente | `200` |
 | `PATCH` | `/clientes/me` | corrige meus dados (LGPD; CPF não muda) | o próprio cliente | `200` |
 | `POST` | `/clientes/me/encerramento` | encerra o cadastro (senha + saldo zero; anonimiza depois de 5 anos) | o próprio cliente | `200` |
-| `GET` | `/clientes` | lista clientes (`?paginado=true&page=0&size=10`) | `ADMIN` | `200` |
-| `POST` | `/contas/clientes/{clienteId}` | abre conta | o próprio cliente | `201` |
+| `GET` | `/clientes` | lista clientes (`?page=0&size=10`) | `ADMIN` | `200` |
+| `POST` | `/contas` | abre conta no próprio cadastro (cliente vem do token) | o próprio cliente | `201` |
 | `GET` | `/contas` | lista contas | `ADMIN`: todas · `CLIENTE`: as dele | `200` |
-| `POST` | `/contas/{contaId}/deposito` | deposita | dono da conta | `204` |
-| `POST` | `/contas/{contaId}/saque` | saca | dono da conta | `204` |
-| `POST` | `/contas/transferencia` | transfere | dono da conta de origem | `204` |
+| `POST` | `/contas/{contaId}/depositos` | deposita | dono da conta | `204` |
+| `POST` | `/contas/{contaId}/saques` | saca | dono da conta | `204` |
+| `POST` | `/transferencias` | transfere | dono da conta de origem | `204` |
 | `GET` | `/contas/{contaId}/lancamentos` | extrato (mais recente primeiro) | dono da conta | `200` |
 | `GET` | `/admin/usuarios` | lista os usuários (perfil, ativo) | `ADMIN` | `200` |
 | `PATCH` | `/admin/usuarios/{usuarioId}/perfil` | promove a `ADMIN` ou rebaixa a `CLIENTE` | `ADMIN` (não em si mesmo) | `200` |
@@ -624,13 +624,13 @@ CPF sem cadastro e senha errada recebem **a mesma** resposta `401`, de propósit
 <br/>
 
 ```json
-// POST /contas/clientes/{clienteId}
-{ "agencia": "0001", "numeroConta": "12345678", "tipoContaEnum": "CORRENTE" }
+// POST /contas (o cliente vem do token; agência e número são gerados pelo banco)
+{ "tipoConta": "CORRENTE" }
 
-// POST /contas/{contaId}/deposito  e  /saque
+// POST /contas/{contaId}/depositos  e  /saque
 { "valor": 150.00, "descricao": "Deposito inicial" }
 
-// POST /contas/transferencia
+// POST /transferencias
 { "contaOrigemId": "407d727e-...", "contaDestinoId": "566dd28f-...", "valor": 50.00, "descricao": "Aluguel" }
 ```
 
@@ -698,12 +698,12 @@ curl -X POST $API/auth/login -H "Content-Type: application/json" \
   -d '{"cpf":"52998224725","senha":"minha-senha-forte"}'
 TOKEN=cole-o-token-aqui
 
-# 3. conta (use o clienteId do login)
-curl -X POST $API/contas/clientes/$CLIENTE_ID -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" -d '{"agencia":"0001","numeroConta":"12345678","tipoContaEnum":"CORRENTE"}'
+# 3. conta (no cadastro de quem está logado)
+curl -X POST $API/contas -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"tipoConta":"CORRENTE"}'
 
 # 4. movimentações e extrato (use o id da conta)
-curl -X POST $API/contas/$CONTA_ID/deposito -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"valor":150.00}'
+curl -X POST $API/contas/$CONTA_ID/depositos -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"valor":150.00}'
 curl $API/contas/$CONTA_ID/lancamentos -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -761,7 +761,7 @@ flowchart LR
 
 | Antes | Depois |
 |---|---|
-| `POST /contas/{id}/saque` funcionava sem login, para qualquer id | sem token dá `401`; conta de outra pessoa dá `403` |
+| `POST /contas/{id}/saques` funcionava sem login, para qualquer id | sem token dá `401`; conta de outra pessoa dá `403` |
 | `GET /clientes` mostrava o CPF de todo mundo | só o `ADMIN` lista clientes |
 
 </details>
@@ -812,7 +812,7 @@ sequenceDiagram
     alt alguém mudou a entidade e esqueceu a migração
         H-->>API: ❌ a API nem sobe
     else tudo bate
-        API->>DB: CriadorAdmin e CriadorAcessoEquipe (logins do .env)
+        API->>DB: InicializadorAdmin e InicializadorAcessoEquipe (logins do .env)
         API-->>API: ✅ Tomcat no ar
     end
 ```
@@ -847,7 +847,7 @@ sequenceDiagram
 </details>
 
 <details>
-<summary><b>🗃️ Modelo de dados (migrações V1 a V8)</b></summary>
+<summary><b>🗃️ Modelo de dados (migrações V1 a V9)</b></summary>
 <br/>
 
 ```mermaid
@@ -1038,7 +1038,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 237 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 261 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1058,15 +1058,15 @@ node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no 
 |---|---|
 | `ClienteServiceTest` | cadastro, CPF/e-mail duplicado, ViaCEP, senha em BCrypt |
 | `ContaServiceTest` | abertura, depósito, saque, transferência, extrato e regra de dono (`403`) |
-| `TokenServiceTest` / `AuthServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login sem enumeração |
-| `UsuarioServiceTest` / `CriadorAdminTest` | primeiro `ADMIN` pelo `.env` |
+| `TokenServiceTest` / `AutenticacaoServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login sem enumeração |
+| `UsuarioServiceTest` / `InicializadorAdminTest` | primeiro `ADMIN` pelo `.env` |
 | `SegurancaIntegracaoTest` | Spring inteiro com tokens reais: `401`, `403`, `429`, perfis, `alg: none` |
 | `IdempotenciaServiceTest` / `DadosEquipeIntegracaoTest` | dinheiro nunca sai duas vezes (`Idempotency-Key`) e saldo sempre bate com o extrato |
 | `GestaoUsuariosIntegracaoTest` | promover, rebaixar, desativar e trocar senha valendo na hora |
 | `PerfilVisitanteIntegracaoTest` | o perfil público não expõe nada da equipe |
 | `ClienteControllerTest` / `ContaControllerTest` | status de cada rota e limites da paginação |
-| `ControllerExceptionHandlerTest` | cada exceção no formato de erro |
-| `ClienteViaCepTest` | CEP encontrado, inexistente (`422`) e ViaCEP fora (`503`) |
+| `TratadorGlobalDeErrosTest` | cada exceção no formato de erro |
+| `ViaCepClientTest` | CEP encontrado, inexistente (`422`) e ViaCEP fora (`503`) |
 | `CpfValidoValidatorTest` | dígitos verificadores e máscara |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e rejeitado contra log forjado |
 | `*RepositoryTest` | consultas, constraints, cascata, `@Version` e `tb_usuario` (`@DataJpaTest` com as migrações do Flyway) |
@@ -1104,7 +1104,7 @@ flowchart LR
 
 ```text
 INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.s.ContaService : Transferencia de 50.00 da conta 672e4ddf-... para 83af15fb-...
-INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.c.FiltroLogRequisicao : POST /contas/transferencia -> 204 (15 ms)
+INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.c.FiltroLogRequisicao : POST /transferencias -> 204 (15 ms)
 ```
 
 Cada requisição ganha um `X-Request-Id` que aparece em todas as linhas, até no SQL. CPF, e-mail, senha e token **nunca** entram no log. Configuração: [`log4j2-spring.xml`](backend/src/main/resources/log4j2-spring.xml).
@@ -1142,7 +1142,7 @@ gantt
 
 - [x] Cadastro com ViaCEP, abertura de conta, depósito, saque, transferência e extrato
 - [x] Logs rastreáveis, CI, CodeQL e Dependabot
-- [x] Banco versionado com Flyway (V1 a V8), contas da equipe (Felipe e Renan) e perfil público de visitante
+- [x] Banco versionado com Flyway (V1 a V9), contas da equipe (Felipe e Renan) e perfil público de visitante
 - [x] Idempotência nas movimentações, número de conta gerado pelo banco, limite de tentativas no login e health check
 - [x] Login com Spring Security + JWT, perfis e regra de dono
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
