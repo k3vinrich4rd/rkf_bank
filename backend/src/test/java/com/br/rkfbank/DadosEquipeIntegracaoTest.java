@@ -225,7 +225,7 @@ class DadosEquipeIntegracaoTest {
                 .map(migracao -> migracao.getVersion().getVersion())
                 .toList();
 
-        assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8"), versoes);
+        assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9"), versoes);
     }
 
     private ResultActions transferir(String token, String chave, String valor) throws Exception {
