@@ -81,7 +81,8 @@ Escopo é opcional: `test(repositories): cobre o extrato`, `fix(deps): atualiza 
 Nunca faça commit de `.env`, senhas ou tokens.
 
 > **Hook de commit:** rode `scripts/instalar-hooks.sh` uma vez depois de clonar. O Git passa a recusar
-> mensagens fora do padrão acima (merges e reverts gerados pelo Git passam direto).
+> mensagens fora do padrão acima (merges e reverts gerados pelo Git passam direto). Vale também nos worktrees
+> (`git worktree add`): o script grava o caminho absoluto dos hooks. Instalou antes de 22/10/2026? Rode de novo.
 
 ---
 
