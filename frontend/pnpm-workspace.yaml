@@ -1,3 +1,9 @@
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
+
+# Forca versoes corrigidas de dependencias transitivas com CVE (o pacote que as traz ainda nao subiu).
+# Remover cada linha quando o shadcn trouxer a versao corrigida sozinho (conferir com: corepack pnpm why <pacote>).
+overrides:
+  hono: "^4.13.11"
+  ip-address: "^10.7.4"

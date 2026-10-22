@@ -31,11 +31,14 @@ public class GestaoUsuarioService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    // Todos os usuarios para o ADMIN, admins primeiro. Resposta minima: CPF mascarado, nunca hash.
     @Transactional(readOnly = true)
     public List<UsuarioAdminResponseDto> listar() {
         return usuarioRepository.findAllByOrderByPerfilAscLoginAsc().stream().map(GestaoUsuarioService::paraResponse).toList();
     }
 
+    // Promove ou rebaixa. So muda o banco; o token antigo da pessoa cai sozinho na proxima requisicao, porque o
+    // ConversorTokenUsuario ve que o perfil do token nao bate mais com o do banco.
     @Transactional
     public UsuarioAdminResponseDto alterarPerfil(UUID usuarioId, PerfilEnum perfil, UsuarioLogado quem) {
         Usuario alvo = buscarOutro(usuarioId, quem);
@@ -50,9 +53,16 @@ public class GestaoUsuarioService {
         return paraResponse(alvo);
     }
 
+    // Desativa ou reativa o login. Desativar e o "remover" de um banco: o usuario some do acesso, mas o historico
+    // (movimentacoes, chaves de idempotencia) continua apontando para ele.
     @Transactional
     public UsuarioAdminResponseDto alterarAcesso(UUID usuarioId, boolean ativo, UsuarioLogado quem) {
         Usuario alvo = buscarOutro(usuarioId, quem);
+        if (ativo && alvo.getCliente() != null && alvo.getCliente().isEncerrado()) {
+            // LGPD: o titular encerrou o cadastro. Reativar seria reabrir uma relacao que ele pediu para acabar.
+            log.warn("Usuario {} tentou reativar o usuario {}, cujo cadastro foi encerrado", quem.usuarioId(), alvo.getId());
+            throw new NaoProcessavelException("O titular encerrou o cadastro; o acesso nao pode ser reativado");
+        }
         if (alvo.isAtivo() != ativo) {
             log.info("Usuario {} {} o acesso do usuario {}", quem.usuarioId(), ativo ? "reativou" : "desativou", alvo.getId());
             alvo.setAtivo(ativo);

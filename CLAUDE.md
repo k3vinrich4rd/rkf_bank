@@ -54,7 +54,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 - Logs com Log4j2 e `X-Request-Id`; nunca logar CPF completo, senha ou token.
 - **LGPD:** dado pessoal novo precisa de finalidade; response devolve só o que a tela usa; nada de dado pessoal em log, exceção, URL ou prompt de IA. Pendências em `planing/debitos-tecnicos.md`.
 - Mudou rota ou formato? Atualize `backend/README_CONTRATO_API.md` **e** avise o frontend (`frontend/lib/api/types.ts` espelha o contrato).
-- **Schema só por Flyway** (`backend/src/main/resources/db/migration`, `ddl-auto=validate`): mudou entidade → crie `V<n>__descricao.sql` (hoje a última é `V8`) que rode no MySQL e no H2. **Nunca edite uma migração já mergeada** (checksum). Revise com `/revisar-migracao`.
+- **Schema só por Flyway** (`backend/src/main/resources/db/migration`, `ddl-auto=validate`): mudou entidade → crie `V<n>__descricao.sql` (hoje a última é `V9`) que rode no MySQL e no H2. **Nunca edite uma migração já mergeada** (checksum). Revise com `/revisar-migracao`.
 - **Dados prontos** por callback `afterMigrate` do Flyway (roda a cada subida, idempotente): `db/seed/equipe` (Felipe = origem, Renan = destino; perfis padrão e `equipe`) e `db/seed/visitante` (Ana e Bruno; só no perfil `visitante`). **Desligados no `test`** e em produção (`FLYWAY_LOCATIONS=classpath:db/migration`). Mudou tabela usada pelo seed → ajuste o seed no mesmo PR.
 - 🔒 **Repositório público: nenhuma senha real no Git.** Login das contas da equipe vem de `EQUIPE_SENHA` (`CriadorAcessoEquipe`) e o admin de `ADMIN_CPF`/`ADMIN_SENHA` (`CriadorAdmin`), só no `.env`. Acessos e roteiro completo da equipe ficam em `.equipe/GUIA_TESTES_EQUIPE.md`, **fora do Git** (`.gitignore`): nunca copie conteúdo de lá para README, PR, issue, recado ou commit. Doc pública usa só as contas de visitante.
 - **Perfil e acesso valem na hora:** o `ConversorTokenUsuario` confere `tb_usuario` (existe, `ativo`, mesmo perfil e mesma `versaoCredencial` do token) a cada requisição. Gestão de usuários só pelo ADMIN em `/admin/usuarios`; usuário nunca é apagado, é desativado.
@@ -63,7 +63,6 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 ## Armadilhas conhecidas
 
 - H2 está fixado em **2.3.232** (o 2.4.240 quebra o `CHECK ... IN` das colunas de enum).
-- Tomcat e Jackson estão **sobrescritos** no `pom.xml` por causa de CVEs; remover quando o Spring Boot alcançar.
 - `@DataJpaTest` troca o datasource por H2 embutido em qualquer perfil.
 - Testes Spring têm `@ActiveProfiles("test")` e o `application-test.properties` fica em `src/test/resources` (fora do jar). O `pom.xml` aponta `RKFBANK_ENV` para um arquivo inexistente: o `.env` de quem roda não entra nos testes.
 - O Mockito é carregado como `-javaagent` no surefire (Java 21+); não remova o `argLine`.

@@ -518,3 +518,42 @@ Cada requisição ganha um `X-Request-Id` (devolvido no header e impresso em tod
 | `Port 8080 was already in use` | outra API rodando | feche a outra ou use `--server.port=8081` |
 | Cadastro `503` | ViaCEP fora ou sem internet | os testes com Ana e Bruno não dependem dele |
 | Acento vira `JSON invalido` no curl | Git Bash quebra UTF-8 no `-d` | `--data-binary @corpo.json` |
+
+---
+
+## 🛡️ Meus dados: direitos do titular (L01 a L13)
+
+A LGPD garante ao titular **ver**, **corrigir** e **pedir o fim** do tratamento dos próprios dados (art. 18). Num banco,
+"apagar agora" esbarra na lei de prevenção à lavagem de dinheiro, que manda guardar o cadastro por 5 anos depois do fim
+do relacionamento. Por isso o encerramento **desliga tudo na hora** e **anonimiza depois** (contrato, seção 3.6).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Ativo: cadastro
+    Ativo --> Ativo: GET / PATCH /clientes/me
+    Ativo --> Encerrado: POST /clientes/me/encerramento (senha + saldo zero)
+    Encerrado --> Anonimizado: rotina diária, 5 anos depois
+    Encerrado --> Encerrado: login 401 · conta não recebe · ADMIN não reativa
+    Anonimizado --> [*]
+```
+
+Rode **depois** das seções 5 a 7 (a L09 esvazia a conta da Ana) ou reinicie a API antes. Token da Ana, salvo quando dito.
+
+| # | O que fazer | Request | Esperado |
+|---|---|---|---|
+| L01 | Ver os próprios dados | `GET /clientes/me` | `200`, cadastro da Ana (o mesmo formato do cadastro, sem senha) |
+| L02 | Corrigir e-mail e telefone | `PATCH /clientes/me` `{"telefone":"(11) 91234-5678","email":"Ana.Nova@Exemplo.test"}` | `200`; e-mail salvo em minúsculas, telefone formatado, CPF igual |
+| L03 | Mudar de endereço | `PATCH /clientes/me` `{"cep":"01001000","numero":"10"}` | `200`; endereço vindo do ViaCEP, número `10` |
+| L04 | CEP sem número | `{"cep":"01001000"}` | `400` · `numero: numero e obrigatorio quando o cep muda` |
+| L05 | Corpo vazio | `{}` | `400` · `corpo: envie pelo menos um campo para corrigir` |
+| L06 | E-mail de outra pessoa | `{"email":"bruno.visitante@exemplo.test"}` | `409` · `Email ja cadastrado` |
+| L07 | Encerrar com senha errada | `POST /clientes/me/encerramento` `{"senha":"errada123"}` | `422` · `Senha incorreta` |
+| L08 | Encerrar com saldo | `{"senha":"Visitante@2026"}` | `422` · `Transfira o saldo das suas contas antes de encerrar o cadastro` |
+| L09 | Zerar o saldo | transferência de todo o saldo da Ana para o Bruno (+ chave nova) | `204` |
+| L10 | Encerrar | `{"senha":"Visitante@2026"}` | `200` com `encerradoEm`, `anonimizacaoPrevistaPara` (+5 anos) e `motivoDaRetencao` |
+| L11 | Token antigo | `GET /clientes/me` | `401` · `Seu acesso foi alterado ou desativado; faca login novamente` |
+| L12 | Login de novo | `POST /auth/login` da Ana | `401` · `CPF ou senha invalidos` |
+| L13 | Bruno manda dinheiro para a conta encerrada | transferência Bruno → Ana | `422` · `Conta inativa` |
+
+O que o log mostra: `Cliente <id> corrigiu o cadastro (campos=[telefone, email])` e `Cliente <id> encerrou o cadastro`;
+**nunca** os valores. A anonimização (5 anos depois) é provada pelo `TitularIntegracaoTest`, que adianta o relógio.

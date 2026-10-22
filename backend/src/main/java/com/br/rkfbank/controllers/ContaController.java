@@ -1,5 +1,6 @@
 package com.br.rkfbank.controllers;
 
+import com.br.rkfbank.dto.comum.PaginaResponse;
 import com.br.rkfbank.dto.request.conta.AbrirContaRequestDto;
 import com.br.rkfbank.dto.request.conta.DepositarRequestDto;
 import com.br.rkfbank.dto.request.conta.SaqueRequestDto;
@@ -46,6 +47,7 @@ public class ContaController {
         this.idempotenciaService = idempotenciaService;
     }
 
+    // Abre conta no cadastro informado na URL; o service confere se e o cadastro do proprio usuario (403 se nao).
     @PostMapping("/clientes/{clienteId}")
     public ResponseEntity<ContaResponseDto> abrir(@PathVariable UUID clienteId, @Valid @RequestBody AbrirContaRequestDto request,
                                                   @AuthenticationPrincipal Jwt jwt) {
@@ -67,6 +69,7 @@ public class ContaController {
         return semConteudo(repetida);
     }
 
+    // Mesmo desenho do deposito: a movimentacao so roda dentro do IdempotenciaService.executarUmaVez.
     @PostMapping("/{contaId}/saque")
     public ResponseEntity<Void> sacar(@PathVariable UUID contaId, @Valid @RequestBody SaqueRequestDto request,
                                       @RequestHeader(name = IdempotenciaService.HEADER, required = false) String chave,
@@ -79,6 +82,8 @@ public class ContaController {
         return semConteudo(repetida);
     }
 
+    // A "assinatura" (contas + valor + descricao) e o que torna uma repeticao reconhecivel: mesma chave com a
+    // mesma assinatura = repeticao (204 sem mover dinheiro); mesma chave com outra = erro do cliente (422).
     @PostMapping("/transferencia")
     public ResponseEntity<Void> transferir(@Valid @RequestBody TransferirRequestDto request,
                                            @RequestHeader(name = IdempotenciaService.HEADER, required = false) String chave,
@@ -106,6 +111,7 @@ public class ContaController {
         return conta + "|" + destino + "|" + valor.stripTrailingZeros().toPlainString() + "|" + (descricao == null ? "" : descricao);
     }
 
+    // Extrato da conta (GET /contas/{contaId}/lancamentos). Regra de dono no service.
     @GetMapping("/{contaId}/lancamentos")
     public ResponseEntity<List<LancamentoResponseDto>> listar(@PathVariable UUID contaId, @AuthenticationPrincipal Jwt jwt) {
         // Retorna extrato da conta em ordem decrescente por data.
@@ -113,6 +119,7 @@ public class ContaController {
         return ResponseEntity.ok(contaService.listarLancamentos(contaId, UsuarioLogado.de(jwt)));
     }
 
+    // Contas do usuario logado (ou todas, para o ADMIN), em lista ou paginadas.
     @GetMapping
     public ResponseEntity<?> listarContas(
             @RequestParam(defaultValue = "false") boolean paginado,
@@ -122,10 +129,10 @@ public class ContaController {
     ) {
         log.debug("Listagem de contas (paginado={}, page={}, size={})", paginado, page, size);
         UsuarioLogado usuario = UsuarioLogado.de(jwt);
-        // Quando paginado=true, retorna Page com metadados de paginação. ADMIN ve todas; CLIENTE so as dele.
+        // Quando paginado=true, retorna a pagina no formato do contrato (PaginaResponse). ADMIN ve todas; CLIENTE so as dele.
         if (paginado) {
-            Page<ContaResponseDto> resposta = contaService.listarPaginado(Paginacao.criar(page, size), usuario);
-            return ResponseEntity.ok(resposta);
+            Page<ContaResponseDto> pagina = contaService.listarPaginado(Paginacao.criar(page, size), usuario);
+            return ResponseEntity.ok(PaginaResponse.de(pagina));
         }
 
         // Caso contrário, retorna lista completa.
