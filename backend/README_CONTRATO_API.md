@@ -15,7 +15,7 @@ discordarem, um dos dois está errado e precisa ser corrigido.
 |---|---|
 | **Backend** | Kevin |
 | **Frontend** | Renan |
-| **Versão** | 2.3 (20/10/2026) — troca de senha (`PATCH /auth/senha`) e redefinição pelo ADMIN; não quebra o frontend (ver [histórico](#8-histórico-de-versões)) |
+| **Versão** | 2.4 (22/10/2026) — página com formato próprio e estável (mesmos campos) e CORS valendo nas rotas reais; não quebra o frontend (ver [histórico](#8-histórico-de-versões)) |
 
 ---
 
@@ -53,6 +53,11 @@ Navegador ──► http://localhost:3000/api/clientes ──(proxy do Next)─�
 
 O prefixo `/api` **só existe no frontend** (rewrite em `frontend/next.config.ts`). No Postman, Insomnia ou curl,
 chame o backend direto, sem `/api`.
+
+**CORS** (navegador chamando o backend direto, sem o proxy): vale para todas as rotas e só para as origens de
+`CORS_ORIGENS` (padrão `http://localhost:3000`). O *preflight* (`OPTIONS`) é respondido sem token; origem fora da
+lista recebe `403`. Headers aceitos: `Authorization`, `Content-Type`, `Idempotency-Key`, `X-Request-Id`. Headers que o
+JavaScript consegue ler na resposta: `X-Request-Id`, `Idempotency-Replayed`, `Retry-After`.
 
 ### Autenticação (JWT)
 
@@ -210,8 +215,9 @@ Formato da página (campos que o frontend usa):
 }
 ```
 
-> ⚠️ Esse formato é o `Page` do Spring serializado direto, que **não é estável** entre versões do Spring Data.
-> Está registrado em [débitos técnicos](../planing/debitos-tecnicos.md). Se mudar, este bloco muda junto.
+São exatamente esses sete campos, nem mais nem menos: a API devolve um DTO próprio (`PaginaResponse`), e não o
+`Page` do Spring, então o formato não muda quando o Spring Data muda (antes da versão 2.4 vazavam `pageable`,
+`sort`, `numberOfElements`...). Os nomes ficaram em inglês de propósito: são os que o frontend já lia.
 
 ### 3.3 Login
 
@@ -555,6 +561,7 @@ Proposta de resposta do `GET /contas/{contaId}`: mesmo formato da [4.1](#41-abri
 
 | Versão | Data | Mudança |
 |---|---|---|
+| 2.4 | 22/10/2026 | Página (`?paginado=true`) passa a ser um DTO próprio com os mesmos campos de antes (`content`, `totalElements`, `totalPages`, `number`, `size`, `first`, `last`), sem os campos internos do `Page` do Spring. CORS valendo para todas as rotas, com origens em `CORS_ORIGENS`. Não quebra o frontend |
 | 2.3 | 20/10/2026 | `PATCH /auth/senha` (troca da própria senha) e `PATCH /admin/usuarios/{id}/senha` (redefinição pelo ADMIN); claim `versaoCredencial` no token e `tb_usuario.versao_credencial` (V8). Regras R22–R23. Não quebra o frontend |
 | 2.2 | 20/10/2026 | Gestão de usuários: `GET /admin/usuarios`, `PATCH .../perfil` e `.../acesso` (só `ADMIN`); `tb_usuario.ativo` (V7); token de quem foi desativado ou mudou de perfil → `401` com mensagem própria. Regras R19–R21. Não quebra o frontend |
 | 2.1 | 20/10/2026 | **Quebra o frontend (ajustado no mesmo PR).** `Idempotency-Key` obrigatório em depósito, saque e transferência (`400` sem ele, `422` reaproveitada, header `Idempotency-Replayed` na repetição); `agencia` e `numeroConta` opcionais na abertura (o banco gera); `429` no login após 5 erros; `GET /actuator/health` público |
