@@ -536,6 +536,7 @@ Suba o perfil `visitante` ([VISITANTES.md](VISITANTES.md)), entre como a Ana e t
 - ✅ Frontend mascara CPF, e-mail e telefone nos logs; token fora do alcance do JavaScript.
 - ✅ Limite de tentativas de login (`429` depois de 5 erros) e movimentações idempotentes (`Idempotency-Key`).
 - ✅ Nenhuma senha real no repositório: contas da equipe e admin ganham login só pelo `.env`; o perfil público `visitante` tem contas fictícias e segredo do JWT sorteado.
+- ✅ Direitos do titular: **ver** (`GET /clientes/me`), **corrigir** (`PATCH /clientes/me`) e **encerrar** o cadastro (`POST /clientes/me/encerramento`, com senha e saldo zero). O cadastro encerrado fica guardado pelo prazo legal (5 anos, Lei 9.613/1998) e uma rotina diária o **anonimiza** depois.
 
 **Falta antes de colocar no ar** (bloqueia o deploy, não o desenvolvimento):
 
@@ -543,7 +544,7 @@ Suba o perfil `visitante` ([VISITANTES.md](VISITANTES.md)), entre como a Ana e t
 - ⏳ Registrar o aceite dos termos (versão + data) numa migração `V7`.
 - ⏳ Encarregado e canal de contato do titular.
 
-**Depois do MVP:** rota "meus dados" (`GET /clientes/me`), correção de dados, encerramento de conta com retenção e anonimização e auditoria.
+**Depois do MVP:** auditoria (quem fez o quê, quando e de onde).
 Detalhes e prioridades em [planing/debitos-tecnicos.md](planing/debitos-tecnicos.md) e [planing/decisoes.md](planing/decisoes.md).
 
 </details>
@@ -560,6 +561,9 @@ Contrato completo (versão 2.0): [backend/README_CONTRATO_API.md](backend/README
 | `POST` | `/clientes` | cadastra cliente (com senha) | público | `201` |
 | `POST` | `/auth/login` | login com CPF + senha (5 erros em 15 min → `429`) | público | `200` + token |
 | `PATCH` | `/auth/senha` | troca a própria senha (pede a atual; derruba os tokens antigos) | logado | `204` |
+| `GET` | `/clientes/me` | meus dados (LGPD) | o próprio cliente | `200` |
+| `PATCH` | `/clientes/me` | corrige meus dados (LGPD; CPF não muda) | o próprio cliente | `200` |
+| `POST` | `/clientes/me/encerramento` | encerra o cadastro (senha + saldo zero; anonimiza depois de 5 anos) | o próprio cliente | `200` |
 | `GET` | `/clientes` | lista clientes (`?paginado=true&page=0&size=10`) | `ADMIN` | `200` |
 | `POST` | `/contas/clientes/{clienteId}` | abre conta | o próprio cliente | `201` |
 | `GET` | `/contas` | lista contas | `ADMIN`: todas · `CLIENTE`: as dele | `200` |
@@ -1158,7 +1162,7 @@ gantt
 - [ ] `MockMvc` em todos os controllers e teste de concorrência ([checklist](planing/checklist-features.md))
 - [ ] Swagger UI com o botão *Authorize* (springdoc-openapi)
 - [ ] Refresh token e 2FA (limite de tentativas e revogação já existem)
-- [ ] "Meus dados", editar perfil e encerrar conta (direitos do titular)
+- [x] "Meus dados", editar perfil e encerrar conta (direitos do titular)
 - [ ] CI do frontend
 - [ ] Pix, boleto, QR Code e cartão virtual (simulados) — [funcionalidades futuras](planing/debitos-tecnicos.md#funcionalidades-futuras-)
 - [ ] 🤖 Assistente do extrato com Spring AI (ideia)
