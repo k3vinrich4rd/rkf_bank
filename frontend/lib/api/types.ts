@@ -172,7 +172,7 @@ export interface AlterarAcessoRequest {
   ativo: boolean;
 }
 
-/** `PATCH /auth/senha` (contrato 2.3). Depois do 204, o token atual deixa de valer: mande para o login. */
+/** `PATCH /usuarios/me/senha` (contrato 2.6). Depois do 204, o token atual deixa de valer: mande para o login. */
 export interface TrocarSenhaRequest {
   senhaAtual: string;
   novaSenha: string;
