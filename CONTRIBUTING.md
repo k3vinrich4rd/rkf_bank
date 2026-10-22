@@ -24,8 +24,8 @@ Este guia mostra como o time trabalha: do pegar uma tarefa até o merge.
 
 | Branch | Para quê |
 |---|---|
-| `main` | versão estável (o que vai para o ar) |
-| `develop` | onde o trabalho do time se junta |
+| `main` | versão estável (o que vai para o ar): recebe a `develop` só depois da **reunião semanal** do Kevin com o Renan |
+| `develop` | onde o trabalho do time se junta: todo PR de branch entra aqui (o `/entregar` mergeia com o CI verde) |
 | `feature/nome` | funcionalidade nova |
 | `fix/nome` | correção de bug |
 | `refactor/nome` | melhoria no código sem mudar o comportamento |
