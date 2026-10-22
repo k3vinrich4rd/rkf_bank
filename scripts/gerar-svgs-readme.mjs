@@ -21,15 +21,30 @@ const VERMELHO = '#F87171';
 const SANS = "'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif";
 const MONO = "Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace";
 
-// Números exibidos no README. Atualize aqui e rode o script de novo.
+// Números exibidos no README: contados do código sempre que o script roda (só status e time são fixos).
 const NUMEROS = {
   testes: contarTestes(),
-  rotas: 9,
+  rotas: contarRotas(),
   migracoes: fs.readdirSync(path.join(RAIZ, 'backend/src/main/resources/db/migration')).filter((f) => /^V\d+__.*\.sql$/.test(f)).length,
   status: 9, // 400, 401, 403, 404, 409, 422, 503 + 201/204 de sucesso
   workflows: fs.readdirSync(path.join(RAIZ, '.github/workflows')).filter((f) => f.endsWith('.yml')).length,
   time: 3,
 };
+
+// Rotas canônicas dos controllers: em @XxxMapping({"nova", "antiga"}) conta uma só, e o método marcado como
+// OBSOLETA (mantido até o contrato 3.0) não entra. O /actuator/health não conta (é do Spring, não da API).
+function contarRotas() {
+  const pasta = path.join(RAIZ, 'backend/src/main/java/com/br/rkfbank/controllers');
+  let total = 0;
+  for (const nome of fs.readdirSync(pasta).filter((n) => n.endsWith('Controller.java'))) {
+    const linhas = fs.readFileSync(path.join(pasta, nome), 'utf8').split(/\r?\n/);
+    linhas.forEach((linha, i) => {
+      if (!/^\s+@(Get|Post|Put|Patch|Delete)Mapping\b/.test(linha)) return;
+      if (!/OBSOLETA/.test(linhas.slice(Math.max(0, i - 3), i).join(' '))) total++;
+    });
+  }
+  return total;
+}
 
 function contarTestes() {
   let total = 0;
@@ -331,7 +346,7 @@ function fluxo() {
     @keyframes acende { 0% { opacity: 0; } 8% { opacity: 1; } 22%, 100% { opacity: 0; } }
   </style>
   <rect width="1200" height="250" rx="20" fill="${FUNDO}" stroke="${BORDA}"/>
-  <text x="40" y="46" style="font: 700 20px ${SANS}" fill="${TEXTO}">🔁 POST /contas/transferencia</text>
+  <text x="40" y="46" style="font: 700 20px ${SANS}" fill="${TEXTO}">🔁 POST /transferencias</text>
   <text x="350" y="46" style="font: 400 14px ${SANS}" fill="${APAGADO}">débito, crédito e lançamento: tudo ou nada</text>
   <path d="M${w / 2} 124 H${1200 - w / 2}" stroke="url(#marca)" stroke-width="2" stroke-dasharray="6 8" opacity=".5"/>
   ${caixas}
@@ -580,7 +595,7 @@ function terminal() {
   const linhas = [
     ['$ scripts/validar.sh backend', TEXTO],
     ['>>> Backend: ./mvnw clean verify (perfil test)', APAGADO],
-    ['[INFO] Flyway: Successfully applied 3 migrations (V1, V2, V3)', CIANO],
+    [`[INFO] Flyway: Successfully applied ${NUMEROS.migracoes} migrations (V1 a V${NUMEROS.migracoes})`, CIANO],
     ['[INFO] SegurancaIntegracaoTest .... alg none → 401 ✔  conta de outro → 403 ✔', APAGADO],
     ['[INFO] ContaRepositoryTest ........ @Version → OptimisticLock ✔', APAGADO],
     [`    Tests run: ${NUMEROS.testes}, Failures: 0, Errors: 0, Skipped: 0`, TEXTO],
