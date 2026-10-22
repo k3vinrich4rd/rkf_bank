@@ -12,10 +12,14 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+// Cliente do banco (tb_cliente): o cadastro da pessoa. CPF e e-mail sao unicos (uk_cliente_cpf, uk_cliente_email),
+// e o banco garante isso mesmo que duas requisicoes passem juntas pela checagem do service.
+// Credencial (senha) fica em Usuario; endereco, em Endereco. Cada tabela guarda um assunto.
 @Entity
 @Table(name = "tb_cliente", uniqueConstraints = {
         @UniqueConstraint(name = "uk_cliente_cpf", columnNames = "cpf"),
@@ -49,6 +53,11 @@ public class Cliente {
     // conta da lista nao a remove; e a FK fk_conta_cliente impede excluir um cliente que ainda tem conta.
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.PERSIST)
     private List<Conta> contas = new ArrayList<>();
+
+    // LGPD (V9): quando o titular encerrou o cadastro e quando os dados foram anonimizados. Nulos = cliente ativo.
+    private Instant encerradoEm;
+
+    private Instant anonimizadoEm;
 
     public UUID getId() {
         return id;
@@ -96,5 +105,25 @@ public class Cliente {
 
     public List<Conta> getContas() {
         return contas;
+    }
+
+    public Instant getEncerradoEm() {
+        return encerradoEm;
+    }
+
+    public boolean isEncerrado() {
+        return encerradoEm != null;
+    }
+
+    public void encerrar(Instant quando) {
+        this.encerradoEm = quando;
+    }
+
+    public Instant getAnonimizadoEm() {
+        return anonimizadoEm;
+    }
+
+    public void marcarAnonimizado(Instant quando) {
+        this.anonimizadoEm = quando;
     }
 }

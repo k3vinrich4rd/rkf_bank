@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+// Cadastro de clientes. O cadastro cria tres coisas na MESMA transacao: endereco (do ViaCEP), cliente e a
+// credencial de login (Usuario com o hash BCrypt). Falhou qualquer uma, nenhuma fica no banco.
 @Service
 public class ClienteService {
 
@@ -53,6 +55,8 @@ public class ClienteService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    // Ordem pensada: primeiro as checagens baratas e locais (CPF/e-mail repetidos, tamanho da senha), depois a
+    // chamada externa ao ViaCEP (lenta e sujeita a falha). Assim um cadastro que ja seria recusado nem gasta a chamada.
     @Transactional
     public ClienteResponseDto cadastrar(CadastroClienteRequestDto request) {
         // Normaliza o CPF para manter somente dígitos antes das validações de banco.
@@ -126,6 +130,7 @@ public class ClienteService {
         }
     }
 
+    // Busca unica por id, reaproveitada por outros services, sempre com o mesmo 404.
     public Cliente buscar(UUID id) {
         // Busca centralizada para reutilizar a mesma exceção de 404 em outras camadas.
         return clienteRepository.findById(id).orElseThrow(() -> {
@@ -134,6 +139,7 @@ public class ClienteService {
         });
     }
 
+    // Lista completa (so ADMIN). Converte para DTO dentro da transacao, enquanto o endereco (lazy) ainda carrega.
     @Transactional(readOnly = true)
     public List<ClienteResponseDto> listarTodos() {
         // Leitura sem paginação para telas simples.
@@ -142,6 +148,7 @@ public class ClienteService {
         return clientes;
     }
 
+    // Pagina do banco: Page.map converte cada cliente mantendo total e numero da pagina.
     @Transactional(readOnly = true)
     public Page<ClienteResponseDto> listarPaginado(Pageable pageable) {
         // Leitura paginada para reduzir payload em listas grandes.
@@ -176,7 +183,8 @@ public class ClienteService {
         return cliente;
     }
 
-    private ClienteResponseDto toResponse(Cliente cliente) {
+    // Pacote: o TitularService devolve o cadastro no mesmo formato.
+    ClienteResponseDto toResponse(Cliente cliente) {
         Endereco endereco = cliente.getEndereco();
         EnderecoResponseDto enderecoResponse = new EnderecoResponseDto(
                 endereco.getCep(),
