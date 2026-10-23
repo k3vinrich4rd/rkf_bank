@@ -36,7 +36,7 @@ function errosDaApi(error: unknown): { campos: ErrosPorCampo; geral: string | nu
     case 400:
       return { campos: error.fieldErrors as ErrosPorCampo, geral: "Confira os campos destacados." };
     case 422:
-      return error.message === "Senha atual incorreta"
+      return error.codigo === "SENHA_ATUAL_INCORRETA"
         ? { campos: { senhaAtual: "Senha atual incorreta." }, geral: null }
         : { campos: { novaSenha: "A nova senha precisa ser diferente da atual." }, geral: null };
     case 429:

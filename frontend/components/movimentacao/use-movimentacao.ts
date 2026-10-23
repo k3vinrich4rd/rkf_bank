@@ -76,7 +76,7 @@ function mensagemDeErro(error: unknown): string {
     case 409:
       // A mesma operação ainda está sendo processada (a chave de idempotência continua a mesma): enviar de novo mostra
       // o resultado sem movimentar duas vezes. Fora isso, é o lock otimista (outra operação mexeu na conta).
-      return error.message.startsWith("Esta operacao ja esta sendo processada")
+      return error.codigo === "IDEMPOTENCIA_EM_ANDAMENTO"
         ? "Sua operação ainda está sendo processada. Envie de novo para ver o resultado: nada será cobrado duas vezes."
         : "Sua conta acabou de ser movimentada por outra operação. Confira o saldo e tente novamente.";
     case 422: // conta inativa, saldo insuficiente ou mesma conta

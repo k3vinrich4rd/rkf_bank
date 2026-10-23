@@ -21,7 +21,7 @@ export function ContaSaldo({ conta }: ContaSaldoProps) {
       </p>
 
       <dl className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm">
-        <Dado rotulo="Tipo" valor={formatTipoConta(conta.tipoContaEnum)} />
+        <Dado rotulo="Tipo" valor={formatTipoConta(conta.tipoConta)} />
         <Dado rotulo="Agência" valor={conta.agencia} />
         <Dado rotulo="Conta" valor={conta.numeroConta} />
       </dl>

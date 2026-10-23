@@ -24,7 +24,7 @@ function mensagemDeErro(error: unknown): string {
     return "Seu usuário não tem cadastro de cliente, então não pode abrir conta.";
   }
 
-  // A API gera agência e número (contrato 2.1); 409 aqui só se ela não achar número livre.
+  // A API gera agência e número; 409 aqui só se ela não achar número livre.
   if (error instanceof ApiError && error.status === 409) {
     return "Não conseguimos gerar o número da sua conta. Tente novamente.";
   }
@@ -57,7 +57,7 @@ export function useAbrirConta() {
 
     try {
       // Sem agência e número: a API usa a 0001 e gera o número com dígito verificador.
-      const conta = await contasApi.abrir({ tipoContaEnum: tipoConta });
+      const conta = await contasApi.abrir({ tipoConta });
       logTela.sucesso("Conta aberta", { contaId: conta.id });
       setContaAberta(conta);
     } catch (error) {

@@ -52,6 +52,7 @@ function erro(status: number, message: string) {
     timestamp: new Date().toISOString(),
     status,
     error: "Service Unavailable",
+    codigo: "SERVICO_INDISPONIVEL",
     message,
     path: "/auth/login",
     campos: [],

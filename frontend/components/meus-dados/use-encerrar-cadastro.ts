@@ -43,7 +43,7 @@ export function useEncerrarCadastro() {
       }
       setEncerramento(resposta);
     } catch (error) {
-      if (error instanceof ApiError && error.status === 422 && /senha/i.test(error.message)) {
+      if (error instanceof ApiError && error.codigo === "SENHA_INCORRETA") {
         setErroSenha("Senha incorreta.");
       } else if (error instanceof ApiError && error.status === 422) {
         // Saldo nas contas: o dinheiro não some, precisa sair antes.

@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 
 /**
  * Troca da própria senha pelo servidor do Next (BFF): lê o token do cookie `httpOnly` e chama
- * `PATCH /usuarios/me/senha` da API (contrato 2.6; a antiga `/auth/senha` segue até a 3.0).
+ * `PATCH /usuarios/me/senha` da API.
  *
  * Fica aqui, e não no rewrite `/api/:path*`, porque `/api/auth/*` é do próprio Next (o `proxy.ts` não repassa o
  * token para essas rotas) e porque, depois do 204, **todo token antigo deixa de valer na API**, inclusive o deste
@@ -48,6 +48,7 @@ function erro(status: number, error: string, message: string) {
     timestamp: new Date().toISOString(),
     status,
     error,
+    codigo: status === 401 ? "AUTENTICACAO_NECESSARIA" : "SERVICO_INDISPONIVEL",
     message,
     path: "/usuarios/me/senha",
     campos: [],

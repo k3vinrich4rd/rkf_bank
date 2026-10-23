@@ -1,7 +1,7 @@
 import { env } from "@/lib/env";
 import { logHttp, type LogContext } from "@/lib/logger";
 import { ROUTES } from "@/lib/routes";
-import type { ErroCampo, ErroResponse } from "./types";
+import type { CodigoErro, ErroCampo, ErroResponse } from "./types";
 
 /**
  * De onde as chamadas partem:
@@ -13,15 +13,18 @@ function baseUrl(): string {
   return isBrowser ? `${window.location.origin}/api` : env.apiUrl;
 }
 
-/** Erro tipado da API: carrega status HTTP e os erros por campo. */
+/** Erro tipado da API: carrega status HTTP, o código estável do erro e os erros por campo. */
 export class ApiError extends Error {
   readonly status: number;
+  /** `null` quando a resposta não veio no formato padrão (ex.: 500 do proxy com o backend desligado). */
+  readonly codigo: CodigoErro | null;
   readonly campos: ErroCampo[];
 
-  constructor(status: number, message: string, campos: ErroCampo[] = []) {
+  constructor(status: number, message: string, campos: ErroCampo[] = [], codigo: CodigoErro | null = null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.codigo = codigo;
     this.campos = campos;
   }
 
@@ -62,7 +65,7 @@ function isErroResponse(value: unknown): value is ErroResponse {
 async function toApiError(response: Response): Promise<ApiError> {
   const payload: unknown = await response.json().catch(() => null);
   if (isErroResponse(payload)) {
-    return new ApiError(payload.status, payload.message, payload.campos ?? []);
+    return new ApiError(payload.status, payload.message, payload.campos ?? [], payload.codigo ?? null);
   }
   return new ApiError(response.status, response.statusText || "Erro inesperado");
 }

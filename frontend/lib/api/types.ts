@@ -125,13 +125,9 @@ export interface Sessao {
 
 // ── Contas e movimentações ──────────────────────────────────────────────
 
+/** Só o tipo (contrato 3.0): o dono vem do token, a agência é 0001 e o número é gerado pelo banco. */
 export interface AbrirContaRequest {
-  /** 4 dígitos. Opcional desde o contrato 2.1: sem ele, a API usa a agência 0001. */
-  agencia?: string;
-  /** 5 a 12 dígitos. Opcional desde o contrato 2.1: sem ele, a API gera o número (8 dígitos com DV). */
-  numeroConta?: string;
-  /** Desde o contrato 2.6 o backend também aceita o nome `tipoConta`; a resposta segue `tipoContaEnum` até a 3.0. */
-  tipoContaEnum: TipoConta;
+  tipoConta: TipoConta;
 }
 
 export interface ContaResponse {
@@ -139,7 +135,7 @@ export interface ContaResponse {
   clienteId: Uuid;
   agencia: string;
   numeroConta: string;
-  tipoContaEnum: TipoConta;
+  tipoConta: TipoConta;
   saldo: DecimalAmount;
   ativa: boolean;
 }
@@ -174,8 +170,8 @@ export interface PageRequest {
 }
 
 /**
- * Página do contrato (2.4): DTO próprio do backend (`PaginaResponse`), sempre com estes 7 campos, estável entre
- * versões do Spring. Desde a 2.6 basta mandar `page` ou `size` para vir paginado (`paginado: true` é obsoleto).
+ * Página do contrato: DTO próprio do backend (`PaginaResponse`), sempre com estes 7 campos, estável entre versões
+ * do Spring. Basta mandar `page` ou `size` para vir paginado; sem eles, a rota devolve a lista inteira.
  */
 export interface Page<T> {
   content: T[];
@@ -224,10 +220,53 @@ export interface ErroCampo {
   mensagem: string;
 }
 
+/**
+ * Código estável de cada erro (contrato 3.0), espelho do `CodigoErroEnum` do backend. Decida pelo `status` e,
+ * quando o mesmo status tem causas diferentes (409 de idempotência × concorrência, 422 de senha × saldo), pelo
+ * código. Nunca pelo texto do `message`, que é só para exibir.
+ */
+export type CodigoErro =
+  | "CAMPOS_INVALIDOS"
+  | "JSON_INVALIDO"
+  | "PARAMETRO_INVALIDO"
+  | "AUTENTICACAO_NECESSARIA"
+  | "TOKEN_INVALIDO"
+  | "ACESSO_ALTERADO"
+  | "CREDENCIAIS_INVALIDAS"
+  | "PERFIL_SEM_PERMISSAO"
+  | "CONTA_DE_OUTRO_CLIENTE"
+  | "CLIENTE_NAO_ENCONTRADO"
+  | "CONTA_NAO_ENCONTRADA"
+  | "USUARIO_NAO_ENCONTRADO"
+  | "CPF_JA_CADASTRADO"
+  | "EMAIL_JA_CADASTRADO"
+  | "CADASTRO_DUPLICADO"
+  | "NUMERO_CONTA_INDISPONIVEL"
+  | "CONCORRENCIA"
+  | "IDEMPOTENCIA_EM_ANDAMENTO"
+  | "CEP_NAO_ENCONTRADO"
+  | "CONTA_INATIVA"
+  | "VALOR_INVALIDO"
+  | "SALDO_INSUFICIENTE"
+  | "MESMA_CONTA"
+  | "SENHA_ATUAL_INCORRETA"
+  | "SENHA_REPETIDA"
+  | "SENHA_INCORRETA"
+  | "SEM_CADASTRO_CLIENTE"
+  | "SALDO_NAO_ZERADO"
+  | "PERFIL_CLIENTE_SEM_CADASTRO"
+  | "CADASTRO_ENCERRADO"
+  | "PROPRIA_SENHA_PELA_GESTAO"
+  | "PROPRIO_ACESSO"
+  | "IDEMPOTENCIA_CHAVE_REUSADA"
+  | "MUITAS_TENTATIVAS"
+  | "SERVICO_INDISPONIVEL";
+
 export interface ErroResponse {
   timestamp: IsoDateTime;
   status: number;
   error: string;
+  codigo: CodigoErro;
   message: string;
   path: string;
   campos: ErroCampo[];

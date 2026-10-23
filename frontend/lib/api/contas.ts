@@ -33,17 +33,17 @@ export const contasApi = {
   },
 
   /**
-   * Abre conta no cadastro do usuário logado (contrato 2.6): a API tira o cliente do token, então não há
+   * Abre conta no cadastro do usuário logado: a API tira o cliente do token, então não há
    * `clienteId` para mandar nem para errar. ADMIN sem cadastro de cliente → `422`.
    */
   async abrir(data: AbrirContaRequest) {
-    logContas.info("Abrindo conta", { tipoConta: data.tipoContaEnum });
+    logContas.info("Abrindo conta", { tipoConta: data.tipoConta });
     const conta = await apiRequest<ContaResponse>("/contas", { method: "POST", body: data });
     logContas.info("Conta aberta", { contaId: conta.id, clienteId: conta.clienteId });
     return conta;
   },
 
-  /** Desde o contrato 2.6, `page` ou `size` na URL já pedem a página (`paginado=true` é obsoleto). */
+  /** `page` ou `size` na URL pedem a página. */
   async listar({ page = 0, size = 10 }: PageRequest = {}) {
     const pagina = await apiRequest<Page<ContaResponse>>("/contas", { query: { page, size } });
     logContas.debug("Contas listadas", { page, size, totalElements: pagina.totalElements });
