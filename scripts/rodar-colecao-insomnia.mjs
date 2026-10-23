@@ -75,7 +75,7 @@ for (const pasta of pastas) {
   const requisicoes = recursos.filter((r) => r._type === "request" && r.parentId === pasta._id)
     .sort((a, b) => a.metaSortKey - b.metaSortKey);
   for (const r of requisicoes) {
-    if (semAdmin && JSON.stringify(r).includes("admin_cpf")) { console.log(`  ⏭️  ${r.name}: este ambiente não tem ADMIN`); continue; }
+    if (semAdmin && /admin_cpf|token_admin/.test(JSON.stringify(r))) { console.log(`  ⏭️  ${r.name}: este ambiente não tem ADMIN`); continue; }
     const testes = [];
     rodarScript(r.preRequestScript, null, testes);
     const headers = Object.fromEntries(r.headers.map((h) => [h.name, renderizar(h.value)]));

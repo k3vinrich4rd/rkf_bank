@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -36,8 +35,9 @@ public class ConfiguracaoConsoleH2 {
         http
                 .securityMatcher(caminho + "/**")
                 .authorizeHttpRequests(rotas -> rotas.anyRequest().permitAll())
-                // O formulario de login do console nao manda token CSRF; aqui so ha banco local de teste.
-                .csrf(AbstractHttpConfigurer::disable)
+                // O formulario de login do console nao manda token CSRF; aqui so ha banco local de teste. A excecao vale
+                // so para o caminho do console (e nao um disable() geral), que e o unico que esta cadeia atende.
+                .csrf(csrf -> csrf.ignoringRequestMatchers(caminho + "/**"))
                 // O console monta a tela com <frame> da mesma origem: DENY deixaria a pagina em branco.
                 .headers(cabecalhos -> cabecalhos.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
         return http.build();

@@ -17,7 +17,7 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 | [README_CONTRATO_API.md](README_CONTRATO_API.md) | **fonte da verdade** de rotas, payloads, regras e erros |
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
 | [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou MySQL), ver o banco (console do H2, MySQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
-| [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia (49 requisições encadeadas: o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
+| [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia (89 requisições encadeadas: o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
 | `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Felipe, do Renan e do admin, roteiro ponta a ponta completo |
 | [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md) | checklist de validação do MVP com o resultado da última execução |
 
