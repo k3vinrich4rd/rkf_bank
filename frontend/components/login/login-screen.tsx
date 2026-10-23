@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CircleCheck, Clock, LoaderCircle, LockKeyhole } from "lucide-react";
-import { Logo } from "@/components/brand/logo";
-import { Button } from "@/components/ui/button";
+import type { ReactNode } from "react";
+import { ArrowRight, CircleCheck, Clock, LoaderCircle, type LucideIcon } from "lucide-react";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { CampoFlutuante } from "@/components/auth/campo-flutuante";
+import { VitrineCartao } from "@/components/auth/vitrine-cartao";
 import { FormAlert } from "@/components/ui/form-alert";
-import { FormField } from "@/components/ui/form-field";
 import { ROUTES } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 import { useLogin } from "./use-login";
 
 interface LoginScreenProps {
@@ -18,90 +20,102 @@ interface LoginScreenProps {
   senhaTrocada: boolean;
 }
 
-/** Login com CPF e senha. O estado vive no `useLogin`. */
+/** Entrada em sequência: cada bloco aparece um pouco depois do anterior. */
+const ENTRADA = "animate-in fade-in slide-in-from-bottom-3 fill-mode-both duration-700";
+
+/** Login com CPF e senha. O estado vive no `useLogin`; aqui é só o desenho. */
 export function LoginScreen({ destino, expirou, senhaTrocada }: LoginScreenProps) {
   const { campo, erroGeral, enviando, handleSubmit } = useLogin(destino);
 
   return (
-    <main className="relative isolate grid flex-1 place-items-center px-4 py-16">
-      <div
-        aria-hidden="true"
-        className="absolute top-1/4 left-1/2 -z-10 size-[30rem] -translate-x-1/2 rounded-full bg-brand-blue/15 blur-[120px]"
-      />
-
-      <div className="w-full max-w-sm rounded-3xl border border-border bg-surface/80 p-8 backdrop-blur animate-in fade-in slide-in-from-bottom-2 duration-500">
-        <Link href={ROUTES.home} className="inline-flex rounded-lg" aria-label="Voltar para o início">
-          <Logo />
-        </Link>
-
-        <span className="mt-8 grid size-12 place-items-center rounded-2xl border border-brand-blue/30 bg-brand-blue/10 text-brand-cyan">
-          <LockKeyhole className="size-5" aria-hidden="true" />
-        </span>
-
-        <h1 className="mt-6 text-2xl font-semibold tracking-tight">Entrar na sua conta</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Use o CPF e a senha do seu cadastro.</p>
+    <AuthShell
+      atalho={{ pergunta: "Ainda não tem conta?", rotulo: "Abrir conta", href: ROUTES.signUp }}
+      vitrine={
+        <VitrineCartao
+          titular="Cliente RKF"
+          rodape="Sessão de 15 minutos  ·  senha guardada só como hash  ·  limite de tentativas"
+        />
+      }
+    >
+      <div className="w-full max-w-[22.5rem] self-center lg:self-start">
+        <h1 className={`text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.035em] text-balance ${ENTRADA}`}>
+          Bem-vindo
+          <span className="block text-muted-foreground">de volta.</span>
+        </h1>
+        <p className={`mt-5 text-[0.95rem] text-muted-foreground delay-75 ${ENTRADA}`}>
+          Entre com o CPF e a senha do seu cadastro.
+        </p>
 
         {senhaTrocada && (
-          <p
-            role="status"
-            className="mt-6 flex items-start gap-2.5 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.07] px-4 py-3 text-sm text-foreground/90"
-          >
-            <CircleCheck className="mt-0.5 size-4 shrink-0 text-emerald-400" aria-hidden="true" />
+          <Aviso icone={CircleCheck} tom="sucesso">
             Senha trocada. Entre com a senha nova.
-          </p>
+          </Aviso>
         )}
-
         {expirou && (
-          <p
-            role="status"
-            className="mt-6 flex items-start gap-2.5 rounded-xl border border-brand-blue/25 bg-brand-blue/[0.07] px-4 py-3 text-sm text-foreground/90"
-          >
-            <Clock className="mt-0.5 size-4 shrink-0 text-brand-cyan" aria-hidden="true" />
-            Sua sessão expirou. Entre de novo para continuar.
-          </p>
+          <Aviso icone={Clock} tom="info">
+            Sua sessão expirou. Entre de novo para continuar de onde parou.
+          </Aviso>
         )}
 
-        <form onSubmit={handleSubmit} noValidate className="mt-8 flex flex-col gap-5">
-          <FormField
-            {...campo("cpf")}
-            label="CPF"
-            placeholder="000.000.000-00"
-            inputMode="numeric"
-            autoComplete="username"
-            autoFocus
-          />
-          <FormField {...campo("senha")} label="Senha" type="password" autoComplete="current-password" />
+        <form onSubmit={handleSubmit} noValidate className={`mt-10 flex flex-col gap-3 delay-150 ${ENTRADA}`}>
+          <CampoFlutuante {...campo("cpf")} label="CPF" inputMode="numeric" autoComplete="username" autoFocus />
+          <CampoFlutuante {...campo("senha")} label="Senha" senha autoComplete="current-password" />
 
-          <div className="mt-3 flex flex-col gap-4">
-            {erroGeral && <FormAlert>{erroGeral}</FormAlert>}
+          {erroGeral && (
+            <div className="mt-2">
+              <FormAlert>{erroGeral}</FormAlert>
+            </div>
+          )}
 
-            <Button type="submit" variant="brand" size="xl" disabled={enviando} className="h-[3.25rem] w-full">
-              {enviando ? (
-                <>
-                  <LoaderCircle className="animate-spin" data-icon="inline-start" aria-hidden="true" />
-                  Entrando…
-                </>
-              ) : (
-                <>
-                  Entrar
-                  <ArrowRight
-                    data-icon="inline-end"
-                    aria-hidden="true"
-                    className="transition-transform group-hover/button:translate-x-0.5"
-                  />
-                </>
-              )}
-            </Button>
-          </div>
+          <button
+            type="submit"
+            disabled={enviando}
+            className={cn(
+              "group mt-4 inline-flex h-[3.75rem] w-full items-center justify-center gap-2.5 rounded-2xl",
+              "bg-foreground text-[0.95rem] font-medium text-background",
+              "shadow-[0_10px_40px_-10px_rgb(241_245_249/0.25)] hover:shadow-[0_14px_50px_-10px_rgb(241_245_249/0.35)]",
+              "transition-[transform,box-shadow,opacity] duration-200 active:scale-[0.99]",
+              "disabled:cursor-wait disabled:opacity-70",
+            )}
+          >
+            {enviando ? (
+              <>
+                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                Entrando…
+              </>
+            ) : (
+              <>
+                Entrar
+                <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+              </>
+            )}
+          </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-muted-foreground">
-          Ainda não tem conta?{" "}
+        <p className={`mt-8 text-sm text-muted-foreground delay-200 ${ENTRADA}`}>
+          Primeira vez no RKF?{" "}
           <Link href={ROUTES.signUp} className="font-medium text-foreground underline-offset-4 hover:underline">
-            Abrir minha conta
+            Abra sua conta em minutos
           </Link>
         </p>
       </div>
-    </main>
+    </AuthShell>
+  );
+}
+
+const TONS = {
+  sucesso: "border-emerald-500/20 bg-emerald-500/[0.06] [&>svg]:text-emerald-400",
+  info: "border-brand-blue/20 bg-brand-blue/[0.06] [&>svg]:text-brand-cyan",
+} as const;
+
+function Aviso({ icone: Icone, tom, children }: { icone: LucideIcon; tom: keyof typeof TONS; children: ReactNode }) {
+  return (
+    <p
+      role="status"
+      className={`mt-8 flex items-start gap-2.5 rounded-2xl border px-4 py-3.5 text-sm text-foreground/90 animate-in fade-in slide-in-from-top-1 duration-300 ${TONS[tom]}`}
+    >
+      <Icone className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      {children}
+    </p>
   );
 }
