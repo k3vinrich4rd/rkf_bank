@@ -3,14 +3,16 @@ package com.br.rkfbank.services;
 import com.br.rkfbank.entities.RegistroIdempotencia;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
 import com.br.rkfbank.exceptions.CodigoErroEnum;
-import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.ConflitoException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.IdempotenciaRepository;
 import com.br.rkfbank.security.UsuarioLogado;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -38,6 +40,17 @@ public class IdempotenciaService {
 
     public IdempotenciaService(IdempotenciaRepository repository) {
         this.repository = repository;
+    }
+
+    // Quanto tempo uma chave fica guardada. Repeticao de verdade acontece em segundos; 30 dias e folga de sobra.
+    static final Duration RETENCAO_DAS_CHAVES = Duration.ofDays(30);
+
+    // Chamado todo dia pela RotinaLimpezaIdempotencia: sem isto a tb_idempotencia so cresce. Devolve quantas sairam.
+    @Transactional
+    public int apagarChavesAntigas(Instant agora) {
+        int apagadas = repository.apagarCriadasAntesDe(agora.minus(RETENCAO_DAS_CHAVES));
+        log.info("Limpeza de idempotencia: {} chave(s) com mais de {} dias apagada(s)", apagadas, RETENCAO_DAS_CHAVES.toDays());
+        return apagadas;
     }
 
     // Executa a movimentacao uma unica vez por chave. Tres casos:

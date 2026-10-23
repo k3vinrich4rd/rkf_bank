@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -54,13 +55,17 @@ class ClienteServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    // Objeto de verdade (nao mock): so guarda a versao vigente dos termos.
+    @Spy
+    private TermosDeUso termosDeUso = new TermosDeUso("2026-10-23");
+
     @InjectMocks
     private ClienteService clienteService;
 
     @Test
     void deveCriarUsuarioClienteComSenhaEmHashAoCadastrar() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "529.982.247-25", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1"
+                "Joao Silva", "529.982.247-25", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1", true, null
         );
         when(clienteRepository.existsByCpf("52998224725")).thenReturn(false);
         when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(false);
@@ -86,7 +91,7 @@ class ClienteServiceTest {
         // 40 caracteres "ç" cabem no @Size(max = 72), mas ocupam 80 bytes em UTF-8.
         String senhaComAcentos = "ç".repeat(40);
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", null, senhaComAcentos
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", null, senhaComAcentos, true, null
         );
         when(clienteRepository.existsByCpf("52998224725")).thenReturn(false);
         when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(false);
@@ -103,7 +108,7 @@ class ClienteServiceTest {
     @Test
     void deveRecusarCpfQueJaELoginDeUmUsuarioSemCadastroDeCliente() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "529.982.247-25", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1"
+                "Joao Silva", "529.982.247-25", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1", true, null
         );
         when(clienteRepository.existsByCpf("52998224725")).thenReturn(false);
         when(usuarioRepository.existsByLogin("52998224725")).thenReturn(true);
@@ -117,7 +122,7 @@ class ClienteServiceTest {
     @Test
     void naoDeveExporSenhaNemCpfNoToStringDoRequest() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1"
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1", true, null
         );
 
         String texto = request.toString();
@@ -136,7 +141,7 @@ class ClienteServiceTest {
                 "01001000",
                 "123",
                 "Apto 45",
-                "senha-forte-1"
+                "senha-forte-1", true, null
         );
 
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
@@ -161,14 +166,16 @@ class ClienteServiceTest {
 
         assertNotNull(response);
         assertEquals("Joao Silva", response.nomeCompleto());
-        assertEquals("529.982.247-25", response.cpf());
+        assertEquals("***.982.247-**", response.cpf());
+        assertEquals("2026-10-23", response.termosVersao());
+        assertNotNull(response.termosAceitosEm());
         assertEquals("Praca da Se", response.endereco().logradouro());
     }
 
     @Test
     void deveLancarConflitoQuandoCpfDuplicado() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1", true, null
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(true);
 
@@ -178,7 +185,7 @@ class ClienteServiceTest {
     @Test
     void deveLancarConflitoQuandoEmailDuplicado() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1", true, null
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(true);
@@ -189,7 +196,7 @@ class ClienteServiceTest {
     @Test
     void deveSalvarEmailEmMinusculasESemEspacos() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "  Joao.Silva@Email.COM ", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
+                "Joao Silva", "52998224725", "  Joao.Silva@Email.COM ", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1", true, null
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail("joao.silva@email.com")).thenReturn(false);
@@ -206,7 +213,7 @@ class ClienteServiceTest {
     @Test
     void deveLancarConflitoQuandoEmailDuplicadoComMaiusculas() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "JOAO@EMAIL.COM", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
+                "Joao Silva", "52998224725", "JOAO@EMAIL.COM", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1", true, null
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(true);
@@ -293,7 +300,7 @@ class ClienteServiceTest {
                 "01001-000",
                 "123",
                 "Apto 45",
-                "senha-forte-1"
+                "senha-forte-1", true, null
         );
 
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
@@ -311,7 +318,7 @@ class ClienteServiceTest {
     @Test
     void deveConverterConflitoDeUnicidadeNoInsertEm409() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1"
+                "Joao Silva", "52998224725", "joao@email.com", "11999998888", "01001000", "123", "Apto 45", "senha-forte-1", true, null
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(false);

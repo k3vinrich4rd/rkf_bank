@@ -3,6 +3,7 @@ package com.br.rkfbank.controllers;
 import com.br.rkfbank.dto.request.auth.TrocarSenhaRequestDto;
 import com.br.rkfbank.security.UsuarioLogado;
 import com.br.rkfbank.services.AutenticacaoService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 // O usuario logado cuidando do proprio acesso ("me" = o usuario do token, cliente ou ADMIN).
 // Par de /admin/usuarios/{id}, onde o ADMIN cuida do acesso dos outros. Exige token.
+@Tag(name = "Usuário logado", description = "o próprio acesso: troca de senha")
 @RestController
 @RequestMapping("/usuarios/me")
 public class UsuarioController {

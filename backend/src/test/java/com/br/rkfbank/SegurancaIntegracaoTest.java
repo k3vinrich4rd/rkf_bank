@@ -412,7 +412,7 @@ class SegurancaIntegracaoTest {
     private static String cadastroJson(String cpf, String senha) {
         return """
                 {"nomeCompleto": "Cliente Teste", "cpf": "%s", "email": "%s@rkfbank.com", "telefone": "11999998888",
-                 "cep": "01001000", "numero": "10", "senha": "%s"}
+                 "cep": "01001000", "numero": "10", "senha": "%s", "aceiteTermos": true}
                 """.formatted(cpf, cpf, senha);
     }
 

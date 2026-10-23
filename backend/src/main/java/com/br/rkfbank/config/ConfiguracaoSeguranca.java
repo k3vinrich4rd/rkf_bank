@@ -56,14 +56,24 @@ public class ConfiguracaoSeguranca {
                 .sessionManagement(sessao -> sessao.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(rotas -> rotas
                         .requestMatchers(HttpMethod.POST, "/clientes", "/auth/login").permitAll()
+                        // Renovar e sair usam o token de renovacao (no corpo), nao o de acesso, que pode ja ter vencido.
+                        .requestMatchers(HttpMethod.POST, "/auth/refresh", "/auth/logout").permitAll()
+                        // Versao vigente dos termos: o cadastro precisa dela antes de ter token.
+                        .requestMatchers(HttpMethod.GET, "/termos").permitAll()
                         // Pagina de erro do Spring: sem isso um 500 numa rota publica viraria 401.
                         .requestMatchers("/error").permitAll()
                         // Health check para Docker/deploy: so UP/DOWN, sem detalhe (show-details=never).
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                        // Swagger: a especificacao e a tela sao publicas (so descrevem a API); as rotas continuam
+                        // exigindo token, que se cola no botao Authorize. Em producao, springdoc.*.enabled=false.
+                        .requestMatchers(HttpMethod.GET, "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/clientes").hasRole("ADMIN")
                         // Gestao de usuarios (promover, rebaixar, desativar): so ADMIN.
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .anyRequest().authenticated())
+                        // Senha temporaria (ConversorTokenUsuario: so a autoridade SENHA_TEMPORARIA) chega ate aqui so para
+                        // trocar a senha; qualquer outra rota pede um perfil de verdade e responde 403 TROCA_DE_SENHA_OBRIGATORIA.
+                        .requestMatchers(HttpMethod.PATCH, "/usuarios/me/senha").authenticated()
+                        .anyRequest().hasAnyRole("CLIENTE", "ADMIN"))
                 .oauth2ResourceServer(resourceServer -> resourceServer
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(conversorToken))
                         .authenticationEntryPoint(respostaErro)

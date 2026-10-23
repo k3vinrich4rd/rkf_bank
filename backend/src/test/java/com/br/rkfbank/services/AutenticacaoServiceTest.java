@@ -52,13 +52,16 @@ class AutenticacaoServiceTest {
     @Mock
     private LimitadorTentativasLogin limitador;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     private AutenticacaoService autenticacaoService;
 
     @BeforeEach
     void setUp() {
         // O construtor gera o hash falso usado quando o CPF nao existe.
         when(passwordEncoder.encode(anyString())).thenReturn(HASH_FALSO);
-        autenticacaoService = new AutenticacaoService(usuarioRepository, passwordEncoder, tokenService, limitador);
+        autenticacaoService = new AutenticacaoService(usuarioRepository, passwordEncoder, tokenService, limitador, refreshTokenService);
     }
 
     @Test
@@ -68,6 +71,7 @@ class AutenticacaoServiceTest {
         when(usuarioRepository.findByLogin("52998224725")).thenReturn(Optional.of(joao));
         when(passwordEncoder.matches("senha-forte-1", HASH_JOAO)).thenReturn(true);
         when(tokenService.emitir(joao)).thenReturn(new TokenService.TokenEmitido("token.jwt.assinado", 3600));
+        when(refreshTokenService.emitir(joao)).thenReturn(new RefreshTokenService.Emitido("token-de-renovacao", 604800));
 
         // CPF com mascara: o login normaliza para so digitos, igual ao cadastro.
         LoginResponseDto response = autenticacaoService.login(new LoginRequestDto("529.982.247-25", "senha-forte-1"));
@@ -77,6 +81,7 @@ class AutenticacaoServiceTest {
         assertEquals(3600, response.expiraEmSegundos());
         assertEquals(clienteId, response.clienteId());
         assertEquals(PerfilEnum.CLIENTE, response.perfil());
+        assertEquals("token-de-renovacao", response.refreshToken());
         // Acertou: o contador de erros daquele CPF zera.
         verify(limitador).limpar("52998224725");
     }
@@ -87,6 +92,7 @@ class AutenticacaoServiceTest {
         when(usuarioRepository.findByLogin("11144477735")).thenReturn(Optional.of(admin));
         when(passwordEncoder.matches("senha-do-admin", HASH_JOAO)).thenReturn(true);
         when(tokenService.emitir(admin)).thenReturn(new TokenService.TokenEmitido("token", 3600));
+        when(refreshTokenService.emitir(admin)).thenReturn(new RefreshTokenService.Emitido("token-de-renovacao", 604800));
 
         LoginResponseDto response = autenticacaoService.login(new LoginRequestDto("11144477735", "senha-do-admin"));
 

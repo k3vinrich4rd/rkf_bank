@@ -7,6 +7,7 @@ import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.CredenciaisInvalidasException;
 import com.br.rkfbank.exceptions.RegraNegocioException;
+import com.br.rkfbank.exceptions.SessaoExpiradaException;
 import com.br.rkfbank.exceptions.UsuarioNaoEncontradoException;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.security.LimitadorTentativasLogin;
@@ -33,22 +34,24 @@ public class AutenticacaoService {
     private final PasswordEncoder passwordEncoder;
     private final TokenService tokenService;
     private final LimitadorTentativasLogin limitador;
+    private final RefreshTokenService refreshTokenService;
 
     // Hash de uma senha que ninguem tem. Usado quando o CPF nao existe, para o login gastar o mesmo tempo
     // do BCrypt nos dois casos; senao a demora da resposta revelaria quais CPFs tem cadastro.
     private final String hashFalso;
 
     public AutenticacaoService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, TokenService tokenService,
-                       LimitadorTentativasLogin limitador) {
+                       LimitadorTentativasLogin limitador, RefreshTokenService refreshTokenService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.tokenService = tokenService;
         this.limitador = limitador;
+        this.refreshTokenService = refreshTokenService;
         this.hashFalso = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
-    // readOnly = true: o login so le o banco; o Hibernate pula a checagem de mudancas e o banco pode otimizar.
-    @Transactional(readOnly = true)
+    // Escreve so o token de renovacao (tb_refresh_token); o resto do login le o banco.
+    @Transactional
     public LoginResponseDto login(LoginRequestDto request) {
         String cpf = request.cpf().replaceAll("\\D", "");
         // Acima de 72 bytes o BCrypt nao confere; nenhuma senha cadastrada passa desse limite.
@@ -75,10 +78,32 @@ public class AutenticacaoService {
             log.warn("Login recusado: usuario {} desativado", usuario.getId());
             throw new CredenciaisInvalidasException();
         }
-        TokenService.TokenEmitido token = tokenService.emitir(usuario);
-        UUID clienteId = usuario.getCliente() != null ? usuario.getCliente().getId() : null;
         log.info("Usuario {} autenticado (perfil={})", usuario.getId(), usuario.getPerfil());
-        return new LoginResponseDto(token.token(), "Bearer", token.expiraEmSegundos(), clienteId, usuario.getPerfil());
+        return sessao(usuario);
+    }
+
+    // POST /auth/refresh: troca o token de renovacao por um par novo (o usado e revogado). Sem senha.
+    // noRollbackFor: no 401 de reuso, a revogacao de todas as sessoes TEM que ser gravada mesmo com a excecao.
+    @Transactional(noRollbackFor = SessaoExpiradaException.class)
+    public LoginResponseDto renovar(String refreshToken) {
+        Usuario usuario = refreshTokenService.consumir(refreshToken);
+        log.info("Sessao do usuario {} renovada", usuario.getId());
+        return sessao(usuario);
+    }
+
+    // POST /auth/logout: o token de renovacao deixa de valer. O de acesso ainda vale ate vencer (no maximo 15 min),
+    // mas o front ja o apagou do cookie.
+    @Transactional
+    public void sair(String refreshToken) {
+        refreshTokenService.revogar(refreshToken);
+    }
+
+    private LoginResponseDto sessao(Usuario usuario) {
+        TokenService.TokenEmitido token = tokenService.emitir(usuario);
+        RefreshTokenService.Emitido renovacao = refreshTokenService.emitir(usuario);
+        UUID clienteId = usuario.getCliente() != null ? usuario.getCliente().getId() : null;
+        return new LoginResponseDto(token.token(), "Bearer", token.expiraEmSegundos(), clienteId, usuario.getPerfil(),
+                usuario.isDeveTrocarSenha(), renovacao.valor(), renovacao.expiraEmSegundos());
     }
 
     // Troca da propria senha. Exige a senha atual (um token roubado nao basta) e conta erro no mesmo limitador do

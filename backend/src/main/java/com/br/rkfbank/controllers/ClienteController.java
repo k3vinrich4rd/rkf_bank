@@ -4,6 +4,8 @@ import com.br.rkfbank.dto.comum.PaginaResponse;
 import com.br.rkfbank.dto.request.cliente.CadastroClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.services.ClienteService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 // Metodo, rota, status e duracao de cada chamada ja saem no FiltroLogRequisicao; aqui so o detalhe em DEBUG.
+@Tag(name = "Clientes", description = "cadastro público e listagem (ADMIN)")
 @RestController
 @RequestMapping("/clientes")
 public class ClienteController {
@@ -28,6 +31,7 @@ public class ClienteController {
 
     // Cadastro publico (sem token). @Valid dispara o Bean Validation do DTO antes de chamar o service.
     // 201 Created: o recurso foi criado, e o corpo traz o cliente como ficou salvo (sem a senha).
+    @SecurityRequirements // publica: sem o cadeado do Authorize no Swagger
     @PostMapping
     public ResponseEntity<ClienteResponseDto> cadastrar(@Valid @RequestBody CadastroClienteRequestDto request) {
         // Camada HTTP: valida request, delega regra ao service e devolve 201 com corpo.

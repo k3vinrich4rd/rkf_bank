@@ -3,6 +3,7 @@ package com.br.rkfbank.config;
 import com.br.rkfbank.dto.comum.ErroResponse;
 import com.br.rkfbank.exceptions.AcessoAlteradoException;
 import com.br.rkfbank.exceptions.CodigoErroEnum;
+import com.br.rkfbank.security.ConversorTokenUsuario;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -13,7 +14,9 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenAuthenticationEntryPoint;
 import org.springframework.security.web.AuthenticationEntryPoint;
@@ -53,8 +56,13 @@ public class TratadorErrosSeguranca implements AuthenticationEntryPoint, AccessD
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException ex)
             throws IOException {
-        log.warn("403 em {}: perfil sem permissao", LogSeguro.texto(request.getRequestURI()));
-        escrever(response, HttpStatus.FORBIDDEN, CodigoErroEnum.PERFIL_SEM_PERMISSAO, request.getRequestURI());
+        // Senha temporaria (redefinida pelo ADMIN): o token so tem a autoridade SENHA_TEMPORARIA e so troca a senha.
+        Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        boolean senhaTemporaria = autenticacao != null && autenticacao.getAuthorities().stream()
+                .anyMatch(a -> ConversorTokenUsuario.SENHA_TEMPORARIA.equals(a.getAuthority()));
+        CodigoErroEnum codigo = senhaTemporaria ? CodigoErroEnum.TROCA_DE_SENHA_OBRIGATORIA : CodigoErroEnum.PERFIL_SEM_PERMISSAO;
+        log.warn("403 em {}: {}", LogSeguro.texto(request.getRequestURI()), codigo);
+        escrever(response, HttpStatus.FORBIDDEN, codigo, request.getRequestURI());
     }
 
     private void escrever(HttpServletResponse response, HttpStatus status, CodigoErroEnum codigo, String path)

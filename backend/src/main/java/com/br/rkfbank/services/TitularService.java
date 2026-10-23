@@ -16,6 +16,7 @@ import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.ClienteRepository;
 import com.br.rkfbank.repositories.ContaRepository;
+import com.br.rkfbank.repositories.LancamentoRepository;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.security.UsuarioLogado;
 import java.math.BigDecimal;
@@ -49,17 +50,20 @@ public class TitularService {
     private final ClienteRepository clienteRepository;
     private final UsuarioRepository usuarioRepository;
     private final ContaRepository contaRepository;
+    private final LancamentoRepository lancamentoRepository;
     private final ViaCepClient viaCepClient;
     private final ClienteService clienteService;
     private final PasswordEncoder passwordEncoder;
     private final LgpdPropriedades lgpd;
 
     public TitularService(ClienteRepository clienteRepository, UsuarioRepository usuarioRepository,
-                          ContaRepository contaRepository, ViaCepClient viaCepClient, ClienteService clienteService,
+                          ContaRepository contaRepository, LancamentoRepository lancamentoRepository,
+                          ViaCepClient viaCepClient, ClienteService clienteService,
                           PasswordEncoder passwordEncoder, LgpdPropriedades lgpd) {
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
         this.contaRepository = contaRepository;
+        this.lancamentoRepository = lancamentoRepository;
         this.viaCepClient = viaCepClient;
         this.clienteService = clienteService;
         this.passwordEncoder = passwordEncoder;
@@ -206,6 +210,11 @@ public class TitularService {
                 credencial.setSenhaHash(passwordEncoder.encode(UUID.randomUUID().toString()));
                 credencial.setAtivo(false);
             });
+            // Texto livre que o proprio titular escreveu nas movimentacoes ("Aluguel do Joao"): valor e contas ficam.
+            List<UUID> contas = contaRepository.findByClienteId(cliente.getId()).stream().map(Conta::getId).toList();
+            if (!contas.isEmpty()) {
+                lancamentoRepository.limparDescricoesEscritasPor(contas);
+            }
             cliente.marcarAnonimizado(agora);
             log.info("Cliente {} anonimizado (encerrado em {})", cliente.getId(), cliente.getEncerradoEm());
         }

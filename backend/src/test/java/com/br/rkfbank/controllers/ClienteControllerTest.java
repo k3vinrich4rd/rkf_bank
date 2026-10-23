@@ -41,7 +41,7 @@ class ClienteControllerTest {
                 "01001000",
                 "123",
                 "Apto 45",
-                "senha-forte-1"
+                "senha-forte-1", true, null
         );
 
         when(clienteService.cadastrar(request)).thenReturn(clienteResponse());
@@ -116,7 +116,7 @@ class ClienteControllerTest {
                 "52998224725",
                 "joao@rkfbank.com",
                 "11999998888",
-                endereco
+                endereco, null, null
         );
     }
 }

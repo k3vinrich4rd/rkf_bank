@@ -5,11 +5,9 @@ public enum TipoLancamentoEnum {
 
     DEPOSITO("Depósito"),
     SAQUE("Saque"),
-    TRANSFERENCIA("Transferência"),
-    // CREDITO e DEBITO sao tipos genericos reservados para lancamentos que nao sao deposito, saque nem transferencia
-    // (tarifa, estorno, rendimento). Nenhuma operacao os gera hoje; ficam no enum para o CHECK do banco ja aceita-los.
-    CREDITO("Crédito"),
-    DEBITO("Débito");
+    // Ate a V13 havia tambem CREDITO e DEBITO, reservados e nunca usados: sairam. Tipo novo (tarifa, rendimento)
+    // entra aqui junto com uma migracao que o acrescente ao CHECK da coluna.
+    TRANSFERENCIA("Transferência");
 
     private final String descricao;
 

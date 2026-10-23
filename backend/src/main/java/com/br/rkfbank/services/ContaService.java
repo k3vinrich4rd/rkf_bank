@@ -4,6 +4,7 @@ import com.br.rkfbank.dto.request.conta.AberturaContaRequestDto;
 import com.br.rkfbank.dto.request.conta.DepositoRequestDto;
 import com.br.rkfbank.dto.request.conta.SaqueRequestDto;
 import com.br.rkfbank.dto.request.conta.TransferenciaRequestDto;
+import com.br.rkfbank.dto.response.conta.ContaDivergenteResponseDto;
 import com.br.rkfbank.dto.response.conta.ContaResponseDto;
 import com.br.rkfbank.dto.response.conta.LancamentoResponseDto;
 import com.br.rkfbank.entities.Cliente;
@@ -180,6 +181,28 @@ public class ContaService {
                 .toList();
         log.debug("Extrato da conta {} retornou {} lancamentos", contaId, lancamentos.size());
         return lancamentos;
+    }
+
+    // GET /contas/{contaId}: uma conta so (saldo atualizado depois de uma movimentacao). Mesma regra do GET /contas:
+    // o CLIENTE ve so as dele (403 nas dos outros) e o ADMIN ve qualquer uma. Conta inativa tambem aparece (ativa=false).
+    @Transactional(readOnly = true)
+    public ContaResponseDto buscarPorId(UUID contaId, UsuarioLogado usuario) {
+        Conta conta = buscar(contaId);
+        if (!usuario.isAdmin() && !usuario.ehDono(conta.getCliente().getId())) {
+            log.warn("Consulta recusada: usuario {} nao e dono da conta {}", usuario.usuarioId(), contaId);
+            throw new AcessoNegadoException();
+        }
+        return paraContaResponse(conta);
+    }
+
+    // Conciliacao saldo x extrato (so ADMIN). Lista vazia = tudo certo. Divergencia vira WARN no log para alertar.
+    @Transactional(readOnly = true)
+    public List<ContaDivergenteResponseDto> conciliar() {
+        List<ContaDivergenteResponseDto> divergentes = contaRepository.findDivergentesDoExtrato();
+        if (!divergentes.isEmpty()) {
+            log.warn("Conciliacao: {} conta(s) com saldo diferente do extrato", divergentes.size());
+        }
+        return divergentes;
     }
 
     // GET /contas: o ADMIN ve todas; o CLIENTE ve so as dele. A mesma rota muda o resultado conforme o perfil.

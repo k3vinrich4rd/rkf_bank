@@ -2,6 +2,7 @@ package com.br.rkfbank.services;
 
 import com.br.rkfbank.clients.viacep.ViaCepClient;
 import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
+import com.br.rkfbank.config.LogSeguro;
 import com.br.rkfbank.dto.request.cliente.CadastroClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.dto.response.cliente.EnderecoResponseDto;
@@ -12,6 +13,7 @@ import com.br.rkfbank.entities.enums.PerfilEnum;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.ConflitoException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.ClienteRepository;
 import com.br.rkfbank.repositories.UsuarioRepository;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -43,17 +46,20 @@ public class ClienteService {
     private final ViaCepClient viaCepClient;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TermosDeUso termosDeUso;
 
     public ClienteService(
             ClienteRepository clienteRepository,
             ViaCepClient viaCepClient,
             UsuarioRepository usuarioRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            TermosDeUso termosDeUso
     ) {
         this.clienteRepository = clienteRepository;
         this.viaCepClient = viaCepClient;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.termosDeUso = termosDeUso;
     }
 
     // Ordem pensada: primeiro as checagens baratas e locais (CPF/e-mail repetidos, tamanho da senha), depois a
@@ -84,6 +90,14 @@ public class ClienteService {
         // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Checado antes de chamar o ViaCEP.
         garantirLimiteDoBcrypt("senha", request.senha());
 
+        // O aceite em si (aceiteTermos=true) ja foi exigido pelo @AssertTrue. Aqui so a versao: quem tem a pagina
+        // aberta desde antes de os termos mudarem aceitou um texto que nao vale mais.
+        String versaoVigente = termosDeUso.versaoVigente();
+        if (request.termosVersao() != null && !request.termosVersao().equals(versaoVigente)) {
+            log.warn("Cadastro de cliente recusado: termos na versao {} (vigente {})", LogSeguro.texto(request.termosVersao()), versaoVigente);
+            throw new RegraNegocioException(CodigoErroEnum.TERMOS_DESATUALIZADOS);
+        }
+
         // Normaliza o CEP para manter somente dígitos antes de chamar o ViaCEP.
         String cep = request.cep().replaceAll("\\D", "");
 
@@ -96,6 +110,8 @@ public class ClienteService {
         // Altera o CPF da entidade para salvar a versão puramente numérica no banco de dados.
         cliente.setCpf(cpfSanitizado);
         cliente.setEmail(emailNormalizado);
+        // LGPD: prova do consentimento (qual texto foi aceito e quando).
+        cliente.registrarAceiteDosTermos(versaoVigente, Instant.now());
 
         // Normaliza o telefone para manter apenas dígitos antes de salvar no banco.
         String telefoneSanitizado = request.telefone().replaceAll("\\D", "");
@@ -198,25 +214,28 @@ public class ClienteService {
                 endereco.getComplemento()
         );
 
-        String cpfFormatado = formatarCpf(cliente);
+        String cpfMascarado = mascararCpf(cliente.getCpf());
         String telefoneFormatado = formatarTelefone(cliente);
 
         return new ClienteResponseDto(
                 cliente.getId(),
                 cliente.getNomeCompleto(),
-                cpfFormatado,
+                cpfMascarado,
                 cliente.getEmail(),
                 telefoneFormatado,
-                enderecoResponse
+                enderecoResponse,
+                cliente.getTermosVersao(),
+                cliente.getTermosAceitosEm()
         );
     }
 
-    private static String formatarCpf(Cliente cliente) {
-        String cpfFormatado = cliente.getCpf();
-        if (cpfFormatado != null && cpfFormatado.length() == 11) {
-            cpfFormatado = cpfFormatado.replaceAll("(\\d{3})(\\d{3})(\\d{3})(\\d{2})", "$1.$2.$3-$4");
+    // 12345678909 -> ***.456.789-** : da para a pessoa (e o ADMIN) reconhecer o cadastro sem expor o CPF inteiro.
+    // Mesmo formato da lista do ADMIN (GestaoUsuarioService), que reaproveita este metodo.
+    static String mascararCpf(String cpf) {
+        if (cpf == null || cpf.length() != 11) {
+            return "***";
         }
-        return cpfFormatado;
+        return "***." + cpf.substring(3, 6) + "." + cpf.substring(6, 9) + "-**";
     }
 
     private static String formatarTelefone(Cliente cliente) {

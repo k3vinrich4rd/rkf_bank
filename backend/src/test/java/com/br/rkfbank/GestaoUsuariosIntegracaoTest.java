@@ -164,7 +164,24 @@ class GestaoUsuariosIntegracaoTest {
 
         mockMvc.perform(get("/contas").header("Authorization", "Bearer " + tokenAntigoDoFellipe))
                 .andExpect(status().isUnauthorized());
-        mockMvc.perform(get("/contas").header("Authorization", "Bearer " + login(CPF_FELLIPE, "senha-temporaria-1")))
+
+        // A senha que o ADMIN passou e temporaria: o login avisa e so a troca de senha fica liberada (V14).
+        mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson(CPF_FELLIPE, "senha-temporaria-1")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deveTrocarSenha").value(true));
+        String tokenTemporario = login(CPF_FELLIPE, "senha-temporaria-1");
+        mockMvc.perform(get("/contas").header("Authorization", "Bearer " + tokenTemporario))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.codigo").value("TROCA_DE_SENHA_OBRIGATORIA"));
+        mockMvc.perform(patch("/usuarios/me/senha").header("Authorization", "Bearer " + tokenTemporario)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"senhaAtual\":\"senha-temporaria-1\",\"novaSenha\":\"senha-so-do-fellipe\"}"))
+                .andExpect(status().isNoContent());
+
+        // Escolheu a propria senha: volta tudo ao normal.
+        mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson(CPF_FELLIPE, "senha-so-do-fellipe")))
+                .andExpect(jsonPath("$.deveTrocarSenha").value(false));
+        mockMvc.perform(get("/contas").header("Authorization", "Bearer " + login(CPF_FELLIPE, "senha-so-do-fellipe")))
                 .andExpect(status().isOk());
     }
 

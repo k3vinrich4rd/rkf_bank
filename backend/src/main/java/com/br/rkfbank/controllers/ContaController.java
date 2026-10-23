@@ -11,6 +11,7 @@ import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
 import com.br.rkfbank.security.UsuarioLogado;
 import com.br.rkfbank.services.ContaService;
 import com.br.rkfbank.services.IdempotenciaService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import org.apache.logging.log4j.LogManager;
@@ -32,6 +33,7 @@ import java.util.UUID;
 
 // Metodo, rota, status e duracao de cada chamada ja saem no FiltroLogRequisicao; aqui so o detalhe em DEBUG.
 // Todas as rotas exigem token (ConfiguracaoSeguranca); o Jwt chega ja validado e vira UsuarioLogado para o service.
+@Tag(name = "Contas e dinheiro", description = "abrir conta, depositar, sacar, transferir e extrato")
 @RestController
 public class ContaController {
 
@@ -107,6 +109,13 @@ public class ContaController {
     // "10.0" e "10.00" sao o mesmo valor: stripTrailingZeros evita que a repeticao pareca outra operacao.
     private static String assinaturaDaOperacao(UUID conta, UUID destino, BigDecimal valor, String descricao) {
         return conta + "|" + destino + "|" + valor.stripTrailingZeros().toPlainString() + "|" + (descricao == null ? "" : descricao);
+    }
+
+    // Uma conta so: saldo, tipo e se esta ativa. CLIENTE ve as dele (403 nas outras); ADMIN ve qualquer uma.
+    @GetMapping("/contas/{contaId}")
+    public ResponseEntity<ContaResponseDto> buscar(@PathVariable UUID contaId, @AuthenticationPrincipal Jwt jwt) {
+        log.debug("Consulta da conta {}", contaId);
+        return ResponseEntity.ok(contaService.buscarPorId(contaId, UsuarioLogado.de(jwt)));
     }
 
     // Extrato da conta (GET /contas/{contaId}/lancamentos). Regra de dono no service.

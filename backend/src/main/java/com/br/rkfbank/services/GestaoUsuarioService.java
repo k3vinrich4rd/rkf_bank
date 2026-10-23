@@ -80,8 +80,9 @@ public class GestaoUsuarioService {
         }
         ClienteService.garantirLimiteDoBcrypt("novaSenha", novaSenha);
         Usuario alvo = buscarOutro(usuarioId, quem);
-        alvo.trocarSenha(passwordEncoder.encode(novaSenha));
-        log.info("Usuario {} redefiniu a senha do usuario {}; tokens anteriores revogados", quem.usuarioId(), alvo.getId());
+        // Temporaria: no proximo login a pessoa so consegue trocar a senha (o ADMIN conhece esta).
+        alvo.redefinirSenhaTemporaria(passwordEncoder.encode(novaSenha));
+        log.info("Usuario {} redefiniu a senha do usuario {}; tokens anteriores revogados e troca obrigatoria", quem.usuarioId(), alvo.getId());
     }
 
     // Ninguem mexe no proprio perfil ou acesso. Alem de evitar o admin se trancar para fora, garante que sempre sobra
@@ -107,11 +108,8 @@ public class GestaoUsuarioService {
                 usuario.getCliente() != null ? usuario.getCliente().getId() : null);
     }
 
-    // 12345678909 -> ***.456.789-** : da para reconhecer a pessoa sem expor o CPF inteiro.
+    // 12345678909 -> ***.456.789-** (a regra mora no ClienteService: um formato so de CPF mascarado na API inteira).
     static String mascararCpf(String cpf) {
-        if (cpf == null || cpf.length() != 11) {
-            return "***";
-        }
-        return "***." + cpf.substring(3, 6) + "." + cpf.substring(6, 9) + "-**";
+        return ClienteService.mascararCpf(cpf);
     }
 }

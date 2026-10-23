@@ -35,7 +35,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import tools.jackson.databind.json.JsonMapper;
 
-// Direitos do titular (LGPD) de ponta a ponta com o seed da equipe: o Felipe ve, corrige e encerra o proprio
+// Direitos do titular (LGPD) de ponta a ponta com o seed da equipe: o Fellipe ve, corrige e encerra o proprio
 // cadastro; a rotina anonimiza quando o prazo de retencao vence. DirtiesContext: cada teste com o banco do seed intacto.
 @SpringBootTest(properties = {
         "spring.flyway.locations=classpath:db/migration,classpath:db/seed/equipe",
@@ -53,10 +53,10 @@ class TitularIntegracaoTest {
     static final String CPF_ADMIN = "13579246828";
     static final String SENHA_ADMIN = "senha-do-admin-so-no-teste";
 
-    private static final String CPF_FELIPE = "12345678909";
+    private static final String CPF_FELLIPE = "12345678909";
     private static final String CPF_RENAN = "98765432100";
-    private static final UUID CLIENTE_FELIPE = UUID.fromString("5eed0000-0000-4000-8000-000000000012");
-    private static final String CONTA_FELIPE = "5eed0000-0000-4000-8000-000000000014";
+    private static final UUID CLIENTE_FELLIPE = UUID.fromString("5eed0000-0000-4000-8000-000000000012");
+    private static final String CONTA_FELLIPE = "5eed0000-0000-4000-8000-000000000014";
     private static final String CONTA_RENAN = "5eed0000-0000-4000-8000-000000000024";
 
     @Autowired
@@ -85,10 +85,10 @@ class TitularIntegracaoTest {
 
     @Test
     void titularVeOsPropriosDadosPeloToken() throws Exception {
-        mockMvc.perform(get("/clientes/me").header("Authorization", "Bearer " + login(CPF_FELIPE, SENHA_EQUIPE)))
+        mockMvc.perform(get("/clientes/me").header("Authorization", "Bearer " + login(CPF_FELLIPE, SENHA_EQUIPE)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(CLIENTE_FELIPE.toString()))
-                .andExpect(jsonPath("$.nomeCompleto").value(org.hamcrest.Matchers.startsWith("Felipe Santana")))
+                .andExpect(jsonPath("$.id").value(CLIENTE_FELLIPE.toString()))
+                .andExpect(jsonPath("$.nomeCompleto").value(org.hamcrest.Matchers.startsWith("Fellipe Santana")))
                 .andExpect(jsonPath("$.endereco.cidade").value("Osasco"));
     }
 
@@ -104,20 +104,20 @@ class TitularIntegracaoTest {
 
     @Test
     void titularCorrigeEmailETelefoneENaoMexeNoCpf() throws Exception {
-        String token = login(CPF_FELIPE, SENHA_EQUIPE);
-        corrigir(token, "{\"email\":\"Felipe.Novo@Exemplo.test\",\"telefone\":\"(11) 91234-5678\"}")
+        String token = login(CPF_FELLIPE, SENHA_EQUIPE);
+        corrigir(token, "{\"email\":\"Fellipe.Novo@Exemplo.test\",\"telefone\":\"(11) 91234-5678\"}")
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("felipe.novo@exemplo.test"))
+                .andExpect(jsonPath("$.email").value("fellipe.novo@exemplo.test"))
                 .andExpect(jsonPath("$.telefone").value("(11) 91234-5678"))
-                .andExpect(jsonPath("$.cpf").value("123.456.789-09"));
+                .andExpect(jsonPath("$.cpf").value("***.456.789-**"));
 
         mockMvc.perform(get("/clientes/me").header("Authorization", "Bearer " + token))
-                .andExpect(jsonPath("$.email").value("felipe.novo@exemplo.test"));
+                .andExpect(jsonPath("$.email").value("fellipe.novo@exemplo.test"));
     }
 
     @Test
     void novoCepBuscaOEnderecoNoViaCepEExigeONumero() throws Exception {
-        String token = login(CPF_FELIPE, SENHA_EQUIPE);
+        String token = login(CPF_FELLIPE, SENHA_EQUIPE);
         when(viaCepClient.buscarPorCep(anyString())).thenReturn(
                 new ViaCepResponseDto("01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", null));
 
@@ -135,7 +135,7 @@ class TitularIntegracaoTest {
 
     @Test
     void emailDeOutroClienteE409ECorpoVazioE400() throws Exception {
-        String token = login(CPF_FELIPE, SENHA_EQUIPE);
+        String token = login(CPF_FELLIPE, SENHA_EQUIPE);
         String emailDoRenan = jsonMapper.readTree(mockMvc.perform(get("/clientes/me")
                         .header("Authorization", "Bearer " + login(CPF_RENAN, SENHA_EQUIPE)))
                 .andReturn().getResponse().getContentAsString()).get("email").asString();
@@ -154,44 +154,44 @@ class TitularIntegracaoTest {
 
     @Test
     void naoEncerraComSaldoNemComSenhaErrada() throws Exception {
-        String token = login(CPF_FELIPE, SENHA_EQUIPE);
+        String token = login(CPF_FELLIPE, SENHA_EQUIPE);
         encerrar(token, "chute-errado")
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.message").value("Senha incorreta"));
         encerrar(token, SENHA_EQUIPE)
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.message").value("Transfira o saldo das suas contas antes de encerrar o cadastro"));
-        // Nada mudou: o Felipe continua entrando e movimentando.
+        // Nada mudou: o Fellipe continua entrando e movimentando.
         mockMvc.perform(get("/contas").header("Authorization", "Bearer " + token)).andExpect(status().isOk());
     }
 
     @Test
     void encerrarDesativaContasELoginNaHoraEInformaAteQuandoGuarda() throws Exception {
-        String token = encerrarFelipeComSaldoZerado();
+        String token = encerrarFellipeComSaldoZerado();
 
         // Token antigo cai na hora e o login nao entra mais.
         mockMvc.perform(get("/clientes/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"cpf\":\"" + CPF_FELIPE + "\",\"senha\":\"" + SENHA_EQUIPE + "\"}"))
+                        .content("{\"cpf\":\"" + CPF_FELLIPE + "\",\"senha\":\"" + SENHA_EQUIPE + "\"}"))
                 .andExpect(status().isUnauthorized());
 
         // Conta encerrada nao recebe mais dinheiro.
         mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + login(CPF_RENAN, SENHA_EQUIPE))
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"contaOrigemId\":\"" + CONTA_RENAN + "\",\"contaDestinoId\":\"" + CONTA_FELIPE + "\",\"valor\":1.00}"))
+                        .content("{\"contaOrigemId\":\"" + CONTA_RENAN + "\",\"contaDestinoId\":\"" + CONTA_FELLIPE + "\",\"valor\":1.00}"))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.message").value("Conta inativa"));
     }
 
     @Test
     void adminNaoReativaQuemEncerrouOCadastro() throws Exception {
-        encerrarFelipeComSaldoZerado();
+        encerrarFellipeComSaldoZerado();
         String tokenAdmin = login(CPF_ADMIN, SENHA_ADMIN);
-        UUID usuarioFelipe = usuarioRepository.findByLogin(CPF_FELIPE).orElseThrow().getId();
+        UUID usuarioFellipe = usuarioRepository.findByLogin(CPF_FELLIPE).orElseThrow().getId();
 
-        mockMvc.perform(patch("/admin/usuarios/" + usuarioFelipe + "/acesso").header("Authorization", "Bearer " + tokenAdmin)
+        mockMvc.perform(patch("/admin/usuarios/" + usuarioFellipe + "/acesso").header("Authorization", "Bearer " + tokenAdmin)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"ativo\":true}"))
                 .andExpect(status().is(422))
                 .andExpect(jsonPath("$.message").value("O titular encerrou o cadastro; o acesso não pode ser reativado"));
@@ -201,19 +201,19 @@ class TitularIntegracaoTest {
 
     @Test
     void rotinaSoAnonimizaDepoisDoPrazoEGuardaOsLancamentos() throws Exception {
-        encerrarFelipeComSaldoZerado();
+        encerrarFellipeComSaldoZerado();
         long lancamentosAntes = lancamentoRepository.count();
 
         // Dentro do prazo (5 anos): nada acontece.
         assertEquals(0, titularService.anonimizarVencidos(Instant.now().plus(365, ChronoUnit.DAYS)));
-        assertTrue(clienteRepository.findById(CLIENTE_FELIPE).orElseThrow().getNomeCompleto().startsWith("Felipe Santana"));
+        assertTrue(clienteRepository.findById(CLIENTE_FELLIPE).orElseThrow().getNomeCompleto().startsWith("Fellipe Santana"));
 
         // Prazo vencido: anonimiza uma vez so.
         Instant daquiASeisAnos = Instant.now().plus(6 * 366, ChronoUnit.DAYS);
         assertEquals(1, titularService.anonimizarVencidos(daquiASeisAnos));
         assertEquals(0, titularService.anonimizarVencidos(daquiASeisAnos));
 
-        Cliente anonimo = clienteRepository.findById(CLIENTE_FELIPE).orElseThrow();
+        Cliente anonimo = clienteRepository.findById(CLIENTE_FELLIPE).orElseThrow();
         assertEquals("Titular anonimizado", anonimo.getNomeCompleto());
         assertTrue(anonimo.getCpf().startsWith("A"));
         assertEquals(11, anonimo.getCpf().length());
@@ -222,24 +222,32 @@ class TitularIntegracaoTest {
         assertEquals("00000-000", anonimo.getEndereco().getCep());
         assertNotNull(anonimo.getAnonimizadoEm());
 
-        Usuario credencial = usuarioRepository.findByClienteId(CLIENTE_FELIPE).orElseThrow();
+        Usuario credencial = usuarioRepository.findByClienteId(CLIENTE_FELLIPE).orElseThrow();
         assertEquals(anonimo.getCpf(), credencial.getLogin());
         assertFalse(credencial.isAtivo());
-        assertTrue(usuarioRepository.findByLogin(CPF_FELIPE).isEmpty());
+        assertTrue(usuarioRepository.findByLogin(CPF_FELLIPE).isEmpty());
 
         // Registro financeiro fica: nenhum lancamento foi apagado.
         assertEquals(lancamentosAntes, lancamentoRepository.count());
+
+        // Mas o texto livre que o Fellipe escreveu sai (o aporte do seed tinha descricao); o do Renan fica.
+        UUID contaFellipe = UUID.fromString(CONTA_FELLIPE);
+        UUID contaRenan = UUID.fromString(CONTA_RENAN);
+        assertTrue(lancamentoRepository.findByContaOrigemIdOrContaDestinoIdOrderByDataHoraDesc(contaFellipe, contaFellipe)
+                .stream().allMatch(lancamento -> lancamento.getDescricao() == null));
+        assertTrue(lancamentoRepository.findByContaOrigemIdOrContaDestinoIdOrderByDataHoraDesc(contaRenan, contaRenan)
+                .stream().anyMatch(lancamento -> lancamento.getDescricao() != null));
     }
 
-    // O Felipe passa todo o saldo para o Renan e encerra. Devolve o token que ele usou.
-    private String encerrarFelipeComSaldoZerado() throws Exception {
-        String token = login(CPF_FELIPE, SENHA_EQUIPE);
+    // O Fellipe passa todo o saldo para o Renan e encerra. Devolve o token que ele usou.
+    private String encerrarFellipeComSaldoZerado() throws Exception {
+        String token = login(CPF_FELLIPE, SENHA_EQUIPE);
         String saldo = jsonMapper.readTree(mockMvc.perform(get("/contas").header("Authorization", "Bearer " + token))
                 .andReturn().getResponse().getContentAsString()).get(0).get("saldo").asString();
         mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + token)
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"contaOrigemId\":\"" + CONTA_FELIPE + "\",\"contaDestinoId\":\"" + CONTA_RENAN + "\",\"valor\":" + saldo + "}"))
+                        .content("{\"contaOrigemId\":\"" + CONTA_FELLIPE + "\",\"contaDestinoId\":\"" + CONTA_RENAN + "\",\"valor\":" + saldo + "}"))
                 .andExpect(status().isNoContent());
 
         encerrar(token, SENHA_EQUIPE)

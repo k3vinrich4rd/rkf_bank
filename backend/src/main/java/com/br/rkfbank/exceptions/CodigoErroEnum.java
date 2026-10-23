@@ -21,9 +21,11 @@ public enum CodigoErroEnum {
     TOKEN_INVALIDO("Token inválido ou expirado; faça login novamente"),
     ACESSO_ALTERADO("Seu acesso foi alterado ou desativado; faça login novamente"),
     CREDENCIAIS_INVALIDAS("CPF ou senha inválidos"),
+    SESSAO_EXPIRADA("Sua sessão expirou; entre de novo com CPF e senha"),
 
     // 403: identidade valida, sem permissao
     PERFIL_SEM_PERMISSAO("Acesso negado para o seu perfil"),
+    TROCA_DE_SENHA_OBRIGATORIA("Sua senha foi redefinida: troque-a antes de continuar"),
     CONTA_DE_OUTRO_CLIENTE("Conta não pertence ao usuário logado"),
 
     // 404: recurso inexistente
@@ -54,6 +56,7 @@ public enum CodigoErroEnum {
     CADASTRO_ENCERRADO("O titular encerrou o cadastro; o acesso não pode ser reativado"),
     PROPRIA_SENHA_PELA_GESTAO("Para trocar a sua própria senha use PATCH /usuarios/me/senha"),
     PROPRIO_ACESSO("Você não pode alterar o seu próprio perfil ou acesso; peça a outro ADMIN"),
+    TERMOS_DESATUALIZADOS("Os termos de uso mudaram: recarregue a página e aceite a versão atual"),
     IDEMPOTENCIA_CHAVE_REUSADA("Idempotency-Key já usada em outra requisição; gere uma chave nova para esta operação"),
 
     // 429 e 503

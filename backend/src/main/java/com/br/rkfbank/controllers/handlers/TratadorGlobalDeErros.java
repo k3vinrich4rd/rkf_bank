@@ -14,6 +14,7 @@ import com.br.rkfbank.exceptions.MuitasTentativasException;
 import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.exceptions.ServicoExternoIndisponivelException;
+import com.br.rkfbank.exceptions.SessaoExpiradaException;
 import com.br.rkfbank.exceptions.UsuarioNaoEncontradoException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -85,9 +86,10 @@ public class TratadorGlobalDeErros {
 
     // 401 do login (CPF ou senha errados). O 401 de token ausente/invalido nasce no filtro e sai pelo
     // TratadorErrosSeguranca, porque o filtro roda antes do controller e este advice nao o enxerga.
-    @ExceptionHandler(CredenciaisInvalidasException.class)
+    // Tambem o 401 da renovacao de sessao (refresh token vencido, revogado ou reusado).
+    @ExceptionHandler({CredenciaisInvalidasException.class, SessaoExpiradaException.class})
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    public ErroResponse credenciaisInvalidas(CredenciaisInvalidasException ex, HttpServletRequest request) {
+    public ErroResponse credenciaisInvalidas(ErroApiException ex, HttpServletRequest request) {
         return montarELogar(HttpStatus.UNAUTHORIZED, ex, request);
     }
 
