@@ -13,11 +13,11 @@ O cliente consegue:
 - depositar, sacar e transferir
 - ver saldo e extrato
 
-## Como estamos (19/10)
+## Como estamos (23/10)
 
-- **Backend:** tudo do MVP pronto e testado (264 testes), com Flyway, login JWT, idempotência nas movimentações, gestão de usuários e troca de senha. Falta buscar uma conta específica.
-- **Frontend:** landing page, cadastro, login, abertura de conta, tela da conta, movimentações e extrato prontos na `develop` (PR #27).
-- **Antes de ir ao ar:** LGPD mínimo (política de privacidade, aceite dos termos e encarregado) — ver `debitos-tecnicos.md`.
+- **Backend:** tudo do MVP pronto e testado (307 testes, 7 no MySQL real com Testcontainers), com refresh token, aceite LGPD, `GET /contas/{contaId}` e Swagger.
+- **Frontend:** todas as telas do MVP, renovação de sessão, aceite dos termos, seletor de conta e 31 testes (Vitest) com CI próprio.
+- **Antes de ir ao ar:** decidir onde publicar, perfil `prod`, encarregado LGPD e o teste do Fellipe. Análise completa em [analise-mvp.md](analise-mvp.md).
 
 ---
 
@@ -34,8 +34,8 @@ O cliente consegue:
 - [x] Frontend: tela de cadastro
 - [x] Frontend: logs
 - [x] Decidir como o usuário acessa a conta sem login (resolvido com o login: feature 2)
-- [ ] Backend: `GET /contas/{contaId}` (saldo)
-- [ ] Backend: `GET /clientes/{clienteId}/contas`
+- [x] Backend: `GET /contas/{contaId}` (saldo)
+- [x] ~~Backend: `GET /clientes/{clienteId}/contas`~~ substituída por `GET /contas` (o cliente vem do token, contrato 2.6)
 - [x] Frontend: abrir conta depois do cadastro
 - [x] Frontend: tela da conta (saldo)
 
@@ -49,7 +49,8 @@ O cliente consegue:
 
 ## Semana 4 (26/10 a 31/10) — Testar e lançar
 
-- [ ] LGPD mínimo: política de privacidade, aceite dos termos (migração nova) e encarregado definido
+- [x] LGPD mínimo: política de privacidade e aceite dos termos (V10, contrato 3.1)
+- [ ] LGPD: definir o encarregado e o canal de contato
 - [ ] Fellipe (idealizador e primeiro cliente) testa tudo (roteiro em `backend/README_TESTES_E2E.md`)
 - [ ] Corrigir bugs
 - [ ] Colocar no ar
@@ -57,8 +58,6 @@ O cliente consegue:
 
 ## Depois do MVP
 
-- Login: feito no backend (PR #24) e no frontend (PR #27)
-- Testcontainers e Swagger (features 3 e 4 do checklist)
 - Pix
 - Cartão
 

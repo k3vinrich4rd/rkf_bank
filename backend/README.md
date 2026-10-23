@@ -150,7 +150,7 @@ subida a nova vale. Os acessos ficam no **guia privado da equipe**, em `.equipe/
 Três jeitos, do mais simples ao mais completo:
 
 ```bash
-# 1. Sem Docker: perfil "test" usa H2 em memória (recomendado no dia a dia)
+# 1. Perfil "test": H2 em memória + os testes de mysql/ num MySQL 8.4 do Testcontainers (pulados sem Docker)
 ./mvnw clean verify -Dspring.profiles.active=test     # PowerShell: .\mvnw.cmd clean verify "-Dspring.profiles.active=test"
 
 # 2. Com o MySQL do Docker já no ar e o .env carregado no terminal (ver "Como rodar")
@@ -170,7 +170,7 @@ Relatório de cobertura: abra `target/site/jacoco/index.html` no navegador.
 Atalhos que mostram só o resumo (o log completo fica em `.validar/`):
 
 ```bash
-scripts/validar.sh backend         # testes em H2 + cobertura, sem Docker
+scripts/validar.sh backend         # testes (H2 + MySQL do Testcontainers se houver Docker) + cobertura
 node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verificações (cadastro → extrato + erros)
 ```
 
@@ -199,7 +199,7 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | `CpfValidoValidatorTest` | algoritmo de CPF | unitário puro |
 | `ViaCepClientTest` | integração com ViaCEP (sucesso, CEP inexistente, falha) | unitário com mock |
 | `ClienteServiceTest` / `ContaServiceTest` | regras de negócio | Mockito (`@ExtendWith(MockitoExtension.class)`) |
-| `ClienteControllerTest` / `ContaControllerTest` | status HTTP e delegação ao service | Mockito |
+| `ClienteControllerTest` / `ContaControllerTest` | JSON de entrada e saída, Bean Validation, formato de erro com `codigo`, `401`/`403` das regras de rota, header de repetição da idempotência | `@WebMvcTest` + MockMvc (base `ControllerWebMvcBase`, services mockados) |
 | `TratadorGlobalDeErrosTest` | exceção → status + corpo de erro | unitário |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e saneado | unitário |
 | `EntitiesAndEnumsTest` | getters/setters, enums, `@PrePersist` | unitário |
@@ -217,19 +217,28 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | `DadosEquipeIntegracaoTest` | seed da equipe + `EQUIPE_SENHA`, idempotência de ponta a ponta, conciliação saldo × extrato, seed rodando duas vezes, versões do Flyway | `@SpringBootTest` + MockMvc (H2 próprio) |
 | `GestaoUsuariosIntegracaoTest` | promover, rebaixar, desativar e trocar/redefinir senha derrubando o token antigo na hora | `@SpringBootTest` + MockMvc (H2 novo por teste) |
 | `PerfilVisitanteIntegracaoTest` | perfil `visitante`: só Ana e Bruno, sem admin nem equipe, JWT sorteado (segredo do ambiente não vale) | `@SpringBootTest` + MockMvc (H2 próprio) |
+| `RefreshTokenIntegracaoTest` | `POST /auth/refresh` (rotação, reuso derruba todas as sessões, vencido), `POST /auth/logout` e troca de senha revogando as renovações | `@SpringBootTest` + MockMvc (H2 próprio) |
+| `TermosIntegracaoTest` / `TitularIntegracaoTest` | LGPD: versão dos termos, aceite obrigatório no cadastro, CPF mascarado, meus dados, encerramento e anonimização (inclusive a descrição dos lançamentos) | `@SpringBootTest` + MockMvc (H2 próprio) |
+| `ConciliacaoIntegracaoTest` | `GET /admin/conciliacao`: só ADMIN, aponta conta com saldo diferente do extrato | `@SpringBootTest` + MockMvc (H2 próprio) |
+| `SwaggerIntegracaoTest` | especificação OpenAPI pública com as rotas do contrato, rotas públicas sem cadeado, Swagger UI abrindo sem token | `@SpringBootTest` + MockMvc |
+| `ConversorTokenUsuarioTest` | token de usuário desativado, com perfil ou senha alterados; senha temporária; cache opcional | unitário com relógio manual |
+| `CodigoErroEnumTest` | todo código com mensagem própria e o tipo `CodigoErro` do frontend com exatamente os mesmos códigos | unitário (lê `frontend/lib/api/types.ts`) |
+| `mysql/MigracoesMySqlTest` | MySQL 8.4 de verdade: V1 a V15 em ordem e os tipos de produção (`DECIMAL`, `BINARY(16)`) | Testcontainers (`MySqlIntegracaoBase`) |
+| `mysql/FluxoBancarioMySqlTest` | do cadastro ao extrato no MySQL; saldo insuficiente não grava nada | Testcontainers + MockMvc |
+| `mysql/ConcorrenciaMySqlTest` | transferências simultâneas não criam nem somem dinheiro; cópia desatualizada perde para o lock otimista | Testcontainers, threads de verdade |
 
 > **H2 × MySQL: qual banco cada teste usa?**
 >
 > | Comando | `@SpringBootTest` | `@DataJpaTest` | Para quê |
 > |---|---|---|---|
-> | `scripts/validar.sh backend` | H2 | H2 | dia a dia: rápido, sem Docker |
-> | `./run-test.sh` | H2 (o script recria o MySQL, mas roda com o perfil `test`) | H2 | garantir banco limpo; **não** testa o MySQL |
+> | `scripts/validar.sh backend` | H2; os de `mysql/` num **MySQL 8.4 do Testcontainers** | H2 (modo MySQL) | dia a dia; sem Docker, os de `mysql/` são pulados |
+> | `./run-test.sh` | igual ao de cima (o script recria o MySQL local, mas roda com o perfil `test`) | H2 (modo MySQL) | garantir banco limpo para o teste manual |
 > | `scripts/testar-no-mysql.sh` | **MySQL** do Docker | (não roda) | provar consultas, tipos e migrações no banco real |
 > | API no ar + `smoke-e2e.mjs` | **MySQL** (perfil padrão) | — | fluxo real por HTTP |
 >
-> Usar H2 nos testes é decisão do projeto (rapidez e nada de Docker para rodar). O custo é que diferença de
-> dialeto só aparece no MySQL, por isso o `testar-no-mysql.sh` e o smoke antes do PR que mexe no banco.
-> `@DataJpaTest` troca o banco por H2 embutido **em qualquer perfil**; MySQL real para eles é a feature 3 (Testcontainers).
+> A maior parte dos testes continua em H2 (rápido e sem Docker), em `MODE=MySQL`. Diferença de dialeto, migração
+> e concorrência de verdade ficam com os testes de `mysql/` (Testcontainers, feature 3), que o CI sempre roda.
+> `@DataJpaTest` usa o H2 do perfil `test` (`spring.test.database.replace=none`), não um embutido sem modo.
 > Com o perfil padrão (sem `-Dspring.profiles.active=test`), `RkfbankApplicationTests` precisa do MySQL e do `.env` carregado.
 
 Teste manual ponta a ponta: [README_TESTES_E2E.md](README_TESTES_E2E.md) · conferência automática:
