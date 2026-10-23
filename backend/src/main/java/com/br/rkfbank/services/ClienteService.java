@@ -63,9 +63,10 @@ public class ClienteService {
         // Normaliza o CPF para manter somente dígitos antes das validações de banco.
         String cpfSanitizado = request.cpf().replaceAll("\\D", "");
 
-        // Regra de unicidade de CPF antes de consultar qualquer serviço externo.
+        // Regra de unicidade de CPF antes de consultar qualquer serviço externo. O CPF tambem e o login, entao vale
+        // olhar tb_usuario: o ADMIN do .env tem login sem cadastro de cliente, e o mesmo CPF daria 500 la no insert.
         // CPF e email ficam fora dos logs por serem dados pessoais.
-        if (clienteRepository.existsByCpf(cpfSanitizado)) {
+        if (clienteRepository.existsByCpf(cpfSanitizado) || usuarioRepository.existsByLogin(cpfSanitizado)) {
             log.warn("Cadastro de cliente recusado: CPF ja cadastrado");
             throw new ConflitoException(CodigoErroEnum.CPF_JA_CADASTRADO);
         }
@@ -100,25 +101,24 @@ public class ClienteService {
         String telefoneSanitizado = request.telefone().replaceAll("\\D", "");
         cliente.setTelefone(telefoneSanitizado);
 
-        // Persistência transacional: salva cliente/endereço e retorna no formato de API.
+        // Persistência transacional: cliente/endereço e a credencial de acesso na mesma transacao (se uma falhar, a
+        // outra e desfeita). So o hash vai para o banco; a senha em texto termina aqui.
         Cliente salvo;
         try {
             salvo = clienteRepository.saveAndFlush(cliente);
+
+            Usuario usuario = new Usuario();
+            usuario.setLogin(cpfSanitizado);
+            usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
+            usuario.setPerfil(PerfilEnum.CLIENTE);
+            usuario.setCliente(salvo);
+            usuarioRepository.saveAndFlush(usuario);
         } catch (DataIntegrityViolationException ex) {
-            // Cadastro concorrente passou pelas checagens acima e esbarrou na constraint unica do banco.
-            // A mensagem do driver traz o valor duplicado (CPF/email), por isso nao entra no log.
+            // Cadastro concorrente passou pelas checagens acima e esbarrou numa constraint unica do banco (CPF, e-mail
+            // ou login). A mensagem do driver traz o valor duplicado, por isso nao entra no log.
             log.warn("Cadastro de cliente recusado: violacao de unicidade no banco");
             throw new ConflitoException(CodigoErroEnum.CADASTRO_DUPLICADO);
         }
-
-        // Credencial de acesso na mesma transacao: se falhar, o cliente tambem e desfeito (rollback).
-        // So o hash vai para o banco; a senha em texto termina aqui.
-        Usuario usuario = new Usuario();
-        usuario.setLogin(cpfSanitizado);
-        usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
-        usuario.setPerfil(PerfilEnum.CLIENTE);
-        usuario.setCliente(salvo);
-        usuarioRepository.save(usuario);
 
         log.info("Cliente {} cadastrado (cidade={}/{})", salvo.getId(), viaCep.localidade(), viaCep.uf());
         return paraResponse(salvo);

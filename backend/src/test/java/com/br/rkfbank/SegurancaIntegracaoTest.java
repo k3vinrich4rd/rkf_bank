@@ -247,6 +247,16 @@ class SegurancaIntegracaoTest {
                 .andExpect(jsonPath("$.perfil").value("CLIENTE"));
     }
 
+    // O ADMIN do .env tem login (o CPF) e nenhum cadastro de cliente. Antes, cadastrar alguem com esse CPF passava
+    // pela checagem de tb_cliente e estourava a constraint de tb_usuario.login: 500. Agora e 409, sem chamar o ViaCEP.
+    @Test
+    void cadastroComOCpfDoAdminDa409ENao500() throws Exception {
+        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON).content(cadastroJson(ADMIN_CPF, SENHA)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.codigo").value("CPF_JA_CADASTRADO"));
+        login(ADMIN_CPF, ADMIN_SENHA);
+    }
+
     @Test
     void senhaErradaDa401() throws Exception {
         String cpf = cpfAleatorio();

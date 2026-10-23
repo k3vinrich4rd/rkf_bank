@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -17,6 +18,7 @@ import com.br.rkfbank.entities.Cliente;
 import com.br.rkfbank.entities.Endereco;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.entities.enums.PerfilEnum;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
@@ -71,7 +73,7 @@ class ClienteServiceTest {
         clienteService.cadastrar(request);
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
-        verify(usuarioRepository).save(captor.capture());
+        verify(usuarioRepository).saveAndFlush(captor.capture());
         Usuario usuario = captor.getValue();
         assertEquals("52998224725", usuario.getLogin());
         assertEquals("$2a$10$hash-gerado-pelo-bcrypt", usuario.getSenhaHash());
@@ -93,7 +95,23 @@ class ClienteServiceTest {
                 () -> clienteService.cadastrar(request));
 
         assertEquals("senha", ex.getCampo());
-        verifyNoInteractions(viaCepClient, usuarioRepository, passwordEncoder);
+        // usuarioRepository so foi consultado (CPF ja e login de alguem?); nada foi gravado nem cifrado.
+        verifyNoInteractions(viaCepClient, passwordEncoder);
+        verify(usuarioRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void deveRecusarCpfQueJaELoginDeUmUsuarioSemCadastroDeCliente() {
+        CadastroClienteRequestDto request = new CadastroClienteRequestDto(
+                "Joao Silva", "529.982.247-25", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1"
+        );
+        when(clienteRepository.existsByCpf("52998224725")).thenReturn(false);
+        when(usuarioRepository.existsByLogin("52998224725")).thenReturn(true);
+
+        ConflitoException ex = assertThrows(ConflitoException.class, () -> clienteService.cadastrar(request));
+
+        assertEquals(CodigoErroEnum.CPF_JA_CADASTRADO, ex.getCodigo());
+        verifyNoInteractions(viaCepClient, passwordEncoder);
     }
 
     @Test
