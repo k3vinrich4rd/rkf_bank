@@ -30,11 +30,15 @@ public class AdminUsuarioController {
         this.gestaoUsuarioService = gestaoUsuarioService;
     }
 
+    // Lista todos os usuarios com o CPF mascarado (***.456.789-**): da para o admin reconhecer a pessoa sem
+    // que a tela exponha o CPF inteiro (LGPD: so o necessario para a finalidade).
     @GetMapping
     public ResponseEntity<List<UsuarioAdminResponseDto>> listar() {
         return ResponseEntity.ok(gestaoUsuarioService.listar());
     }
 
+    // Promove a ADMIN ou rebaixa a CLIENTE. PATCH (e nao PUT) porque muda so um atributo do usuario.
+    // UsuarioLogado.de(jwt) leva ao service QUEM esta pedindo: ele recusa se o alvo for a propria pessoa.
     @PatchMapping("/{usuarioId}/perfil")
     public ResponseEntity<UsuarioAdminResponseDto> alterarPerfil(@PathVariable UUID usuarioId,
                                                                  @Valid @RequestBody AlterarPerfilRequestDto request,
@@ -42,6 +46,7 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(gestaoUsuarioService.alterarPerfil(usuarioId, request.perfil(), UsuarioLogado.de(jwt)));
     }
 
+    // Desativa (ativo=false) ou reativa o login. Usuario nunca e apagado: o historico aponta para ele.
     @PatchMapping("/{usuarioId}/acesso")
     public ResponseEntity<UsuarioAdminResponseDto> alterarAcesso(@PathVariable UUID usuarioId,
                                                                  @Valid @RequestBody AlterarAcessoRequestDto request,

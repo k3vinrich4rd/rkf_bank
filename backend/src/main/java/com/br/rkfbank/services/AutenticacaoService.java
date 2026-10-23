@@ -5,7 +5,7 @@ import com.br.rkfbank.dto.request.auth.TrocarSenhaRequestDto;
 import com.br.rkfbank.dto.response.auth.LoginResponseDto;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.exceptions.CredenciaisInvalidasException;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.UsuarioNaoEncontradoException;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.security.LimitadorTentativasLogin;
@@ -19,10 +19,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Autenticacao: confere CPF + senha e emite o token. Tres cuidados de seguranca de banco:
+//  1. mesma resposta e mesmo tempo para CPF inexistente e senha errada (nao revela quem e cliente);
+//  2. limite de tentativas por CPF (LimitadorTentativasLogin) contra chute de senha;
+//  3. senha so comparada com o hash BCrypt (passwordEncoder.matches); a senha em texto nunca e guardada.
 @Service
-public class AuthService {
+public class AutenticacaoService {
 
-    private static final Logger log = LogManager.getLogger(AuthService.class);
+    private static final Logger log = LogManager.getLogger(AutenticacaoService.class);
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
@@ -33,7 +37,7 @@ public class AuthService {
     // do BCrypt nos dois casos; senao a demora da resposta revelaria quais CPFs tem cadastro.
     private final String hashFalso;
 
-    public AuthService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, TokenService tokenService,
+    public AutenticacaoService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, TokenService tokenService,
                        LimitadorTentativasLogin limitador) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
@@ -42,6 +46,7 @@ public class AuthService {
         this.hashFalso = passwordEncoder.encode(UUID.randomUUID().toString());
     }
 
+    // readOnly = true: o login so le o banco; o Hibernate pula a checagem de mudancas e o banco pode otimizar.
     @Transactional(readOnly = true)
     public LoginResponseDto login(LoginRequestDto request) {
         String cpf = request.cpf().replaceAll("\\D", "");
@@ -69,7 +74,7 @@ public class AuthService {
             log.warn("Login recusado: usuario {} desativado", usuario.getId());
             throw new CredenciaisInvalidasException();
         }
-        TokenService.TokenGerado token = tokenService.gerar(usuario);
+        TokenService.TokenEmitido token = tokenService.emitir(usuario);
         UUID clienteId = usuario.getCliente() != null ? usuario.getCliente().getId() : null;
         log.info("Usuario {} autenticado (perfil={})", usuario.getId(), usuario.getPerfil());
         return new LoginResponseDto(token.token(), "Bearer", token.expiraEmSegundos(), clienteId, usuario.getPerfil());
@@ -87,10 +92,10 @@ public class AuthService {
         if (!senhaAtualNoLimite || !passwordEncoder.matches(request.senhaAtual(), usuario.getSenhaHash())) {
             limitador.registrarFalha(usuario.getLogin());
             log.warn("Troca de senha recusada: senha atual incorreta (usuario {})", usuario.getId());
-            throw new NaoProcessavelException("Senha atual incorreta");
+            throw new RegraNegocioException("Senha atual incorreta");
         }
         if (passwordEncoder.matches(request.novaSenha(), usuario.getSenhaHash())) {
-            throw new NaoProcessavelException("A nova senha precisa ser diferente da atual");
+            throw new RegraNegocioException("A nova senha precisa ser diferente da atual");
         }
 
         limitador.limpar(usuario.getLogin());

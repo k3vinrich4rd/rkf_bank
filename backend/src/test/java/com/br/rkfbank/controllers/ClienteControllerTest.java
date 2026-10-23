@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
+import com.br.rkfbank.dto.comum.PaginaResponse;
 import com.br.rkfbank.dto.request.cliente.CadastroClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.dto.response.cliente.EnderecoResponseDto;
@@ -17,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
@@ -56,7 +56,7 @@ class ClienteControllerTest {
     void deveListarClientesSemPaginacao() {
         when(clienteService.listarTodos()).thenReturn(List.of(clienteResponse()));
 
-        ResponseEntity<?> response = clienteController.listarClientes(false, 0, 10);
+        ResponseEntity<?> response = clienteController.listar(false, 0, 10);
 
         assertEquals(200, response.getStatusCode().value());
         assertInstanceOf(List.class, response.getBody());
@@ -67,17 +67,22 @@ class ClienteControllerTest {
         when(clienteService.listarPaginado(PageRequest.of(0, 10)))
                 .thenReturn(new PageImpl<>(List.of(clienteResponse()), PageRequest.of(0, 10), 1));
 
-        ResponseEntity<?> response = clienteController.listarClientes(true, 0, 10);
+        ResponseEntity<?> response = clienteController.listar(true, 0, 10);
 
         assertEquals(200, response.getStatusCode().value());
-        assertInstanceOf(Page.class, response.getBody());
+        PaginaResponse<?> pagina = assertInstanceOf(PaginaResponse.class, response.getBody());
+        assertEquals(1, pagina.content().size());
+        assertEquals(1, pagina.totalElements());
+        assertEquals(1, pagina.totalPages());
+        assertEquals(0, pagina.number());
+        assertEquals(10, pagina.size());
     }
 
     @Test
     void deveRejeitarPaginacaoComPaginaNegativa() {
         RequisicaoInvalidaException exception = assertThrows(
                 RequisicaoInvalidaException.class,
-                () -> clienteController.listarClientes(true, -1, 10)
+                () -> clienteController.listar(true, -1, 10)
         );
 
         assertEquals("page", exception.getCampo());
@@ -87,7 +92,7 @@ class ClienteControllerTest {
     void deveRejeitarPaginacaoComTamanhoForaDoLimite() {
         RequisicaoInvalidaException exception = assertThrows(
                 RequisicaoInvalidaException.class,
-                () -> clienteController.listarClientes(true, 0, 101)
+                () -> clienteController.listar(true, 0, 101)
         );
 
         assertEquals("size", exception.getCampo());

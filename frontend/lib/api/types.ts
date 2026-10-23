@@ -60,6 +60,39 @@ export interface ClienteResponse {
   endereco: EnderecoResponse;
 }
 
+/**
+ * `PATCH /clientes/me` (LGPD, contrato 2.5): o titular corrige os próprios dados. Tudo opcional; mande só o
+ * que mudou (corpo vazio → 400). CPF não muda. CEP novo exige `numero` (o endereço vem do ViaCEP).
+ * `complemento: ""` apaga o complemento. Resposta: `ClienteResponse` atualizado.
+ */
+export interface AtualizarClienteRequest {
+  /** 1 a 120 caracteres. */
+  nomeCompleto?: string;
+  /** Salvo em minúsculas; e-mail de outro cliente → 409. */
+  email?: string;
+  /** DDD + 8 ou 9 dígitos; pontuação é ignorada. */
+  telefone?: string;
+  /** 8 dígitos, com ou sem hífen. */
+  cep?: string;
+  numero?: string;
+  complemento?: string;
+}
+
+/**
+ * `POST /clientes/me/encerramento` (LGPD, contrato 2.5). Exige saldo zero em todas as contas (422).
+ * Depois do 200, todo token do titular dá 401: apague a sessão como na troca de senha.
+ */
+export interface EncerrarCadastroRequest {
+  senha: string;
+}
+
+export interface EncerramentoResponse {
+  encerradoEm: IsoDateTime;
+  /** Data (AAAA-MM-DD) a partir da qual os dados pessoais são anonimizados (5 anos depois). */
+  anonimizacaoPrevistaPara: string;
+  motivoDaRetencao: string;
+}
+
 // ── Autenticação ────────────────────────────────────────────────────────
 
 export type Perfil = "CLIENTE" | "ADMIN";
@@ -97,6 +130,7 @@ export interface AbrirContaRequest {
   agencia?: string;
   /** 5 a 12 dígitos. Opcional desde o contrato 2.1: sem ele, a API gera o número (8 dígitos com DV). */
   numeroConta?: string;
+  /** Desde o contrato 2.6 o backend também aceita o nome `tipoConta`; a resposta segue `tipoContaEnum` até a 3.0. */
   tipoContaEnum: TipoConta;
 }
 
@@ -140,8 +174,8 @@ export interface PageRequest {
 }
 
 /**
- * Formato de `Page<T>` do Spring Data. Atenção: serializar `PageImpl`
- * diretamente não é estável entre versões — ver revisão do contrato.
+ * Página do contrato (2.4): DTO próprio do backend (`PaginaResponse`), sempre com estes 7 campos, estável entre
+ * versões do Spring. Desde a 2.6 basta mandar `page` ou `size` para vir paginado (`paginado: true` é obsoleto).
  */
 export interface Page<T> {
   content: T[];
@@ -149,6 +183,8 @@ export interface Page<T> {
   totalPages: number;
   number: number;
   size: number;
+  first: boolean;
+  last: boolean;
 }
 
 /** Gestão de usuários (só ADMIN, contrato 2.2). Sem tela por enquanto: tipos para quando houver. */
@@ -172,7 +208,7 @@ export interface AlterarAcessoRequest {
   ativo: boolean;
 }
 
-/** `PATCH /auth/senha` (contrato 2.3). Depois do 204, o token atual deixa de valer: mande para o login. */
+/** `PATCH /usuarios/me/senha` (contrato 2.6). Depois do 204, o token atual deixa de valer: mande para o login. */
 export interface TrocarSenhaRequest {
   senhaAtual: string;
   novaSenha: string;

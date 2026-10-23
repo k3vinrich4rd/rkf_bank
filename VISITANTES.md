@@ -19,7 +19,7 @@ Pronto quando o log mostrar `Tomcat started on port 8080`.
 
 ## 2. Contas de visitante
 
-| | Ana Visitante (origem) | Bruno Visitante (destino) |
+| | Ana Visitante (Origem) | Bruno Visitante (Destino) |
 |---|---|---|
 | CPF (login) | `246.813.579-28` | `975.318.642-82` |
 | Senha | `Visitante@2026` | `Visitante@2026` |
@@ -39,12 +39,12 @@ TOKEN=$(curl -s -X POST $API/auth/login -H "$H" -d '{"cpf":"24681357928","senha"
 curl -s $API/contas -H "Authorization: Bearer $TOKEN"                     # saldo 1000.00
 
 CHAVE=$(node -e 'console.log(crypto.randomUUID())')                       # uma chave por operação
-curl -s -i -X POST $API/contas/transferencia -H "$H" -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $CHAVE" \
+curl -s -i -X POST $API/transferencias -H "$H" -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $CHAVE" \
   -d "{\"contaOrigemId\":\"$ANA\",\"contaDestinoId\":\"$BRUNO\",\"valor\":200.00,\"descricao\":\"Aluguel\"}" | head -1
 # HTTP/1.1 204
 
 # Mande DE NOVO com a mesma chave (como se a rede tivesse caído): o banco não debita duas vezes.
-curl -s -i -X POST $API/contas/transferencia -H "$H" -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $CHAVE" \
+curl -s -i -X POST $API/transferencias -H "$H" -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $CHAVE" \
   -d "{\"contaOrigemId\":\"$ANA\",\"contaDestinoId\":\"$BRUNO\",\"valor\":200.00,\"descricao\":\"Aluguel\"}" | grep -E "HTTP|Idempotency"
 # HTTP/1.1 204
 # Idempotency-Replayed: true
@@ -54,6 +54,14 @@ curl -s $API/contas/$ANA/lancamentos -H "Authorization: Bearer $TOKEN"    # extr
 curl -s -i $API/contas/$BRUNO/lancamentos -H "Authorization: Bearer $TOKEN" | head -1   # 403: a conta é do Bruno
 ```
 
+## 3½. Prefere clicar? Insomnia e o banco no navegador
+
+- **Insomnia:** *Import* → arquivo [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) →
+  ambiente **Visitante (H2, Ana e Bruno)** → mande as requisições de cima para baixo. O login guarda o token sozinho:
+  nada de copiar e colar.
+- **Ver as tabelas:** abra `http://localhost:8080/h2-console`, troque a JDBC URL para `jdbc:h2:mem:rkfbank-visitante`
+  (usuário `sa`, senha vazia) e rode `SELECT numero_conta, saldo FROM tb_conta;` antes e depois da transferência.
+
 ## 4. O que tentar depois
 
 | Experimento | O que deve acontecer |
@@ -61,10 +69,11 @@ curl -s -i $API/contas/$BRUNO/lancamentos -H "Authorization: Bearer $TOKEN" | he
 | Chamar `GET /contas` sem token | `401` |
 | Errar a senha da Ana 5 vezes seguidas | a 6ª tentativa dá `429` (proteção contra força bruta; libera em 15 min ou reiniciando) |
 | Sacar mais do que tem | `422 Saldo insuficiente` |
-| Abrir uma poupança: `POST /contas/clientes/a0000000-0000-4000-8000-000000000112` com `{"tipoContaEnum":"POUPANCA"}` | `201` com número de conta **gerado pelo banco** |
+| Abrir uma poupança: `POST /contas` com `{"tipoConta":"POUPANCA"}` (a conta nasce no cadastro de quem está logado) | `201` com número de conta **gerado pelo banco** |
 | Trocar uma letra do token | `401`: a assinatura não bate |
 
-Roteiro completo, com cada resposta esperada e a explicação de Spring Security, OAuth2 e JWT:
+Guia completo (rodar pela IDE, H2 ou MySQL, permissões de cada rota, como tornar alguém ADMIN, todos os payloads, os
+roteiros com cada resposta esperada e a explicação de Spring Security, OAuth2 e JWT):
 [backend/README_TESTES_E2E.md](backend/README_TESTES_E2E.md).
 
 ## 5. O que este perfil garante (e por quê)

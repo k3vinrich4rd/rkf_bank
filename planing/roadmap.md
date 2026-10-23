@@ -15,7 +15,7 @@ O cliente consegue:
 
 ## Como estamos (19/10)
 
-- **Backend:** tudo do MVP pronto e testado (237 testes), com Flyway, login JWT, idempotência nas movimentações, gestão de usuários e troca de senha. Falta buscar uma conta específica.
+- **Backend:** tudo do MVP pronto e testado (264 testes), com Flyway, login JWT, idempotência nas movimentações, gestão de usuários e troca de senha. Falta buscar uma conta específica.
 - **Frontend:** landing page, cadastro, login, abertura de conta, tela da conta, movimentações e extrato prontos na `develop` (PR #27).
 - **Antes de ir ao ar:** LGPD mínimo (política de privacidade, aceite dos termos e encarregado) — ver `debitos-tecnicos.md`.
 
@@ -49,7 +49,7 @@ O cliente consegue:
 
 ## Semana 4 (26/10 a 31/10) — Testar e lançar
 
-- [ ] LGPD mínimo: política de privacidade, aceite dos termos (`V4`) e encarregado definido
+- [ ] LGPD mínimo: política de privacidade, aceite dos termos (migração nova) e encarregado definido
 - [ ] Felipe (idealizador e primeiro cliente) testa tudo (roteiro em `backend/README_TESTES_E2E.md`)
 - [ ] Corrigir bugs
 - [ ] Colocar no ar

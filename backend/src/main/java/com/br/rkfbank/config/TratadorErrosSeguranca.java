@@ -1,7 +1,7 @@
 package com.br.rkfbank.config;
 
 import com.br.rkfbank.dto.comum.ErroResponse;
-import com.br.rkfbank.security.AcessoAlteradoException;
+import com.br.rkfbank.exceptions.AcessoAlteradoException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -20,18 +20,18 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
-// 401 e 403 barrados pelos filtros do Spring Security, no mesmo formato do ControllerExceptionHandler.
+// 401 e 403 barrados pelos filtros do Spring Security, no mesmo formato do TratadorGlobalDeErros.
 // O advice nao serve aqui: o filtro recusa a requisicao antes de ela chegar ao DispatcherServlet.
 @Component
-public class RespostaErroSeguranca implements AuthenticationEntryPoint, AccessDeniedHandler {
+public class TratadorErrosSeguranca implements AuthenticationEntryPoint, AccessDeniedHandler {
 
-    private static final Logger log = LogManager.getLogger(RespostaErroSeguranca.class);
+    private static final Logger log = LogManager.getLogger(TratadorErrosSeguranca.class);
 
     // Poe o header "WWW-Authenticate: Bearer ..." exigido pela RFC 6750; o corpo JSON e nosso.
     private final BearerTokenAuthenticationEntryPoint cabecalhoBearer = new BearerTokenAuthenticationEntryPoint();
     private final JsonMapper jsonMapper;
 
-    public RespostaErroSeguranca(JsonMapper jsonMapper) {
+    public TratadorErrosSeguranca(JsonMapper jsonMapper) {
         this.jsonMapper = jsonMapper;
     }
 
@@ -45,7 +45,7 @@ public class RespostaErroSeguranca implements AuthenticationEntryPoint, AccessDe
                 ? "Token invalido ou expirado; faca login novamente"
                 : "Autenticacao necessaria: envie o token no header Authorization (Bearer)";
         // Nunca o token no log: com ele, qualquer um entra como o usuario ate expirar.
-        log.warn("401 em {}: {}", request.getRequestURI(), ex.getClass().getSimpleName());
+        log.warn("401 em {}: {}", LogSeguro.texto(request.getRequestURI()), ex.getClass().getSimpleName());
         cabecalhoBearer.commence(request, response, ex);
         escrever(response, HttpStatus.UNAUTHORIZED, mensagem, request.getRequestURI());
     }
@@ -54,7 +54,7 @@ public class RespostaErroSeguranca implements AuthenticationEntryPoint, AccessDe
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException ex)
             throws IOException {
-        log.warn("403 em {}: perfil sem permissao", request.getRequestURI());
+        log.warn("403 em {}: perfil sem permissao", LogSeguro.texto(request.getRequestURI()));
         escrever(response, HttpStatus.FORBIDDEN, "Acesso negado para o seu perfil", request.getRequestURI());
     }
 

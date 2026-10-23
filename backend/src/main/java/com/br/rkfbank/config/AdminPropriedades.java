@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "rkfbank.admin")
 public record AdminPropriedades(String cpf, String senha) {
 
+    // Os dois precisam estar preenchidos; um so (ex.: CPF sem senha) e tratado como "sem admin".
     public boolean configurado() {
         return cpf != null && !cpf.isBlank() && senha != null && !senha.isBlank();
     }

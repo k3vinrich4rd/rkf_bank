@@ -10,7 +10,7 @@ Como executar cada passo: [README_TESTES_E2E.md](README_TESTES_E2E.md). Rotas e 
 | **Data** | 13/10/2026 |
 | **Branch** | `feature/implementando-logs` |
 | **Ambiente** | Java 25.0.4.1 · Spring Boot 4.1.1 · MySQL 8.4 (Docker) · perfil padrão · ViaCEP real |
-| **Resultado** | **38/38 itens aprovados** |
+| **Resultado** | **62/62 itens aprovados** |
 
 > Os dados de teste (CPF, e-mail e número de conta) foram gerados na hora para não colidir com o que já estava no banco.
 
@@ -64,7 +64,7 @@ Legenda: ✅ aprovado · ❌ reprovado · ⏳ não executado
 
 ## 🚫 5. Cenários de erro do roteiro
 
-Numeração igual à seção 2 do [roteiro](README_TESTES_E2E.md#7-cenários-de-erro-e01-a-e18). E1, E6, E12, E15 e E17 já estão
+Numeração igual à seção 2 do [roteiro](README_TESTES_E2E.md#12-cenários-de-erro-e01-a-e20). E1, E6, E12, E15 e E17 já estão
 cobertos acima (itens 1.4, 2.2, 3.4, 3.2 e 1.7).
 
 | # | Cenário | Esperado | Resultado |

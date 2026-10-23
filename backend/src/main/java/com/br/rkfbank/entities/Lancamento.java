@@ -17,6 +17,8 @@ import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+// Uma linha do extrato (tb_lancamento). E gravado na MESMA transacao que muda o saldo: se o lancamento falhar,
+// o saldo volta junto (rollback). Lancamento nao se edita nem se apaga: e o registro do que aconteceu.
 @Entity
 @Table(name = "tb_lancamento")
 public class Lancamento {
@@ -25,7 +27,7 @@ public class Lancamento {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // Persistido como VARCHAR para manter flexibilidade do contrato da API.
+    // Nome do enum em VARCHAR (ver o comentario igual em Conta): ordem do enum pode mudar sem estragar o historico.
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(nullable = false, length = 32)
@@ -34,7 +36,9 @@ public class Lancamento {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal valor;
 
-    // Em deposito/saque apenas um lado pode estar preenchido; em transferencia ambos.
+    // Para que lado o dinheiro andou: deposito so tem destino, saque so tem origem, transferencia tem os dois.
+    // Sao ids soltos (UUID), e nao @ManyToOne para Conta: o extrato so precisa do id, e assim ler um lancamento
+    // nao carrega duas contas inteiras do banco. Os indices idx_lancamento_origem/destino (V4) deixam o extrato rapido.
     private UUID contaOrigemId;
     private UUID contaDestinoId;
     private String descricao;
@@ -42,9 +46,11 @@ public class Lancamento {
     @Column(nullable = false)
     private Instant dataHora;
 
+    // @PrePersist roda logo antes do INSERT: a data vem do servidor, nunca do cliente da API (nao da para forjar
+    // a data de uma movimentacao). Instant = instante em UTC; a tela converte para o fuso de quem ve.
     @PrePersist
     void aoSalvar() {
-        // Timestamp de criacao do lancamento no momento do insert.
+        // Momento exato do INSERT, em UTC.
         this.dataHora = Instant.now();
     }
 

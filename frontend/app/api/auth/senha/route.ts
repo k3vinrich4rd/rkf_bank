@@ -5,7 +5,7 @@ import { env } from "@/lib/env";
 
 /**
  * Troca da própria senha pelo servidor do Next (BFF): lê o token do cookie `httpOnly` e chama
- * `PATCH /auth/senha` da API (contrato 2.3).
+ * `PATCH /usuarios/me/senha` da API (contrato 2.6; a antiga `/auth/senha` segue até a 3.0).
  *
  * Fica aqui, e não no rewrite `/api/:path*`, porque `/api/auth/*` é do próprio Next (o `proxy.ts` não repassa o
  * token para essas rotas) e porque, depois do 204, **todo token antigo deixa de valer na API**, inclusive o deste
@@ -20,7 +20,7 @@ export async function PATCH(request: Request) {
 
   let resposta: Response;
   try {
-    resposta = await fetch(`${env.apiUrl}/auth/senha`, {
+    resposta = await fetch(`${env.apiUrl}/usuarios/me/senha`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Accept: "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ senhaAtual: dados.senhaAtual ?? "", novaSenha: dados.novaSenha ?? "" }),
@@ -49,7 +49,7 @@ function erro(status: number, error: string, message: string) {
     status,
     error,
     message,
-    path: "/auth/senha",
+    path: "/usuarios/me/senha",
     campos: [],
   };
   return Response.json(corpo, { status });

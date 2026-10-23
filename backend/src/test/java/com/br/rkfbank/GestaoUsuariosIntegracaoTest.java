@@ -53,7 +53,7 @@ class GestaoUsuariosIntegracaoTest {
                 .andExpect(jsonPath("$.length()").value(3))
                 .andExpect(jsonPath("$[0].perfil").value("ADMIN"))
                 .andExpect(jsonPath("$[0].cpf").value("***.792.468-**"))
-                .andExpect(jsonPath("$[1].nome").value("Felipe Santana"))
+                .andExpect(jsonPath("$[1].nome").value("Felipe Santana (Teste Origem)"))
                 .andExpect(jsonPath("$[1].ativo").value(true))
                 .andExpect(jsonPath("$[0].senhaHash").doesNotExist());
     }

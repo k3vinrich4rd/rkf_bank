@@ -118,7 +118,7 @@ Durante o vídeo, prestar atenção em:
 - [x] Validação do token em todas as outras rotas
 - [x] **Regra de dono:** depósito, saque, transferência e extrato só nas contas do usuário logado → `403`
 - [x] `GET /clientes` só para perfil admin (ou removido do uso público)
-- [x] `401` e `403` no mesmo formato de erro do `ControllerExceptionHandler`
+- [x] `401` e `403` no mesmo formato de erro do `TratadorGlobalDeErros`
 - [x] Segredo do JWT em variável de ambiente (`.env`), nunca no código
 - [x] Testes: login ok, senha errada, sem token, token expirado, conta de outro cliente
 - [x] Combinar com o Renan as mudanças no frontend (guardar e enviar o token) — feito: cookie `httpOnly` no Next (decisão de 17/10, PR #27)

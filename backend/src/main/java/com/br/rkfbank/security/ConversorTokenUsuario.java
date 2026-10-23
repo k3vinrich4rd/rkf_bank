@@ -1,5 +1,6 @@
 package com.br.rkfbank.security;
 
+import com.br.rkfbank.exceptions.AcessoAlteradoException;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.services.TokenService;
@@ -30,6 +31,8 @@ public class ConversorTokenUsuario implements Converter<Jwt, AbstractAuthenticat
         this.usuarioRepository = usuarioRepository;
     }
 
+    // Chamado pelo Resource Server para cada requisicao com token valido. Devolver a autenticacao = deixar passar;
+    // lancar AcessoAlteradoException = 401 com mensagem propria (TratadorErrosSeguranca).
     @Override
     public AbstractAuthenticationToken convert(Jwt jwt) {
         Optional<Usuario> usuario = buscar(jwt.getSubject());

@@ -14,8 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.clients.viacep.ClienteViaCep;
-import com.br.rkfbank.clients.viacep.ResponseViaCepDto;
+import com.br.rkfbank.clients.viacep.ViaCepClient;
+import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.services.TokenService;
@@ -76,11 +76,11 @@ class SegurancaIntegracaoTest {
 
     // ViaCEP e externo: fora do teste de seguranca.
     @MockitoBean
-    private ClienteViaCep clienteViaCep;
+    private ViaCepClient viaCepClient;
 
     @BeforeEach
     void setUp() {
-        when(clienteViaCep.buscarPorCep(anyString())).thenReturn(new ResponseViaCepDto(
+        when(viaCepClient.buscarPorCep(anyString())).thenReturn(new ViaCepResponseDto(
                 "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false));
     }
 
@@ -351,6 +351,26 @@ class SegurancaIntegracaoTest {
         mockMvc.perform(get("/contas").param("paginado", "true").header("Authorization", "Bearer " + tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
+    }
+
+    @Test
+    void paginaTemSoOsCamposDoContratoENaoOPageDoSpring() throws Exception {
+        String tokenAdmin = login(ADMIN_CPF, ADMIN_SENHA);
+
+        mockMvc.perform(get("/clientes").param("paginado", "true").param("size", "1")
+                        .header("Authorization", "Bearer " + tokenAdmin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").isNumber())
+                .andExpect(jsonPath("$.totalPages").isNumber())
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").isBoolean())
+                // Campos internos do PageImpl nao podem vazar para o contrato.
+                .andExpect(jsonPath("$.pageable").doesNotExist())
+                .andExpect(jsonPath("$.sort").doesNotExist())
+                .andExpect(jsonPath("$.numberOfElements").doesNotExist());
     }
 
     // ---------- apoio ----------

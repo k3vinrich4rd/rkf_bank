@@ -24,8 +24,8 @@ Este guia mostra como o time trabalha: do pegar uma tarefa até o merge.
 
 | Branch | Para quê |
 |---|---|
-| `main` | versão estável (o que vai para o ar) |
-| `develop` | onde o trabalho do time se junta |
+| `main` | versão estável (o que vai para o ar): recebe a `develop` só depois da **reunião semanal** do Kevin com o Renan |
+| `develop` | onde o trabalho do time se junta: todo PR de branch entra aqui (o `/entregar` mergeia com o CI verde) |
 | `feature/nome` | funcionalidade nova |
 | `fix/nome` | correção de bug |
 | `refactor/nome` | melhoria no código sem mudar o comportamento |
@@ -81,7 +81,8 @@ Escopo é opcional: `test(repositories): cobre o extrato`, `fix(deps): atualiza 
 Nunca faça commit de `.env`, senhas ou tokens.
 
 > **Hook de commit:** rode `scripts/instalar-hooks.sh` uma vez depois de clonar. O Git passa a recusar
-> mensagens fora do padrão acima (merges e reverts gerados pelo Git passam direto).
+> mensagens fora do padrão acima (merges e reverts gerados pelo Git passam direto). Vale também nos worktrees
+> (`git worktree add`): o script grava o caminho absoluto dos hooks. Instalou antes de 22/10/2026? Rode de novo.
 
 ---
 

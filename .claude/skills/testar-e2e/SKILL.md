@@ -18,6 +18,8 @@ description: Sobe a API do RKF Bank contra o MySQL do Docker e roda o smoke test
 
 O smoke já confere as contas do seed: no `visitante`, a Ana; no padrão/`equipe`, Felipe e Renan **se** `EQUIPE_SENHA` estiver no ambiente do terminal (`set -a && source <(tr -d '\r' < .env) && set +a`). Esperado: 32/32 no `visitante`, 35/35 no `equipe` com o `.env` carregado. Nunca escreva a `EQUIPE_SENHA` na resposta ao usuário.
 
+Depois, a coleção do Insomnia (cobre ADMIN, LGPD e rotas obsoletas, que o smoke não cobre): `node scripts/rodar-colecao-insomnia.mjs` (visitante: 62/62, pula o ADMIN) ou, no `equipe`/padrão, `node scripts/rodar-colecao-insomnia.mjs --ambiente equipe --arquivo .equipe/testes/rkfbank-equipe.insomnia.json` (89/89; se o arquivo não existir, gere com `node scripts/gerar-colecao-insomnia.mjs --equipe`).
+
 ## 3. Interpretar
 - Tudo ✅: informe `X/Y verificações OK` em uma linha.
 - Alguma ❌: para cada falha, leia o trecho do log da API pelo `X-Request-Id` que começa com `smoke-e2e-`, explique a causa em linguagem simples e indique o arquivo provável (`arquivo:linha`). Corrija só se o usuário pedir.

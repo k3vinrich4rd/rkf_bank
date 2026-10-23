@@ -15,7 +15,7 @@ discordarem, um dos dois está errado e precisa ser corrigido.
 |---|---|
 | **Backend** | Kevin |
 | **Frontend** | Renan |
-| **Versão** | 2.3 (20/10/2026) — troca de senha (`PATCH /auth/senha`) e redefinição pelo ADMIN; não quebra o frontend (ver [histórico](#8-histórico-de-versões)) |
+| **Versão** | 2.6 (22/10/2026) — rotas no padrão de mercado (`POST /contas`, `/depositos`, `/saques`, `/transferencias`, `/usuarios/me/senha`, paginação por `page`/`size`); as antigas continuam funcionando com `Deprecation`; não quebra o frontend (ver [histórico](#8-histórico-de-versões)) |
 
 ---
 
@@ -53,6 +53,11 @@ Navegador ──► http://localhost:3000/api/clientes ──(proxy do Next)─�
 
 O prefixo `/api` **só existe no frontend** (rewrite em `frontend/next.config.ts`). No Postman, Insomnia ou curl,
 chame o backend direto, sem `/api`.
+
+**CORS** (navegador chamando o backend direto, sem o proxy): vale para todas as rotas e só para as origens de
+`CORS_ORIGENS` (padrão `http://localhost:3000`). O *preflight* (`OPTIONS`) é respondido sem token; origem fora da
+lista recebe `403`. Headers aceitos: `Authorization`, `Content-Type`, `Idempotency-Key`, `X-Request-Id`. Headers que o
+JavaScript consegue ler na resposta: `X-Request-Id`, `Idempotency-Replayed`, `Retry-After`.
 
 ### Autenticação (JWT)
 
@@ -97,18 +102,37 @@ recusada (ex.: `422` de saldo) não grava a chave.
 | `POST` | `/clientes` | cadastra cliente (com senha) | **público** | `201` + cliente | [3.1](#31-cadastrar-cliente) |
 | `POST` | `/auth/login` | login com CPF + senha | **público** | `200` + token | [3.3](#33-login) |
 | `GET` | `/clientes` | lista clientes | só `ADMIN` | `200` | [3.2](#32-listar-clientes) |
-| `POST` | `/contas/clientes/{clienteId}` | abre conta para o cliente | o próprio cliente | `201` + conta | [4.1](#41-abrir-conta) |
+| `POST` | `/contas` | abre conta **no próprio cadastro** (cliente vem do token) | o próprio cliente | `201` + conta | [4.1](#41-abrir-conta) |
 | `GET` | `/contas` | lista contas | `ADMIN`: todas · `CLIENTE`: só as dele | `200` | [4.2](#42-listar-contas) |
-| `POST` | `/contas/{contaId}/deposito` | deposita | dono da conta | `204` | [4.3](#43-depositar-e-sacar) |
-| `POST` | `/contas/{contaId}/saque` | saca | dono da conta | `204` | [4.3](#43-depositar-e-sacar) |
-| `POST` | `/contas/transferencia` | transfere entre contas | dono da conta de **origem** | `204` | [4.4](#44-transferir) |
+| `POST` | `/contas/{contaId}/depositos` | deposita | dono da conta | `204` | [4.3](#43-depositar-e-sacar) |
+| `POST` | `/contas/{contaId}/saques` | saca | dono da conta | `204` | [4.3](#43-depositar-e-sacar) |
+| `POST` | `/transferencias` | transfere entre contas | dono da conta de **origem** | `204` | [4.4](#44-transferir) |
 | `GET` | `/contas/{contaId}/lancamentos` | extrato da conta | dono da conta | `200` | [4.5](#45-extrato) |
 | `GET` | `/admin/usuarios` | lista usuários (CPF mascarado) | só `ADMIN` | `200` | [3.4](#34-gestão-de-usuários-admin) |
 | `PATCH` | `/admin/usuarios/{usuarioId}/perfil` | promove a `ADMIN` ou rebaixa a `CLIENTE` | só `ADMIN` | `200` | [3.4](#34-gestão-de-usuários-admin) |
 | `PATCH` | `/admin/usuarios/{usuarioId}/acesso` | desativa ou reativa o login | só `ADMIN` | `200` | [3.4](#34-gestão-de-usuários-admin) |
 | `PATCH` | `/admin/usuarios/{usuarioId}/senha` | redefine a senha de quem esqueceu | só `ADMIN` | `204` | [3.4](#34-gestão-de-usuários-admin) |
-| `PATCH` | `/auth/senha` | troca a **própria** senha (com a atual) | qualquer usuário logado | `204` | [3.5](#35-trocar-a-própria-senha) |
+| `PATCH` | `/usuarios/me/senha` | troca a **própria** senha (com a atual) | qualquer usuário logado | `204` | [3.5](#35-trocar-a-própria-senha) |
+| `GET` | `/clientes/me` | o titular vê os próprios dados (LGPD) | o próprio cliente | `200` + cliente | [3.6](#36-meus-dados-lgpd) |
+| `PATCH` | `/clientes/me` | o titular corrige os próprios dados (LGPD) | o próprio cliente | `200` + cliente | [3.6](#36-meus-dados-lgpd) |
+| `POST` | `/clientes/me/encerramento` | o titular encerra o cadastro (LGPD) | o próprio cliente | `200` + prazos | [3.6](#36-meus-dados-lgpd) |
 | `GET` | `/actuator/health` | a API está no ar? (`{"status":"UP"}`, sem detalhes) | **público** | `200` | — |
+
+### Rotas obsoletas (funcionam até o contrato 3.0)
+
+A 2.6 trouxe as rotas para o padrão de mercado (substantivo no plural, o "me" do token em vez de um id na URL).
+As antigas **continuam respondendo igual**, para nenhum cliente da API quebrar, e avisam pelos headers padronizados
+`Deprecation: true` ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)) e `Link: <rota nova>; rel="successor-version"`
+([RFC 8288](https://www.rfc-editor.org/rfc/rfc8288)). A remoção só acontece num contrato **3.0**, combinado com o frontend.
+
+| Antiga | Use | Por que mudou |
+|---|---|---|
+| `POST /contas/clientes/{clienteId}` | `POST /contas` | o `clienteId` da URL só servia para ser conferido contra o token; vindo do token, não existe "cadastro de outro" |
+| `POST /contas/{contaId}/deposito` | `POST /contas/{contaId}/depositos` | REST: recurso no plural; cada chamada **cria** um depósito |
+| `POST /contas/{contaId}/saque` | `POST /contas/{contaId}/saques` | idem |
+| `POST /contas/transferencia` | `POST /transferencias` | a transferência envolve duas contas: não pertence a uma só |
+| `PATCH /auth/senha` | `PATCH /usuarios/me/senha` | a senha é do **usuário** (cliente ou admin); fica par de `/admin/usuarios/{id}/senha` |
+| `?paginado=true` | `?page=0&size=10` | `page`/`size` já pedem a página (padrão do Spring Data); a flag sobra |
 
 > Fora as rotas públicas, **toda chamada sem token válido → `401`**. Token válido, mas recurso de outro
 > cliente ou perfil sem acesso → `403`. O `ADMIN` lista, mas não movimenta conta de ninguém.
@@ -191,10 +215,10 @@ O cadastro **não devolve token**: depois do `201`, chame o [login](#33-login).
 | Chamada | Retorno |
 |---|---|
 | `GET /clientes` | **array** com todos os clientes (mesmo formato da 3.1) |
-| `GET /clientes?paginado=true&page=0&size=10` | **página** (formato abaixo) |
+| `GET /clientes?page=0&size=10` | **página** (formato abaixo) |
 
 - `page` começa em `0`; `size` vai de `1` a `100`. Fora disso → `400` com o campo em `campos`.
-- `page` e `size` são ignorados quando `paginado` não é `true`.
+- Basta `page` **ou** `size` na URL para a resposta vir paginada (sem eles: array). `paginado=true|false` ainda vale (obsoleto).
 
 Formato da página (campos que o frontend usa):
 
@@ -210,8 +234,9 @@ Formato da página (campos que o frontend usa):
 }
 ```
 
-> ⚠️ Esse formato é o `Page` do Spring serializado direto, que **não é estável** entre versões do Spring Data.
-> Está registrado em [débitos técnicos](../planing/debitos-tecnicos.md). Se mudar, este bloco muda junto.
+São exatamente esses sete campos, nem mais nem menos: a API devolve um DTO próprio (`PaginaResponse`), e não o
+`Page` do Spring, então o formato não muda quando o Spring Data muda (antes da versão 2.4 vazavam `pageable`,
+`sort`, `numberOfElements`...). Os nomes ficaram em inglês de propósito: são os que o frontend já lia.
 
 ### 3.3 Login
 
@@ -256,7 +281,7 @@ cadastro e senha errada, de propósito: não revela quais CPFs têm conta.
 
 ```json
 [{"id":"9744fa24-8034-4c38-b20f-ce3a0cfe40c7","cpf":"***.792.468-**","nome":null,"perfil":"ADMIN","ativo":true,"clienteId":null},
- {"id":"f3155e34-57f9-410e-8900-a1139202fe2f","cpf":"***.456.789-**","nome":"Felipe Santana","perfil":"CLIENTE","ativo":true,"clienteId":"5eed0000-0000-4000-8000-000000000012"}]
+ {"id":"f3155e34-57f9-410e-8900-a1139202fe2f","cpf":"***.456.789-**","nome":"Felipe Santana (Teste Origem)","perfil":"CLIENTE","ativo":true,"clienteId":"5eed0000-0000-4000-8000-000000000012"}]
 ```
 
 `PATCH /admin/usuarios/{usuarioId}/perfil` com `{"perfil":"ADMIN"}` ou `{"perfil":"CLIENTE"}` · `PATCH /admin/usuarios/{usuarioId}/acesso`
@@ -267,7 +292,7 @@ com `{"ativo":false}` ou `{"ativo":true}` → `200` com o usuário no formato ac
   `Seu acesso foi alterado ou desativado; faca login novamente`. Desativado não faz login (`401` `CPF ou senha invalidos`).
 - "Remover" = desativar: usuário não é apagado (o histórico aponta para ele).
 - `PATCH /admin/usuarios/{usuarioId}/senha` com `{"novaSenha":"..."}` (8 a 72) → `204`. Os tokens da pessoa caem na hora. O ADMIN
-  não redefine a própria senha por aqui (`422` `Para trocar a sua propria senha use PATCH /auth/senha`).
+  não redefine a própria senha por aqui (`422` `Para trocar a sua propria senha use PATCH /usuarios/me/senha`).
 
 **Erros possíveis:** `400` (perfil fora de `CLIENTE`/`ADMIN`, `ativo` ausente, id não é UUID), `401`, `403` (não é ADMIN),
 `404` `Usuario nao encontrado`, `422` `Voce nao pode alterar o seu proprio perfil ou acesso; peca a outro ADMIN` ou
@@ -275,7 +300,7 @@ com `{"ativo":false}` ou `{"ativo":true}` → `200` com o usuário no formato ac
 
 ### 3.5 Trocar a própria senha
 
-`PATCH /auth/senha` (🔒 qualquer usuário logado)
+`PATCH /usuarios/me/senha` (🔒 qualquer usuário logado)
 
 ```json
 { "senhaAtual": "senha-de-hoje", "novaSenha": "senha-nova-123" }
@@ -293,6 +318,55 @@ Por dentro: o token leva a claim `versaoCredencial`; a troca sobe a versão no b
 **Erros possíveis:** `400` (validação; `novaSenha` acima de 72 bytes), `401`, `422` `Senha atual incorreta` ou
 `A nova senha precisa ser diferente da atual`, `429` (senha atual errada conta no mesmo limite do login).
 
+### 3.6 Meus dados (LGPD)
+
+Direitos do titular (LGPD, art. 18): **ver**, **corrigir** e **pedir o encerramento** do próprio cadastro. `me` é
+sempre o cliente do token: não existe `/clientes/{id}` de propósito, para nenhum id na URL abrir o cadastro de outra
+pessoa. `ADMIN` criado pelo `.env` não tem cadastro de cliente → `422` `Seu usuario nao tem cadastro de cliente`.
+
+**`GET /clientes/me`** → `200` no mesmo formato da [3.1](#31-cadastrar-cliente) (o que o banco guarda dele, sem senha).
+
+**`PATCH /clientes/me`** → `200` com o cadastro atualizado. Só muda o que vier no corpo:
+
+```json
+{ "email": "joao.novo@exemplo.com", "telefone": "11912345678", "cep": "01001000", "numero": "200", "complemento": "" }
+```
+
+| Campo | Regra |
+|---|---|
+| `nomeCompleto` | 1 a 120 caracteres |
+| `email` | formato de e-mail; salvo em minúsculas; não pode ser de outro cliente (`409`) |
+| `telefone` | DDD + 8 ou 9 dígitos (pontuação é ignorada) |
+| `cep` | 8 dígitos; o endereço é buscado de novo no ViaCEP (`422`/`503` como no cadastro); exige `numero` |
+| `numero` | 1 a 20 caracteres |
+| `complemento` | até 80; `""` apaga |
+| `cpf` | **não muda**: é o login e a chave do cadastro (correção pelo atendimento) |
+
+Corpo vazio (`{}`) → `400` com `campos` = `corpo`. O log registra **quais** campos mudaram, nunca os valores.
+
+**`POST /clientes/me/encerramento`** com `{ "senha": "..." }` → `200`:
+
+```json
+{
+  "encerradoEm": "2026-10-22T18:02:11.483Z",
+  "anonimizacaoPrevistaPara": "2031-10-22",
+  "motivoDaRetencao": "Lei 9.613/1998, art. 10: cadastro e operacoes guardados pelo prazo legal depois do fim do relacionamento; em seguida, os dados pessoais sao anonimizados"
+}
+```
+
+| Regra | Erro |
+|---|---|
+| a senha confirma que é o titular | `422` `Senha incorreta` |
+| todas as contas com saldo zero (dinheiro não some: transfira antes) | `422` `Transfira o saldo das suas contas antes de encerrar o cadastro` |
+
+Na hora: todas as contas viram `ativa = false` (não recebem nem movimentam), o login é desativado e **todo token
+dele passa a dar `401`**; o `ADMIN` não consegue reativar (`422` `O titular encerrou o cadastro; o acesso nao pode ser
+reativado`). O cadastro **não é apagado agora**: a lei de prevenção à lavagem de dinheiro manda guardar por 5 anos
+(`LGPD_RETENCAO`, padrão `5y`). Uma rotina diária (03:00, horário de São Paulo) troca nome, CPF, e-mail, telefone,
+endereço e login por valores sem identificação quando o prazo vence; contas, lançamentos e cidade/UF ficam.
+
+**Erros possíveis:** `400` (validação), `401`, `409` `Email ja cadastrado`, `422` (acima), `503` (ViaCEP).
+
 ---
 
 ## 4) Contas e movimentações
@@ -301,7 +375,8 @@ Por dentro: o token leva a claim `versaoCredencial`; a troca sobe a versão no b
 
 ### 4.1 Abrir conta
 
-`POST /contas/clientes/{clienteId}` — o `clienteId` precisa ser **o do usuário logado** (o `clienteId` da resposta do login).
+`POST /contas` — a conta é aberta **no cadastro do usuário logado** (o cliente vem do token). A rota antiga
+`POST /contas/clientes/{clienteId}` continua funcionando (obsoleta), com o `clienteId` conferido contra o token.
 
 ```json
 {
@@ -311,7 +386,7 @@ Por dentro: o token leva a claim `versaoCredencial`; a troca sobe a versão no b
 
 | Campo | Obrigatório | Regra |
 |---|:---:|---|
-| `tipoContaEnum` | ✅ | `CORRENTE` ou `POUPANCA` |
+| `tipoContaEnum` (ou `tipoConta`) | ✅ | `CORRENTE` ou `POUPANCA`. Desde a 2.6 o pedido aceita o nome `tipoConta`; a resposta segue com `tipoContaEnum` até a 3.0 |
 | `agencia` | — | 4 dígitos. **Omita:** o banco usa `0001` |
 | `numeroConta` | — | 5 a 12 dígitos, único. **Omita:** o banco gera 8 dígitos (7 aleatórios + dígito verificador módulo 11) |
 
@@ -333,12 +408,12 @@ Por dentro: o token leva a claim `versaoCredencial`; a troca sobe a versão no b
 - Um cliente pode ter **mais de uma conta**.
 - Desde a 2.1 o banco gera agência e número; mandar os dois ainda funciona (compatibilidade), mas o front não deve.
 
-**Erros possíveis:** `400` (validação ou `clienteId` não é UUID), `401` (sem token), `403` (`clienteId` de outro
-cliente), `404` (cliente não encontrado), `409` (número de conta já existe).
+**Erros possíveis:** `400` (validação), `401` (sem token), `409` (número de conta já existe), `422` (usuário sem
+cadastro de cliente, como o ADMIN do `.env`). Só na rota antiga: `403` (`clienteId` de outro cliente) e `404`.
 
 ### 4.2 Listar contas
 
-Igual à listagem de clientes: `GET /contas` (array) ou `GET /contas?paginado=true&page=0&size=10` (página).
+Igual à listagem de clientes: `GET /contas` (array) ou `GET /contas?page=0&size=10` (página).
 Cada item tem o formato da resposta da 4.1.
 
 - Token de `CLIENTE` → **só as contas dele** (é o jeito de achar as contas do usuário logado).
@@ -346,7 +421,7 @@ Cada item tem o formato da resposta da 4.1.
 
 ### 4.3 Depositar e sacar
 
-`POST /contas/{contaId}/deposito` · `POST /contas/{contaId}/saque`
+`POST /contas/{contaId}/depositos` · `POST /contas/{contaId}/saques`
 
 ```json
 {
@@ -371,7 +446,7 @@ A ordem de checagem é `404` → `403` → `422`: conta de outro cliente dá `40
 
 ### 4.4 Transferir
 
-`POST /contas/transferencia`
+`POST /transferencias`
 
 ```json
 {
@@ -468,6 +543,10 @@ saldo insuficiente).
 | R21 | Usuário desativado não faz login (mesma resposta de senha errada) | `401` |
 | R22 | Trocar a própria senha exige a atual; erro conta no limite de tentativas | `422` / `429` |
 | R23 | Troca ou redefinição de senha derruba na hora todos os tokens emitidos antes | `401` |
+| R24 | O titular vê e corrige só o **próprio** cadastro (`/clientes/me`, do token); CPF não muda | `422` sem cadastro · `409` e-mail |
+| R25 | Encerrar o cadastro exige a senha e saldo zero em todas as contas | `422` |
+| R26 | Cadastro encerrado: contas inativas, login desativado na hora e sem reativação pelo `ADMIN` | `401` / `422` |
+| R27 | Cadastro encerrado é anonimizado depois do prazo de retenção (5 anos); lançamentos ficam | — |
 
 ---
 
@@ -524,6 +603,9 @@ Todo erro **tratado** volta assim:
 | `422` | transferência sem saldo | `Saldo insuficiente para transferencia` |
 | `422` | transferência para a mesma conta | `Conta de origem e destino nao podem ser iguais` |
 | `422` | troca de senha com a senha atual errada / nova igual à atual | `Senha atual incorreta` / `A nova senha precisa ser diferente da atual` |
+| `422` | `/clientes/me` ou `POST /contas` com usuário sem cadastro de cliente (ADMIN do `.env`) | `Seu usuario nao tem cadastro de cliente` |
+| `422` | encerramento com senha errada / com saldo | `Senha incorreta` / `Transfira o saldo das suas contas antes de encerrar o cadastro` |
+| `422` | ADMIN tentando reativar quem encerrou | `O titular encerrou o cadastro; o acesso nao pode ser reativado` |
 | `422` | `Idempotency-Key` reaproveitada com outro corpo | `Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao` |
 | `429` | 5 logins errados seguidos para o mesmo CPF | `Muitas tentativas de login; aguarde alguns minutos e tente de novo` (+ header `Retry-After`) |
 | `503` | ViaCEP fora do ar / timeout | `ViaCEP indisponível` ou `Falha ao consultar ViaCEP` |
@@ -544,7 +626,6 @@ Ainda **não implementados**. Quando um deles for feito, ele sai daqui e entra n
 |---|---|---|---|
 | `GET` | `/contas/{contaId}` | tela de saldo | **MVP** |
 | `GET` | `/clientes/{clienteId}/contas` | listar as contas de um cliente | **MVP** |
-| `GET` | `/clientes/{clienteId}` | dados do cliente logado | depois do MVP |
 | `POST` | `/auth/refresh` | renovar o token sem pedir a senha de novo (*refresh token*) | depois do MVP |
 
 Proposta de resposta do `GET /contas/{contaId}`: mesmo formato da [4.1](#41-abrir-conta).
@@ -555,13 +636,16 @@ Proposta de resposta do `GET /contas/{contaId}`: mesmo formato da [4.1](#41-abri
 
 | Versão | Data | Mudança |
 |---|---|---|
-| 2.3 | 20/10/2026 | `PATCH /auth/senha` (troca da própria senha) e `PATCH /admin/usuarios/{id}/senha` (redefinição pelo ADMIN); claim `versaoCredencial` no token e `tb_usuario.versao_credencial` (V8). Regras R22–R23. Não quebra o frontend |
+| 2.6 | 22/10/2026 | Rotas no padrão de mercado: `POST /contas` (cliente do token), `/contas/{id}/depositos` e `/saques`, `POST /transferencias`, `PATCH /usuarios/me/senha`; paginação só com `page`/`size`; pedido de abertura aceita `tipoConta`. As antigas seguem funcionando com `Deprecation` + `Link` até a 3.0. Não quebra o frontend |
+| 2.5 | 22/10/2026 | Direitos do titular (LGPD): `GET /clientes/me`, `PATCH /clientes/me` e `POST /clientes/me/encerramento`; `tb_cliente.encerrado_em` e `anonimizado_em` (V9); rotina diária de anonimização depois de 5 anos (`LGPD_RETENCAO`). Regras R24–R27. Não quebra o frontend |
+| 2.4 | 22/10/2026 | Página (`?paginado=true`) passa a ser um DTO próprio com os mesmos campos de antes (`content`, `totalElements`, `totalPages`, `number`, `size`, `first`, `last`), sem os campos internos do `Page` do Spring. CORS valendo para todas as rotas, com origens em `CORS_ORIGENS`. Não quebra o frontend |
+| 2.3 | 20/10/2026 | `PATCH /usuarios/me/senha` (troca da própria senha) e `PATCH /admin/usuarios/{id}/senha` (redefinição pelo ADMIN); claim `versaoCredencial` no token e `tb_usuario.versao_credencial` (V8). Regras R22–R23. Não quebra o frontend |
 | 2.2 | 20/10/2026 | Gestão de usuários: `GET /admin/usuarios`, `PATCH .../perfil` e `.../acesso` (só `ADMIN`); `tb_usuario.ativo` (V7); token de quem foi desativado ou mudou de perfil → `401` com mensagem própria. Regras R19–R21. Não quebra o frontend |
 | 2.1 | 20/10/2026 | **Quebra o frontend (ajustado no mesmo PR).** `Idempotency-Key` obrigatório em depósito, saque e transferência (`400` sem ele, `422` reaproveitada, header `Idempotency-Replayed` na repetição); `agencia` e `numeroConta` opcionais na abertura (o banco gera); `429` no login após 5 erros; `GET /actuator/health` público |
 | 2.0 | 16/10/2026 | **Quebra o frontend.** Login com JWT: `senha` obrigatória no cadastro, `POST /auth/login` novo, `Authorization: Bearer` em todas as outras rotas (`401`), regra de dono (`403`), `GET /clientes` só `ADMIN`, `GET /contas` do `CLIENTE` traz só as dele. Regras R11–R14 |
 | 1.3 | 15/10/2026 | e-mail salvo e devolvido em minúsculas; R2 sem diferenciar maiúsculas. Sem mudança de campo ou status (não quebra o frontend) |
 | 1.2 | 13/10/2026 | tabela de mensagens de erro reais, regras numeradas, erros por endpoint, propostas priorizadas |
 | 1.1 | 12/10/2026 | stack, convenções e endpoints revisados |
-| — | 11/10/2026 | rotas passam a seguir o backend: sem `/api`, `POST /contas/clientes/{id}` e `POST /contas/transferencia` |
+| — | 11/10/2026 | rotas passam a seguir o backend: sem `/api`, `POST /contas/clientes/{id}` e `POST /transferencias` |
 | — | 05/10/2026 | contrato alinhado com o guia de implementação e o fluxo E2E |
 | 1.0 | 02/10/2026 | primeira versão do contrato |

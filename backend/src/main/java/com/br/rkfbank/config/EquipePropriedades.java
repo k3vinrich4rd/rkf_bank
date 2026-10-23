@@ -7,6 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "rkfbank.equipe")
 public record EquipePropriedades(String senha) {
 
+    // Sem EQUIPE_SENHA as contas da equipe existem (o seed cria), mas ninguem consegue entrar nelas.
     public boolean configurado() {
         return senha != null && !senha.isBlank();
     }

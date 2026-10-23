@@ -16,7 +16,7 @@
 [![Flyway](https://img.shields.io/badge/Flyway-V1→V8_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-237_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-264_✔-22C55E)](#-qualidade-e-testes)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
 <a href="#-conheça-o-rkf-bank"><img src="assets/readme/botoes/abrir-conta.svg" alt="🏦 Conheça o banco" height="46"/></a>
@@ -32,7 +32,7 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 237 testes, 14 rotas REST, 8 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 264 testes, 17 rotas REST, 9 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -98,7 +98,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Felipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **237 testes**, CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **264 testes**, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -115,7 +115,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 | [`ContaService.java`](backend/src/main/java/com/br/rkfbank/services/ContaService.java) | transferência atômica, regra de dono (404 → 403 → 422) e validação de saldo |
 | [`Conta.java`](backend/src/main/java/com/br/rkfbank/entities/Conta.java) | `@Version` para lock otimista |
 | [`ConfiguracaoSeguranca.java`](backend/src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java) | `SecurityFilterChain`, JWT HS256 com algoritmo fixo, BCrypt |
-| [`AuthService.java`](backend/src/main/java/com/br/rkfbank/services/AuthService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
+| [`AutenticacaoService.java`](backend/src/main/java/com/br/rkfbank/services/AutenticacaoService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
 | [`db/migration/`](backend/src/main/resources/db/migration) | `V1` a `V5`: uma tabela por versão (endereço, cliente, conta, lançamento, usuário) |
 | [`db/seed/`](backend/src/main/resources/db/seed) | callbacks `afterMigrate`: `equipe/` (Felipe e Renan, login só pelo `.env`) e `visitante/` (Ana e Bruno, contas públicas) |
 | [`FiltroLogRequisicao.java`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) | `X-Request-Id` em todas as linhas de log, com proteção contra log forjado |
@@ -229,7 +229,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 <summary>🔑 Trocar a senha pelo app</summary>
 <br/>
 
-✅ **`204`**: `PATCH /auth/senha` pediu a senha atual (um token roubado não basta) e gravou a nova. **Todo token emitido antes** caiu na hora: quem estivesse com o seu acesso recebe **`401`** na próxima chamada. Você entra de novo com a senha nova.
+✅ **`204`**: `PATCH /usuarios/me/senha` pediu a senha atual (um token roubado não basta) e gravou a nova. **Todo token emitido antes** caiu na hora: quem estivesse com o seu acesso recebe **`401`** na próxima chamada. Você entra de novo com a senha nova.
 
 </details>
 
@@ -431,7 +431,7 @@ CPF inexistente e senha errada dão a **mesma** resposta, no mesmo tempo.
 | Rebaixar a CLIENTE | `PATCH /admin/usuarios/{id}/perfil` | ❌ `401` na hora | ✅ volta a CLIENTE |
 | Desativar ("remover") | `PATCH /admin/usuarios/{id}/acesso` | ❌ `401` na hora | ❌ `CPF ou senha invalidos` |
 | Redefinir a senha de quem esqueceu | `PATCH /admin/usuarios/{id}/senha` | ❌ `401` na hora | ✅ com a senha nova |
-| Trocar a **própria** senha | `PATCH /auth/senha` (pede a atual) | ❌ `401` na hora | ✅ com a senha nova |
+| Trocar a **própria** senha | `PATCH /usuarios/me/senha` (pede a atual) | ❌ `401` na hora | ✅ com a senha nova |
 
 Ninguém mexe no **próprio** perfil ou acesso: o admin não se tranca para fora e sempre sobra um ADMIN ativo.
 
@@ -536,14 +536,15 @@ Suba o perfil `visitante` ([VISITANTES.md](VISITANTES.md)), entre como a Ana e t
 - ✅ Frontend mascara CPF, e-mail e telefone nos logs; token fora do alcance do JavaScript.
 - ✅ Limite de tentativas de login (`429` depois de 5 erros) e movimentações idempotentes (`Idempotency-Key`).
 - ✅ Nenhuma senha real no repositório: contas da equipe e admin ganham login só pelo `.env`; o perfil público `visitante` tem contas fictícias e segredo do JWT sorteado.
+- ✅ Direitos do titular: **ver** (`GET /clientes/me`), **corrigir** (`PATCH /clientes/me`) e **encerrar** o cadastro (`POST /clientes/me/encerramento`, com senha e saldo zero). O cadastro encerrado fica guardado pelo prazo legal (5 anos, Lei 9.613/1998) e uma rotina diária o **anonimiza** depois.
 
 **Falta antes de colocar no ar** (bloqueia o deploy, não o desenvolvimento):
 
 - ⏳ Política de privacidade e termos de uso de verdade (o cadastro já cita os dois).
-- ⏳ Registrar o aceite dos termos (versão + data) numa migração `V7`.
+- ⏳ Registrar o aceite dos termos (versão + data) numa migração nova do Flyway.
 - ⏳ Encarregado e canal de contato do titular.
 
-**Depois do MVP:** rota "meus dados" (`GET /clientes/me`), correção de dados, encerramento de conta com retenção e anonimização e auditoria.
+**Depois do MVP:** auditoria (quem fez o quê, quando e de onde).
 Detalhes e prioridades em [planing/debitos-tecnicos.md](planing/debitos-tecnicos.md) e [planing/decisoes.md](planing/decisoes.md).
 
 </details>
@@ -553,19 +554,22 @@ Detalhes e prioridades em [planing/debitos-tecnicos.md](planing/debitos-tecnicos
 ## 🔌 API REST
 
 Base URL: `http://localhost:8080` · JSON · IDs em UUID · dinheiro com 2 casas (`150.00`) · datas ISO-8601 UTC · rotas privadas com `Authorization: Bearer <token>`.
-Contrato completo (versão 2.0): [backend/README_CONTRATO_API.md](backend/README_CONTRATO_API.md).
+Contrato completo (com a versão atual e o histórico de mudanças): [backend/README_CONTRATO_API.md](backend/README_CONTRATO_API.md).
 
 | Método | Rota | O que faz | Quem pode | Sucesso |
 |---|---|---|---|---|
 | `POST` | `/clientes` | cadastra cliente (com senha) | público | `201` |
 | `POST` | `/auth/login` | login com CPF + senha (5 erros em 15 min → `429`) | público | `200` + token |
-| `PATCH` | `/auth/senha` | troca a própria senha (pede a atual; derruba os tokens antigos) | logado | `204` |
-| `GET` | `/clientes` | lista clientes (`?paginado=true&page=0&size=10`) | `ADMIN` | `200` |
-| `POST` | `/contas/clientes/{clienteId}` | abre conta | o próprio cliente | `201` |
+| `PATCH` | `/usuarios/me/senha` | troca a própria senha (pede a atual; derruba os tokens antigos) | logado | `204` |
+| `GET` | `/clientes/me` | meus dados (LGPD) | o próprio cliente | `200` |
+| `PATCH` | `/clientes/me` | corrige meus dados (LGPD; CPF não muda) | o próprio cliente | `200` |
+| `POST` | `/clientes/me/encerramento` | encerra o cadastro (senha + saldo zero; anonimiza depois de 5 anos) | o próprio cliente | `200` |
+| `GET` | `/clientes` | lista clientes (`?page=0&size=10`) | `ADMIN` | `200` |
+| `POST` | `/contas` | abre conta no próprio cadastro (cliente vem do token) | o próprio cliente | `201` |
 | `GET` | `/contas` | lista contas | `ADMIN`: todas · `CLIENTE`: as dele | `200` |
-| `POST` | `/contas/{contaId}/deposito` | deposita | dono da conta | `204` |
-| `POST` | `/contas/{contaId}/saque` | saca | dono da conta | `204` |
-| `POST` | `/contas/transferencia` | transfere | dono da conta de origem | `204` |
+| `POST` | `/contas/{contaId}/depositos` | deposita | dono da conta | `204` |
+| `POST` | `/contas/{contaId}/saques` | saca | dono da conta | `204` |
+| `POST` | `/transferencias` | transfere | dono da conta de origem | `204` |
 | `GET` | `/contas/{contaId}/lancamentos` | extrato (mais recente primeiro) | dono da conta | `200` |
 | `GET` | `/admin/usuarios` | lista os usuários (perfil, ativo) | `ADMIN` | `200` |
 | `PATCH` | `/admin/usuarios/{usuarioId}/perfil` | promove a `ADMIN` ou rebaixa a `CLIENTE` | `ADMIN` (não em si mesmo) | `200` |
@@ -620,13 +624,13 @@ CPF sem cadastro e senha errada recebem **a mesma** resposta `401`, de propósit
 <br/>
 
 ```json
-// POST /contas/clientes/{clienteId}
-{ "agencia": "0001", "numeroConta": "12345678", "tipoContaEnum": "CORRENTE" }
+// POST /contas (o cliente vem do token; agência e número são gerados pelo banco)
+{ "tipoConta": "CORRENTE" }
 
-// POST /contas/{contaId}/deposito  e  /saque
+// POST /contas/{contaId}/depositos  e  /saque
 { "valor": 150.00, "descricao": "Deposito inicial" }
 
-// POST /contas/transferencia
+// POST /transferencias
 { "contaOrigemId": "407d727e-...", "contaDestinoId": "566dd28f-...", "valor": 50.00, "descricao": "Aluguel" }
 ```
 
@@ -694,16 +698,16 @@ curl -X POST $API/auth/login -H "Content-Type: application/json" \
   -d '{"cpf":"52998224725","senha":"minha-senha-forte"}'
 TOKEN=cole-o-token-aqui
 
-# 3. conta (use o clienteId do login)
-curl -X POST $API/contas/clientes/$CLIENTE_ID -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" -d '{"agencia":"0001","numeroConta":"12345678","tipoContaEnum":"CORRENTE"}'
+# 3. conta (no cadastro de quem está logado)
+curl -X POST $API/contas -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" -d '{"tipoConta":"CORRENTE"}'
 
 # 4. movimentações e extrato (use o id da conta)
-curl -X POST $API/contas/$CONTA_ID/deposito -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"valor":150.00}'
+curl -X POST $API/contas/$CONTA_ID/depositos -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"valor":150.00}'
 curl $API/contas/$CONTA_ID/lancamentos -H "Authorization: Bearer $TOKEN"
 ```
 
-CPFs válidos para teste: `52998224725`, `16899535009`, `39053344705`, `11144477735`.
+CPFs válidos para teste: `52998224725`, `70483726052`, `39053344705`, `11144477735`.
 Ou rode tudo de uma vez com a API no ar: `node scripts/smoke-e2e.mjs`.
 
 </details>
@@ -757,7 +761,7 @@ flowchart LR
 
 | Antes | Depois |
 |---|---|
-| `POST /contas/{id}/saque` funcionava sem login, para qualquer id | sem token dá `401`; conta de outra pessoa dá `403` |
+| `POST /contas/{id}/saques` funcionava sem login, para qualquer id | sem token dá `401`; conta de outra pessoa dá `403` |
 | `GET /clientes` mostrava o CPF de todo mundo | só o `ADMIN` lista clientes |
 
 </details>
@@ -808,7 +812,7 @@ sequenceDiagram
     alt alguém mudou a entidade e esqueceu a migração
         H-->>API: ❌ a API nem sobe
     else tudo bate
-        API->>DB: CriadorAdmin e CriadorAcessoEquipe (logins do .env)
+        API->>DB: InicializadorAdmin e InicializadorAcessoEquipe (logins do .env)
         API-->>API: ✅ Tomcat no ar
     end
 ```
@@ -843,7 +847,7 @@ sequenceDiagram
 </details>
 
 <details>
-<summary><b>🗃️ Modelo de dados (migrações V1 a V8)</b></summary>
+<summary><b>🗃️ Modelo de dados (migrações V1 a V9)</b></summary>
 <br/>
 
 ```mermaid
@@ -956,11 +960,11 @@ Não existe admin nem conta da equipe nesse perfil. Guia de 5 minutos: **[VISITA
 
 | Quem | CPF (login) | Senha | Conta |
 |---|---|---|---|
-| **Ana Visitante** (origem) | `246.813.579-28` | `Visitante@2026` | 0001 / 900001 · R$ 1.000,00 |
-| **Bruno Visitante** (destino) | `975.318.642-82` | `Visitante@2026` | 0001 / 900002 · R$ 500,00 |
+| **Ana Visitante (Origem)** | `246.813.579-28` | `Visitante@2026` | 0001 / 900001 · R$ 1.000,00 |
+| **Bruno Visitante (Destino)** | `975.318.642-82` | `Visitante@2026` | 0001 / 900002 · R$ 500,00 |
 
-Roteiro completo (caminho feliz, idempotência, 401/403/429, erros, Spring Security + OAuth2):
-[guia de testes manuais](backend/README_TESTES_E2E.md). Quando usar cada perfil:
+Roteiro completo (H2, MySQL, Insomnia, permissões, caminho feliz, idempotência, 401/403/429, erros, Spring Security + OAuth2):
+[como testar o projeto](backend/README_TESTES_E2E.md). Quando usar cada perfil:
 [backend/README.md → Perfis](backend/README.md#-perfis-qual-usar-e-quando).
 
 </details>
@@ -987,11 +991,28 @@ O Spring **lê o `.env` da raiz sozinho** (desde 20/10/2026): basta rodar da rai
 ./mvnw spring-boot:run        # PowerShell: .\mvnw.cmd spring-boot:run
 ```
 
-As tabelas nascem pelo **Flyway** (`V1` a `V8`) e, a cada subida, o callback `afterMigrate` garante as contas da
+As tabelas nascem pelo **Flyway** (`V1` a `V9`) e, a cada subida, o callback `afterMigrate` garante as contas da
 equipe (Felipe = origem, Renan = destino). O login delas vem da `EQUIPE_SENHA` do `.env`: os acessos ficam no guia
 privado da equipe, fora do repositório. As migrações foram reorganizadas em 20/10/2026: se a API recusar com
 *Migration checksum mismatch* ou *applied migration not resolved locally*, rode
 `docker compose down -v && docker compose up -d` **uma vez** (apaga os dados locais).
+
+</details>
+
+<details open>
+<summary><b>🧪 Testar: pela IDE, no Insomnia e olhando o banco</b></summary>
+<br/>
+
+| Quero... | Como |
+|---|---|
+| rodar pela IntelliJ | o projeto traz 3 configurações prontas (pasta `.run/`): **API · Visitante (H2)**, **API · Equipe (H2)** e **API · MySQL (Docker)** |
+| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) no Insomnia: 89 requisições em ordem, e o login guarda o token sozinho |
+| ver as tabelas no H2 | `http://localhost:8080/h2-console` · JDBC URL `jdbc:h2:mem:rkfbank-visitante` (ou `rkfbank-equipe`) · usuário `sa`, senha vazia |
+| ver as tabelas no MySQL | `localhost:5441` com o usuário do `.env` (IntelliJ *Database*, DBeaver) ou `docker exec` no container `rkfbank-mysql` |
+| tornar alguém ADMIN | pelo `.env` (primeiro admin), pela API (`PATCH /admin/usuarios/{id}/perfil`) ou por SQL num banco local |
+
+Passo a passo de tudo isso, com as permissões de cada rota e todos os payloads:
+**[Como testar o projeto, do zero](backend/README_TESTES_E2E.md)**.
 
 </details>
 
@@ -1034,7 +1055,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 237 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 264 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1042,6 +1063,7 @@ scripts/validar.sh backend          # testes em H2, resumo curto (sem Docker)
 scripts/validar.sh frontend         # lint + typecheck + build
 scripts/testar-no-mysql.sh          # testes de integração contra o MySQL do Docker
 node scripts/smoke-e2e.mjs          # fluxo real contra a API no ar
+node scripts/rodar-colecao-insomnia.mjs  # a coleção do Insomnia inteira pelo terminal
 node scripts/engenharia-reversa-jwt.mjs  # tenta forjar o JWT: tudo tem que dar 401
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no pnpm
 ```
@@ -1054,17 +1076,18 @@ node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no 
 |---|---|
 | `ClienteServiceTest` | cadastro, CPF/e-mail duplicado, ViaCEP, senha em BCrypt |
 | `ContaServiceTest` | abertura, depósito, saque, transferência, extrato e regra de dono (`403`) |
-| `TokenServiceTest` / `AuthServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login sem enumeração |
-| `UsuarioServiceTest` / `CriadorAdminTest` | primeiro `ADMIN` pelo `.env` |
+| `TokenServiceTest` / `AutenticacaoServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login sem enumeração |
+| `UsuarioServiceTest` / `InicializadorAdminTest` | primeiro `ADMIN` pelo `.env` |
 | `SegurancaIntegracaoTest` | Spring inteiro com tokens reais: `401`, `403`, `429`, perfis, `alg: none` |
 | `IdempotenciaServiceTest` / `DadosEquipeIntegracaoTest` | dinheiro nunca sai duas vezes (`Idempotency-Key`) e saldo sempre bate com o extrato |
 | `GestaoUsuariosIntegracaoTest` | promover, rebaixar, desativar e trocar senha valendo na hora |
 | `PerfilVisitanteIntegracaoTest` | o perfil público não expõe nada da equipe |
 | `ClienteControllerTest` / `ContaControllerTest` | status de cada rota e limites da paginação |
-| `ControllerExceptionHandlerTest` | cada exceção no formato de erro |
-| `ClienteViaCepTest` | CEP encontrado, inexistente (`422`) e ViaCEP fora (`503`) |
+| `TratadorGlobalDeErrosTest` | cada exceção no formato de erro |
+| `ViaCepClientTest` | CEP encontrado, inexistente (`422`) e ViaCEP fora (`503`) |
 | `CpfValidoValidatorTest` | dígitos verificadores e máscara |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e rejeitado contra log forjado |
+| `ConsoleH2LigadoTest` / `ConsoleH2DesligadoTest` | console do H2 aberto só nos perfis com H2, sem afrouxar a segurança da API |
 | `*RepositoryTest` | consultas, constraints, cascata, `@Version` e `tb_usuario` (`@DataJpaTest` com as migrações do Flyway) |
 
 Relatório de cobertura: `target/site/jacoco/index.html`. Teste manual de aceite: [roteiro E2E](backend/README_TESTES_E2E.md) + [checklist](backend/CHECKLIST_TESTES_E2E.md).
@@ -1100,7 +1123,7 @@ flowchart LR
 
 ```text
 INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.s.ContaService : Transferencia de 50.00 da conta 672e4ddf-... para 83af15fb-...
-INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.c.FiltroLogRequisicao : POST /contas/transferencia -> 204 (15 ms)
+INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.c.FiltroLogRequisicao : POST /transferencias -> 204 (15 ms)
 ```
 
 Cada requisição ganha um `X-Request-Id` que aparece em todas as linhas, até no SQL. CPF, e-mail, senha e token **nunca** entram no log. Configuração: [`log4j2-spring.xml`](backend/src/main/resources/log4j2-spring.xml).
@@ -1138,7 +1161,7 @@ gantt
 
 - [x] Cadastro com ViaCEP, abertura de conta, depósito, saque, transferência e extrato
 - [x] Logs rastreáveis, CI, CodeQL e Dependabot
-- [x] Banco versionado com Flyway (V1 a V8), contas da equipe (Felipe e Renan) e perfil público de visitante
+- [x] Banco versionado com Flyway (V1 a V9), contas da equipe (Felipe e Renan) e perfil público de visitante
 - [x] Idempotência nas movimentações, número de conta gerado pelo banco, limite de tentativas no login e health check
 - [x] Login com Spring Security + JWT, perfis e regra de dono
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
@@ -1158,7 +1181,7 @@ gantt
 - [ ] `MockMvc` em todos os controllers e teste de concorrência ([checklist](planing/checklist-features.md))
 - [ ] Swagger UI com o botão *Authorize* (springdoc-openapi)
 - [ ] Refresh token e 2FA (limite de tentativas e revogação já existem)
-- [ ] "Meus dados", editar perfil e encerrar conta (direitos do titular)
+- [x] "Meus dados", editar perfil e encerrar conta (direitos do titular)
 - [ ] CI do frontend
 - [ ] Pix, boleto, QR Code e cartão virtual (simulados) — [funcionalidades futuras](planing/debitos-tecnicos.md#funcionalidades-futuras-)
 - [ ] 🤖 Assistente do extrato com Spring AI (ideia)
@@ -1441,12 +1464,14 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 |---|---|---|
 | Time | [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, PRs e revisão |
 | Time e IA | [CLAUDE.md](CLAUDE.md) | regras do projeto para pessoas e agentes de IA |
-| API | [Contrato da API (2.3)](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
+| Todos | [🗺️ Atlas de fluxos](FLUXOS.md) | como cada parte se conecta: contexto, telas, árvore da transferência, containers, componentes, rastreabilidade tela → tabela, sessão e fluxo do time |
+| API | [Contrato da API](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
+| Segurança | [Spring Security + OAuth2 + JWT](backend/README_SEGURANCA.md) | como o login, o token, os filtros, a autorização e o cookie do front funcionam, e por que é assim |
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
-| Backend | [Guia de testes (visitante)](backend/README_TESTES_E2E.md) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) · [Visitantes](VISITANTES.md) | testar a API na sua máquina; aceite do MVP |
+| Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou MySQL), ver o banco, permissões, payloads e roteiros; aceite do MVP |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
-| Planejamento | [planing/](planing/README.md) | roadmap, decisões, checklist de features, débitos e recados |
+| Planejamento | [planing/](planing/README.md) · [Proposta de nomes](planing/proposta-de-nomes.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e nomes a padronizar |
 
 <br/>
 

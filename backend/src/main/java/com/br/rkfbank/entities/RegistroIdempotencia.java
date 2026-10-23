@@ -43,6 +43,8 @@ public class RegistroIdempotencia {
     @Column(name = "hash_requisicao", nullable = false, length = 64)
     private String hashRequisicao;
 
+    // Quando a chave foi usada. Repeticao legitima acontece em segundos (retry de rede), entao chaves antigas podem
+    // ser apagadas por uma limpeza periodica sem risco de cobrar duas vezes.
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
 

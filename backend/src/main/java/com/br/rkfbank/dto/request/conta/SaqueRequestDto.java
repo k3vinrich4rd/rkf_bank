@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
+// Corpo do POST /contas/{contaId}/saque. Mesmas regras de formato do deposito; o saldo e conferido no service (422).
 public record SaqueRequestDto(
     @NotNull(message = "valor e obrigatório")
     @DecimalMin(value = "0.01", message = "valor deve ser maior que zero")

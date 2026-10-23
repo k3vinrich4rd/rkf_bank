@@ -54,13 +54,13 @@ Raiz: `backend/src/main/java/com/br/rkfbank/`
 | `clients/viacep` | chamar o ViaCEP e traduzir falhas em exceções nossas | `RestClient`, timeouts | regra de negócio de cliente |
 | `exceptions` | exceções de domínio (cada uma mapeia um status) | — | — |
 | `validation` | validações customizadas (`@CpfValido`) | — | — |
-| `config` | beans de configuração (CORS) | — | — |
+| `config` | beans de configuração (segurança, CORS para `/**` com origens de `CORS_ORIGENS`, log, admin) | — | — |
 
 ---
 
 ## 3. Caminho de uma requisição
 
-Exemplo: **transferência** (`POST /contas/transferencia`).
+Exemplo: **transferência** (`POST /transferencias`).
 
 ```mermaid
 sequenceDiagram
@@ -72,8 +72,8 @@ sequenceDiagram
     participant L as LancamentoRepository
     participant H as ExceptionHandler
 
-    F->>C: POST /contas/transferencia {origem, destino, valor}
-    Note over C: @Valid no TransferirRequestDto<br/>(falhou → 400 com campos)
+    F->>C: POST /transferencias {origem, destino, valor}
+    Note over C: @Valid no TransferenciaRequestDto<br/>(falhou → 400 com campos)
     C->>S: transferir(request)
     Note over S: @Transactional — tudo ou nada
     S->>S: origem == destino? → 422
@@ -134,7 +134,7 @@ public void sacar(UUID contaId, SaqueRequestDto request) {
     BigDecimal valor = validarValor(request.valor()); // > 0, 2 casas
 
     if (conta.getSaldo().compareTo(valor) < 0) {
-        throw new NaoProcessavelException("Saldo insuficiente"); // 422
+        throw new RegraNegocioException("Saldo insuficiente"); // 422
     }
 
     conta.setSaldo(conta.getSaldo().subtract(valor));
@@ -182,21 +182,21 @@ assim, reordenar ou adicionar valores não corrompe dados antigos.
 
 ### 4.6 Integração ViaCEP
 
-[`ClienteViaCep.java`](src/main/java/com/br/rkfbank/clients/viacep/ClienteViaCep.java)
+[`ViaCepClient.java`](src/main/java/com/br/rkfbank/clients/viacep/ViaCepClient.java)
 
 | Situação | O que acontece | Status final |
 |---|---|---|
-| CEP encontrado | devolve `ResponseViaCepDto` | — |
-| ViaCEP responde `{"erro": true}` (com HTTP 200!) | `NaoProcessavelException("CEP não encontrado")` | `422` |
-| ViaCEP responde 5xx | `ServicoExternoException("ViaCEP indisponível")` | `503` |
-| timeout (3 s), DNS, rede | `ServicoExternoException("Falha ao consultar ViaCEP")` | `503` |
+| CEP encontrado | devolve `ViaCepResponseDto` | — |
+| ViaCEP responde `{"erro": true}` (com HTTP 200!) | `RegraNegocioException("CEP não encontrado")` | `422` |
+| ViaCEP responde 5xx | `ServicoExternoIndisponivelException("ViaCEP indisponível")` | `503` |
+| timeout (3 s), DNS, rede | `ServicoExternoIndisponivelException("Falha ao consultar ViaCEP")` | `503` |
 
 Lição: **serviço externo sempre falha em algum momento.** Timeout configurado + tradução de erro evitam que
 uma API de terceiros derrube a nossa.
 
 ### 4.7 Tratamento de erros centralizado
 
-[`ControllerExceptionHandler.java`](src/main/java/com/br/rkfbank/controllers/handlers/ControllerExceptionHandler.java)
+[`TratadorGlobalDeErros.java`](src/main/java/com/br/rkfbank/controllers/handlers/TratadorGlobalDeErros.java)
 (`@RestControllerAdvice`) transforma exceções em `ErroResponse`:
 
 | Exceção | Status | Quando usar ao criar código novo |
@@ -206,13 +206,13 @@ uma API de terceiros derrube a nossa.
 | `MethodArgumentTypeMismatchException` | `400` | automática, UUID inválido na URL |
 | `RequisicaoInvalidaException(campo, msg)` | `400` | validação manual que precisa apontar um campo |
 | `ClienteNaoEncontradoException` / `ContaNaoEncontradaException` | `404` | recurso não existe |
-| `NegocioException(msg)` | `409` | **conflito**: algo já existe (CPF, e-mail, número de conta) |
+| `ConflitoException(msg)` | `409` | **conflito**: algo já existe (CPF, e-mail, número de conta) |
 | `OptimisticLockingFailureException` | `409` | automática, concorrência |
-| `NaoProcessavelException(msg)` | `422` | **regra de negócio violada** (saldo, conta inativa, CEP) |
-| `ServicoExternoException(msg)` | `503` | dependência externa falhou |
+| `RegraNegocioException(msg)` | `422` | **regra de negócio violada** (saldo, conta inativa, CEP) |
+| `ServicoExternoIndisponivelException(msg)` | `503` | dependência externa falhou |
 
-> 💡 O nome `NegocioException` engana: ela significa **conflito (409)**, não "qualquer regra de negócio".
-> Para regra violada, use `NaoProcessavelException` (422).
+> 💡 O nome `ConflitoException` engana: ela significa **conflito (409)**, não "qualquer regra de negócio".
+> Para regra violada, use `RegraNegocioException` (422).
 
 ### 4.8 Validação customizada `@CpfValido`
 
@@ -269,10 +269,10 @@ Os testes ficam em `backend/src/test/java/com/br/rkfbank/`, espelhando os pacote
 | Camada | Como testamos | Exemplo |
 |---|---|---|
 | Validação | instancia o validator e chama `isValid` | `CpfValidoValidatorTest` |
-| Client externo | mock do `RestClient` | `ClienteViaCepTest` |
+| Client externo | mock do `RestClient` | `ViaCepClientTest` |
 | Service | `@ExtendWith(MockitoExtension.class)`, mocks dos repositories | `ContaServiceTest` |
 | Controller | chama o método do controller com service mockado | `ContaControllerTest` |
-| Handler | chama o handler com a exceção e confere status/corpo | `ControllerExceptionHandlerTest` |
+| Handler | chama o handler com a exceção e confere status/corpo | `TratadorGlobalDeErrosTest` |
 | Aplicação | `@SpringBootTest` (sobe o contexto inteiro) | `RkfbankApplicationTests` |
 
 **O que um bom teste de service cobre:** caminho feliz, cada `throw` (um teste por regra) e o que foi salvo
@@ -326,9 +326,9 @@ e há **três ajustes de domínio** que precisam vir **antes de ir para produç�
 
 | # | Risco | Onde | Por que importa | Recomendação |
 |:-:|---|---|---|---|
-| 1 🔴 | **Transferência sem idempotência** | `POST /contas/transferencia` | a rede cai depois do débito, o app tenta de novo e o dinheiro sai **duas vezes** | header `Idempotency-Key` (UUID gerado pelo cliente) + tabela `tb_idempotencia` com a chave e a resposta; repetiu a chave, devolve a mesma resposta sem movimentar |
+| 1 🔴 | **Transferência sem idempotência** | `POST /transferencias` | a rede cai depois do débito, o app tenta de novo e o dinheiro sai **duas vezes** | header `Idempotency-Key` (UUID gerado pelo cliente) + tabela `tb_idempotencia` com a chave e a resposta; repetiu a chave, devolve a mesma resposta sem movimentar |
 | 2 🔴 | **Conta pode ser apagada em cascata** | `Cliente.contas` com `cascade = ALL, orphanRemoval = true` | tirar uma conta da lista do cliente **apaga** a conta; banco não apaga conta, **encerra** (o extrato precisa sobreviver) | trocar por `cascade = PERSIST` (sem `orphanRemoval`) e encerrar com `ativa = false` |
-| 3 🟡 | **Quem chama escolhe o número da conta** | `AbrirContaRequestDto.numeroConta` | número de conta é identidade do banco; o frontend hoje sorteia e tenta de novo no `409` | o backend gera número + dígito verificador (já está nos débitos); muda o contrato → combinar com o Renan |
+| 3 🟡 | **Quem chama escolhe o número da conta** | `AberturaContaRequestDto.numeroConta` | número de conta é identidade do banco; o frontend hoje sorteia e tenta de novo no `409` | o backend gera número + dígito verificador (já está nos débitos); muda o contrato → combinar com o Renan |
 | 4 🟡 | **Saldo e extrato são duas verdades** | `tb_conta.saldo` + `tb_lancamento` | se um dia um `UPDATE` manual mexer no saldo, nada avisa | manter o saldo como "cache" e criar um teste/rotina de **conciliação** (`saldo = soma dos lançamentos`); no futuro, partidas dobradas (`DEBITO` na origem + `CREDITO` no destino, os enums já existem) |
 | 5 🟡 | **Sem health check** | `pom.xml` sem Actuator | o deploy (e o Docker) não tem como saber se a API está viva | `spring-boot-starter-actuator` expondo só `health` |
 | 6 🟢 | **Pacotes por camada** | `controllers/`, `services/`... | com Pix e cartão, cada pasta vira uma gaveta com tudo misturado | monólito modular (8.4) |
@@ -341,9 +341,9 @@ Um único deploy (como hoje), mas o código organizado **por funcionalidade**, c
 com.br.rkfbank
 ├── cliente/        ClienteController, ClienteService, Cliente, Endereco, ClienteRepository, viacep/
 ├── conta/          ContaController, ContaService, Conta, Lancamento, repositórios, regras de saldo
-├── auth/           AuthController, AuthService, TokenService, Usuario, ConfiguracaoSeguranca
+├── auth/           AuthController, AutenticacaoService, TokenService, Usuario, ConfiguracaoSeguranca
 ├── pix/            (futuro) chaves, cobrança, transferência instantânea — usa conta/ pela fachada
-└── compartilhado/  erros (ControllerExceptionHandler), logs (FiltroLogRequisicao), validação (@CpfValido)
+└── compartilhado/  erros (TratadorGlobalDeErros), logs (FiltroLogRequisicao), validação (@CpfValido)
 ```
 
 ```mermaid
@@ -361,7 +361,7 @@ flowchart LR
 | Por que essa e não... | Motivo |
 |---|---|
 | ...microsserviços | 3 pessoas, um banco, sem necessidade de escalar partes separadas. Microsserviço traria rede, consistência eventual e deploy múltiplo sem ganho |
-| ...hexagonal completa | portas e adaptadores para tudo é cerimônia demais para CRUD + regras simples. Vale só onde há integração externa (o ViaCEP já está atrás do `ClienteViaCep`, e o Pix terá um adaptador igual) |
+| ...hexagonal completa | portas e adaptadores para tudo é cerimônia demais para CRUD + regras simples. Vale só onde há integração externa (o ViaCEP já está atrás do `ViaCepClient`, e o Pix terá um adaptador igual) |
 | ...ficar como está para sempre | com 3+ domínios, "camadas" espalha uma feature em 6 pastas; por funcionalidade, uma feature = uma pasta |
 
 **Quando mover:** no PR que começar o Pix, e não antes. Como mover sem quebrar: uma pasta por PR, só `git mv` e ajuste
