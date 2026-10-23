@@ -29,8 +29,10 @@
         "novo_senha": "",
         "novo_cliente_id": "",
         "conta_nova_id": "",
+        "conta_nova_destino_id": "",
         "usuario_novo_id": "",
         "chave_fixa": "",
+        "novo_cpf_mascara": "",
         "senha_redefinida": "",
         "senha_trocada": "",
         "usuario_admin_id": "",
@@ -109,7 +111,7 @@
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "01 · Login (guarda o token sozinho)",
-      "description": "Cada login roda um script que salva o token no ambiente (`token_origem`, `token_destino`, `token_admin`). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token vence (15 min no MySQL, 60 min no H2): deu `401 Token invalido ou expirado`? Mande o login de novo.",
+      "description": "Cada login roda um script que salva o token no ambiente (`token_origem`, `token_destino`, `token_admin`). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo.",
       "metaSortKey": 1
     },
     {
@@ -203,8 +205,8 @@
       "_id": "fld_rkfbank_02",
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
-      "name": "02 · Cliente novo (cadastro → login → conta)",
-      "description": "O cadastro sorteia um CPF válido e um e-mail novos a cada envio (aba Scripts → Pre-request), então pode repetir à vontade. Precisa de internet: o endereço vem do ViaCEP.",
+      "name": "02 · Fluxo E2E: cliente novo, do cadastro ao extrato",
+      "description": "O roteiro E2E principal, na ordem: cadastro (CPF, CEP e telefone com máscara, endereço pelo ViaCEP) → login → contas ORIGEM e DESTINO → depósito, saque e transferência → extratos. O cadastro sorteia CPF e e-mail novos a cada envio, então pode repetir à vontade. Precisa de internet: o endereço vem do ViaCEP.",
       "metaSortKey": 2
     },
     {
@@ -212,12 +214,12 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Cadastrar cliente (público)",
-      "description": "`201` com o cliente (CPF, telefone e CEP voltam formatados). O cadastro **não** devolve token: faça o login.",
+      "description": "Manda CPF, CEP e telefone **com máscara**, como a pessoa digita: a API higieniza (fica só com os dígitos), valida o CPF pelos dígitos verificadores e busca o endereço no **ViaCEP** (Osasco/SP). `201` com o cliente. O cadastro **não** devolve token: faça o login.",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"nomeCompleto\": \"Cliente Novo do Insomnia\",\n  \"cpf\": \"{{ _.novo_cpf }}\",\n  \"email\": \"{{ _.novo_email }}\",\n  \"telefone\": \"11999998888\",\n  \"cep\": \"06020010\",\n  \"numero\": \"123\",\n  \"complemento\": \"Apto 45\",\n  \"senha\": \"{{ _.novo_senha }}\"\n}"
+        "text": "{\n  \"nomeCompleto\": \"Cliente Novo do Insomnia\",\n  \"cpf\": \"{{ _.novo_cpf_mascara }}\",\n  \"email\": \"{{ _.novo_email }}\",\n  \"telefone\": \"(11) 99999-8888\",\n  \"cep\": \"06020-010\",\n  \"numero\": \"123\",\n  \"complemento\": \"Apto 45\",\n  \"senha\": \"{{ _.novo_senha }}\"\n}"
       },
       "headers": [
         {
@@ -229,8 +231,8 @@
         "type": "none"
       },
       "parameters": [],
-      "preRequestScript": "const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));\nif (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;\nfor (const tamanho of [9, 10]) {\n  const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);\n  const resto = (soma * 10) % 11;\n  n.push(resto === 10 ? 0 : resto);\n}\nconst sufixo = Date.now().toString(36);\ninsomnia.environment.set(\"novo_cpf\", n.join(\"\"));\ninsomnia.environment.set(\"novo_email\", \"cliente.novo.\" + sufixo + \"@exemplo.test\");\ninsomnia.environment.set(\"novo_senha\", \"senha-do-novo-\" + sufixo);\nconsole.log(\"CPF sorteado:\", n.join(\"\"));",
-      "afterResponseScript": "insomnia.test(\"status 201\", () => insomnia.expect(insomnia.response.code).to.equal(201));\nif (insomnia.response.code === 201) insomnia.environment.set(\"novo_cliente_id\", insomnia.response.json().id);",
+      "preRequestScript": "const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));\nif (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;\nfor (const tamanho of [9, 10]) {\n  const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);\n  const resto = (soma * 10) % 11;\n  n.push(resto === 10 ? 0 : resto);\n}\nconst sufixo = Date.now().toString(36);\ninsomnia.environment.set(\"novo_cpf\", n.join(\"\"));\nconst d = n.join(\"\");\ninsomnia.environment.set(\"novo_cpf_mascara\", d.slice(0, 3) + \".\" + d.slice(3, 6) + \".\" + d.slice(6, 9) + \"-\" + d.slice(9));\ninsomnia.environment.set(\"novo_email\", \"cliente.novo.\" + sufixo + \"@exemplo.test\");\ninsomnia.environment.set(\"novo_senha\", \"senha-do-novo-\" + sufixo);\nconsole.log(\"CPF sorteado:\", n.join(\"\"));",
+      "afterResponseScript": "insomnia.test(\"status 201\", () => insomnia.expect(insomnia.response.code).to.equal(201));\nif (insomnia.response.code === 201) insomnia.environment.set(\"novo_cliente_id\", insomnia.response.json().id);\nconst c = insomnia.response.code === 201 ? insomnia.response.json() : null;\ninsomnia.test(\"ViaCEP preencheu a cidade\", () => insomnia.expect(c.endereco.cidade).to.equal(\"Osasco\"));\ninsomnia.test(\"CEP higienizado\", () => insomnia.expect(c.endereco.cep.replace(/\\D/g, \"\")).to.equal(\"06020010\"));",
       "metaSortKey": 0,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -269,8 +271,8 @@
       "_id": "req_rkfbank_02_02",
       "_type": "request",
       "parentId": "fld_rkfbank_02",
-      "name": "Abrir conta corrente (cliente novo)",
-      "description": "O dono vem do **token**, não da URL. Agência `0001` e número (com dígito verificador) são gerados pelo banco.",
+      "name": "Abrir conta ORIGEM: corrente",
+      "description": "Corpo só com `tipoConta`: o dono vem do **token**, a agência é `0001` e o número (com dígito verificador) é gerado pelo banco.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas",
       "body": {
@@ -300,8 +302,8 @@
       "_id": "req_rkfbank_02_03",
       "_type": "request",
       "parentId": "fld_rkfbank_02",
-      "name": "Abrir poupança (cliente novo)",
-      "description": "",
+      "name": "Abrir conta DESTINO: poupança",
+      "description": "Um cliente pode ter mais de uma conta. Esta recebe a transferência logo abaixo.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas",
       "body": {
@@ -321,7 +323,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 201\", () => insomnia.expect(insomnia.response.code).to.equal(201));",
+      "afterResponseScript": "insomnia.test(\"status 201\", () => insomnia.expect(insomnia.response.code).to.equal(201));\nif (insomnia.response.code === 201) insomnia.environment.set(\"conta_nova_destino_id\", insomnia.response.json().id);",
       "metaSortKey": 3,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -331,7 +333,7 @@
       "_id": "req_rkfbank_02_04",
       "_type": "request",
       "parentId": "fld_rkfbank_02",
-      "name": "Minhas contas (cliente novo)",
+      "name": "Minhas contas (as duas com saldo 0,00)",
       "description": "",
       "method": "GET",
       "url": "{{ _.base_url }}/contas",
@@ -344,8 +346,182 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));",
+      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\ninsomnia.test(\"duas contas\", () => insomnia.expect(insomnia.response.json().length).to.equal(2));",
       "metaSortKey": 4,
+      "settingEncodeUrl": true,
+      "settingSendCookies": false,
+      "settingStoreCookies": false
+    },
+    {
+      "_id": "req_rkfbank_02_05",
+      "_type": "request",
+      "parentId": "fld_rkfbank_02",
+      "name": "Depositar R$ 150,00 na ORIGEM",
+      "description": "`204` sem corpo. O header `Idempotency-Key` (aba Headers) gera um UUID novo a cada envio.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/depositos",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"valor\": 150,\n  \"descricao\": \"Deposito pelo Insomnia\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{% uuid 'v4' %}"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_novo }}",
+        "prefix": ""
+      },
+      "parameters": [],
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));",
+      "metaSortKey": 5,
+      "settingEncodeUrl": true,
+      "settingSendCookies": false,
+      "settingStoreCookies": false
+    },
+    {
+      "_id": "req_rkfbank_02_06",
+      "_type": "request",
+      "parentId": "fld_rkfbank_02",
+      "name": "Sacar R$ 50,00 da ORIGEM",
+      "description": "",
+      "method": "POST",
+      "url": "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/saques",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"valor\": 50,\n  \"descricao\": \"Saque pelo Insomnia\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{% uuid 'v4' %}"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_novo }}",
+        "prefix": ""
+      },
+      "parameters": [],
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));",
+      "metaSortKey": 6,
+      "settingEncodeUrl": true,
+      "settingSendCookies": false,
+      "settingStoreCookies": false
+    },
+    {
+      "_id": "req_rkfbank_02_07",
+      "_type": "request",
+      "parentId": "fld_rkfbank_02",
+      "name": "Transferir R$ 25,00 ORIGEM → DESTINO",
+      "description": "Débito e crédito na mesma transação: ou os dois acontecem, ou nenhum.",
+      "method": "POST",
+      "url": "{{ _.base_url }}/transferencias",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"contaOrigemId\": \"{{ _.conta_nova_id }}\",\n  \"contaDestinoId\": \"{{ _.conta_nova_destino_id }}\",\n  \"valor\": 25.00,\n  \"descricao\": \"Transferencia pelo Insomnia\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{% uuid 'v4' %}"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_novo }}",
+        "prefix": ""
+      },
+      "parameters": [],
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));",
+      "metaSortKey": 7,
+      "settingEncodeUrl": true,
+      "settingSendCookies": false,
+      "settingStoreCookies": false
+    },
+    {
+      "_id": "req_rkfbank_02_08",
+      "_type": "request",
+      "parentId": "fld_rkfbank_02",
+      "name": "Saldos: ORIGEM 75,00 · DESTINO 25,00",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/contas",
+      "body": {},
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_novo }}",
+        "prefix": ""
+      },
+      "parameters": [],
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\nconst contas = insomnia.response.code === 200 ? insomnia.response.json() : [];\nconst saldo = (id) => Number(contas.find((c) => c.id === insomnia.environment.get(id))?.saldo);\ninsomnia.test(\"origem 75\", () => insomnia.expect(saldo(\"conta_nova_id\")).to.equal(75));\ninsomnia.test(\"destino 25\", () => insomnia.expect(saldo(\"conta_nova_destino_id\")).to.equal(25));",
+      "metaSortKey": 8,
+      "settingEncodeUrl": true,
+      "settingSendCookies": false,
+      "settingStoreCookies": false
+    },
+    {
+      "_id": "req_rkfbank_02_09",
+      "_type": "request",
+      "parentId": "fld_rkfbank_02",
+      "name": "Extrato da ORIGEM (3 lançamentos)",
+      "description": "Do mais recente para o mais antigo. `valor` sempre positivo: se `contaDestinoId` é esta conta, é entrada.",
+      "method": "GET",
+      "url": "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/lancamentos",
+      "body": {},
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_novo }}",
+        "prefix": ""
+      },
+      "parameters": [],
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\ninsomnia.test(\"transferência, saque e depósito\", () => insomnia.expect(insomnia.response.json().length).to.equal(3));",
+      "metaSortKey": 9,
+      "settingEncodeUrl": true,
+      "settingSendCookies": false,
+      "settingStoreCookies": false
+    },
+    {
+      "_id": "req_rkfbank_02_10",
+      "_type": "request",
+      "parentId": "fld_rkfbank_02",
+      "name": "Extrato do DESTINO (1 lançamento)",
+      "description": "",
+      "method": "GET",
+      "url": "{{ _.base_url }}/contas/{{ _.conta_nova_destino_id }}/lancamentos",
+      "body": {},
+      "headers": [],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_novo }}",
+        "prefix": ""
+      },
+      "parameters": [],
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\ninsomnia.test(\"recebeu a transferência\", () => insomnia.expect(insomnia.response.json()[0].tipoLancamento).to.equal(\"TRANSFERENCIA\"));",
+      "metaSortKey": 10,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
       "settingStoreCookies": false
@@ -354,7 +530,7 @@
       "_id": "fld_rkfbank_03",
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
-      "name": "03 · Dinheiro: depósito, saque, transferência, extrato",
+      "name": "03 · Dinheiro entre clientes (contas prontas do seed)",
       "description": "Tudo com o token da ORIGEM. Depósito, saque e transferência levam `Idempotency-Key` (aba Headers): o `{% uuid 'v4' %}` gera uma chave nova a cada envio. Resposta `204` não tem corpo: veja o saldo em **Minhas contas**.",
       "metaSortKey": 3
     },
@@ -536,29 +712,6 @@
       "_id": "req_rkfbank_03_06",
       "_type": "request",
       "parentId": "fld_rkfbank_03",
-      "name": "Extrato da ORIGEM paginado",
-      "description": "",
-      "method": "GET",
-      "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/lancamentos?page=0&size=5",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_origem }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));",
-      "metaSortKey": 6,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_03_07",
-      "_type": "request",
-      "parentId": "fld_rkfbank_03",
       "name": "Extrato do DESTINO (token do destino)",
       "description": "",
       "method": "GET",
@@ -573,7 +726,7 @@
       "parameters": [],
       "preRequestScript": "",
       "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\ninsomnia.test(\"recebeu a transferência\", () => insomnia.expect(insomnia.response.json()[0].tipoLancamento).to.equal(\"TRANSFERENCIA\"));",
-      "metaSortKey": 7,
+      "metaSortKey": 6,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
       "settingStoreCookies": false
@@ -685,7 +838,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Idempotency-Key ja usada\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Idempotency-Key ja usada\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo IDEMPOTENCIA_CHAVE_REUSADA\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"IDEMPOTENCIA_CHAVE_REUSADA\"));",
       "metaSortKey": 2,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -870,7 +1023,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"mensagem: Seu acesso foi alterado\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Seu acesso foi alterado\"));",
+      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"codigo ACESSO_ALTERADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"ACESSO_ALTERADO\"));",
       "metaSortKey": 5,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -953,7 +1106,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Usuario sem cadastro de cliente\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Usuario sem cadastro de cliente\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo PERFIL_CLIENTE_SEM_CADASTRO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"PERFIL_CLIENTE_SEM_CADASTRO\"));",
       "metaSortKey": 8,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1044,7 +1197,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"mensagem: CPF ou senha invalidos\", () => insomnia.expect(insomnia.response.json().message).to.include(\"CPF ou senha invalidos\"));",
+      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"codigo CREDENCIAIS_INVALIDAS\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CREDENCIAIS_INVALIDAS\"));",
       "metaSortKey": 11,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1166,7 +1319,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Voce nao pode alterar o seu proprio\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Voce nao pode alterar o seu proprio\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo PROPRIO_ACESSO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"PROPRIO_ACESSO\"));",
       "metaSortKey": 15,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1197,7 +1350,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Para trocar a sua propria senha\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Para trocar a sua propria senha\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo PROPRIA_SENHA_PELA_GESTAO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"PROPRIA_SENHA_PELA_GESTAO\"));",
       "metaSortKey": 16,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1259,7 +1412,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 404\", () => insomnia.expect(insomnia.response.code).to.equal(404));\ninsomnia.test(\"mensagem: Usuario nao encontrado\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Usuario nao encontrado\"));",
+      "afterResponseScript": "insomnia.test(\"status 404\", () => insomnia.expect(insomnia.response.code).to.equal(404));\ninsomnia.test(\"codigo USUARIO_NAO_ENCONTRADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"USUARIO_NAO_ENCONTRADO\"));",
       "metaSortKey": 18,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1352,7 +1505,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Seu usuario nao tem cadastro de cliente\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Seu usuario nao tem cadastro de cliente\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SEM_CADASTRO_CLIENTE\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SEM_CADASTRO_CLIENTE\"));",
       "metaSortKey": 21,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1375,7 +1528,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Seu usuario nao tem cadastro de cliente\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Seu usuario nao tem cadastro de cliente\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SEM_CADASTRO_CLIENTE\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SEM_CADASTRO_CLIENTE\"));",
       "metaSortKey": 22,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1410,7 +1563,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));\ninsomnia.test(\"mensagem: Conta nao pertence\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Conta nao pertence\"));",
+      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));\ninsomnia.test(\"codigo CONTA_DE_OUTRO_CLIENTE\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CONTA_DE_OUTRO_CLIENTE\"));",
       "metaSortKey": 23,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1619,7 +1772,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 409\", () => insomnia.expect(insomnia.response.code).to.equal(409));\ninsomnia.test(\"mensagem: Email ja cadastrado\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Email ja cadastrado\"));",
+      "afterResponseScript": "insomnia.test(\"status 409\", () => insomnia.expect(insomnia.response.code).to.equal(409));\ninsomnia.test(\"codigo EMAIL_JA_CADASTRADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"EMAIL_JA_CADASTRADO\"));",
       "metaSortKey": 5,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1650,7 +1803,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Senha atual incorreta\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Senha atual incorreta\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SENHA_ATUAL_INCORRETA\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SENHA_ATUAL_INCORRETA\"));",
       "metaSortKey": 6,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1681,7 +1834,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: precisa ser diferente\", () => insomnia.expect(insomnia.response.json().message).to.include(\"precisa ser diferente\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SENHA_REPETIDA\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SENHA_REPETIDA\"));",
       "metaSortKey": 7,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1735,7 +1888,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"mensagem: Seu acesso foi alterado\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Seu acesso foi alterado\"));",
+      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"codigo ACESSO_ALTERADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"ACESSO_ALTERADO\"));",
       "metaSortKey": 9,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1795,7 +1948,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Senha incorreta\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Senha incorreta\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SENHA_INCORRETA\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SENHA_INCORRETA\"));",
       "metaSortKey": 11,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1826,7 +1979,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Transfira o saldo\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Transfira o saldo\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SALDO_NAO_ZERADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SALDO_NAO_ZERADO\"));",
       "metaSortKey": 12,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1834,6 +1987,76 @@
     },
     {
       "_id": "req_rkfbank_06_13",
+      "_type": "request",
+      "parentId": "fld_rkfbank_06",
+      "name": "Zerar a ORIGEM (saque de R$ 75,00)",
+      "description": "Dinheiro não some: antes de encerrar, o titular tira o saldo das contas (as da pasta 02).",
+      "method": "POST",
+      "url": "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/saques",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"valor\": 75,\n  \"descricao\": \"Saque antes de encerrar\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{% uuid 'v4' %}"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_novo }}",
+        "prefix": ""
+      },
+      "parameters": [],
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));",
+      "metaSortKey": 13,
+      "settingEncodeUrl": true,
+      "settingSendCookies": false,
+      "settingStoreCookies": false
+    },
+    {
+      "_id": "req_rkfbank_06_14",
+      "_type": "request",
+      "parentId": "fld_rkfbank_06",
+      "name": "Zerar o DESTINO (saque de R$ 25,00)",
+      "description": "",
+      "method": "POST",
+      "url": "{{ _.base_url }}/contas/{{ _.conta_nova_destino_id }}/saques",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"valor\": 25,\n  \"descricao\": \"Saque antes de encerrar\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Idempotency-Key",
+          "value": "{% uuid 'v4' %}"
+        }
+      ],
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token_novo }}",
+        "prefix": ""
+      },
+      "parameters": [],
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));",
+      "metaSortKey": 14,
+      "settingEncodeUrl": true,
+      "settingSendCookies": false,
+      "settingStoreCookies": false
+    },
+    {
+      "_id": "req_rkfbank_06_15",
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "⚠️ Encerrar o cadastro (cliente novo)",
@@ -1858,13 +2081,13 @@
       "parameters": [],
       "preRequestScript": "",
       "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\ninsomnia.test(\"prazo de anonimização\", () => insomnia.expect(insomnia.response.json().anonimizacaoPrevistaPara).to.be.ok);",
-      "metaSortKey": 13,
+      "metaSortKey": 15,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
       "settingStoreCookies": false
     },
     {
-      "_id": "req_rkfbank_06_14",
+      "_id": "req_rkfbank_06_16",
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Token do encerrado → 401",
@@ -1881,13 +2104,13 @@
       "parameters": [],
       "preRequestScript": "",
       "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));",
-      "metaSortKey": 14,
+      "metaSortKey": 16,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
       "settingStoreCookies": false
     },
     {
-      "_id": "req_rkfbank_06_15",
+      "_id": "req_rkfbank_06_17",
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Login do encerrado → 401",
@@ -1910,13 +2133,13 @@
       "parameters": [],
       "preRequestScript": "",
       "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));",
-      "metaSortKey": 15,
+      "metaSortKey": 17,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
       "settingStoreCookies": false
     },
     {
-      "_id": "req_rkfbank_06_16",
+      "_id": "req_rkfbank_06_18",
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "ADMIN tenta reativar o encerrado → 422",
@@ -1940,8 +2163,8 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: encerrou o cadastro\", () => insomnia.expect(insomnia.response.json().message).to.include(\"encerrou o cadastro\"));",
-      "metaSortKey": 16,
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo CADASTRO_ENCERRADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CADASTRO_ENCERRADO\"));",
+      "metaSortKey": 18,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
       "settingStoreCookies": false
@@ -1969,7 +2192,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"mensagem: Autenticacao necessaria\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Autenticacao necessaria\"));",
+      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"codigo AUTENTICACAO_NECESSARIA\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"AUTENTICACAO_NECESSARIA\"));",
       "metaSortKey": 0,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -1992,7 +2215,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"mensagem: Token invalido ou expirado\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Token invalido ou expirado\"));",
+      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"codigo TOKEN_INVALIDO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"TOKEN_INVALIDO\"));",
       "metaSortKey": 1,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -2021,7 +2244,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"mensagem: CPF ou senha invalidos\", () => insomnia.expect(insomnia.response.json().message).to.include(\"CPF ou senha invalidos\"));",
+      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"codigo CREDENCIAIS_INVALIDAS\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CREDENCIAIS_INVALIDAS\"));",
       "metaSortKey": 2,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -2044,7 +2267,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));\ninsomnia.test(\"mensagem: Acesso negado\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Acesso negado\"));",
+      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));\ninsomnia.test(\"codigo PERFIL_SEM_PERMISSAO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"PERFIL_SEM_PERMISSAO\"));",
       "metaSortKey": 3,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -2102,7 +2325,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));\ninsomnia.test(\"mensagem: Conta nao pertence\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Conta nao pertence\"));",
+      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));\ninsomnia.test(\"codigo CONTA_DE_OUTRO_CLIENTE\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CONTA_DE_OUTRO_CLIENTE\"));",
       "metaSortKey": 5,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -2160,7 +2383,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Saldo insuficiente\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Saldo insuficiente\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SALDO_INSUFICIENTE\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SALDO_INSUFICIENTE\"));",
       "metaSortKey": 7,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -2195,7 +2418,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: Saldo insuficiente para transferencia\", () => insomnia.expect(insomnia.response.json().message).to.include(\"Saldo insuficiente para transferencia\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SALDO_INSUFICIENTE\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SALDO_INSUFICIENTE\"));",
       "metaSortKey": 8,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -2230,7 +2453,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: nao podem ser iguais\", () => insomnia.expect(insomnia.response.json().message).to.include(\"nao podem ser iguais\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo MESMA_CONTA\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"MESMA_CONTA\"));",
       "metaSortKey": 9,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -2458,7 +2681,7 @@
       },
       "parameters": [],
       "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 409\", () => insomnia.expect(insomnia.response.code).to.equal(409));\ninsomnia.test(\"mensagem: CPF ja cadastrado\", () => insomnia.expect(insomnia.response.json().message).to.include(\"CPF ja cadastrado\"));",
+      "afterResponseScript": "insomnia.test(\"status 409\", () => insomnia.expect(insomnia.response.code).to.equal(409));\ninsomnia.test(\"codigo CPF_JA_CADASTRADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CPF_JA_CADASTRADO\"));",
       "metaSortKey": 17,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -2487,7 +2710,7 @@
       },
       "parameters": [],
       "preRequestScript": "const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));\nif (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;\nfor (const tamanho of [9, 10]) {\n  const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);\n  const resto = (soma * 10) % 11;\n  n.push(resto === 10 ? 0 : resto);\n}\ninsomnia.environment.set(\"cpf_extra\", n.join(\"\"));",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"mensagem: CEP\", () => insomnia.expect(insomnia.response.json().message).to.include(\"CEP\"));",
+      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo CEP_NAO_ENCONTRADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CEP_NAO_ENCONTRADO\"));",
       "metaSortKey": 18,
       "settingEncodeUrl": true,
       "settingSendCookies": false,
@@ -2497,181 +2720,14 @@
       "_id": "fld_rkfbank_08",
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
-      "name": "08 · Rotas obsoletas (ainda funcionam até o contrato 3.0)",
-      "description": "Os nomes antigos continuam respondendo e avisam com `Deprecation: true` e `Link: <rota nova>; rel=\"successor-version\"` (aba Headers da resposta). Use sempre as rotas novas das outras pastas.",
+      "name": "08 · CORS (navegador chamando a API direto)",
+      "description": "O site de hoje passa pelo proxy do Next e não usa CORS. Isto vale para um navegador chamando a API direto. As origens permitidas vêm de `CORS_ORIGENS` (padrão `http://localhost:3000`).",
       "metaSortKey": 8
     },
     {
       "_id": "req_rkfbank_08_00",
       "_type": "request",
       "parentId": "fld_rkfbank_08",
-      "name": "POST /contas/{id}/deposito (antiga)",
-      "description": "",
-      "method": "POST",
-      "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/deposito",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"valor\": 5\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        },
-        {
-          "name": "Idempotency-Key",
-          "value": "{% uuid 'v4' %}"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_origem }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));\ninsomnia.test(\"Deprecation\", () => insomnia.expect(insomnia.response.headers.get(\"Deprecation\")).to.equal(\"true\"));",
-      "metaSortKey": 0,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_08_01",
-      "_type": "request",
-      "parentId": "fld_rkfbank_08",
-      "name": "POST /contas/{id}/saque (antiga)",
-      "description": "",
-      "method": "POST",
-      "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/saque",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"valor\": 1\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        },
-        {
-          "name": "Idempotency-Key",
-          "value": "{% uuid 'v4' %}"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_origem }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));\ninsomnia.test(\"Link para a nova\", () => insomnia.expect(insomnia.response.headers.get(\"Link\")).to.include(\"/saques\"));",
-      "metaSortKey": 1,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_08_02",
-      "_type": "request",
-      "parentId": "fld_rkfbank_08",
-      "name": "POST /contas/transferencia (antiga)",
-      "description": "",
-      "method": "POST",
-      "url": "{{ _.base_url }}/contas/transferencia",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"contaOrigemId\": \"{{ _.conta_origem_id }}\",\n  \"contaDestinoId\": \"{{ _.conta_destino_id }}\",\n  \"valor\": 1.00\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        },
-        {
-          "name": "Idempotency-Key",
-          "value": "{% uuid 'v4' %}"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_origem }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));\ninsomnia.test(\"Deprecation\", () => insomnia.expect(insomnia.response.headers.get(\"Deprecation\")).to.equal(\"true\"));",
-      "metaSortKey": 2,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_08_03",
-      "_type": "request",
-      "parentId": "fld_rkfbank_08",
-      "name": "Abrir conta no cadastro de OUTRO pela rota antiga → 403",
-      "description": "A rota antiga levava o cliente na URL; a nova (`POST /contas`) tira do token, então isso nem é possível.",
-      "method": "POST",
-      "url": "{{ _.base_url }}/contas/clientes/{{ _.cliente_destino_id }}",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"tipoContaEnum\": \"POUPANCA\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_origem }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));\ninsomnia.test(\"mensagem: so pode abrir conta no seu proprio cadastro\", () => insomnia.expect(insomnia.response.json().message).to.include(\"so pode abrir conta no seu proprio cadastro\"));",
-      "metaSortKey": 3,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_08_04",
-      "_type": "request",
-      "parentId": "fld_rkfbank_08",
-      "name": "GET /contas?paginado=true (antiga)",
-      "description": "",
-      "method": "GET",
-      "url": "{{ _.base_url }}/contas?paginado=true",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_origem }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));",
-      "metaSortKey": 4,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "fld_rkfbank_09",
-      "_type": "request_group",
-      "parentId": "wrk_rkfbank",
-      "name": "09 · CORS (navegador chamando a API direto)",
-      "description": "O site de hoje passa pelo proxy do Next e não usa CORS. Isto vale para um navegador chamando a API direto. As origens permitidas vêm de `CORS_ORIGENS` (padrão `http://localhost:3000`).",
-      "metaSortKey": 9
-    },
-    {
-      "_id": "req_rkfbank_09_00",
-      "_type": "request",
-      "parentId": "fld_rkfbank_09",
       "name": "Preflight de origem permitida → 200",
       "description": "",
       "method": "OPTIONS",
@@ -2703,9 +2759,9 @@
       "settingStoreCookies": false
     },
     {
-      "_id": "req_rkfbank_09_01",
+      "_id": "req_rkfbank_08_01",
       "_type": "request",
-      "parentId": "fld_rkfbank_09",
+      "parentId": "fld_rkfbank_08",
       "name": "Preflight de origem estranha → 403",
       "description": "",
       "method": "OPTIONS",

@@ -114,7 +114,7 @@ try {
   r = await chamar("GET", "/contas", undefined, "token.falso.qualquer");
   verificar("Token inválido → 401", r.status === 401, `status ${r.status}`);
   r = await login(origem.cpf, "senha-errada");
-  verificar("Senha errada → 401 'CPF ou senha invalidos'", r.status === 401 && r.json?.message === "CPF ou senha invalidos", `status ${r.status}`);
+  verificar("Senha errada → 401 com codigo CREDENCIAIS_INVALIDAS", r.status === 401 && r.json?.codigo === "CREDENCIAIS_INVALIDAS", `status ${r.status}`);
   r = await chamar("POST", `/contas/${contaOrigem.id}/saques`, { valor: 1.0, descricao: "smoke" }, destino.token);
   verificar("Saque na conta de outro cliente → 403", r.status === 403 && r.json?.status === 403, `status ${r.status}`);
   r = await chamar("GET", `/contas/${contaOrigem.id}/lancamentos`, undefined, destino.token);
@@ -129,7 +129,7 @@ try {
     console.log("⏭️  GET /clientes com ADMIN pulado (perfil visitante nao tem admin)");
   } else if (process.env.ADMIN_CPF && process.env.ADMIN_SENHA) {
     const admin = await login(process.env.ADMIN_CPF, process.env.ADMIN_SENHA);
-    r = await chamar("GET", "/clientes?paginado=true", undefined, admin.json?.token);
+    r = await chamar("GET", "/clientes?page=0&size=10", undefined, admin.json?.token);
     verificar("GET /clientes com perfil ADMIN → 200", admin.json?.perfil === "ADMIN" && r.status === 200, `login ${admin.status}, listagem ${r.status}`);
   } else {
     console.log("⏭️  GET /clientes com ADMIN pulado (defina ADMIN_CPF e ADMIN_SENHA para conferir)");
