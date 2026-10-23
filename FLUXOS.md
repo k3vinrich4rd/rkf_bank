@@ -7,7 +7,7 @@ segue o **modelo C4** (contexto → containers → componentes), o padrão de me
 níveis de zoom.
 
 Legenda das cores: 🟦 o que é nosso · 🟩 banco de dados · 🟧 serviço de terceiros · ⬜ pessoas.
-Contrato da API em vigor: **3.0** (só as rotas canônicas; todo erro com `codigo`).
+Contrato da API em vigor: **3.1** (rotas canônicas, todo erro com `codigo`, sessão com renovação, aceite dos termos e CPF mascarado).
 
 ---
 
@@ -427,21 +427,36 @@ sequenceDiagram
     U->>RH: POST {cpf, senha}
     RH->>API: POST /auth/login
     API->>DB: busca tb_usuario e confere o BCrypt
-    API-->>RH: 200 {token, perfil, clienteId}
-    RH-->>U: Set-Cookie rkf_token (httpOnly, sameSite) + sessão sem o token
+    API-->>RH: 200 {token, refreshToken, perfil, clienteId, deveTrocarSenha}
+    RH-->>U: Set-Cookie rkf_token + rkf_refresh + rkf_sessao (httpOnly, sameSite)
     Note over U: o JavaScript da página nunca vê o token
 
     U->>PX: GET /api/contas (cookie vai sozinho)
+    opt token de acesso vencido ou a menos de 1 min de vencer
+        PX->>API: POST /auth/refresh {refreshToken}
+        API->>DB: confere o hash, revoga o usado, grava o novo
+        API-->>PX: 200 par novo
+        PX-->>U: 307 para a mesma URL + Set-Cookie do par novo
+        U->>PX: repete GET /api/contas, já com o token novo
+    end
     PX->>PX: lê o cookie, apaga cookies do pedido, põe Authorization: Bearer
     PX->>API: GET /contas
     API->>API: valida assinatura e validade + ConversorTokenUsuario confere tb_usuario
     alt token ok
         API-->>U: 200 contas
-    else vencido, desativado ou senha trocada
+    else desativado, senha trocada ou renovação recusada
         API-->>U: 401 TOKEN_INVALIDO / ACESSO_ALTERADO
         U->>U: tela manda para /login?voltar=/conta
     end
+
+    U->>RH: POST /api/auth/logout
+    RH->>API: POST /auth/logout {refreshToken}
+    RH-->>U: 204 + apaga os três cookies
 ```
+
+O 307 existe porque o repasse do Next para a API descarta o `Set-Cookie` do `proxy.ts`: sem ele, o navegador ficaria
+com o token de renovação antigo, já trocado, e a próxima renovação contaria como **reuso** (a API derrubaria todas as
+sessões da pessoa). Cada token de renovação vale uma vez só.
 
 </details>
 
@@ -450,7 +465,7 @@ sequenceDiagram
 ## 🧪 8. O roteiro E2E: cadastro → contas → dinheiro
 
 O mesmo roteiro existe em três formatos, **com os mesmos passos e payloads**: a pasta
-**"02 · Fluxo E2E"** da [coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json), o
+**"02 · Fluxo E2E"** da [coleção do Insomnia](backend/insomnia/rkfbank.insomnia.yaml), o
 [fluxo com `curl` do README](README.md#-api-rest) e o [guia de testes](backend/README_TESTES_E2E.md).
 
 ```mermaid
@@ -468,8 +483,8 @@ flowchart LR
 <summary>✅ <b>Checklist do roteiro</b> (o que conferir em cada passo)</summary>
 <br/>
 
-- [ ] **Cadastro `201`:** CPF, telefone e CEP mandados com máscara voltam formatados; a cidade é **Osasco** (veio do ViaCEP); a senha não aparece na resposta.
-- [ ] **Login `200`:** `token`, `expiraEmSegundos`, `perfil: CLIENTE` e o `clienteId`.
+- [ ] **Cadastro `201`** com `"aceiteTermos": true`: telefone e CEP voltam formatados, o CPF volta **mascarado** (`***.982.247-**`) com `termosVersao` e `termosAceitosEm`; a cidade é **Osasco** (veio do ViaCEP); a senha não aparece na resposta.
+- [ ] **Login `200`:** `token`, `expiraEmSegundos`, `perfil: CLIENTE`, o `clienteId`, `refreshToken` e `deveTrocarSenha: false`.
 - [ ] **Duas contas `201`:** agência `0001`, número de 8 dígitos, saldo `0.00`, `tipoConta` certo.
 - [ ] **Depósito, saque e transferência `204`:** sem corpo; cada um com uma `Idempotency-Key` nova.
 - [ ] **Saldos:** ORIGEM `75.00`, DESTINO `25.00`.

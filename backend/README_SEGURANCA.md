@@ -229,8 +229,11 @@ Comparado com os tutoriais mais comuns de Spring Security + JWT (por exemplo, `U
 | `schema.sql` | Flyway (`V1…V9`) | banco versionado e igual em todo ambiente |
 | tudo num pacote só | camadas (`config`, `security`, `controllers`, `services`...) | tutorial é curto; projeto real cresce |
 
-**Próximos passos de segurança:** *refresh token* revogável (`POST /auth/refresh`), RS256 + JWKS, Authorization Server
-dedicado quando houver mais de um app, 2FA, auditoria de quem fez o quê.
+**Próximos passos de segurança:** RS256 + JWKS, Authorization Server dedicado quando houver mais de um app, 2FA,
+auditoria de quem fez o quê.
+
+**Feito no contrato 3.1:** *refresh token* revogável (`POST /auth/refresh` e `POST /auth/logout`), de uso único, guardado
+só como hash SHA-256 e com detecção de reuso (reusar um token já trocado derruba todas as sessões da pessoa).
 
 ---
 

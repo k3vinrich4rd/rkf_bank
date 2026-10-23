@@ -200,7 +200,7 @@ Durante o vídeo, prestar atenção em:
 
 ### 🛠️ Implementação
 - [x] Dependência do springdoc compatível com o Spring Boot 4 (springdoc 3.1.1)
-- [x] Liberar `/swagger-ui` e `/v3/api-docs` na `SecurityFilterChain` (só leitura; em produção, `springdoc.*.enabled=false`)
+- [x] Liberar `/swagger-ui` e `/v3/api-docs` na `SecurityFilterChain` (só leitura; em produção, `springdoc.*.enabled=false` no perfil `prod`, que ainda não existe)
 - [x] Descrever as rotas por grupo (`@Tag`) e marcar as públicas sem o cadeado (`@SecurityRequirements`); os erros seguem o `ErroResponse` com `codigo` do contrato
 - [x] Esquema de segurança Bearer JWT (`ConfiguracaoOpenApi`)
 - [x] Link do Swagger no `README.md` e no contrato da API

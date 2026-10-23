@@ -15,7 +15,12 @@ cd rkf_bank
 ```
 
 No PowerShell: `.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=visitante"`.
-Pronto quando o log mostrar `Tomcat started on port 8080`.
+**Pelo IntelliJ:** **File → Open** na pasta `rkf_bank` → JDK 25 em **File → Project Structure → SDK** (o próprio
+IntelliJ baixa: *Download JDK*) → escolha **API · Visitante (H2)** ao lado do ▶️ e clique ▶️. Passo a passo, com o que
+aparece no log: [guia, Parte 1](backend/README_TESTES_E2E.md#parte-1--prepare-o-ambiente-pelo-intellij).
+
+Pronto quando o log mostrar `Started RkfbankApplication` e http://localhost:8080/actuator/health responder
+`{"groups":["liveness","readiness"],"status":"UP"}`. Todas as rotas, com os campos: http://localhost:8080/swagger-ui.html.
 
 ## 2. Contas de visitante
 
@@ -36,7 +41,11 @@ API=http://localhost:8080; H='Content-Type: application/json'
 ANA=a0000000-0000-4000-8000-000000000114; BRUNO=a0000000-0000-4000-8000-000000000124
 TOKEN=$(curl -s -X POST $API/auth/login -H "$H" -d '{"cpf":"24681357928","senha":"Visitante@2026"}' | sed -E 's/.*"token":"([^"]+)".*/\1/')
 
+# o login respondeu: {"token":"eyJ...","tipo":"Bearer","expiraEmSegundos":3600,"clienteId":"a0000000-...0112",
+#                     "perfil":"CLIENTE","deveTrocarSenha":false,"refreshToken":"...","refreshExpiraEmSegundos":604800}
+
 curl -s $API/contas -H "Authorization: Bearer $TOKEN"                     # saldo 1000.00
+# [{"id":"a0000000-...0114","clienteId":"a0000000-...0112","agencia":"0001","numeroConta":"900001","tipoConta":"CORRENTE","saldo":1000.00,"ativa":true}]
 
 CHAVE=$(node -e 'console.log(crypto.randomUUID())')                       # uma chave por operação
 curl -s -i -X POST $API/transferencias -H "$H" -H "Authorization: Bearer $TOKEN" -H "Idempotency-Key: $CHAVE" \
@@ -51,14 +60,16 @@ curl -s -i -X POST $API/transferencias -H "$H" -H "Authorization: Bearer $TOKEN"
 
 curl -s $API/contas -H "Authorization: Bearer $TOKEN"                     # saldo 800.00 (não 600.00)
 curl -s $API/contas/$ANA/lancamentos -H "Authorization: Bearer $TOKEN"    # extrato
-curl -s -i $API/contas/$BRUNO/lancamentos -H "Authorization: Bearer $TOKEN" | head -1   # 403: a conta é do Bruno
+curl -s $API/contas/$BRUNO/lancamentos -H "Authorization: Bearer $TOKEN"  # 403: a conta é do Bruno
+# {"status":403,"error":"Forbidden","codigo":"CONTA_DE_OUTRO_CLIENTE","message":"Conta não pertence ao usuário logado",...}
 ```
 
 ## 3½. Prefere clicar? Insomnia e o banco no navegador
 
-- **Insomnia:** *Import* → arquivo [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) →
-  ambiente **Visitante (H2, Ana e Bruno)** → mande as requisições de cima para baixo. O login guarda o token sozinho:
-  nada de copiar e colar.
+- **Insomnia:** *Import* → arquivo [`backend/insomnia/rkfbank.insomnia.yaml`](backend/insomnia/rkfbank.insomnia.yaml)
+  (Insomnia 10+; para o 9, o [`.json`](backend/insomnia/rkfbank.insomnia.json)) → ambiente **Visitante (H2, Ana e
+  Bruno)** → mande as requisições de cima para baixo. O login guarda o token sozinho: nada de copiar e colar. O pedido
+  e a resposta esperada de cada uma estão no [guia, Parte 3](backend/README_TESTES_E2E.md#parte-3--teste-como-cliente).
 - **Ver as tabelas:** abra `http://localhost:8080/h2-console`, troque a JDBC URL para `jdbc:h2:mem:rkfbank-visitante`
   (usuário `sa`, senha vazia) e rode `SELECT numero_conta, saldo FROM tb_conta;` antes e depois da transferência.
 
@@ -66,7 +77,7 @@ curl -s -i $API/contas/$BRUNO/lancamentos -H "Authorization: Bearer $TOKEN" | he
 
 No Insomnia, a pasta **02 · Fluxo E2E** faz o caminho inteiro de um cliente novo, na ordem. Marque conforme for:
 
-- [ ] **Cadastro** com CPF, CEP e telefone **com máscara** (`529.982.247-25`, `06020-010`): a cidade volta **Osasco**, direto do ViaCEP
+- [ ] **Cadastro** com CPF, CEP e telefone **com máscara** (`529.982.247-25`, `06020-010`) e o **aceite dos termos** (`"aceiteTermos": true`): a cidade volta **Osasco**, direto do ViaCEP, e o CPF volta **mascarado** (`***.982.247-**`)
 - [ ] **Login** com o CPF do cadastro
 - [ ] **Conta ORIGEM** (corrente) e **conta DESTINO** (poupança), as duas com saldo `0.00`
 - [ ] **Depósito** de 150,00, **saque** de 50,00 e **transferência** de 25,00 da origem para o destino
@@ -113,6 +124,14 @@ forjar o token de vários jeitos.
 Guia completo (rodar pela IDE, H2 ou MySQL, permissões de cada rota, como tornar alguém ADMIN, todos os payloads, os
 roteiros com cada resposta esperada e a explicação de Spring Security, OAuth2 e JWT):
 [backend/README_TESTES_E2E.md](backend/README_TESTES_E2E.md).
+
+## 🛡️ E como ADMIN?
+
+O perfil `visitante` não tem ADMIN de propósito: a senha dele é pública. Para testar a gestão de usuários (promover,
+rebaixar, desativar, senha temporária, conciliação), crie **o seu** ADMIN na **sua** máquina: copie o `.env.example`
+para `.env`, preencha `JWT_SEGREDO`, `ADMIN_CPF` e `ADMIN_SENHA` com valores seus e suba no perfil MySQL
+(`docker compose up -d` e **API · MySQL (Docker)**). Passo a passo, com cada pedido e resposta:
+[guia, Parte 2](backend/README_TESTES_E2E.md#parte-2--teste-como-admin).
 
 ## 5. O que este perfil garante (e por quê)
 

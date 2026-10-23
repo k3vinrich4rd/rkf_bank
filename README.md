@@ -32,7 +32,7 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 266 testes, 17 rotas REST, 9 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 338 testes, 22 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 4 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -66,8 +66,10 @@
 | Perfis `CLIENTE` e `ADMIN`, regra de dono da conta e gestão de usuários | ✅ | — |
 | Erros com `codigo` estável e mensagem para exibir | ✅ | ✅ |
 | Logs rastreáveis por requisição (`X-Request-Id`) | ✅ | ✅ |
-| `GET /contas/{id}` e `GET /clientes/{id}/contas` | ⏳ | — |
-| Política de privacidade e aceite dos termos (LGPD) | ⏳ | ⏳ |
+| Sessão que se renova sozinha (*refresh token*) e logout de verdade | ✅ | ✅ |
+| Várias contas por cliente (`GET /contas/{id}` e seletor de conta) | ✅ | ✅ |
+| Política de privacidade e aceite dos termos (LGPD) | ✅ | ✅ |
+| Encarregado LGPD e publicação (colocar no ar) | ⏳ | ⏳ |
 
 <sub>✅ pronto na <code>develop</code> · ⏳ a fazer antes do lançamento</sub>
 
@@ -357,7 +359,10 @@ stateDiagram-v2
 </details>
 <details><summary>⏰ ...usar o app depois de 15 minutos parado?</summary>
 
-O JWT expira e a API responde `401`. O site leva você ao login (`?expirou=1`) e depois **de volta para a tela onde estava**.
+Nada: o token de acesso vence em 15 minutos, mas o servidor do Next troca o par pelo **token de renovação** (7 dias,
+uso único) antes de cada chamada, sem a pessoa perceber. Só depois de 7 dias sem usar, ou de sair, trocar a senha ou
+tentar reusar um token de renovação já trocado, a sessão acaba e o site leva ao login (`?expirou=1`), voltando depois
+para a tela onde você estava.
 
 </details>
 <details><summary>⚡ ...fazer duas transferências ao mesmo tempo da mesma conta?</summary>
@@ -541,10 +546,10 @@ Suba o perfil `visitante` ([VISITANTES.md](VISITANTES.md)), entre como a Ana e t
 - ✅ Nenhuma senha real no repositório: contas da equipe e admin ganham login só pelo `.env`; o perfil público `visitante` tem contas fictícias e segredo do JWT sorteado.
 - ✅ Direitos do titular: **ver** (`GET /clientes/me`), **corrigir** (`PATCH /clientes/me`) e **encerrar** o cadastro (`POST /clientes/me/encerramento`, com senha e saldo zero). O cadastro encerrado fica guardado pelo prazo legal (5 anos, Lei 9.613/1998) e uma rotina diária o **anonimiza** depois.
 
+- ✅ Termos de Uso e Política de Privacidade publicados (`/termos` e `/privacidade`), aceite obrigatório no cadastro com versão e data gravadas (V10) e CPF mascarado nas respostas.
+
 **Falta antes de colocar no ar** (bloqueia o deploy, não o desenvolvimento):
 
-- ⏳ Política de privacidade e termos de uso de verdade (o cadastro já cita os dois).
-- ⏳ Registrar o aceite dos termos (versão + data) numa migração nova do Flyway.
 - ⏳ Encarregado e canal de contato do titular.
 
 **Depois do MVP:** auditoria (quem fez o quê, quando e de onde).
@@ -562,7 +567,10 @@ Contrato completo (com a versão atual e o histórico de mudanças): [backend/RE
 | Método | Rota | O que faz | Quem pode | Sucesso |
 |---|---|---|---|---|
 | `POST` | `/clientes` | cadastra cliente (com senha) | público | `201` |
-| `POST` | `/auth/login` | login com CPF + senha (5 erros em 15 min → `429`) | público | `200` + token |
+| `GET` | `/termos` | versão vigente dos termos (o cadastro manda a que a pessoa aceitou) | público | `200` |
+| `POST` | `/auth/login` | login com CPF + senha (5 erros em 15 min → `429`) | público | `200` + tokens |
+| `POST` | `/auth/refresh` | troca o token de renovação por um par novo (uso único) | público (token no corpo) | `200` + tokens |
+| `POST` | `/auth/logout` | revoga o token de renovação | público (token no corpo) | `204` |
 | `PATCH` | `/usuarios/me/senha` | troca a própria senha (pede a atual; derruba os tokens antigos) | logado | `204` |
 | `GET` | `/clientes/me` | meus dados (LGPD) | o próprio cliente | `200` |
 | `PATCH` | `/clientes/me` | corrige meus dados (LGPD; CPF não muda) | o próprio cliente | `200` |
@@ -570,6 +578,7 @@ Contrato completo (com a versão atual e o histórico de mudanças): [backend/RE
 | `GET` | `/clientes` | lista clientes (`?page=0&size=10`) | `ADMIN` | `200` |
 | `POST` | `/contas` | abre conta no próprio cadastro (cliente vem do token) | o próprio cliente | `201` |
 | `GET` | `/contas` | lista contas | `ADMIN`: todas · `CLIENTE`: as dele | `200` |
+| `GET` | `/contas/{contaId}` | uma conta (saldo, tipo, ativa) | dono da conta ou `ADMIN` | `200` |
 | `POST` | `/contas/{contaId}/depositos` | deposita | dono da conta | `204` |
 | `POST` | `/contas/{contaId}/saques` | saca | dono da conta | `204` |
 | `POST` | `/transferencias` | transfere | dono da conta de origem | `204` |
@@ -577,7 +586,11 @@ Contrato completo (com a versão atual e o histórico de mudanças): [backend/RE
 | `GET` | `/admin/usuarios` | lista os usuários (perfil, ativo) | `ADMIN` | `200` |
 | `PATCH` | `/admin/usuarios/{usuarioId}/perfil` | promove a `ADMIN` ou rebaixa a `CLIENTE` | `ADMIN` (não em si mesmo) | `200` |
 | `PATCH` | `/admin/usuarios/{usuarioId}/acesso` | desativa ou reativa o acesso | `ADMIN` (não em si mesmo) | `200` |
-| `PATCH` | `/admin/usuarios/{usuarioId}/senha` | redefine a senha de quem esqueceu | `ADMIN` | `204` |
+| `PATCH` | `/admin/usuarios/{usuarioId}/senha` | redefine a senha de quem esqueceu (vira senha temporária) | `ADMIN` | `204` |
+| `GET` | `/admin/conciliacao` | contas cujo saldo não bate com o extrato | `ADMIN` | `200` |
+
+📖 **Swagger UI:** com a API no ar, [`http://localhost:8080/swagger-ui.html`](http://localhost:8080/swagger-ui.html) documenta
+todas as rotas a partir do código; faça o login, cole o `token` no botão **Authorize** e teste por ali.
 
 <details>
 <summary><b>👤 <code>POST /clientes</code> — cadastrar</b></summary>
@@ -592,13 +605,14 @@ Contrato completo (com a versão atual e o histórico de mudanças): [backend/RE
   "cep": "06020-010",
   "numero": "123",
   "complemento": "Apto 45",
-  "senha": "minha-senha-forte"
+  "senha": "minha-senha-forte",
+  "aceiteTermos": true
 }
 ```
 
-CPF, telefone e CEP podem ir **com máscara**, do jeito que a pessoa digita: a API higieniza (fica só com os dígitos),
+`aceiteTermos: true` é obrigatório (LGPD): sem ele, `400`. CPF, telefone e CEP podem ir **com máscara**, do jeito que a pessoa digita: a API higieniza (fica só com os dígitos),
 valida o CPF pelos dígitos verificadores e busca logradouro, bairro, cidade e UF no **ViaCEP** (aqui, Osasco/SP).
-Resposta `201`: o cliente com o endereço completo. A senha **nunca** volta.
+Resposta `201`: o cliente com o endereço completo, o CPF mascarado (`***.982.247-**`) e a versão dos termos aceita. A senha **nunca** volta.
 
 </details>
 
@@ -616,11 +630,15 @@ Resposta `201`: o cliente com o endereço completo. A senha **nunca** volta.
   "tipo": "Bearer",
   "expiraEmSegundos": 900,
   "clienteId": "1a89861c-70a0-4b7c-947a-d16cdfe2dd08",
-  "perfil": "CLIENTE"
+  "perfil": "CLIENTE",
+  "deveTrocarSenha": false,
+  "refreshToken": "q3Jd0kX4...",
+  "refreshExpiraEmSegundos": 604800
 }
 ```
 
-CPF sem cadastro e senha errada recebem **a mesma** resposta `401`, de propósito.
+CPF sem cadastro e senha errada recebem **a mesma** resposta `401`, de propósito. O `refreshToken` renova a sessão
+em `POST /auth/refresh` (cada um vale uma vez) e `POST /auth/logout` o revoga.
 
 </details>
 
@@ -709,7 +727,8 @@ CPF=529.982.247-25    # com máscara de propósito: a API higieniza
 # 1. Cadastrar cliente (público): CPF, telefone e CEP com máscara; endereço vem do ViaCEP
 curl -X POST $API/clientes -H "Content-Type: application/json" -d '{
   "nomeCompleto":"Cliente Novo do Insomnia","cpf":"'$CPF'","email":"cliente.novo@exemplo.test",
-  "telefone":"(11) 99999-8888","cep":"06020-010","numero":"123","complemento":"Apto 45","senha":"minha-senha-forte"}'
+  "telefone":"(11) 99999-8888","cep":"06020-010","numero":"123","complemento":"Apto 45","senha":"minha-senha-forte",
+  "aceiteTermos":true}'
 
 # 2. Login · cliente novo: guarde o token
 curl -X POST $API/auth/login -H "Content-Type: application/json" -d '{"cpf":"'$CPF'","senha":"minha-senha-forte"}'
@@ -737,7 +756,7 @@ curl $API/contas/$DESTINO/lancamentos -H "$AUTH"    # 1 lançamento: a transfer�
 
 Sem `uuidgen`? Use qualquer texto único de 8 a 100 caracteres (`deposito-001`, `saque-001`...).
 CPF já cadastrado? Troque por outro válido: `70483726052`, `39053344705`, `11144477735`.
-A coleção inteira (91 requisições, com os erros esperados) roda pelo terminal: `node scripts/rodar-colecao-insomnia.mjs`.
+A coleção inteira (114 requisições, com os erros esperados) roda pelo terminal: `node scripts/rodar-colecao-insomnia.mjs`.
 
 </details>
 
@@ -1093,7 +1112,7 @@ privado da equipe, fora do repositório. As migrações foram reorganizadas em 2
 | Quero... | Como |
 |---|---|
 | rodar pela IntelliJ | o projeto traz 3 configurações prontas (pasta `.run/`): **API · Visitante (H2)**, **API · Equipe (H2)** e **API · MySQL (Docker)** |
-| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) no Insomnia: 91 requisições em ordem (a pasta 02 é o roteiro E2E completo), e o login guarda o token sozinho |
+| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.yaml`](backend/insomnia/rkfbank.insomnia.yaml) (ou o `.json`, Insomnia 9) no Insomnia: 114 requisições em ordem (a pasta 02 é o roteiro E2E completo), e o login guarda o token sozinho |
 | ver as tabelas no H2 | `http://localhost:8080/h2-console` · JDBC URL `jdbc:h2:mem:rkfbank-visitante` (ou `rkfbank-equipe`) · usuário `sa`, senha vazia |
 | ver as tabelas no MySQL | `localhost:5441` com o usuário do `.env` (IntelliJ *Database*, DBeaver) ou `docker exec` no container `rkfbank-mysql` |
 | tornar alguém ADMIN | pelo `.env` (primeiro admin), pela API (`PATCH /admin/usuarios/{id}/perfil`) ou por SQL num banco local |
@@ -1133,7 +1152,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 | Toda movimentação dá `400` | faltou o header `Idempotency-Key` | gere um UUID por operação ([contrato](backend/README_CONTRATO_API.md#idempotência-idempotency-key)) |
 | Login dá `429` | 5 senhas erradas seguidas | espere 15 min ou reinicie a API |
 | Cadastro devolve `503` | ViaCEP fora do ar | tente de novo em alguns segundos |
-| Volta para o login toda hora | token de 15 min venceu | esperado: ainda não há refresh token |
+| Volta para o login toda hora | o token de renovação foi revogado (logout, troca de senha, reuso) ou passaram 7 dias | entre de novo; se acontecer a cada 15 min, confira se o cookie `rkf_refresh` existe (DevTools → Application) |
 
 </details>
 
@@ -1142,7 +1161,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 266 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 307 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1231,14 +1250,11 @@ gantt
     Flyway V1 a V3                       :done,   f1, 2026-10-15, 2d
     Spring Security + JWT                :done,   f2, 2026-10-16, 2d
     Idempotência, gestão de usuários, Flyway V1 a V8 :done, f3, 2026-10-20, 1d
+    Testcontainers, Swagger, LGPD e refresh :done, f4, 2026-10-21, 3d
     section MVP
-    Testcontainers (MySQL real)          :active, m0, 2026-10-21, 2d
-    GET conta e contas do cliente        :        m1, after m0, 1d
-    LGPD mínimo                          :        m2, after m1, 2d
-    Deploy (Docker, perfil prod, banco)  :crit,   m4, after m2, 3d
-    Testes do Fellipe e correções         :        m3, after m4, 2d
+    Deploy (Docker, perfil prod, banco)  :crit,   m4, 2026-10-24, 4d
+    Testes do Fellipe e correções         :        m3, after m4, 3d
     section Depois
-    Swagger / OpenAPI                    :        p2, 2026-11-02, 2d
     Pix, boleto e cartão (simulados)     :        p3, 2026-11-05, 20d
 ```
 
@@ -1248,14 +1264,16 @@ gantt
 
 - [x] Cadastro com ViaCEP, abertura de conta, depósito, saque, transferência e extrato
 - [x] Logs rastreáveis, CI, CodeQL e Dependabot
-- [x] Banco versionado com Flyway (V1 a V9), contas da equipe (Fellipe e Renan) e perfil público de visitante
+- [x] Banco versionado com Flyway (V1 a V15), contas da equipe (Fellipe e Renan) e perfil público de visitante
 - [x] Idempotência nas movimentações, número de conta gerado pelo banco, limite de tentativas no login e health check
 - [x] Login com Spring Security + JWT, perfis e regra de dono
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
 - [x] Gestão de usuários pelo ADMIN (promover, rebaixar, desativar) e troca de senha, valendo na hora
-- [ ] Testes de integração com Testcontainers + MySQL real (protege o deploy)
-- [ ] Backend: `GET /contas/{id}` e `GET /clientes/{id}/contas`
-- [ ] LGPD mínimo: política de privacidade, aceite dos termos e encarregado
+- [x] Testes de integração com Testcontainers + MySQL real (protege o deploy)
+- [x] Backend: `GET /contas/{id}` (a lista por cliente virou `GET /contas`, do token)
+- [x] LGPD mínimo: política de privacidade e aceite dos termos versionado
+- [x] Sessão com *refresh token*, logout de verdade e Swagger UI
+- [ ] LGPD: encarregado e canal de contato do titular
 - [ ] Fellipe testa tudo como primeiro cliente e os bugs são corrigidos
 - [ ] Colocar no ar (Docker, perfil `prod` sem dados de teste, banco gerenciado) e atualizar este README com link e prints
 
@@ -1265,11 +1283,11 @@ gantt
 <summary><b>🔭 Depois do MVP</b></summary>
 <br/>
 
-- [ ] `MockMvc` em todos os controllers e teste de concorrência ([checklist](planing/checklist-features.md))
-- [ ] Swagger UI com o botão *Authorize* (springdoc-openapi)
-- [ ] Refresh token e 2FA (limite de tentativas e revogação já existem)
+- [x] `MockMvc` nos controllers e teste de concorrência no MySQL real ([checklist](planing/checklist-features.md))
+- [x] Swagger UI com o botão *Authorize* (springdoc-openapi)
+- [x] Refresh token (2FA continua ideia futura)
 - [x] "Meus dados", editar perfil e encerrar conta (direitos do titular)
-- [ ] CI do frontend
+- [x] CI do frontend (lint, tipos, Vitest e build)
 - [ ] Pix, boleto, QR Code e cartão virtual (simulados) — [funcionalidades futuras](planing/debitos-tecnicos.md#funcionalidades-futuras-)
 - [ ] 🤖 Assistente do extrato com Spring AI (ideia)
 

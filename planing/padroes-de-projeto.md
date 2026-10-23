@@ -11,7 +11,7 @@
 
 | Argumento a favor do `Impl` | No RKF Bank |
 |---|---|
-| "Facilita mockar nos testes" | o Mockito moca classe direto (`@Mock ContaService`); os 237 testes já fazem isso |
+| "Facilita mockar nos testes" | o Mockito moca classe direto (`@Mock ContaService`); os 307 testes já fazem isso |
 | "O Spring precisa de interface para o proxy do `@Transactional`" | precisava no Spring antigo (proxy JDK); desde o Boot 2 o padrão é proxy de **classe** (CGLIB) |
 | "Permite trocar a implementação" | cada service tem **uma** implementação e não há segunda à vista: seria uma interface que só repete a classe |
 | "É o padrão de mercado" | é comum em código legado; o guia do próprio Spring e projetos modernos usam a classe direto |

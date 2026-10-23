@@ -36,7 +36,7 @@ scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do D
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante  # API pública sem Docker e sem .env (H2 + Ana e Bruno Visitante, JWT sorteado)
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe     # equipe sem Docker (H2 + Fellipe e Renan; segredos do .env)
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
-node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 64/64 visitante, 91/91 equipe
+node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 82/82 visitante, 114/114 equipe
 node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou rota ou payload? mude aqui); --equipe gera a privada em .equipe/
 node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas (OSV.dev) no Maven e no pnpm-lock
