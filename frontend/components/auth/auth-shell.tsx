@@ -36,9 +36,12 @@ export function AuthShell({ atalho, vitrine, children }: AuthShellProps) {
 
         <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-14">{children}</main>
 
-        <footer className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
-          <Lock className="size-3" aria-hidden="true" />
-          Seus dados trafegam com criptografia
+        <footer className="flex items-center justify-between gap-4 text-xs text-muted-foreground/60">
+          <span>© 2026 RKF Banco Digital</span>
+          <span className="flex items-center gap-1.5">
+            <Lock className="size-3" aria-hidden="true" />
+            Conexão criptografada
+          </span>
         </footer>
       </section>
 

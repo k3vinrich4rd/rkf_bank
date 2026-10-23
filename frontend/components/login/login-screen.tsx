@@ -1,15 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowRight, CircleCheck, Clock, LoaderCircle, type LucideIcon } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
-import { CartaoEmVitrine } from "@/components/auth/cartao-em-vitrine";
-import { Vitrine } from "@/components/auth/vitrine";
-import { Button } from "@/components/ui/button";
+import { CampoFlutuante } from "@/components/auth/campo-flutuante";
+import { VitrineCartao } from "@/components/auth/vitrine-cartao";
 import { FormAlert } from "@/components/ui/form-alert";
-import { FormField } from "@/components/ui/form-field";
-import { PasswordField } from "@/components/ui/password-field";
 import { ROUTES } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 import { useLogin } from "./use-login";
 
 interface LoginScreenProps {
@@ -21,14 +20,10 @@ interface LoginScreenProps {
   senhaTrocada: boolean;
 }
 
-/** Fatos de segurança do login: todos verdadeiros no backend (contrato 2.0 a 2.3). */
-const FATOS = [
-  "Sessão que expira sozinha em 15 minutos",
-  "Senha guardada só como hash, nunca em texto",
-  "5 senhas erradas seguidas · pausa de 15 minutos",
-] as const;
+/** Entrada em sequência: cada bloco aparece um pouco depois do anterior. */
+const ENTRADA = "animate-in fade-in slide-in-from-bottom-3 fill-mode-both duration-700";
 
-/** Login com CPF e senha. O estado vive no `useLogin`. */
+/** Login com CPF e senha. O estado vive no `useLogin`; aqui é só o desenho. */
 export function LoginScreen({ destino, expirou, senhaTrocada }: LoginScreenProps) {
   const { campo, erroGeral, enviando, handleSubmit } = useLogin(destino);
 
@@ -36,24 +31,20 @@ export function LoginScreen({ destino, expirou, senhaTrocada }: LoginScreenProps
     <AuthShell
       atalho={{ pergunta: "Ainda não tem conta?", rotulo: "Abrir conta", href: ROUTES.signUp }}
       vitrine={
-        <Vitrine
-          rotulo="Acesso seguro"
-          destaque={<CartaoEmVitrine titular="Cliente RKF" legenda="Seu saldo, seu extrato e suas transferências, a um login." />}
-          titulo={
-            <>
-              Seu dinheiro continua <span className="text-gradient-brand">onde você deixou.</span>
-            </>
-          }
-          fatos={FATOS}
+        <VitrineCartao
+          titular="Cliente RKF"
+          rodape="Sessão de 15 minutos  ·  senha guardada só como hash  ·  limite de tentativas"
         />
       }
     >
-      <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-        <p className="font-mono text-xs tracking-[0.2em] text-brand-cyan uppercase">Entrar</p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">
-          Bem-vindo de volta.
+      <div className="w-full max-w-[22.5rem] self-center lg:self-start">
+        <h1 className={`text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.035em] text-balance ${ENTRADA}`}>
+          Bem-vindo
+          <span className="block text-muted-foreground">de volta.</span>
         </h1>
-        <p className="mt-3 text-muted-foreground">Use o CPF e a senha do seu cadastro.</p>
+        <p className={`mt-5 text-[0.95rem] text-muted-foreground delay-75 ${ENTRADA}`}>
+          Entre com o CPF e a senha do seu cadastro.
+        </p>
 
         {senhaTrocada && (
           <Aviso icone={CircleCheck} tom="sucesso">
@@ -66,61 +57,62 @@ export function LoginScreen({ destino, expirou, senhaTrocada }: LoginScreenProps
           </Aviso>
         )}
 
-        <form onSubmit={handleSubmit} noValidate className="mt-10 flex flex-col gap-5">
-          <FormField
-            {...campo("cpf")}
-            label="CPF"
-            placeholder="000.000.000-00"
-            inputMode="numeric"
-            autoComplete="username"
-            autoFocus
-          />
-          <PasswordField {...campo("senha")} label="Senha" autoComplete="current-password" />
+        <form onSubmit={handleSubmit} noValidate className={`mt-10 flex flex-col gap-3 delay-150 ${ENTRADA}`}>
+          <CampoFlutuante {...campo("cpf")} label="CPF" inputMode="numeric" autoComplete="username" autoFocus />
+          <CampoFlutuante {...campo("senha")} label="Senha" senha autoComplete="current-password" />
 
-          <div className="mt-4 flex flex-col gap-4">
-            {erroGeral && <FormAlert>{erroGeral}</FormAlert>}
+          {erroGeral && (
+            <div className="mt-2">
+              <FormAlert>{erroGeral}</FormAlert>
+            </div>
+          )}
 
-            <Button type="submit" variant="brand" size="xl" disabled={enviando} className="h-[3.25rem] w-full">
-              {enviando ? (
-                <>
-                  <LoaderCircle className="animate-spin" data-icon="inline-start" aria-hidden="true" />
-                  Entrando…
-                </>
-              ) : (
-                <>
-                  Entrar
-                  <ArrowRight
-                    data-icon="inline-end"
-                    aria-hidden="true"
-                    className="transition-transform group-hover/button:translate-x-0.5"
-                  />
-                </>
-              )}
-            </Button>
-          </div>
+          <button
+            type="submit"
+            disabled={enviando}
+            className={cn(
+              "group mt-4 inline-flex h-[3.75rem] w-full items-center justify-center gap-2.5 rounded-2xl",
+              "bg-foreground text-[0.95rem] font-medium text-background",
+              "shadow-[0_10px_40px_-10px_rgb(241_245_249/0.25)] hover:shadow-[0_14px_50px_-10px_rgb(241_245_249/0.35)]",
+              "transition-[transform,box-shadow,opacity] duration-200 active:scale-[0.99]",
+              "disabled:cursor-wait disabled:opacity-70",
+            )}
+          >
+            {enviando ? (
+              <>
+                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                Entrando…
+              </>
+            ) : (
+              <>
+                Entrar
+                <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
+              </>
+            )}
+          </button>
         </form>
 
-        {/* No celular a vitrine some: os três fatos viram uma linha discreta embaixo do formulário. */}
-        <ul className="mt-10 grid grid-cols-3 gap-3 border-t border-white/[0.06] pt-6 text-center font-mono text-[0.68rem] text-muted-foreground lg:hidden">
-          <li>Sessão de 15 min</li>
-          <li>Senha com hash</li>
-          <li>Limite de tentativas</li>
-        </ul>
+        <p className={`mt-8 text-sm text-muted-foreground delay-200 ${ENTRADA}`}>
+          Primeira vez no RKF?{" "}
+          <Link href={ROUTES.signUp} className="font-medium text-foreground underline-offset-4 hover:underline">
+            Abra sua conta em minutos
+          </Link>
+        </p>
       </div>
     </AuthShell>
   );
 }
 
 const TONS = {
-  sucesso: "border-emerald-500/25 bg-emerald-500/[0.07] [&>svg]:text-emerald-400",
-  info: "border-brand-blue/25 bg-brand-blue/[0.07] [&>svg]:text-brand-cyan",
+  sucesso: "border-emerald-500/20 bg-emerald-500/[0.06] [&>svg]:text-emerald-400",
+  info: "border-brand-blue/20 bg-brand-blue/[0.06] [&>svg]:text-brand-cyan",
 } as const;
 
 function Aviso({ icone: Icone, tom, children }: { icone: LucideIcon; tom: keyof typeof TONS; children: ReactNode }) {
   return (
     <p
       role="status"
-      className={`mt-8 flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm text-foreground/90 animate-in fade-in slide-in-from-top-1 duration-300 ${TONS[tom]}`}
+      className={`mt-8 flex items-start gap-2.5 rounded-2xl border px-4 py-3.5 text-sm text-foreground/90 animate-in fade-in slide-in-from-top-1 duration-300 ${TONS[tom]}`}
     >
       <Icone className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
       {children}
