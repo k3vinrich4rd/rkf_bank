@@ -110,6 +110,7 @@ export async function apiRequest<T>(
     const apiError = await toApiError(response);
     registrarErro(method, path, apiError, { requestId, duracaoMs: duracaoMs(inicio) });
     if (apiError.status === 401 && !path.startsWith("/auth/")) irParaLogin();
+    if (apiError.codigo === "TROCA_DE_SENHA_OBRIGATORIA") irParaTrocaDeSenha();
     throw apiError;
   }
 
@@ -132,6 +133,12 @@ function irParaLogin() {
   login.searchParams.set("expirou", "1");
   // Navegação completa de propósito: a sessão acabou, nenhum estado da página deve sobreviver.
   window.location.assign(login);
+}
+
+/** Senha temporária (contrato 3.1): qualquer rota além da troca de senha responde 403; a tela vai para a troca. */
+function irParaTrocaDeSenha() {
+  if (typeof window === "undefined" || window.location.pathname === ROUTES.trocarSenha) return;
+  window.location.assign(`${ROUTES.trocarSenha}?temporaria=1`);
 }
 
 /** 4xx é falha esperada (validação/regra de negócio) → warn; 5xx é falha do servidor → error. */

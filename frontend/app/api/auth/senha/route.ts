@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import type { ErroResponse, TrocarSenhaRequest } from "@/lib/api";
-import { COOKIE_SESSAO, COOKIE_TOKEN } from "@/lib/auth/cookies";
+import { COOKIE_TOKEN, apagarSessao } from "@/lib/auth/cookies";
 import { env } from "@/lib/env";
 
 /**
@@ -38,8 +38,8 @@ export async function PATCH(request: Request) {
     });
   }
 
-  cookieStore.delete(COOKIE_TOKEN);
-  cookieStore.delete(COOKIE_SESSAO);
+  // A troca derruba todos os tokens na API (inclusive o de renovação, pela versão da senha): a sessão acabou.
+  apagarSessao(cookieStore);
   return new Response(null, { status: 204 });
 }
 

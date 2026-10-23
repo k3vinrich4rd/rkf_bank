@@ -124,6 +124,11 @@ export interface LoginResponse {
   /** `null` para o ADMIN, que não é cliente. */
   clienteId: Uuid | null;
   perfil: Perfil;
+  /** Senha temporária (redefinida pelo ADMIN): só a troca de senha funciona até trocar (contrato 3.1). */
+  deveTrocarSenha: boolean;
+  /** Renova a sessão em `POST /auth/refresh` sem pedir a senha. Uso único; fica num cookie `httpOnly`. */
+  refreshToken: string;
+  refreshExpiraEmSegundos: number;
 }
 
 /**
@@ -133,7 +138,10 @@ export interface LoginResponse {
 export interface Sessao {
   clienteId: Uuid | null;
   perfil: Perfil;
+  /** Quando o token de acesso vence; o `proxy.ts` renova antes, com o token de renovação. */
   expiraEm: IsoDateTime;
+  /** Senha temporária: a tela leva direto para a troca de senha. */
+  deveTrocarSenha: boolean;
 }
 
 // ── Contas e movimentações ──────────────────────────────────────────────
@@ -246,7 +254,9 @@ export type CodigoErro =
   | "TOKEN_INVALIDO"
   | "ACESSO_ALTERADO"
   | "CREDENCIAIS_INVALIDAS"
+  | "SESSAO_EXPIRADA"
   | "PERFIL_SEM_PERMISSAO"
+  | "TROCA_DE_SENHA_OBRIGATORIA"
   | "CONTA_DE_OUTRO_CLIENTE"
   | "CLIENTE_NAO_ENCONTRADO"
   | "CONTA_NAO_ENCONTRADA"

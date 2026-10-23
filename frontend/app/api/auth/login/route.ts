@@ -1,11 +1,11 @@
 import { cookies } from "next/headers";
-import type { ErroResponse, LoginRequest, LoginResponse, Sessao } from "@/lib/api";
-import { COOKIE_SESSAO, COOKIE_TOKEN, opcoesDoCookie } from "@/lib/auth/cookies";
+import type { ErroResponse, LoginRequest, LoginResponse } from "@/lib/api";
+import { gravarSessao, sessaoDoLogin } from "@/lib/auth/cookies";
 import { env } from "@/lib/env";
 
 /**
- * Login pelo servidor do Next (BFF): repassa CPF e senha para `POST /auth/login` da API e guarda o token
- * num cookie `httpOnly`. O navegador recebe só a `Sessao`, sem o token.
+ * Login pelo servidor do Next (BFF): repassa CPF e senha para `POST /auth/login` da API e guarda o token de acesso
+ * e o de renovação em cookies `httpOnly`. O navegador recebe só a `Sessao`, sem nenhum token.
  *
  * Como arquivo de rota, este handler vence o rewrite `/api/:path*` do `next.config.ts`.
  */
@@ -33,18 +33,8 @@ export async function POST(request: Request) {
   }
 
   const login = (await resposta.json()) as LoginResponse;
-  const sessao: Sessao = {
-    clienteId: login.clienteId,
-    perfil: login.perfil,
-    expiraEm: new Date(Date.now() + login.expiraEmSegundos * 1000).toISOString(),
-  };
-
-  const cookieStore = await cookies();
-  const opcoes = opcoesDoCookie(login.expiraEmSegundos);
-  cookieStore.set(COOKIE_TOKEN, login.token, opcoes);
-  cookieStore.set(COOKIE_SESSAO, JSON.stringify(sessao), opcoes);
-
-  return Response.json(sessao);
+  gravarSessao(await cookies(), login);
+  return Response.json(sessaoDoLogin(login));
 }
 
 function erro(status: number, message: string) {

@@ -8,8 +8,11 @@ import { FormAlert } from "@/components/ui/form-alert";
 import { FormField } from "@/components/ui/form-field";
 import { useTrocarSenha } from "./use-trocar-senha";
 
-/** Troca da própria senha. O estado vive no `useTrocarSenha`; depois do sucesso a pessoa vai para o login. */
-export function TrocarSenhaScreen() {
+/**
+ * Troca da própria senha. O estado vive no `useTrocarSenha`; depois do sucesso a pessoa vai para o login.
+ * `temporaria`: a senha atual foi passada pelo ADMIN; enquanto não trocar, o resto do banco fica bloqueado.
+ */
+export function TrocarSenhaScreen({ temporaria = false }: { temporaria?: boolean }) {
   const { campo, erroGeral, enviando, handleSubmit } = useTrocarSenha();
 
   return (
@@ -22,7 +25,9 @@ export function TrocarSenhaScreen() {
         </span>
         <h1 className="mt-6 text-3xl font-semibold tracking-tight">Trocar senha</h1>
         <p className="mt-3 mb-8 text-muted-foreground">
-          Por segurança, você vai sair de todos os aparelhos e entrar de novo com a senha nova.
+          {temporaria
+            ? "Sua senha foi redefinida pelo atendimento. Para continuar, escolha uma senha que só você conheça."
+            : "Por segurança, você vai sair de todos os aparelhos e entrar de novo com a senha nova."}
         </p>
 
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
