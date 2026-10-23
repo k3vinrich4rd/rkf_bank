@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="API · MySQL (Docker)" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="com.br.rkfbank.RkfbankApplication" />
+    <module name="rkfbank" />
+    <option name="VM_PARAMETERS" value="" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

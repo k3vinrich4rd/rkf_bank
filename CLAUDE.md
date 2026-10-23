@@ -36,13 +36,17 @@ scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do D
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante  # API pública sem Docker e sem .env (H2 + Ana e Bruno Visitante, JWT sorteado)
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe     # equipe sem Docker (H2 + Felipe e Renan; segredos do .env)
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
+node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 38/38 visitante, 49/49 equipe
+node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou rota ou payload? mude aqui); --equipe gera a privada em .equipe/
 node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas (OSV.dev) no Maven e no pnpm-lock
 node scripts/gerar-svgs-readme.mjs  # regera os SVGs animados do README (assets/readme/) com o número atual de testes e migrações
 scripts/instalar-hooks.sh           # ativa o hook que valida mensagens de commit
 ```
 
-Rodar a API: `docker compose up -d`, carregar o `.env` no terminal e `./mvnw spring-boot:run`.
+Rodar a API: `docker compose up -d` e `./mvnw spring-boot:run` na raiz (o Spring lê o `.env` sozinho). Console do H2 só nos perfis
+`visitante`/`equipe` (`/h2-console`, JDBC URL `jdbc:h2:mem:rkfbank-<perfil>`); o perfil padrão o desliga de propósito (o DevTools
+ligaria). Mudou rota ou payload? Atualize também `scripts/gerar-colecao-insomnia.mjs` e rode-o.
 JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 
 ## Regras do backend
