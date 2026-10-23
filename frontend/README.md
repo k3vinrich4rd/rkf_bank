@@ -62,7 +62,7 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 | `/conta/sacar` | [`app/conta/sacar/page.tsx`](app/conta/sacar/page.tsx) | ✅ saque (valida o saldo antes de enviar) |
 | `/conta/transferir` | [`app/conta/transferir/page.tsx`](app/conta/transferir/page.tsx) | ✅ transferência pelo ID da conta de destino |
 | `/conta/extrato` | [`app/conta/extrato/page.tsx`](app/conta/extrato/page.tsx) | ✅ extrato agrupado por dia, entradas em verde |
-| `/conta/senha` | [`app/conta/senha/page.tsx`](app/conta/senha/page.tsx) | ✅ trocar a própria senha (o Route Handler chama `PATCH /usuarios/me/senha`, contrato 2.6); a sessão cai e o login mostra "senha trocada" |
+| `/conta/senha` | [`app/conta/senha/page.tsx`](app/conta/senha/page.tsx) | ✅ trocar a própria senha (o Route Handler chama `PATCH /usuarios/me/senha`); a sessão cai e o login mostra "senha trocada" |
 | `/conta/meus-dados` | [`app/conta/meus-dados/page.tsx`](app/conta/meus-dados/page.tsx) | ✅ meus dados (LGPD): ver, corrigir só o que mudou (`PATCH /clientes/me`) e encerrar o cadastro com a senha; depois do encerramento a sessão é apagada |
 
 As três movimentações são **uma tela só** (`components/movimentacao`), configurada por tipo em `movimentacoes.ts`:
@@ -126,7 +126,8 @@ try {
 } catch (error) {
   if (error instanceof ApiError) {
     error.status;       // 400, 404, 409, 422, 503...
-    error.message;      // mensagem do backend
+    error.codigo;       // "SALDO_INSUFICIENTE", "IDEMPOTENCIA_EM_ANDAMENTO"... (contrato 3.0; null fora do formato padrão)
+    error.message;      // mensagem do backend, só para exibir
     error.fieldErrors;  // { valor: "valor deve ser maior que zero" } → direto no formulário
   } else {
     // sem resposta: backend fora do ar ou rede caiu
@@ -134,8 +135,10 @@ try {
 }
 ```
 
-**Decida pelo `status`, nunca pelo texto da mensagem.** Exemplo real: `mensagemDeErro` em
-[`components/cadastro/use-cadastro-form.ts`](components/cadastro/use-cadastro-form.ts).
+**Decida pelo `status` e, quando o mesmo status tem causas diferentes, pelo `codigo`. Nunca pelo texto da
+mensagem**, que pode mudar. Exemplos reais: o `409` de `use-movimentacao.ts` (`IDEMPOTENCIA_EM_ANDAMENTO` ×
+concorrência) e o `422` de `use-trocar-senha.ts` (`SENHA_ATUAL_INCORRETA` × `SENHA_REPETIDA`). A lista completa de
+códigos é o tipo `CodigoErro` em [`lib/api/types.ts`](lib/api/types.ts), espelho do `CodigoErroEnum` do backend.
 
 ### Login e sessão (JWT em cookie `httpOnly`)
 

@@ -36,7 +36,7 @@ scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do D
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante  # API pública sem Docker e sem .env (H2 + Ana e Bruno Visitante, JWT sorteado)
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe     # equipe sem Docker (H2 + Felipe e Renan; segredos do .env)
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
-node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 62/62 visitante, 89/89 equipe
+node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 64/64 visitante, 91/91 equipe
 node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou rota ou payload? mude aqui); --equipe gera a privada em .equipe/
 node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas (OSV.dev) no Maven e no pnpm-lock
@@ -53,7 +53,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 
 - Camadas: controller só conhece service; service tem a regra e o `@Transactional`; repository só acesso a dados.
 - Entrada e saída por DTO `record`; nunca exponha a entidade JPA.
-- Erros: exceção de negócio → status pelo `TratadorGlobalDeErros` (`400`, `404`, `409`, `422`, `503`) no formato padrão (`timestamp`, `status`, `error`, `message`, `path`, `campos`).
+- Erros: exceção de negócio → status pelo `TratadorGlobalDeErros` (`400`, `404`, `409`, `422`, `503`) no formato padrão (`timestamp`, `status`, `error`, `codigo`, `message`, `path`, `campos`). **Código e mensagem só no `CodigoErroEnum`**: o service lança `new RegraNegocioException(CodigoErroEnum.X)`, nunca escreve a frase. Código novo → contrato (seção 6) e `CodigoErro` em `frontend/lib/api/types.ts`; nunca renomeie um existente.
 - Dinheiro em `BigDecimal` com 2 casas; `Conta` tem `@Version` (lock otimista → `409`).
 - Logs com Log4j2 e `X-Request-Id`; nunca logar CPF completo, senha ou token.
 - **LGPD:** dado pessoal novo precisa de finalidade; response devolve só o que a tela usa; nada de dado pessoal em log, exceção, URL ou prompt de IA. Pendências em `planing/debitos-tecnicos.md`.

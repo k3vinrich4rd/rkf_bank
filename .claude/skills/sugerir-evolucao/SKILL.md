@@ -15,7 +15,7 @@ escolher **poucas** evoluções que resolvam problema real **e** mostrem maturid
 2. Leia, nesta ordem e só o necessário:
    - `planing/checklist-features.md` (o que já está planejado e a data do MVP);
    - `planing/padroes-de-projeto.md` (catálogo: padrões já usados, recomendados e os que **não** usar);
-   - `planing/debitos-tecnicos.md` e `planing/proposta-de-nomes.md`;
+   - `planing/debitos-tecnicos.md` e `planing/decisoes.md`;
    - `planing/decisoes.md` (não sugira o que o time já decidiu não fazer).
 3. Medições rápidas, sem ler o projeto inteiro:
    - setters de estado sensível fora da entidade: `grep -rn "setSaldo\|setAtiva" backend/src/main/java --include=*Service.java`;

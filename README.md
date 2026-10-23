@@ -32,7 +32,7 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 264 testes, 17 rotas REST, 9 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 266 testes, 17 rotas REST, 9 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -54,14 +54,17 @@
 
 | Funcionalidade | Backend | Frontend |
 |---|:---:|:---:|
-| Landing page (benefícios, como funciona, cartão, segurança, FAQ) | — | ✅ |
-| Cadastro com senha e endereço automático pelo CEP (ViaCEP) | ✅ | ✅ |
+| Landing page com o cartão RKF em 3D e a seção do time | — | ✅ |
+| Cadastro com senha, CPF/CEP higienizados e endereço automático pelo CEP (ViaCEP) | ✅ | ✅ |
 | Login com CPF + senha (JWT) e sessão em cookie `httpOnly` | ✅ | ✅ |
 | Abertura de conta corrente ou poupança | ✅ | ✅ |
 | Tela da conta com saldo | ✅ (via `GET /contas`) | ✅ |
-| Depósito, saque e transferência | ✅ | ✅ |
+| Depósito, saque e transferência (uma vez só, com `Idempotency-Key`) | ✅ | ✅ |
 | Extrato | ✅ | ✅ |
-| Perfis `CLIENTE` e `ADMIN` + regra de dono da conta | ✅ | — |
+| Trocar a própria senha | ✅ | ✅ |
+| Meus dados (LGPD): ver, corrigir e encerrar o cadastro | ✅ | ✅ |
+| Perfis `CLIENTE` e `ADMIN`, regra de dono da conta e gestão de usuários | ✅ | — |
+| Erros com `codigo` estável e mensagem para exibir | ✅ | ✅ |
 | Logs rastreáveis por requisição (`X-Request-Id`) | ✅ | ✅ |
 | `GET /contas/{id}` e `GET /clientes/{id}/contas` | ⏳ | — |
 | Política de privacidade e aceite dos termos (LGPD) | ⏳ | ⏳ |
@@ -98,7 +101,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Felipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **264 testes**, CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **266 testes**, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -132,7 +135,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 2. Suba tudo: [rodando o projeto](#-rodando-o-projeto).
 3. Branch nova **sempre** da `origin/develop` atualizada: `git switch -c feature/minha-tarefa origin/develop`.
 4. Antes do PR: `scripts/validar.sh backend` (ou `frontend` / `tudo`).
-5. **Felipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); o resultado vai para o [CHECKLIST_TESTES_E2E.md](backend/CHECKLIST_TESTES_E2E.md).
+5. **Felipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); a conferência automática é `node scripts/rodar-colecao-insomnia.mjs` (91 requisições).
 6. Recados entre o time: [planing/recados.md](planing/recados.md).
 
 </details>
@@ -582,18 +585,20 @@ Contrato completo (com a versão atual e o histórico de mudanças): [backend/RE
 
 ```json
 {
-  "nomeCompleto": "Joao Silva",
-  "cpf": "52998224725",
-  "email": "joao.silva@rkfbank.com",
-  "telefone": "11999998888",
-  "cep": "01001000",
+  "nomeCompleto": "Cliente Novo do Insomnia",
+  "cpf": "529.982.247-25",
+  "email": "cliente.novo@exemplo.test",
+  "telefone": "(11) 99999-8888",
+  "cep": "06020-010",
   "numero": "123",
   "complemento": "Apto 45",
   "senha": "minha-senha-forte"
 }
 ```
 
-Resposta `201`: o cliente com o endereço completo vindo do ViaCEP. A senha **nunca** volta.
+CPF, telefone e CEP podem ir **com máscara**, do jeito que a pessoa digita: a API higieniza (fica só com os dígitos),
+valida o CPF pelos dígitos verificadores e busca logradouro, bairro, cidade e UF no **ViaCEP** (aqui, Osasco/SP).
+Resposta `201`: o cliente com o endereço completo. A senha **nunca** volta.
 
 </details>
 
@@ -627,12 +632,15 @@ CPF sem cadastro e senha errada recebem **a mesma** resposta `401`, de propósit
 // POST /contas (o cliente vem do token; agência e número são gerados pelo banco)
 { "tipoConta": "CORRENTE" }
 
-// POST /contas/{contaId}/depositos  e  /saque
-{ "valor": 150.00, "descricao": "Deposito inicial" }
+// POST /contas/{contaId}/depositos  e  /contas/{contaId}/saques   (header Idempotency-Key obrigatório)
+{ "valor": 150.00, "descricao": "Deposito pelo Insomnia" }
 
-// POST /transferencias
-{ "contaOrigemId": "407d727e-...", "contaDestinoId": "566dd28f-...", "valor": 50.00, "descricao": "Aluguel" }
+// POST /transferencias   (header Idempotency-Key obrigatório)
+{ "contaOrigemId": "407d727e-...", "contaDestinoId": "566dd28f-...", "valor": 25.00, "descricao": "Transferencia pelo Insomnia" }
 ```
+
+A `Idempotency-Key` é um UUID novo **por operação**: repetir o mesmo pedido com a mesma chave (rede caiu, clique
+duplo) responde `204` com `Idempotency-Replayed: true` e não move o dinheiro de novo.
 
 Extrato (`GET /contas/{contaId}/lancamentos`):
 
@@ -660,55 +668,76 @@ O `valor` é sempre positivo: se a conta da tela é o `contaDestinoId`, é entra
 
 ```json
 {
-  "timestamp": "2026-10-12T11:19:54.090042Z",
-  "status": 400,
-  "error": "Bad Request",
-  "message": "Requisicao invalida",
-  "path": "/clientes",
-  "campos": [{ "campo": "cpf", "mensagem": "cpf inválido" }]
+  "timestamp": "2026-10-23T11:19:54.090042Z",
+  "status": 422,
+  "error": "Unprocessable Content",
+  "codigo": "SALDO_INSUFICIENTE",
+  "message": "Saldo insuficiente",
+  "path": "/contas/407d727e-.../saques",
+  "campos": []
 }
 ```
 
-| Status | Quando |
-|---|---|
-| `400` | dados inválidos, JSON mal formado ou parâmetro inválido |
-| `401` | sem token, token inválido ou vencido, ou CPF/senha errados no login |
-| `403` | logado, mas sem permissão (conta de outro cliente, rota de `ADMIN`) |
-| `404` | cliente ou conta não encontrado |
-| `409` | CPF, e-mail ou número de conta repetido, ou conta alterada ao mesmo tempo |
-| `422` | regra de negócio: CEP inexistente, saldo insuficiente, mesma conta na transferência |
-| `503` | ViaCEP fora do ar |
+**Decida pelo `status` e pelo `codigo`; o `message` é só para exibir.** Código e mensagem moram juntos no enum
+[`CodigoErroEnum`](backend/src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java) (a tabela completa está no
+[contrato](backend/README_CONTRATO_API.md#6-erros)).
+
+| Status | Quando | Alguns `codigo` |
+|---|---|---|
+| `400` | dados inválidos, JSON mal formado ou parâmetro inválido | `CAMPOS_INVALIDOS` (+ `campos`), `JSON_INVALIDO` |
+| `401` | sem token, token inválido ou vencido, acesso alterado, CPF/senha errados | `TOKEN_INVALIDO`, `ACESSO_ALTERADO`, `CREDENCIAIS_INVALIDAS` |
+| `403` | logado, mas sem permissão | `CONTA_DE_OUTRO_CLIENTE`, `PERFIL_SEM_PERMISSAO` |
+| `404` | cliente, conta ou usuário não encontrado | `CONTA_NAO_ENCONTRADA` |
+| `409` | dado repetido ou operação simultânea | `CPF_JA_CADASTRADO`, `CONCORRENCIA`, `IDEMPOTENCIA_EM_ANDAMENTO` |
+| `422` | regra de negócio recusou | `SALDO_INSUFICIENTE`, `MESMA_CONTA`, `CEP_NAO_ENCONTRADO`, `SENHA_ATUAL_INCORRETA` |
+| `429` | 5 logins errados seguidos | `MUITAS_TENTATIVAS` (+ `Retry-After`) |
+| `503` | ViaCEP fora do ar | `SERVICO_INDISPONIVEL` |
 
 </details>
 
 <details>
-<summary><b>🧪 Fluxo completo com <code>curl</code></b></summary>
+<summary><b>🧪 Fluxo E2E completo com <code>curl</code> (o mesmo da pasta 02 do Insomnia)</b></summary>
 <br/>
+
+Cada passo tem o **mesmo nome, rota e corpo** da pasta **"02 · Fluxo E2E: cliente novo, do cadastro ao extrato"** da
+[coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json). Com a API no ar (`./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante`):
 
 ```bash
 API=http://localhost:8080
+CPF=529.982.247-25    # com máscara de propósito: a API higieniza
 
-# 1. cadastro (público)
+# 1. Cadastrar cliente (público): CPF, telefone e CEP com máscara; endereço vem do ViaCEP
 curl -X POST $API/clientes -H "Content-Type: application/json" -d '{
-  "nomeCompleto":"Joao Silva","cpf":"52998224725","email":"joao@rkfbank.com",
-  "telefone":"11999998888","cep":"01001000","numero":"123","senha":"minha-senha-forte"}'
+  "nomeCompleto":"Cliente Novo do Insomnia","cpf":"'$CPF'","email":"cliente.novo@exemplo.test",
+  "telefone":"(11) 99999-8888","cep":"06020-010","numero":"123","complemento":"Apto 45","senha":"minha-senha-forte"}'
 
-# 2. login: guarde o token e o clienteId
-curl -X POST $API/auth/login -H "Content-Type: application/json" \
-  -d '{"cpf":"52998224725","senha":"minha-senha-forte"}'
+# 2. Login · cliente novo: guarde o token
+curl -X POST $API/auth/login -H "Content-Type: application/json" -d '{"cpf":"'$CPF'","senha":"minha-senha-forte"}'
 TOKEN=cole-o-token-aqui
+AUTH="Authorization: Bearer $TOKEN"; JSON="Content-Type: application/json"
 
-# 3. conta (no cadastro de quem está logado)
-curl -X POST $API/contas -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" -d '{"tipoConta":"CORRENTE"}'
+# 3. Abrir conta ORIGEM (corrente) e conta DESTINO (poupança): guarde os dois "id"
+curl -X POST $API/contas -H "$AUTH" -H "$JSON" -d '{"tipoConta":"CORRENTE"}'
+curl -X POST $API/contas -H "$AUTH" -H "$JSON" -d '{"tipoConta":"POUPANCA"}'
+ORIGEM=cole-o-id-da-corrente; DESTINO=cole-o-id-da-poupanca
 
-# 4. movimentações e extrato (use o id da conta)
-curl -X POST $API/contas/$CONTA_ID/depositos -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"valor":150.00}'
-curl $API/contas/$CONTA_ID/lancamentos -H "Authorization: Bearer $TOKEN"
+# 4. Depositar 150,00 · sacar 50,00 · transferir 25,00 (cada operação com uma Idempotency-Key nova)
+curl -X POST $API/contas/$ORIGEM/depositos -H "$AUTH" -H "$JSON" -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"valor":150.00,"descricao":"Deposito pelo Insomnia"}'
+curl -X POST $API/contas/$ORIGEM/saques -H "$AUTH" -H "$JSON" -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"valor":50.00,"descricao":"Saque pelo Insomnia"}'
+curl -X POST $API/transferencias -H "$AUTH" -H "$JSON" -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"contaOrigemId":"'$ORIGEM'","contaDestinoId":"'$DESTINO'","valor":25.00,"descricao":"Transferencia pelo Insomnia"}'
+
+# 5. Saldos (ORIGEM 75,00 · DESTINO 25,00) e extratos
+curl $API/contas -H "$AUTH"
+curl $API/contas/$ORIGEM/lancamentos -H "$AUTH"     # 3 lançamentos: transferência, saque, depósito
+curl $API/contas/$DESTINO/lancamentos -H "$AUTH"    # 1 lançamento: a transferência recebida
 ```
 
-CPFs válidos para teste: `52998224725`, `70483726052`, `39053344705`, `11144477735`.
-Ou rode tudo de uma vez com a API no ar: `node scripts/smoke-e2e.mjs`.
+Sem `uuidgen`? Use qualquer texto único de 8 a 100 caracteres (`deposito-001`, `saque-001`...).
+CPF já cadastrado? Troque por outro válido: `70483726052`, `39053344705`, `11144477735`.
+A coleção inteira (91 requisições, com os erros esperados) roda pelo terminal: `node scripts/rodar-colecao-insomnia.mjs`.
 
 </details>
 
@@ -734,7 +763,7 @@ flowchart LR
         C --> S[Services<br/>regra de dono · @Transactional]
         S --> R[Repositories]
         S --> V[Client ViaCEP]
-        C -. erros .-> EH[ExceptionHandler]
+        C -. erros .-> EH[TratadorGlobalDeErros<br/>status + CodigoErroEnum]
     end
 
     R --> DB[(MySQL 8.4<br/>schema pelo Flyway)]
@@ -744,6 +773,64 @@ flowchart LR
 <div align="center">
   <img src="assets/readme/fluxo-transferencia.svg" width="100%" alt="Animação: uma transferência atravessa Next.js, Spring Security, controller, service e MySQL e volta com 204"/>
 </div>
+
+<details>
+<summary><b>🧩 Cada camada, ponto a ponto: o que faz, por que existe e onde está</b> (clique)</summary>
+<br/>
+
+| # | Camada | Papel | Por que importa | No código |
+|:-:|---|---|---|---|
+| 1 | **Filtros** | dão um `X-Request-Id` a cada chamada e registram método, rota, status e tempo | rastrear uma requisição em todos os logs | [`FiltroLogRequisicao`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) |
+| 2 | **Segurança** | valida o JWT, confere no banco se o usuário ainda vale e barra `401`/`403` por perfil | ninguém chega ao controller sem identidade | [`ConfiguracaoSeguranca`](backend/src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java) · [`ConversorTokenUsuario`](backend/src/main/java/com/br/rkfbank/security/ConversorTokenUsuario.java) |
+| 3 | **Controllers** | traduzem HTTP ↔ Java: rota, `@Valid` no DTO, quem está logado (`UsuarioLogado`) e o status de sucesso | a camada web fica fina; regra nenhuma mora aqui | [`controllers/`](backend/src/main/java/com/br/rkfbank/controllers) |
+| 4 | **DTOs** (`record`) | o formato de entrada e saída da API, com as validações de formato | a entidade JPA nunca vaza; o contrato não muda quando o banco muda | [`dto/`](backend/src/main/java/com/br/rkfbank/dto) |
+| 5 | **Services** | a regra de negócio: dono da conta, saldo, conta ativa, idempotência, LGPD; abrem a transação (`@Transactional`) | tudo-ou-nada no dinheiro; testável sem HTTP | [`services/`](backend/src/main/java/com/br/rkfbank/services) |
+| 6 | **Mapeamento** | métodos `paraResponse`/`paraContaResponse` convertem entidade → DTO | só o que a tela usa sai da API (LGPD) | dentro de cada service |
+| 7 | **Repositories** | consultas ao banco pelo Spring Data JPA | o service pede "contas do cliente", não escreve SQL | [`repositories/`](backend/src/main/java/com/br/rkfbank/repositories) |
+| 8 | **Entities** | as tabelas como classes; `Conta` tem `@Version` (lock otimista) | duas operações na mesma conta não se sobrescrevem | [`entities/`](backend/src/main/java/com/br/rkfbank/entities) |
+| 9 | **Clients** | conversam com sistemas de fora (ViaCEP) com timeout | falha externa vira `503`, não `500` | [`ViaCepClient`](backend/src/main/java/com/br/rkfbank/clients/viacep/ViaCepClient.java) |
+| 10 | **Exceções + `CodigoErroEnum`** | o service lança `new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE)`; o enum guarda o código e a mensagem | um lugar só para o texto de cada erro; o front decide pelo `codigo` | [`exceptions/`](backend/src/main/java/com/br/rkfbank/exceptions) |
+| 11 | **Tratador de erros** | escolhe o status HTTP de cada exceção e monta o JSON padrão | todo erro sai no mesmo formato | [`TratadorGlobalDeErros`](backend/src/main/java/com/br/rkfbank/controllers/handlers/TratadorGlobalDeErros.java) |
+| 12 | **Flyway** | cria e evolui o schema (V1 a V9) e carrega as contas de teste | o banco de todo mundo é igual ao de produção | [`db/migration`](backend/src/main/resources/db/migration) |
+
+</details>
+
+<details>
+<summary><b>🛣️ Uma transferência do clique ao banco, passo a passo</b> (clique)</summary>
+<br/>
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant T as Tela (Next.js)
+    participant F as Filtros + Security
+    participant C as ContaController
+    participant I as IdempotenciaService
+    participant S as ContaService
+    participant R as ContaRepository
+    participant DB as MySQL
+    T->>F: POST /transferencias + Bearer + Idempotency-Key
+    F->>F: X-Request-Id, JWT válido? usuário ativo?
+    alt token ausente ou inválido
+        F-->>T: 401 (TOKEN_INVALIDO...)
+    end
+    F->>C: requisição autenticada
+    C->>C: @Valid no TransferenciaRequestDto (400 CAMPOS_INVALIDOS)
+    C->>I: executarUmaVez(chave, assinatura)
+    alt mesma chave e mesmo corpo
+        I-->>T: 204 + Idempotency-Replayed: true (nada se move)
+    end
+    I->>S: transferir(request, usuario)
+    S->>R: busca origem (dona?) e destino (ativa?)
+    S->>S: saldo suficiente? (422 SALDO_INSUFICIENTE)
+    S->>R: debita origem, credita destino, grava lançamento
+    R->>DB: UPDATE + INSERT na mesma transação (@Version)
+    DB-->>T: COMMIT → 204 No Content
+```
+
+Mais diagramas (telas, containers, rastreabilidade tela → tabela, sessão): **[🗺️ Atlas de fluxos](FLUXOS.md)**.
+
+</details>
 
 <details>
 <summary><b>🆚 Antes × depois: decisões que mudaram o projeto</b> (clique em cada uma)</summary>
@@ -1006,7 +1093,7 @@ privado da equipe, fora do repositório. As migrações foram reorganizadas em 2
 | Quero... | Como |
 |---|---|
 | rodar pela IntelliJ | o projeto traz 3 configurações prontas (pasta `.run/`): **API · Visitante (H2)**, **API · Equipe (H2)** e **API · MySQL (Docker)** |
-| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) no Insomnia: 89 requisições em ordem, e o login guarda o token sozinho |
+| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) no Insomnia: 91 requisições em ordem (a pasta 02 é o roteiro E2E completo), e o login guarda o token sozinho |
 | ver as tabelas no H2 | `http://localhost:8080/h2-console` · JDBC URL `jdbc:h2:mem:rkfbank-visitante` (ou `rkfbank-equipe`) · usuário `sa`, senha vazia |
 | ver as tabelas no MySQL | `localhost:5441` com o usuário do `.env` (IntelliJ *Database*, DBeaver) ou `docker exec` no container `rkfbank-mysql` |
 | tornar alguém ADMIN | pelo `.env` (primeiro admin), pela API (`PATCH /admin/usuarios/{id}/perfil`) ou por SQL num banco local |
@@ -1055,7 +1142,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 264 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 266 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1090,7 +1177,7 @@ node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no 
 | `ConsoleH2LigadoTest` / `ConsoleH2DesligadoTest` | console do H2 aberto só nos perfis com H2, sem afrouxar a segurança da API |
 | `*RepositoryTest` | consultas, constraints, cascata, `@Version` e `tb_usuario` (`@DataJpaTest` com as migrações do Flyway) |
 
-Relatório de cobertura: `target/site/jacoco/index.html`. Teste manual de aceite: [roteiro E2E](backend/README_TESTES_E2E.md) + [checklist](backend/CHECKLIST_TESTES_E2E.md).
+Relatório de cobertura: `target/site/jacoco/index.html`. Teste manual de aceite: [roteiro E2E](backend/README_TESTES_E2E.md) + [coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json).
 
 </details>
 
@@ -1469,9 +1556,9 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | Segurança | [Spring Security + OAuth2 + JWT](backend/README_SEGURANCA.md) | como o login, o token, os filtros, a autorização e o cookie do front funcionam, e por que é assim |
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
-| Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou MySQL), ver o banco, permissões, payloads e roteiros; aceite do MVP |
+| Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou MySQL), ver o banco, permissões, payloads e roteiros; aceite do MVP pela coleção |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
-| Planejamento | [planing/](planing/README.md) · [Proposta de nomes](planing/proposta-de-nomes.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e nomes a padronizar |
+| Planejamento | [planing/](planing/README.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e padrões |
 
 <br/>
 

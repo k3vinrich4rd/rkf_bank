@@ -62,15 +62,53 @@ curl -s -i $API/contas/$BRUNO/lancamentos -H "Authorization: Bearer $TOKEN" | he
 - **Ver as tabelas:** abra `http://localhost:8080/h2-console`, troque a JDBC URL para `jdbc:h2:mem:rkfbank-visitante`
   (usuário `sa`, senha vazia) e rode `SELECT numero_conta, saldo FROM tb_conta;` antes e depois da transferência.
 
-## 4. O que tentar depois
+## 🎯 Missão completa: do seu cadastro ao extrato
 
-| Experimento | O que deve acontecer |
-|---|---|
-| Chamar `GET /contas` sem token | `401` |
-| Errar a senha da Ana 5 vezes seguidas | a 6ª tentativa dá `429` (proteção contra força bruta; libera em 15 min ou reiniciando) |
-| Sacar mais do que tem | `422 Saldo insuficiente` |
-| Abrir uma poupança: `POST /contas` com `{"tipoConta":"POUPANCA"}` (a conta nasce no cadastro de quem está logado) | `201` com número de conta **gerado pelo banco** |
-| Trocar uma letra do token | `401`: a assinatura não bate |
+No Insomnia, a pasta **02 · Fluxo E2E** faz o caminho inteiro de um cliente novo, na ordem. Marque conforme for:
+
+- [ ] **Cadastro** com CPF, CEP e telefone **com máscara** (`529.982.247-25`, `06020-010`): a cidade volta **Osasco**, direto do ViaCEP
+- [ ] **Login** com o CPF do cadastro
+- [ ] **Conta ORIGEM** (corrente) e **conta DESTINO** (poupança), as duas com saldo `0.00`
+- [ ] **Depósito** de 150,00, **saque** de 50,00 e **transferência** de 25,00 da origem para o destino
+- [ ] **Saldos** 75,00 e 25,00, e os **extratos** com 3 e 1 lançamentos
+
+Prefere o terminal? O mesmo roteiro, comando por comando, está no [README → API REST](README.md#-api-rest).
+
+## 4. O que tentar depois (adivinhe a resposta antes de abrir)
+
+<details>
+<summary>🔓 Chamar <code>GET /contas</code> sem token</summary>
+
+`401` com `"codigo": "AUTENTICACAO_NECESSARIA"`. Fora o cadastro, o login e o health, toda rota pede o token.
+</details>
+
+<details>
+<summary>🎲 Errar a senha da Ana 5 vezes seguidas</summary>
+
+A 6ª tentativa dá `429` `MUITAS_TENTATIVAS` com o header `Retry-After`, **mesmo com a senha certa** (proteção contra
+força bruta; libera em 15 min ou reiniciando a API).
+</details>
+
+<details>
+<summary>💸 Sacar mais do que tem</summary>
+
+`422` com `"codigo": "SALDO_INSUFICIENTE"`, e o saldo não muda. O front decide pelo `codigo`; o `message` é só para
+exibir.
+</details>
+
+<details>
+<summary>🏦 Abrir uma poupança: <code>POST /contas</code> com <code>{"tipoConta":"POUPANCA"}</code></summary>
+
+`201` com agência `0001` e número de 8 dígitos **gerado pelo banco** (o último é dígito verificador). A conta nasce no
+cadastro de quem está logado: não existe id de cliente na URL para trocar.
+</details>
+
+<details>
+<summary>✂️ Trocar uma letra do token</summary>
+
+`401` `TOKEN_INVALIDO`: a assinatura não bate. Tente também o `node scripts/engenharia-reversa-jwt.mjs`, que tenta
+forjar o token de vários jeitos.
+</details>
 
 Guia completo (rodar pela IDE, H2 ou MySQL, permissões de cada rota, como tornar alguém ADMIN, todos os payloads, os
 roteiros com cada resposta esperada e a explicação de Spring Security, OAuth2 e JWT):

@@ -17,9 +17,8 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 | [README_CONTRATO_API.md](README_CONTRATO_API.md) | **fonte da verdade** de rotas, payloads, regras e erros |
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
 | [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou MySQL), ver o banco (console do H2, MySQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
-| [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia (89 requisições encadeadas: o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
+| [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia (91 requisições encadeadas; a pasta 02 é o roteiro E2E completo e o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
 | `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Felipe, do Renan e do admin, roteiro ponta a ponta completo |
-| [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md) | checklist de validação do MVP com o resultado da última execução |
 
 ---
 
@@ -190,8 +189,8 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | **só documentação** | nada | links e comandos citados continuam funcionando |
 
 **Antes do PR que mexe em regra, rota ou banco:** `./run-test.sh` (**apaga o MySQL local**) → subir a API → `node scripts/smoke-e2e.mjs`
-→ se mudou o comportamento visível, refazer os itens afetados do [roteiro E2E manual](README_TESTES_E2E.md) e atualizar o
-[checklist E2E](CHECKLIST_TESTES_E2E.md).
+→ `node scripts/rodar-colecao-insomnia.mjs` → se mudou o comportamento visível, refazer os itens afetados do
+[roteiro E2E manual](README_TESTES_E2E.md).
 
 > ⚠️ Classe de teste precisa terminar em `Test`, `Tests` ou `TestCase`; senão o Surefire **ignora em silêncio**.
 
@@ -233,8 +232,8 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 > `@DataJpaTest` troca o banco por H2 embutido **em qualquer perfil**; MySQL real para eles é a feature 3 (Testcontainers).
 > Com o perfil padrão (sem `-Dspring.profiles.active=test`), `RkfbankApplicationTests` precisa do MySQL e do `.env` carregado.
 
-Teste manual ponta a ponta: [README_TESTES_E2E.md](README_TESTES_E2E.md) ·
-resultado da última execução: [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md).
+Teste manual ponta a ponta: [README_TESTES_E2E.md](README_TESTES_E2E.md) · conferência automática:
+`node scripts/rodar-colecao-insomnia.mjs` (a coleção inteira contra a API no ar).
 
 **Padrão de nome:** `deve<Resultado>[Quando<Condição>]` — ex.: `deveRetornarEnderecoQuandoViaCepResponderComSucesso`,
 `deveRejeitarPaginacaoComPaginaNegativa`.

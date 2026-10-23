@@ -70,7 +70,7 @@ sequenceDiagram
     participant S as ContaService
     participant R as ContaRepository
     participant L as LancamentoRepository
-    participant H as ExceptionHandler
+    participant H as TratadorGlobalDeErros
 
     F->>C: POST /transferencias {origem, destino, valor}
     Note over C: @Valid no TransferenciaRequestDto<br/>(falhou → 400 com campos)
@@ -103,7 +103,7 @@ public ResponseEntity<ClienteResponseDto> cadastrar(@Valid @RequestBody Cadastro
 ```
 
 - `@Valid` dispara as anotações do DTO **antes** de chegar no service.
-- Listagens aceitam `paginado`, `page` e `size`; a validação de limites (`page >= 0`, `1 <= size <= 100`)
+- Listagens aceitam `page` e `size` (qualquer um deles pede a página); a validação de limites (`page >= 0`, `1 <= size <= 100`)
   fica no próprio controller porque é regra de **HTTP**, não de negócio.
 
 ### 4.2 DTOs — `record` com validação
@@ -134,7 +134,7 @@ public void sacar(UUID contaId, SaqueRequestDto request) {
     BigDecimal valor = validarValor(request.valor()); // > 0, 2 casas
 
     if (conta.getSaldo().compareTo(valor) < 0) {
-        throw new RegraNegocioException("Saldo insuficiente"); // 422
+        throw new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE); // 422
     }
 
     conta.setSaldo(conta.getSaldo().subtract(valor));
@@ -187,9 +187,9 @@ assim, reordenar ou adicionar valores não corrompe dados antigos.
 | Situação | O que acontece | Status final |
 |---|---|---|
 | CEP encontrado | devolve `ViaCepResponseDto` | — |
-| ViaCEP responde `{"erro": true}` (com HTTP 200!) | `RegraNegocioException("CEP não encontrado")` | `422` |
-| ViaCEP responde 5xx | `ServicoExternoIndisponivelException("ViaCEP indisponível")` | `503` |
-| timeout (3 s), DNS, rede | `ServicoExternoIndisponivelException("Falha ao consultar ViaCEP")` | `503` |
+| ViaCEP responde `{"erro": true}` (com HTTP 200!) | `RegraNegocioException(CodigoErroEnum.CEP_NAO_ENCONTRADO)` | `422` |
+| ViaCEP responde 5xx | `ServicoExternoIndisponivelException()` | `503` |
+| timeout (3 s), DNS, rede | `ServicoExternoIndisponivelException(causa)` (a causa vai só para o log) | `503` |
 
 Lição: **serviço externo sempre falha em algum momento.** Timeout configurado + tradução de erro evitam que
 uma API de terceiros derrube a nossa.
@@ -197,7 +197,9 @@ uma API de terceiros derrube a nossa.
 ### 4.7 Tratamento de erros centralizado
 
 [`TratadorGlobalDeErros.java`](src/main/java/com/br/rkfbank/controllers/handlers/TratadorGlobalDeErros.java)
-(`@RestControllerAdvice`) transforma exceções em `ErroResponse`:
+(`@RestControllerAdvice`) transforma exceções em `ErroResponse`. Ele só escolhe o **status**: o `codigo` e a `message`
+vêm do [`CodigoErroEnum`](src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java) que a exceção carrega, então
+nenhuma frase de erro é escrita em service ou controller.
 
 | Exceção | Status | Quando usar ao criar código novo |
 |---|---|---|
@@ -205,14 +207,18 @@ uma API de terceiros derrube a nossa.
 | `HttpMessageNotReadableException` | `400` | automática, JSON inválido |
 | `MethodArgumentTypeMismatchException` | `400` | automática, UUID inválido na URL |
 | `RequisicaoInvalidaException(campo, msg)` | `400` | validação manual que precisa apontar um campo |
-| `ClienteNaoEncontradoException` / `ContaNaoEncontradaException` | `404` | recurso não existe |
-| `ConflitoException(msg)` | `409` | **conflito**: algo já existe (CPF, e-mail, número de conta) |
+| `ClienteNaoEncontradoException` / `ContaNaoEncontradaException` / `UsuarioNaoEncontradoException` | `404` | recurso não existe |
+| `ConflitoException(CodigoErroEnum.X)` | `409` | **conflito**: algo já existe (CPF, e-mail, número de conta) ou chamada simultânea |
 | `OptimisticLockingFailureException` | `409` | automática, concorrência |
-| `RegraNegocioException(msg)` | `422` | **regra de negócio violada** (saldo, conta inativa, CEP) |
-| `ServicoExternoIndisponivelException(msg)` | `503` | dependência externa falhou |
+| `RegraNegocioException(CodigoErroEnum.X)` | `422` | **regra de negócio violada** (saldo, conta inativa, CEP) |
+| `ServicoExternoIndisponivelException()` | `503` | dependência externa falhou |
 
 > 💡 O nome `ConflitoException` engana: ela significa **conflito (409)**, não "qualquer regra de negócio".
 > Para regra violada, use `RegraNegocioException` (422).
+>
+> **Erro novo?** Acrescente uma constante no `CodigoErroEnum` com a mensagem, lance a exceção com ela, documente o
+> código na [seção 6 do contrato](README_CONTRATO_API.md#6-erros) e no tipo `CodigoErro` de `frontend/lib/api/types.ts`.
+> Nunca renomeie um código existente: o front decide por ele.
 
 ### 4.8 Validação customizada `@CpfValido`
 

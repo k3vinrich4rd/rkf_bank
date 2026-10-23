@@ -26,7 +26,7 @@ Resolveu um item? Apague a linha no mesmo PR.
 | 🟢 | O `pom.xml` fixa o H2 em 2.3.232 (o 2.4.240 quebra o `CHECK ... IN` das colunas de enum). | Remover quando o H2 corrigir, ou quando os testes usarem MySQL real (Testcontainers). |
 | 🟢 | O `pom.xml` fica na raiz, mas o código fica em `backend/`. | Mover `pom.xml` e `mvnw` para `backend/`. |
 | 🟢 | O enum de lançamento tem `CREDITO` e `DEBITO`, que não são usados. | Remover ou usar. |
-| 🟢 | Mensagens de erro misturam texto com e sem acento ("nao", "não"). | Padronizar. |
+| 🟢 | As mensagens de validação **por campo** (anotações dos DTOs, ex.: `nomeCompleto e obrigatório`) ainda misturam texto com e sem acento. As mensagens de erro da API já estão padronizadas no `CodigoErroEnum` desde 23/10/2026. | Padronizar os `message` das anotações (ou levá-los para `ValidationMessages.properties`). |
 | 🟢 | Os testes de controller chamam o método direto, sem testar o JSON de verdade. | Usar `MockMvc`. |
 
 ## Frontend

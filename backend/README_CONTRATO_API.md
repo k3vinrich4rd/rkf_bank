@@ -15,7 +15,7 @@ discordarem, um dos dois está errado e precisa ser corrigido.
 |---|---|
 | **Backend** | Kevin |
 | **Frontend** | Renan |
-| **Versão** | 2.6 (22/10/2026) — rotas no padrão de mercado (`POST /contas`, `/depositos`, `/saques`, `/transferencias`, `/usuarios/me/senha`, paginação por `page`/`size`); as antigas continuam funcionando com `Deprecation`; não quebra o frontend (ver [histórico](#8-histórico-de-versões)) |
+| **Versão** | 3.0 (23/10/2026) — só as rotas canônicas (as do contrato 2.x saíram), `tipoConta` no pedido e na resposta, e todo erro com um `codigo` estável; o frontend foi ajustado no mesmo PR (ver [histórico](#8-histórico-de-versões)) |
 
 ---
 
@@ -85,8 +85,8 @@ Depósito, saque e transferência **exigem** o header `Idempotency-Key`: um valo
 |---|---|
 | chave nova | movimenta e responde `204` |
 | **mesma chave e mesmo corpo** (repetição: rede caiu, clique duplo, retry) | `204` com header `Idempotency-Replayed: true` e **nada é movimentado de novo** |
-| mesma chave, corpo diferente (outro valor, conta ou descrição) | `422` `Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao` |
-| duas chamadas iguais ao mesmo tempo | uma movimenta; a outra recebe `409` e, repetida com a mesma chave, vira `204` com `Idempotency-Replayed` |
+| mesma chave, corpo diferente (outro valor, conta ou descrição) | `422` com `codigo` `IDEMPOTENCIA_CHAVE_REUSADA` |
+| duas chamadas iguais ao mesmo tempo | uma movimenta; a outra recebe `409` `IDEMPOTENCIA_EM_ANDAMENTO` e, repetida com a mesma chave, vira `204` com `Idempotency-Replayed` |
 | sem o header ou fora do formato | `400` com `campos[0].campo = "Idempotency-Key"` |
 
 Regra para o front: gere a chave ao enviar o formulário e **reuse a mesma** se o usuário tentar de novo depois de erro
@@ -118,21 +118,9 @@ recusada (ex.: `422` de saldo) não grava a chave.
 | `POST` | `/clientes/me/encerramento` | o titular encerra o cadastro (LGPD) | o próprio cliente | `200` + prazos | [3.6](#36-meus-dados-lgpd) |
 | `GET` | `/actuator/health` | a API está no ar? (`{"status":"UP"}`, sem detalhes) | **público** | `200` | — |
 
-### Rotas obsoletas (funcionam até o contrato 3.0)
-
-A 2.6 trouxe as rotas para o padrão de mercado (substantivo no plural, o "me" do token em vez de um id na URL).
-As antigas **continuam respondendo igual**, para nenhum cliente da API quebrar, e avisam pelos headers padronizados
-`Deprecation: true` ([RFC 9745](https://www.rfc-editor.org/rfc/rfc9745)) e `Link: <rota nova>; rel="successor-version"`
-([RFC 8288](https://www.rfc-editor.org/rfc/rfc8288)). A remoção só acontece num contrato **3.0**, combinado com o frontend.
-
-| Antiga | Use | Por que mudou |
-|---|---|---|
-| `POST /contas/clientes/{clienteId}` | `POST /contas` | o `clienteId` da URL só servia para ser conferido contra o token; vindo do token, não existe "cadastro de outro" |
-| `POST /contas/{contaId}/deposito` | `POST /contas/{contaId}/depositos` | REST: recurso no plural; cada chamada **cria** um depósito |
-| `POST /contas/{contaId}/saque` | `POST /contas/{contaId}/saques` | idem |
-| `POST /contas/transferencia` | `POST /transferencias` | a transferência envolve duas contas: não pertence a uma só |
-| `PATCH /auth/senha` | `PATCH /usuarios/me/senha` | a senha é do **usuário** (cliente ou admin); fica par de `/admin/usuarios/{id}/senha` |
-| `?paginado=true` | `?page=0&size=10` | `page`/`size` já pedem a página (padrão do Spring Data); a flag sobra |
+**Por que as rotas têm esse formato:** recurso no plural (cada `POST /contas/{id}/depositos` *cria* um depósito), a
+transferência fora de `/contas/{id}` (envolve duas contas) e `me` no lugar de um id na URL (o dono vem do token, então
+não existe "conta ou cadastro de outro" para pedir). Rotas que não estão nesta tabela respondem `404`.
 
 > Fora as rotas públicas, **toda chamada sem token válido → `401`**. Token válido, mas recurso de outro
 > cliente ou perfil sem acesso → `403`. O `ADMIN` lista, mas não movimenta conta de ninguém.
@@ -173,8 +161,9 @@ As antigas **continuam respondendo igual**, para nenhum cliente da API quebrar, 
 | `numero` | ✅ | texto (aceita "S/N") |
 | `complemento` | — | até 80 caracteres |
 
-- **Máscaras:** o front envia CPF, telefone e CEP **só com números**. O backend também aceita com máscara —
-  ele remove tudo que não é dígito antes de salvar.
+- **Higienização:** CPF, telefone e CEP podem vir **com ou sem máscara** (`529.982.247-25`, `(11) 99999-8888`,
+  `06020-010`): o backend remove tudo que não é dígito, valida o CPF pelos dígitos verificadores e consulta o ViaCEP
+  com os 8 dígitos. No banco fica só o número.
 - **E-mail:** o backend salva e devolve o e-mail **em minúsculas e sem espaços nas pontas** (`" Joao@X.com "` → `"joao@x.com"`).
   O front pode mostrar o valor da resposta como está; não precisa normalizar antes de enviar.
 - **Endereço:** logradouro, bairro, cidade, UF e IBGE vêm do **ViaCEP**, não do usuário.
@@ -218,7 +207,7 @@ O cadastro **não devolve token**: depois do `201`, chame o [login](#33-login).
 | `GET /clientes?page=0&size=10` | **página** (formato abaixo) |
 
 - `page` começa em `0`; `size` vai de `1` a `100`. Fora disso → `400` com o campo em `campos`.
-- Basta `page` **ou** `size` na URL para a resposta vir paginada (sem eles: array). `paginado=true|false` ainda vale (obsoleto).
+- Basta `page` **ou** `size` na URL para a resposta vir paginada (sem eles: array). O que faltar usa o padrão (`page=0`, `size=10`).
 
 Formato da página (campos que o frontend usa):
 
@@ -267,10 +256,11 @@ São exatamente esses sete campos, nem mais nem menos: a API devolve um DTO pró
 ```
 
 - Envie o token em toda chamada protegida: `Authorization: Bearer <token>`.
-- `clienteId` é o que vai na URL de [abrir conta](#41-abrir-conta). Para o `ADMIN` vem `null`.
+- `clienteId` identifica o cadastro do titular (o front usa para separar as contas dele quando o perfil é `ADMIN`,
+  que recebe todas em `GET /contas`). Para o `ADMIN` criado pelo `.env` vem `null`.
 - Calcule quando o token vence com `expiraEmSegundos` (a partir do momento do login).
 
-**Erros possíveis:** `400` (campo vazio), `401` com `CPF ou senha invalidos`, `429` (5 erros seguidos para o mesmo CPF; ver [limite](#autenticação-jwt)). A mensagem é **a mesma** para CPF sem
+**Erros possíveis:** `400` (campo vazio), `401` `CREDENCIAIS_INVALIDAS`, `429` (5 erros seguidos para o mesmo CPF; ver [limite](#autenticação-jwt)). A mensagem é **a mesma** para CPF sem
 cadastro e senha errada, de propósito: não revela quais CPFs têm conta.
 
 ### 3.4 Gestão de usuários (ADMIN)
@@ -288,15 +278,15 @@ cadastro e senha errada, de propósito: não revela quais CPFs têm conta.
 com `{"ativo":false}` ou `{"ativo":true}` → `200` com o usuário no formato acima.
 
 - `usuarioId` é o `id` da lista (de `tb_usuario`), **não** o `clienteId`.
-- A mudança vale na **próxima requisição**: o token emitido antes dela responde `401`
-  `Seu acesso foi alterado ou desativado; faca login novamente`. Desativado não faz login (`401` `CPF ou senha invalidos`).
+- A mudança vale na **próxima requisição**: o token emitido antes dela responde `401` `ACESSO_ALTERADO`.
+  Desativado não faz login (`401` `CREDENCIAIS_INVALIDAS`, a mesma resposta de senha errada).
 - "Remover" = desativar: usuário não é apagado (o histórico aponta para ele).
 - `PATCH /admin/usuarios/{usuarioId}/senha` com `{"novaSenha":"..."}` (8 a 72) → `204`. Os tokens da pessoa caem na hora. O ADMIN
-  não redefine a própria senha por aqui (`422` `Para trocar a sua propria senha use PATCH /usuarios/me/senha`).
+  não redefine a própria senha por aqui (`422` `PROPRIA_SENHA_PELA_GESTAO`: ele usa `PATCH /usuarios/me/senha`).
 
 **Erros possíveis:** `400` (perfil fora de `CLIENTE`/`ADMIN`, `ativo` ausente, id não é UUID), `401`, `403` (não é ADMIN),
-`404` `Usuario nao encontrado`, `422` `Voce nao pode alterar o seu proprio perfil ou acesso; peca a outro ADMIN` ou
-`Usuario sem cadastro de cliente nao pode virar CLIENTE; desative o acesso`.
+`404` `USUARIO_NAO_ENCONTRADO`, `422` `PROPRIO_ACESSO` (ninguém altera o próprio perfil ou acesso) ou
+`PERFIL_CLIENTE_SEM_CADASTRO` (o ADMIN do `.env` não tem cadastro para virar CLIENTE; desative o acesso).
 
 ### 3.5 Trocar a própria senha
 
@@ -312,17 +302,17 @@ com `{"ativo":false}` ou `{"ativo":true}` → `200` com o usuário no formato ac
 | `novaSenha` | ✅ | 8 a 72 caracteres (até 72 bytes), diferente da atual |
 
 **Resposta `204 No Content`.** Todo token emitido antes da troca, **inclusive o usado nesta chamada**, passa a responder
-`401` `Seu acesso foi alterado ou desativado; faca login novamente`: o front deve mandar para o login.
+`401` `ACESSO_ALTERADO`: o front deve mandar para o login.
 Por dentro: o token leva a claim `versaoCredencial`; a troca sobe a versão no banco e o token antigo deixa de bater.
 
-**Erros possíveis:** `400` (validação; `novaSenha` acima de 72 bytes), `401`, `422` `Senha atual incorreta` ou
-`A nova senha precisa ser diferente da atual`, `429` (senha atual errada conta no mesmo limite do login).
+**Erros possíveis:** `400` (validação; `novaSenha` acima de 72 bytes), `401`, `422` `SENHA_ATUAL_INCORRETA` (marque o
+campo da senha atual) ou `SENHA_REPETIDA` (marque o da nova), `429` (senha atual errada conta no mesmo limite do login).
 
 ### 3.6 Meus dados (LGPD)
 
 Direitos do titular (LGPD, art. 18): **ver**, **corrigir** e **pedir o encerramento** do próprio cadastro. `me` é
 sempre o cliente do token: não existe `/clientes/{id}` de propósito, para nenhum id na URL abrir o cadastro de outra
-pessoa. `ADMIN` criado pelo `.env` não tem cadastro de cliente → `422` `Seu usuario nao tem cadastro de cliente`.
+pessoa. `ADMIN` criado pelo `.env` não tem cadastro de cliente → `422` `SEM_CADASTRO_CLIENTE`.
 
 **`GET /clientes/me`** → `200` no mesmo formato da [3.1](#31-cadastrar-cliente) (o que o banco guarda dele, sem senha).
 
@@ -356,16 +346,15 @@ Corpo vazio (`{}`) → `400` com `campos` = `corpo`. O log registra **quais** ca
 
 | Regra | Erro |
 |---|---|
-| a senha confirma que é o titular | `422` `Senha incorreta` |
-| todas as contas com saldo zero (dinheiro não some: transfira antes) | `422` `Transfira o saldo das suas contas antes de encerrar o cadastro` |
+| a senha confirma que é o titular | `422` `SENHA_INCORRETA` |
+| todas as contas com saldo zero (dinheiro não some: transfira antes) | `422` `SALDO_NAO_ZERADO` |
 
 Na hora: todas as contas viram `ativa = false` (não recebem nem movimentam), o login é desativado e **todo token
-dele passa a dar `401`**; o `ADMIN` não consegue reativar (`422` `O titular encerrou o cadastro; o acesso nao pode ser
-reativado`). O cadastro **não é apagado agora**: a lei de prevenção à lavagem de dinheiro manda guardar por 5 anos
+dele passa a dar `401`**; o `ADMIN` não consegue reativar (`422` `CADASTRO_ENCERRADO`). O cadastro **não é apagado agora**: a lei de prevenção à lavagem de dinheiro manda guardar por 5 anos
 (`LGPD_RETENCAO`, padrão `5y`). Uma rotina diária (03:00, horário de São Paulo) troca nome, CPF, e-mail, telefone,
 endereço e login por valores sem identificação quando o prazo vence; contas, lançamentos e cidade/UF ficam.
 
-**Erros possíveis:** `400` (validação), `401`, `409` `Email ja cadastrado`, `422` (acima), `503` (ViaCEP).
+**Erros possíveis:** `400` (validação), `401`, `409` `EMAIL_JA_CADASTRADO`, `422` (acima), `503` (ViaCEP).
 
 ---
 
@@ -375,20 +364,20 @@ endereço e login por valores sem identificação quando o prazo vence; contas, 
 
 ### 4.1 Abrir conta
 
-`POST /contas` — a conta é aberta **no cadastro do usuário logado** (o cliente vem do token). A rota antiga
-`POST /contas/clientes/{clienteId}` continua funcionando (obsoleta), com o `clienteId` conferido contra o token.
+`POST /contas` — a conta é aberta **no cadastro do usuário logado** (o cliente vem do token).
 
 ```json
 {
-  "tipoContaEnum": "CORRENTE"
+  "tipoConta": "CORRENTE"
 }
 ```
 
 | Campo | Obrigatório | Regra |
 |---|:---:|---|
-| `tipoContaEnum` (ou `tipoConta`) | ✅ | `CORRENTE` ou `POUPANCA`. Desde a 2.6 o pedido aceita o nome `tipoConta`; a resposta segue com `tipoContaEnum` até a 3.0 |
-| `agencia` | — | 4 dígitos. **Omita:** o banco usa `0001` |
-| `numeroConta` | — | 5 a 12 dígitos, único. **Omita:** o banco gera 8 dígitos (7 aleatórios + dígito verificador módulo 11) |
+| `tipoConta` | ✅ | `CORRENTE` ou `POUPANCA` |
+
+Agência e número **não vão no pedido**: a agência é sempre `0001` e o número tem 8 dígitos gerados pelo banco
+(7 aleatórios + dígito verificador módulo 11). Número de conta é identidade do banco, não escolha de quem abre.
 
 **Resposta `201 Created`:**
 
@@ -398,7 +387,7 @@ endereço e login por valores sem identificação quando o prazo vence; contas, 
   "clienteId": "1a89861c-70a0-4b7c-947a-d16cdfe2dd08",
   "agencia": "0001",
   "numeroConta": "12345678",
-  "tipoContaEnum": "CORRENTE",
+  "tipoConta": "CORRENTE",
   "saldo": 0.00,
   "ativa": true
 }
@@ -406,10 +395,10 @@ endereço e login por valores sem identificação quando o prazo vence; contas, 
 
 - Toda conta nasce com **saldo zero** e **ativa**.
 - Um cliente pode ter **mais de uma conta**.
-- Desde a 2.1 o banco gera agência e número; mandar os dois ainda funciona (compatibilidade), mas o front não deve.
 
-**Erros possíveis:** `400` (validação), `401` (sem token), `409` (número de conta já existe), `422` (usuário sem
-cadastro de cliente, como o ADMIN do `.env`). Só na rota antiga: `403` (`clienteId` de outro cliente) e `404`.
+**Erros possíveis:** `400` (`tipoConta` ausente ou fora de `CORRENTE`/`POUPANCA`), `401` (sem token),
+`409` `NUMERO_CONTA_INDISPONIVEL` (raro: 5 sorteios seguidos ocupados; tente de novo), `422` `SEM_CADASTRO_CLIENTE`
+(o ADMIN do `.env`).
 
 ### 4.2 Listar contas
 
@@ -535,7 +524,7 @@ saldo insuficiente).
 | R13 | `GET /clientes` é só do `ADMIN`; em `GET /contas` o `CLIENTE` vê só as dele | `403` |
 | R14 | Senha guardada só como hash BCrypt; nunca volta em resposta nem aparece em log | — |
 | R15 | Cada movimentação acontece **uma vez** por `Idempotency-Key`; repetir a chave não movimenta de novo | `400` sem chave · `422` chave com outro corpo |
-| R16 | Agência e número da conta são definidos pelo banco quando não enviados (`0001` + 8 dígitos com DV) | `409` se não houver número livre |
+| R16 | Agência e número da conta são sempre definidos pelo banco (`0001` + 8 dígitos com DV) | `409` se não houver número livre |
 | R17 | 5 logins errados para o mesmo CPF em 15 min bloqueiam aquele CPF até a janela acabar | `429` |
 | R18 | Conta não é apagada: cliente com conta não pode ser excluído; conta é encerrada (`ativa = false`) | — |
 | R19 | Só `ADMIN` promove, rebaixa, desativa e reativa usuários; ninguém altera o próprio perfil ou acesso | `403` / `422` |
@@ -558,10 +547,11 @@ Todo erro **tratado** volta assim:
 
 ```json
 {
-  "timestamp": "2026-10-12T11:19:54.090042Z",
+  "timestamp": "2026-10-23T11:19:54.090042Z",
   "status": 400,
   "error": "Bad Request",
-  "message": "Requisicao invalida",
+  "codigo": "CAMPOS_INVALIDOS",
+  "message": "Requisição inválida",
   "path": "/clientes",
   "campos": [
     { "campo": "cpf", "mensagem": "cpf inválido" }
@@ -569,52 +559,66 @@ Todo erro **tratado** volta assim:
 }
 ```
 
-- `campos` vem preenchido em erro de validação; nos outros casos vem `[]`.
-- O nome em `campo` é **o mesmo do JSON**, então o front consegue marcar o input certo.
-- **No front, decida pelo `status`.** O `message` serve para exibir ao usuário em `409` e `422`.
+| Campo | Para quê |
+|---|---|
+| `status` | decida primeiro por ele |
+| `codigo` | **identificador estável da causa** (desde a 3.0). Use quando o mesmo status tem causas diferentes, ex.: `409` `IDEMPOTENCIA_EM_ANDAMENTO` × `CONCORRENCIA`, `422` `SENHA_ATUAL_INCORRETA` × `SENHA_REPETIDA`. Código novo pode surgir; um existente não muda de nome |
+| `message` | texto em português para **exibir**. Pode mudar (um acento, uma vírgula) sem aviso: **nunca compare o texto** |
+| `campos` | erros por campo (nome igual ao do JSON, para o front marcar o input). Vem `[]` fora da validação |
 
-### Tabela de status
+No backend, código e mensagem moram juntos no enum
+[`CodigoErroEnum`](src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java): o service lança a exceção com o
+código (`new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE)`) e o
+[`TratadorGlobalDeErros`](src/main/java/com/br/rkfbank/controllers/handlers/TratadorGlobalDeErros.java) só escolhe o
+status. No front, o tipo `CodigoErro` de [`lib/api/types.ts`](../frontend/lib/api/types.ts) espelha o enum e o
+`ApiError` traz `codigo`.
 
-| Status | Quando | `message` (texto real do backend) |
-|---|---|---|
-| `400` | campo inválido no corpo | `Requisicao invalida` (+ `campos`) |
-| `400` | JSON mal formado, tipo errado ou enum desconhecido | `JSON invalido ou tipo de campo incompativel` |
-| `400` | ID da URL não é UUID | `Parametro de URL invalido` (+ `campos`) |
-| `400` | `page`/`size` fora do limite | `Requisicao invalida` (+ `campos`) |
-| `400` | senha acima de 72 bytes (acentos) | `Requisicao invalida` (+ `campos` com `senha`) |
-| `400` | movimentação sem `Idempotency-Key` ou fora do formato | `Requisicao invalida` (+ `campos` com `Idempotency-Key`) |
-| `401` | sem header `Authorization` | `Autenticacao necessaria: envie o token no header Authorization (Bearer)` |
-| `401` | token mal formado, de outra chave ou vencido | `Token invalido ou expirado; faca login novamente` |
-| `401` | token válido, mas o usuário foi desativado, mudou de perfil ou trocou a senha depois do login | `Seu acesso foi alterado ou desativado; faca login novamente` |
-| `401` | login com CPF ou senha errados | `CPF ou senha invalidos` |
-| `403` | conta (ou `clienteId`) de outro cliente | `Conta nao pertence ao usuario logado` / `Voce so pode abrir conta no seu proprio cadastro` |
-| `403` | perfil sem acesso à rota (`CLIENTE` em `GET /clientes`) | `Acesso negado para o seu perfil` |
-| `404` | cliente não existe | `Cliente não encontrado` |
-| `404` | conta não existe | `Conta nao encontrada` |
-| `404` | usuário não existe (gestão) | `Usuario nao encontrado` |
-| `409` | CPF repetido | `CPF ja cadastrado` |
-| `409` | e-mail repetido | `Email ja cadastrado` |
-| `409` | número de conta repetido | `Numero de conta ja existe` |
-| `409` | conflito de concorrência | `A conta foi alterada por outra operacao; tente novamente` |
-| `409` | mesma `Idempotency-Key` em duas chamadas simultâneas | `Esta operacao ja esta sendo processada; repita com a mesma Idempotency-Key para ver o resultado` |
-| `422` | CEP inexistente | `CEP não encontrado` |
-| `422` | conta inativa | `Conta inativa` |
-| `422` | saque sem saldo | `Saldo insuficiente` |
-| `422` | transferência sem saldo | `Saldo insuficiente para transferencia` |
-| `422` | transferência para a mesma conta | `Conta de origem e destino nao podem ser iguais` |
-| `422` | troca de senha com a senha atual errada / nova igual à atual | `Senha atual incorreta` / `A nova senha precisa ser diferente da atual` |
-| `422` | `/clientes/me` ou `POST /contas` com usuário sem cadastro de cliente (ADMIN do `.env`) | `Seu usuario nao tem cadastro de cliente` |
-| `422` | encerramento com senha errada / com saldo | `Senha incorreta` / `Transfira o saldo das suas contas antes de encerrar o cadastro` |
-| `422` | ADMIN tentando reativar quem encerrou | `O titular encerrou o cadastro; o acesso nao pode ser reativado` |
-| `422` | `Idempotency-Key` reaproveitada com outro corpo | `Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao` |
-| `429` | 5 logins errados seguidos para o mesmo CPF | `Muitas tentativas de login; aguarde alguns minutos e tente de novo` (+ header `Retry-After`) |
-| `503` | ViaCEP fora do ar / timeout | `ViaCEP indisponível` ou `Falha ao consultar ViaCEP` |
+### Tabela de códigos
 
-> `401` e `403` também vêm no **formato padrão** (com `campos: []`); o `401` traz ainda o header `WWW-Authenticate: Bearer`.
-> Rota inexistente sem token responde `401` (o filtro de segurança barra antes de saber que a rota não existe).
+| Status | `codigo` | Quando | `message` |
+|---|---|---|---|
+| `400` | `CAMPOS_INVALIDOS` | campo inválido no corpo (Bean Validation), `page`/`size` fora do limite, senha acima de 72 bytes, `Idempotency-Key` ausente ou fora do formato; o detalhe de cada campo vem em `campos` | Requisição inválida |
+| `400` | `JSON_INVALIDO` | JSON mal formado, tipo errado ou enum desconhecido | JSON inválido ou tipo de campo incompatível |
+| `400` | `PARAMETRO_INVALIDO` | id da URL não é UUID (o parâmetro vem em `campos`) | Parâmetro de URL inválido |
+| `401` | `AUTENTICACAO_NECESSARIA` | sem header `Authorization` | Autenticação necessária: envie o token no header Authorization (Bearer) |
+| `401` | `TOKEN_INVALIDO` | token mal formado, de outra chave ou vencido | Token inválido ou expirado; faça login novamente |
+| `401` | `ACESSO_ALTERADO` | token válido, mas o usuário foi desativado, mudou de perfil, trocou a senha ou encerrou o cadastro depois do login | Seu acesso foi alterado ou desativado; faça login novamente |
+| `401` | `CREDENCIAIS_INVALIDAS` | login com CPF ou senha errados (mesma resposta para CPF sem cadastro) | CPF ou senha inválidos |
+| `403` | `PERFIL_SEM_PERMISSAO` | perfil sem acesso à rota (`CLIENTE` em `GET /clientes` ou `/admin/**`) | Acesso negado para o seu perfil |
+| `403` | `CONTA_DE_OUTRO_CLIENTE` | movimentar ou ver o extrato da conta de outro cliente | Conta não pertence ao usuário logado |
+| `404` | `CLIENTE_NAO_ENCONTRADO` | cliente não existe | Cliente não encontrado |
+| `404` | `CONTA_NAO_ENCONTRADA` | conta não existe | Conta não encontrada |
+| `404` | `USUARIO_NAO_ENCONTRADO` | usuário não existe (gestão do ADMIN) | Usuário não encontrado |
+| `409` | `CPF_JA_CADASTRADO` | cadastro com CPF repetido | CPF já cadastrado |
+| `409` | `EMAIL_JA_CADASTRADO` | cadastro ou correção com e-mail de outro cliente | E-mail já cadastrado |
+| `409` | `CADASTRO_DUPLICADO` | dois cadastros iguais ao mesmo tempo (a constraint do banco pegou) | CPF ou e-mail já cadastrado |
+| `409` | `NUMERO_CONTA_INDISPONIVEL` | o banco não achou número livre em 5 sorteios (raro; repetir resolve) | Não foi possível gerar um número de conta livre; tente novamente |
+| `409` | `CONCORRENCIA` | duas operações mexeram na mesma conta ao mesmo tempo (lock otimista); nada foi gravado | A conta foi alterada por outra operação; tente novamente |
+| `409` | `IDEMPOTENCIA_EM_ANDAMENTO` | a mesma `Idempotency-Key` em duas chamadas simultâneas | Esta operação já está sendo processada; repita com a mesma Idempotency-Key para ver o resultado |
+| `422` | `CEP_NAO_ENCONTRADO` | CEP que o ViaCEP não conhece | CEP não encontrado |
+| `422` | `CONTA_INATIVA` | movimentar ou ver o extrato de conta inativa | Conta inativa |
+| `422` | `VALOR_INVALIDO` | valor zero ou negativo que passou da validação | Valor deve ser maior que zero |
+| `422` | `SALDO_INSUFICIENTE` | saque ou transferência maior que o saldo | Saldo insuficiente |
+| `422` | `MESMA_CONTA` | transferência com origem igual ao destino | Conta de origem e destino não podem ser iguais |
+| `422` | `SENHA_ATUAL_INCORRETA` | troca de senha com a senha atual errada | Senha atual incorreta |
+| `422` | `SENHA_REPETIDA` | troca de senha com a nova igual à atual | A nova senha precisa ser diferente da atual |
+| `422` | `SENHA_INCORRETA` | encerramento do cadastro com a senha errada | Senha incorreta |
+| `422` | `SEM_CADASTRO_CLIENTE` | `/clientes/me` ou `POST /contas` com usuário sem cadastro de cliente (ADMIN do `.env`) | Seu usuário não tem cadastro de cliente |
+| `422` | `SALDO_NAO_ZERADO` | encerramento com saldo em alguma conta | Transfira o saldo das suas contas antes de encerrar o cadastro |
+| `422` | `PERFIL_CLIENTE_SEM_CADASTRO` | ADMIN tentando rebaixar a `CLIENTE` quem não tem cadastro | Usuário sem cadastro de cliente não pode virar CLIENTE; desative o acesso |
+| `422` | `CADASTRO_ENCERRADO` | ADMIN tentando reativar quem encerrou o cadastro | O titular encerrou o cadastro; o acesso não pode ser reativado |
+| `422` | `PROPRIA_SENHA_PELA_GESTAO` | ADMIN redefinindo a própria senha pela gestão | Para trocar a sua própria senha use PATCH /usuarios/me/senha |
+| `422` | `PROPRIO_ACESSO` | ADMIN alterando o próprio perfil ou acesso | Você não pode alterar o seu próprio perfil ou acesso; peça a outro ADMIN |
+| `422` | `IDEMPOTENCIA_CHAVE_REUSADA` | `Idempotency-Key` reaproveitada com outro corpo | Idempotency-Key já usada em outra requisição; gere uma chave nova para esta operação |
+| `429` | `MUITAS_TENTATIVAS` | 5 logins errados seguidos para o mesmo CPF (+ header `Retry-After`) | Muitas tentativas de login; aguarde alguns minutos e tente de novo |
+| `503` | `SERVICO_INDISPONIVEL` | ViaCEP fora do ar ou lento (timeout de 3 s) | ViaCEP indisponível; tente novamente em instantes |
+
+> `401` e `403` também vêm no **formato padrão**; o `401` traz ainda o header `WWW-Authenticate: Bearer`.
+> Rota inexistente sem token responde `401` (o filtro de segurança barra antes de saber que a rota não existe);
+> com token, `404`.
 >
-> Erros **não tratados** (bug → `500`, rota inexistente → `404`) vêm no formato padrão do Spring, **sem** `campos`.
-> O `apiRequest` do front já lida com isso (vira `ApiError` com o status HTTP).
+> Erros **não tratados** (bug → `500`, rota inexistente → `404`) vêm no formato padrão do Spring, **sem** `codigo`
+> nem `campos`. O `apiRequest` do front já lida com isso (vira `ApiError` com o status HTTP e `codigo: null`).
 
 ---
 
@@ -636,6 +640,7 @@ Proposta de resposta do `GET /contas/{contaId}`: mesmo formato da [4.1](#41-abri
 
 | Versão | Data | Mudança |
 |---|---|---|
+| 3.0 | 23/10/2026 | **Quebra o frontend (ajustado no mesmo PR).** Saem as rotas do contrato 2.x (`POST /contas/clientes/{id}`, `/contas/{id}/deposito` e `/saque`, `POST /contas/transferencia`, `PATCH /auth/senha`) e o `?paginado`: respondem `404`/são ignorados. `tipoConta` no pedido e na resposta (sai `tipoContaEnum`); `agencia` e `numeroConta` saem do pedido. Todo erro ganha `codigo` (`CodigoErroEnum`) e as mensagens passam a ter acento |
 | 2.6 | 22/10/2026 | Rotas no padrão de mercado: `POST /contas` (cliente do token), `/contas/{id}/depositos` e `/saques`, `POST /transferencias`, `PATCH /usuarios/me/senha`; paginação só com `page`/`size`; pedido de abertura aceita `tipoConta`. As antigas seguem funcionando com `Deprecation` + `Link` até a 3.0. Não quebra o frontend |
 | 2.5 | 22/10/2026 | Direitos do titular (LGPD): `GET /clientes/me`, `PATCH /clientes/me` e `POST /clientes/me/encerramento`; `tb_cliente.encerrado_em` e `anonimizado_em` (V9); rotina diária de anonimização depois de 5 anos (`LGPD_RETENCAO`). Regras R24–R27. Não quebra o frontend |
 | 2.4 | 22/10/2026 | Página (`?paginado=true`) passa a ser um DTO próprio com os mesmos campos de antes (`content`, `totalElements`, `totalPages`, `number`, `size`, `first`, `last`), sem os campos internos do `Page` do Spring. CORS valendo para todas as rotas, com origens em `CORS_ORIGENS`. Não quebra o frontend |

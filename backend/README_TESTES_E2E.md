@@ -1,14 +1,30 @@
-# RKF Bank — Como testar o projeto, do zero
+# RKF Bank — Como testar a API, do zero
 
-> **Para quem é:** qualquer pessoa que queira rodar e testar a API inteira na própria máquina, sem ajuda: visitantes,
-> recrutadores, quem está chegando no projeto. Cada passo diz **o que fazer**, **o que deve aparecer** e **por quê**.
-> Só quer ver funcionando em 5 minutos? [VISITANTES.md](../VISITANTES.md).
->
-> 🔒 A equipe (Kevin, Renan e Felipe) segue este mesmo guia com as contas internas; as senhas delas ficam no guia
-> privado, **fora** do repositório. Aqui aparecem só as **contas de visitante** e valores de teste inventados.
+> **Para quem é:** este guia é **público** (o repositório é público), então serve a qualquer pessoa que queira rodar e
+> testar a **API** na própria máquina, sem ajuda: visitantes, recrutadores, quem está chegando no projeto. Usa só as
+> **contas de visitante** e valores inventados. Cada passo diz **o que fazer**, **o que deve aparecer** e **por quê**.
 
-Respostas reais, capturadas entre 20 e 22/10/2026 (contrato **2.6**). Ao repetir, só mudam `id`s gerados, `dataHora`,
-`timestamp` e o `token`.
+| Quero testar... | Guia |
+|---|---|
+| a **API** (backend), por Insomnia ou terminal | **este guia** |
+| as **telas** do site | [frontend/README_TESTES_E2E.md](../frontend/README_TESTES_E2E.md) |
+| só ver funcionando em 5 minutos | [VISITANTES.md](../VISITANTES.md) |
+| 🔒 sou da equipe (contas internas, ADMIN, MySQL) | repositório privado `.equipe/testes/`: `BACKEND_E2E.md` (só a API), `FRONTEND_E2E.md` (só as telas) e `E2E_COMPLETO.md` (as duas pontas, com checklist de aceite) |
+
+Respostas reais, capturadas entre 20 e 23/10/2026 (contrato **3.0**: só as rotas canônicas e todo erro com `codigo`).
+Ao repetir, só mudam `id`s gerados, `dataHora`, `timestamp` e o `token`.
+
+## ⚡ Caminho rápido (10 minutos)
+
+| # | Faça | Confira |
+|:-:|---|---|
+| 1 | Na raiz do repositório: `./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante` (só precisa do JDK 25) | `curl http://localhost:8080/actuator/health` → `{"status":"UP"}` |
+| 2 | Insomnia → **Import** → `backend/insomnia/rkfbank.insomnia.json` → ambiente **Visitante** ([seção 6](#6-insomnia-importar-a-coleção-e-testar-sem-copiar-e-colar)) | aparece a coleção **RKF Bank API** |
+| 3 | Mande a pasta **02 · Fluxo E2E** de cima para baixo | cada resposta com ✅ na aba **Tests**; o passo a passo comentado é o [roteiro 10.1](#101-cliente-novo-do-cadastro-ao-extrato-f01-a-f10) |
+| 4 | Sem Insomnia? `node scripts/rodar-colecao-insomnia.mjs` | `✅ 64/64 requisições como o esperado` |
+
+Deu tudo certo? Explore os erros de propósito (pastas `04` e `07`, seções 11 e 12) e, para entender o que aconteceu por
+dentro, a [Parte 3](#parte-3--entender-por-dentro).
 
 **Como ler:** a **Parte 1** deixa tudo pronto (rodar, ver o banco, Insomnia, permissões, payloads). A **Parte 2** são
 os roteiros de teste. A **Parte 3** explica o que acontece por dentro. Primeira vez? Faça a Parte 1 na ordem.
@@ -327,7 +343,7 @@ Mudou uma entidade? Crie `V10__descricao.sql` (e rode `/revisar-migracao`). Deta
 
 ## 6. Insomnia: importar a coleção e testar sem copiar e colar
 
-A coleção [`backend/insomnia/rkfbank.insomnia.json`](insomnia/rkfbank.insomnia.json) tem **89 requisições** em 10
+A coleção [`backend/insomnia/rkfbank.insomnia.json`](insomnia/rkfbank.insomnia.json) tem **91 requisições** em 9
 pastas, na ordem de um teste completo. Ninguém copia token nem id: os scripts guardam tudo sozinhos.
 
 ### 6.1 Importar (uma vez)
@@ -358,21 +374,20 @@ Mande as requisições **de cima para baixo**, começando por `00 · Comece aqui
 | Aba **Auth → Bearer** com `{{ _.token_origem }}` | o token que o login guardou: você não cola nada |
 | Aba **Headers** com `Idempotency-Key: {% uuid 'v4' %}` | uma chave nova a cada envio (Parte 3) |
 | Aba **Scripts → After-response** | o código que guarda o token/id e confere o status |
-| Aba **Tests** na resposta | ✅/❌ de cada conferência (`status 204`, `mensagem: Saldo insuficiente`...) |
+| Aba **Tests** na resposta | ✅/❌ de cada conferência (`status 204`, `codigo SALDO_INSUFICIENTE`...) |
 | Ícone ⚙️ do ambiente | os valores guardados até agora (`token_origem`, `novo_cpf`, `conta_nova_id`...) |
 
 | Pasta | O que testa | Depende de |
 |---|---|---|
 | `00` Comece aqui | a API está no ar | — |
 | `01` Login | guarda `token_origem`, `token_destino`, `token_admin` | — |
-| `02` Cliente novo | cadastro com **CPF válido sorteado**, login, abrir corrente e poupança | internet (ViaCEP) |
-| `03` Dinheiro | contas, depósito, saque, transferência, extrato (simples e paginado) | `01` |
+| `02` **Fluxo E2E** | o roteiro principal: cadastro com CPF/CEP/telefone **com máscara** (higienização + ViaCEP), login, conta ORIGEM e DESTINO, depósito, saque, transferência, saldos e extratos | internet (ViaCEP) |
+| `03` Dinheiro entre clientes | as contas prontas do seed (Ana → Bruno ou Felipe → Renan): contas, página, depósito, saque, transferência e extratos | `01` |
 | `04` Idempotência | a mesma chave não movimenta duas vezes | `01` |
 | `05` ADMIN (26) | listar clientes (array e página), todas as contas e os usuários; promover (e ver o token antigo cair e o promovido entrar como ADMIN), rebaixar, desativar, reativar, redefinir senha; **as travas**: mexer em si mesmo, redefinir a própria senha pela gestão, rebaixar o admin do `.env`, perfil/usuário inexistente; e o que o ADMIN **não** faz: abrir conta, `/clientes/me`, movimentar ou ver extrato de cliente | `01` (ADMIN) e `02` |
-| `06` Meus dados (LGPD) | ver e corrigir os próprios dados (telefone, endereço pelo CEP), erros da correção e da troca de senha, trocar senha, encerrar o cadastro (com senha errada, com saldo, de verdade) e o ADMIN não conseguir reativar | `02` |
+| `06` Meus dados (LGPD) | ver e corrigir os próprios dados (telefone, endereço pelo CEP), erros da correção e da troca de senha, trocar senha, zerar as contas e encerrar o cadastro (com senha errada, com saldo, de verdade) e o ADMIN não conseguir reativar | `02` |
 | `07` Erros | `400`, `401` (sem token, token adulterado, senha errada), `403`, `404`, `409` (CPF repetido), `422` (saldo, mesma conta, CEP inexistente): cada proteção funcionando | `01` |
-| `08` Rotas obsoletas | as rotas antigas ainda respondem, com `Deprecation: true` | `01` |
-| `09` CORS | *preflight* de origem permitida (`200`) e de origem estranha (`403`) | — |
+| `08` CORS | *preflight* de origem permitida (`200`) e de origem estranha (`403`) | — |
 
 No ambiente **Visitante**, o login do ADMIN e a pasta `05` dão `401`: é o esperado (o visitante não tem ADMIN). Para
 testá-las, suba o perfil equipe (seção 4.2) e use o ambiente **Equipe**.
@@ -382,8 +397,8 @@ testá-las, suba o perfil equipe (seção 4.2) e use o ambiente **Equipe**.
 Para conferir tudo de uma vez (ou sem abrir o Insomnia), com a API no ar:
 
 ```bash
-node scripts/rodar-colecao-insomnia.mjs                       # ambiente Visitante: 62/62 (pula o ADMIN)
-node scripts/rodar-colecao-insomnia.mjs --ambiente equipe     # precisa do ADMIN no ambiente: 89/89
+node scripts/rodar-colecao-insomnia.mjs                       # ambiente Visitante: 64/64 (pula o ADMIN)
+node scripts/rodar-colecao-insomnia.mjs --ambiente equipe     # precisa do ADMIN no ambiente: 91/91
 node scripts/rodar-colecao-insomnia.mjs --pasta 03            # só uma pasta
 ```
 
@@ -493,16 +508,18 @@ GET /actuator/health
 ```http
 POST /clientes
 {
-  "nomeCompleto": "Joao Silva",
-  "cpf": "52998224725",
-  "email": "joao.silva@rkfbank.com",
-  "telefone": "11999998888",
-  "cep": "01001000",
+  "nomeCompleto": "Cliente Novo do Insomnia",
+  "cpf": "529.982.247-25",
+  "email": "cliente.novo@exemplo.test",
+  "telefone": "(11) 99999-8888",
+  "cep": "06020-010",
   "numero": "123",
   "complemento": "Apto 45",
-  "senha": "senha-forte-1"
+  "senha": "minha-senha-forte"
 }
-→ 201 com o cliente (sem senha). CPF tem que ser válido e único; outros CPFs válidos: 70483726052, 39053344705.
+→ 201 com o cliente (sem senha), endereço de Osasco/SP vindo do ViaCEP.
+  CPF, telefone e CEP podem ir com ou sem máscara: a API guarda só os dígitos.
+  CPF tem que ser válido e único; outros CPFs válidos: 70483726052, 39053344705, 11144477735.
 ```
 
 ```http
@@ -516,10 +533,10 @@ POST /auth/login
 ```http
 POST /contas                                    🔑   abre conta no cadastro do dono do token
 { "tipoConta": "CORRENTE" }                          ou "POUPANCA"; agência e número são gerados
-→ 201 { "id", "clienteId", "agencia": "0001", "numeroConta": "12345678", "tipoContaEnum", "saldo": 0.00, "ativa": true }
+→ 201 { "id", "clienteId", "agencia": "0001", "numeroConta": "12345678", "tipoConta", "saldo": 0.00, "ativa": true }
 
 GET /contas                                     🔑   array · GET /contas?page=0&size=10 → página
-GET /contas/{contaId}/lancamentos               🔑   extrato · ?page=0&size=5 → página
+GET /contas/{contaId}/lancamentos               🔑   extrato (lista inteira, mais recente primeiro)
 ```
 
 ```http
@@ -602,7 +619,40 @@ Invoke-RestMethod -Method Post "$API/contas/$CA/depositos" -Headers (Mov $TA) -C
 
 ---
 
-## 10. Caminho feliz (T01 a T12)
+## 10. Caminhos felizes
+
+### 10.1 Cliente novo, do cadastro ao extrato (F01 a F10)
+
+**O roteiro E2E principal.** É a pasta **02 · Fluxo E2E** do Insomnia, passo a passo, e o
+[fluxo com `curl` do README](../README.md#-api-rest): mesmos nomes, rotas e corpos.
+
+```mermaid
+flowchart LR
+    F1["F01 cadastro<br/>com máscara + ViaCEP"] --> F2["F02 login"]
+    F2 --> F3["F03-F05 ORIGEM e DESTINO<br/>saldo 0,00"]
+    F3 --> F4["F06-F08 +150 · −50 · 25 →"]
+    F4 --> F5["F09-F10 saldos 75/25<br/>e extratos"]
+```
+
+| # | Passo (nome na coleção) | Request | Esperado e **por quê** |
+|---|---|---|---|
+| F01 | Cadastrar cliente (público) | `POST /clientes` com o corpo da seção 9 (CPF `529.982.247-25`, CEP `06020-010`, telefone `(11) 99999-8888`) | `201` · CPF, telefone e CEP formatados na resposta, **cidade Osasco** (veio do ViaCEP), sem senha. Por dentro: a API tirou as máscaras, validou os dígitos verificadores do CPF e consultou o ViaCEP com os 8 dígitos |
+| F02 | Login · cliente novo | `POST /auth/login` `{"cpf":"529.982.247-25","senha":"minha-senha-forte"}` | `200` · `token`, `perfil CLIENTE`, `clienteId` do cadastro. O CPF com máscara também vale aqui |
+| F03 | Abrir conta ORIGEM: corrente | `POST /contas` `{"tipoConta":"CORRENTE"}` (token do F02) | `201` · agência `0001`, número de 8 dígitos com DV, `saldo 0.00`. O dono vem do **token** |
+| F04 | Abrir conta DESTINO: poupança | `POST /contas` `{"tipoConta":"POUPANCA"}` | `201` · outra conta do mesmo cliente |
+| F05 | Minhas contas | `GET /contas` | `200` · **2** contas, as duas com `0.00` |
+| F06 | Depositar R$ 150,00 na ORIGEM | `POST /contas/{origem}/depositos` + chave nova · `{"valor":150.00,"descricao":"Deposito pelo Insomnia"}` | `204` sem corpo |
+| F07 | Sacar R$ 50,00 da ORIGEM | `POST /contas/{origem}/saques` + chave nova · `{"valor":50.00,"descricao":"Saque pelo Insomnia"}` | `204` |
+| F08 | Transferir R$ 25,00 ORIGEM → DESTINO | `POST /transferencias` + chave nova · `{"contaOrigemId":"{origem}","contaDestinoId":"{destino}","valor":25.00,"descricao":"Transferencia pelo Insomnia"}` | `204` · débito e crédito na **mesma transação** |
+| F09 | Saldos | `GET /contas` | ORIGEM `75.00`, DESTINO `25.00` |
+| F10 | Extratos | `GET /contas/{origem}/lancamentos` e `GET /contas/{destino}/lancamentos` | ORIGEM: `TRANSFERENCIA 25` → `SAQUE 50` → `DEPOSITO 150` (mais recente primeiro) · DESTINO: `TRANSFERENCIA 25`, com `contaDestinoId` = destino (entrada) |
+
+Quer provar a idempotência? Repita o F08 com a **mesma** `Idempotency-Key`: `204` com `Idempotency-Replayed: true` e os
+saldos não mudam (pasta `04` da coleção).
+
+### 10.2 Contas prontas: Ana e Bruno (T01 a T12)
+
+É a pasta **03** da coleção, com as contas do seed (no perfil equipe, Felipe e Renan).
 
 ```mermaid
 flowchart LR
@@ -627,7 +677,7 @@ flowchart LR
 | T09 | Bruno vê o dinheiro | `GET /contas` e extrato (token Bruno) | `saldo 700.00`; **um** `TRANSFERENCIA 200.00` |
 | T10 | Extrato da Ana | `GET /contas/{{contaAna}}/lancamentos` | `TRANSFERENCIA 200` → `SAQUE 50` → `DEPOSITO 150` → `DEPOSITO 1000`; soma = **900** |
 | T11 | Poupança com número gerado | `POST /contas` `{"tipoConta":"POUPANCA"}` (o cliente vem do token) | `201` · agência `0001` · número de **8 dígitos** (o último é dígito verificador) · `saldo 0.00` |
-| T12 | Cadastro de cliente novo (público, ViaCEP) | `POST /clientes` sem token (corpo da seção 9) | `201`, CPF/telefone formatados, endereço do ViaCEP, **sem** senha na resposta |
+| T12 | Cadastro de cliente novo (público, ViaCEP) | `POST /clientes` sem token (corpo da seção 9; troque o CPF se já usou no 10.1) | `201`, CPF/telefone formatados, endereço do ViaCEP, **sem** senha na resposta |
 
 Confira no banco (seção 5): depois da T10, `SELECT` em `tb_conta` mostra `900.00` e `700.00`, e `tb_lancamento` tem
 os quatro lançamentos da Ana. Respostas reais de referência:
@@ -640,7 +690,7 @@ T07 → HTTP/1.1 204
 
 ```json
 // T11
-{"id":"4d7532a3-...","clienteId":"a0000000-0000-4000-8000-000000000112","agencia":"0001","numeroConta":"95143998","tipoContaEnum":"POUPANCA","saldo":0.00,"ativa":true}
+{"id":"4d7532a3-...","clienteId":"a0000000-0000-4000-8000-000000000112","agencia":"0001","numeroConta":"95143998","tipoConta":"POUPANCA","saldo":0.00,"ativa":true}
 ```
 
 No Git Bash:
@@ -660,19 +710,19 @@ curl -s $API/contas -H "$AA"; echo; curl -s $API/contas -H "$AB"; echo
 
 | # | Cenário | Como provocar | Esperado |
 |---|---|---|---|
-| S01 | Sem token | `curl -i $API/contas` | `401` · `Autenticacao necessaria: envie o token no header Authorization (Bearer)` |
-| S02 | Senha errada | login da Ana com `"senha":"errada123"` | `401` · `CPF ou senha invalidos` |
+| S01 | Sem token | `curl -i $API/contas` | `401` · `AUTENTICACAO_NECESSARIA` |
+| S02 | Senha errada | login da Ana com `"senha":"errada123"` | `401` · `CREDENCIAIS_INVALIDAS` |
 | S03 | CPF sem cadastro | login com `39053344705` | `401` com a **mesma** mensagem do S02 |
-| S04 | Token que não é JWT | `Authorization: Bearer isso-nao-e-um-jwt` | `401` · `Token invalido ou expirado; faca login novamente` |
+| S04 | Token que não é JWT | `Authorization: Bearer isso-nao-e-um-jwt` | `401` · `TOKEN_INVALIDO` |
 | S05 | Token adulterado | troque uma letra do meio do token | `401` · mesma do S04 |
 | S06 | Token de outra execução | faça login, **reinicie** a API e use o token antigo | `401`: o segredo foi sorteado de novo (visitante) |
-| S07 | Bruno saca da conta da Ana | `POST /contas/{{contaAna}}/saques` + chave, token Bruno | `403` · `Conta nao pertence ao usuario logado` |
+| S07 | Bruno saca da conta da Ana | `POST /contas/{{contaAna}}/saques` + chave, token Bruno | `403` · `CONTA_DE_OUTRO_CLIENTE` |
 | S08 | Bruno vê o extrato da Ana | `GET /contas/{{contaAna}}/lancamentos`, token Bruno | `403` |
 | S09 | Bruno transfere saindo da Ana | transferência com origem = conta da Ana, token Bruno | `403` |
-| S10 | Ana abre conta no cadastro do Bruno (pela rota **obsoleta**, a única que aceita outro cadastro na URL) | `POST /contas/clientes/{{clienteBruno}}`, token Ana | `403` · `Voce so pode abrir conta no seu proprio cadastro` |
-| S11 | Cliente lista clientes | `GET /clientes`, token Ana | `403` · `Acesso negado para o seu perfil` |
+| S10 | Ana tenta abrir conta "no cadastro do Bruno" | não há rota para isso: `POST /contas` só leva `tipoConta` e o dono vem do token | a conta nasce no cadastro da **Ana** (`clienteId …112`): não existe id na URL para trocar |
+| S11 | Cliente lista clientes | `GET /clientes`, token Ana | `403` · `PERFIL_SEM_PERMISSAO` |
 | S12 | Força bruta | 5 logins errados para o Bruno, depois a senha **certa** | 5 × `401`, depois `429` com `Retry-After` (≈900 s) **mesmo com a senha certa** |
-| S13 | Trocar a própria senha | `PATCH /usuarios/me/senha` (token da Ana) com `{"senhaAtual":"Visitante@2026","novaSenha":"senha-nova-da-ana"}`, depois use o token antigo | `204`; token antigo → `401` `Seu acesso foi alterado ou desativado; faca login novamente`; login com a nova → `200` (reinicie a API para voltar à senha pública) |
+| S13 | Trocar a própria senha | `PATCH /usuarios/me/senha` (token da Ana) com `{"senhaAtual":"Visitante@2026","novaSenha":"senha-nova-da-ana"}`, depois use o token antigo | `204`; token antigo → `401` `ACESSO_ALTERADO`; login com a nova → `200` (reinicie a API para voltar à senha pública) |
 
 Por que S02 e S03 respondem igual: senão daria para descobrir quem é cliente testando CPFs. Por que S07 é `403` e não
 `404`: o dono é conferido antes de qualquer coisa que revele o estado da conta. Rode o S12 por último (ou reinicie a
@@ -684,71 +734,46 @@ API depois): o Bruno fica 15 min sem entrar.
 
 Token da Ana e conta dela, salvo quando dito; toda movimentação com `Idempotency-Key` nova.
 
-| # | Cenário | Request | Esperado (`status` · `message` · `campos`) |
+| # | Cenário | Request | Esperado (`status` · `codigo` · `campos`) |
 |---|---|---|---|
 | E01 | CPF inválido | T12 com `"cpf":"12345678900"` | `400` · `cpf: cpf inválido` |
 | E02 | Campo vazio | T12 com CPF novo e `"nomeCompleto":""` | `400` · `nomeCompleto: nomeCompleto e obrigatório` |
-| E03 | CPF repetido | T12 com `"cpf":"24681357928"` | `409` · `CPF ja cadastrado` |
-| E04 | E-mail repetido | CPF novo, `"email":"ana.visitante@exemplo.test"` | `409` · `Email ja cadastrado` |
+| E03 | CPF repetido | T12 com `"cpf":"24681357928"` | `409` · `CPF_JA_CADASTRADO` |
+| E04 | E-mail repetido | CPF novo, `"email":"ana.visitante@exemplo.test"` | `409` · `EMAIL_JA_CADASTRADO` |
 | E05 | CEP inexistente | `"cep":"99999999"` | `422` · `CEP não encontrado` |
-| E06 | Cliente inexistente | `POST /contas/clientes/00000000-0000-0000-0000-000000000000` | `403` (regra de dono antes do `404`) |
-| E07 | Número de conta repetido | T11 com `"numeroConta":"900002"` | `409` · `Numero de conta ja existe` |
-| E08 | Agência inválida | T11 com `"agencia":"1"` | `400` · `agencia: agencia deve ter 4 digitos` |
-| E09 | Tipo inválido | `{"tipoContaEnum":"SALARIO"}` | `400` · `JSON invalido ou tipo de campo incompativel` |
+| E06 | Abrir conta sem o tipo | `POST /contas` `{}` | `400` · `CAMPOS_INVALIDOS` · `tipoConta: tipoConta e obrigatorio e deve ser CORRENTE ou POUPANCA` |
+| E07 | Nome de campo antigo | `POST /contas` `{"tipoContaEnum":"POUPANCA"}` | `400` · `CAMPOS_INVALIDOS` (`tipoConta` ausente): o nome do contrato 2.x saiu na 3.0 |
+| E08 | Transferir para conta inexistente | T06 com `contaDestinoId` = `00000000-0000-4000-8000-000000000000` | `404` · `CONTA_NAO_ENCONTRADA` |
+| E09 | Tipo inválido | `{"tipoConta":"SALARIO"}` | `400` · `JSON_INVALIDO` |
 | E10 | Valor zero | depósito `{"valor":0}` | `400` · `valor: valor deve ser maior que zero` |
 | E11 | Três casas | depósito `{"valor":10.555}` | `400` · `valor: valor deve ter no maximo 2 casas decimais` |
-| E12 | Saldo insuficiente (saque) | `{"valor":999999.00}` | `422` · `Saldo insuficiente` |
-| E13 | Saldo insuficiente (transferência) | T06 com `999999.00` | `422` · `Saldo insuficiente para transferencia` |
-| E14 | Mesma conta | T06 com destino = conta da Ana | `422` · `Conta de origem e destino nao podem ser iguais` |
-| E15 | Conta inexistente | depósito em `00000000-0000-0000-0000-000000000000` | `404` · `Conta nao encontrada` |
+| E12 | Saldo insuficiente (saque) | `{"valor":999999.00}` | `422` · `SALDO_INSUFICIENTE` |
+| E13 | Saldo insuficiente (transferência) | T06 com `999999.00` | `422` · `SALDO_INSUFICIENTE` |
+| E14 | Mesma conta | T06 com destino = conta da Ana | `422` · `MESMA_CONTA` |
+| E15 | Conta inexistente | depósito em `00000000-0000-0000-0000-000000000000` | `404` · `CONTA_NAO_ENCONTRADA` |
 | E16 | Id inválido | `GET /contas/abc/lancamentos` | `400` · `contaId: Tipo invalido para o parametro contaId` |
 | E17 | Paginação inválida | `GET /contas?size=0` | `400` · `size: deve estar entre 1 e 100` |
-| E18 | JSON quebrado | corpo `{ "valor": ` | `400` · `JSON invalido ou tipo de campo incompativel` |
+| E18 | JSON quebrado | corpo `{ "valor": ` | `400` · `JSON_INVALIDO` |
 | E19 | Sem `Idempotency-Key` | depósito sem o header | `400` · `Idempotency-Key: header Idempotency-Key e obrigatorio nas movimentacoes (gere um UUID novo por operacao)` |
-| E20 | Chave reaproveitada com outro valor | repita a chave da T06 com `"valor":999.00` | `422` · `Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao` |
+| E20 | Chave reaproveitada com outro valor | repita a chave da T06 com `"valor":999.00` | `422` · `IDEMPOTENCIA_CHAVE_REUSADA` |
 
 Depois de E10–E20, o saldo da Ana **não muda** (confira no banco). Mapa de status: `400` entrada · `401` identidade ·
 `403` permissão · `404` não existe · `409` conflito · `422` regra · `429` tentativas demais · `503` ViaCEP fora.
 
 ---
 
-## 13. Rotas novas, rotas obsoletas, paginação e CORS (contrato 2.6)
+## 13. Paginação e CORS
 
-O contrato 2.6 trouxe as rotas para o padrão de mercado. As antigas **continuam funcionando** (ninguém quebra) e avisam
-pelos headers `Deprecation: true` (RFC 9745) e `Link: <rota nova>; rel="successor-version"` (RFC 8288). Saem só num
-contrato 3.0.
-
-| Antiga | Nova |
-|---|---|
-| `POST /contas/clientes/{clienteId}` | `POST /contas` (o cliente vem do token) |
-| `POST /contas/{contaId}/deposito` · `/saque` | `POST /contas/{contaId}/depositos` · `/saques` |
-| `POST /contas/transferencia` | `POST /transferencias` |
-| `PATCH /auth/senha` | `PATCH /usuarios/me/senha` |
-| `?paginado=true&page=0&size=10` | `?page=0&size=10` |
-
-### Rotas obsoletas (R01 a R05)
-
-```bash
-curl -s -D - -o /dev/null -X POST $API/contas/$CA/deposito -H "$H" -H "$AA" -H "$(chave)" -d '{"valor":5.00}' | grep -iE "^HTTP|^deprecation|^link"
-```
-
-| # | Rota antiga | Esperado |
-|---|---|---|
-| R01 | `POST /contas/{contaAna}/deposito` | `204` · `Deprecation: true` · `Link: </contas/{contaAna}/depositos>; rel="successor-version"` |
-| R02 | `POST /contas/{contaAna}/saque` | `204` · `Link: </contas/{contaAna}/saques>; ...` |
-| R03 | `POST /contas/transferencia` | `204` · `Link: </transferencias>; ...` |
-| R04 | `POST /contas/clientes/{clienteAna}` `{"tipoContaEnum":"POUPANCA"}` | `201` · `Link: </contas>; ...` |
-| R05 | a **nova** `POST /contas/{contaAna}/depositos` | `204` **sem** `Deprecation` |
-
-Por que assim: quem consome a API (o front, um app, um parceiro) não quebra no dia da mudança; ferramentas e o próprio
-front conseguem detectar o header e migrar com calma. É como as APIs públicas grandes evoluem.
+Desde o contrato 3.0 só existem as rotas canônicas (tabela da [seção 7](#7-autenticação-e-permissões-quem-pode-o-quê));
+as do contrato 2.x (`/deposito`, `/saque`, `/contas/transferencia`, `/contas/clientes/{id}`, `/auth/senha`) respondem
+`404` e não movem dinheiro (`RotasContratoIntegracaoTest`).
 
 ### Paginação (P01 a P03)
 
 | # | Chamada | Esperado |
 |---|---|---|
 | P01 | `GET /contas?page=0&size=1` (token Ana, depois da T11) | `{"content":[...],"totalElements":2,"totalPages":2,"number":0,"size":1,"first":true,"last":false}`: **só** esses 7 campos |
-| P02 | `GET /contas?paginado=true` (forma antiga) | página com `"size":10` (o padrão) |
+| P02 | `GET /contas?page=0` (só o `page`) | página com `"size":10` (o padrão) |
 | P03 | `GET /contas` (sem nada) | **array** simples, sem paginação |
 
 Basta `page` **ou** `size` na URL para vir a página. O formato é um DTO próprio (`PaginaResponse`), e não o `Page` do
@@ -808,27 +833,27 @@ O João é cadastrado no A02; os ids `<joao>` e `<admin>` saem da lista do A06.
 | A01 | Login do admin | `POST /auth/login` `{"cpf":"11144477735","senha":"admin-local-123"}` | `200` · `perfil ADMIN` · `clienteId null` (admin não é cliente) |
 | A02 | Cadastrar o João (público) | `POST /clientes` com o corpo da seção 9 | `201` |
 | A03 | Login do João | `{"cpf":"52998224725","senha":"senha-forte-1"}` | `200` · `perfil CLIENTE` |
-| A04 | João lista clientes | `GET /clientes` (token João) | `403` · `Acesso negado para o seu perfil` |
+| A04 | João lista clientes | `GET /clientes` (token João) | `403` · `PERFIL_SEM_PERMISSAO` |
 | A05 | João entra na gestão | `GET /admin/usuarios` (token João) | `403` · mesma mensagem |
 | A06 | **Validar os usuários** | `GET /admin/usuarios` (token admin) | `200`: lista com `id`, `cpf` **mascarado** (`***.982.247-**`), `nome`, `perfil`, `ativo`, `clienteId`; nunca senha nem hash |
 | A07 | **Promover o João** | `PATCH /admin/usuarios/<joao>/perfil` `{"perfil":"ADMIN"}` | `200` · `perfil ADMIN` |
-| A08 | Token antigo do João | `GET /contas` (token do A03) | `401` · `Seu acesso foi alterado ou desativado; faca login novamente` |
+| A08 | Token antigo do João | `GET /contas` (token do A03) | `401` · `ACESSO_ALTERADO` |
 | A09 | João entra de novo | login + `GET /clientes` | `200` · `perfil ADMIN` (e continua dono da própria conta) |
-| A10 | Admin mexe em si mesmo | `PATCH /admin/usuarios/<admin>/perfil` `{"perfil":"CLIENTE"}` (token admin) | `422` · `Voce nao pode alterar o seu proprio perfil ou acesso; peca a outro ADMIN` |
-| A11 | João (agora ADMIN) rebaixa o admin do `.env` | mesma rota, token João | `422` · `Usuario sem cadastro de cliente nao pode virar CLIENTE; desative o acesso` |
+| A10 | Admin mexe em si mesmo | `PATCH /admin/usuarios/<admin>/perfil` `{"perfil":"CLIENTE"}` (token admin) | `422` · `PROPRIO_ACESSO` |
+| A11 | João (agora ADMIN) rebaixa o admin do `.env` | mesma rota, token João | `422` · `PERFIL_CLIENTE_SEM_CADASTRO` |
 | A12 | Rebaixar o João | `PATCH /admin/usuarios/<joao>/perfil` `{"perfil":"CLIENTE"}` | `200`; o token de ADMIN dele → `401`; novo login → `CLIENTE` |
-| A13 | **Desativar** o João | `PATCH /admin/usuarios/<joao>/acesso` `{"ativo":false}` | `200` · `ativo false`; token dele → `401`; login → `401` `CPF ou senha invalidos` |
+| A13 | **Desativar** o João | `PATCH /admin/usuarios/<joao>/acesso` `{"ativo":false}` | `200` · `ativo false`; token dele → `401`; login → `401` `CREDENCIAIS_INVALIDAS` |
 | A14 | Reativar | `{"ativo":true}` | `200`; login volta a funcionar |
 | A15 | **Redefinir a senha** de quem esqueceu | `PATCH /admin/usuarios/<joao>/senha` `{"novaSenha":"senha-temporaria-1"}` | `204`; token dele → `401`; senha velha → `401`; temporária → `200` |
 | A16 | João troca a temporária pela dele | `PATCH /usuarios/me/senha` `{"senhaAtual":"senha-temporaria-1","novaSenha":"senha-nova-do-joao"}` | `204` |
-| A17 | Admin redefine a **própria** senha pela gestão | `PATCH /admin/usuarios/<admin>/senha` | `422` · `Para trocar a sua propria senha use PATCH /usuarios/me/senha` |
-| A18 | Perfil que não existe | `{"perfil":"GERENTE"}` | `400` · `JSON invalido ou tipo de campo incompativel` |
-| A19 | Usuário que não existe | `PATCH /admin/usuarios/00000000-0000-0000-0000-000000000000/perfil` | `404` · `Usuario nao encontrado` |
+| A17 | Admin redefine a **própria** senha pela gestão | `PATCH /admin/usuarios/<admin>/senha` | `422` · `PROPRIA_SENHA_PELA_GESTAO` |
+| A18 | Perfil que não existe | `{"perfil":"GERENTE"}` | `400` · `JSON_INVALIDO` |
+| A19 | Usuário que não existe | `PATCH /admin/usuarios/00000000-0000-0000-0000-000000000000/perfil` | `404` · `USUARIO_NAO_ENCONTRADO` |
 | A20 | Sem o campo | `PATCH .../acesso` `{}` | `400` · `ativo: ativo e obrigatorio (true ou false)` |
 | A21 | Gestão sem token | `GET /admin/usuarios` | `401` |
 | A22 | Admin vê todas as contas | `GET /contas` (token admin) | `200` com as contas de todos (mas não movimenta nenhuma: `403`) |
 | A23 | Senha curta na redefinição | `{"novaSenha":"curta"}` | `400` · `novaSenha: novaSenha deve ter entre 8 e 72 caracteres` |
-| A24 | Admin tenta abrir conta | `POST /contas` `{"tipoConta":"CORRENTE"}` (token admin) | `422` · `Seu usuario nao tem cadastro de cliente` (o admin do `.env` não é cliente) |
+| A24 | Admin tenta abrir conta | `POST /contas` `{"tipoConta":"CORRENTE"}` (token admin) | `422` · `SEM_CADASTRO_CLIENTE` (o admin do `.env` não é cliente) |
 
 No Git Bash, o atalho para pegar o id do João:
 
@@ -871,14 +896,14 @@ dito. No Insomnia, a pasta `06` faz o encerramento num cliente novo, sem estraga
 | L03 | Mudar de endereço | `PATCH /clientes/me` `{"cep":"01001000","numero":"10"}` | `200`; endereço vindo do ViaCEP, número `10` |
 | L04 | CEP sem número | `{"cep":"01001000"}` | `400` · `numero: numero e obrigatorio quando o cep muda` |
 | L05 | Corpo vazio | `{}` | `400` · `corpo: envie pelo menos um campo para corrigir` |
-| L06 | E-mail de outra pessoa | `{"email":"bruno.visitante@exemplo.test"}` | `409` · `Email ja cadastrado` |
-| L07 | Encerrar com senha errada | `POST /clientes/me/encerramento` `{"senha":"errada123"}` | `422` · `Senha incorreta` |
-| L08 | Encerrar com saldo | `{"senha":"Visitante@2026"}` | `422` · `Transfira o saldo das suas contas antes de encerrar o cadastro` |
+| L06 | E-mail de outra pessoa | `{"email":"bruno.visitante@exemplo.test"}` | `409` · `EMAIL_JA_CADASTRADO` |
+| L07 | Encerrar com senha errada | `POST /clientes/me/encerramento` `{"senha":"errada123"}` | `422` · `SENHA_INCORRETA` |
+| L08 | Encerrar com saldo | `{"senha":"Visitante@2026"}` | `422` · `SALDO_NAO_ZERADO` |
 | L09 | Zerar o saldo | transferência de todo o saldo da Ana para o Bruno (+ chave nova) | `204` |
 | L10 | Encerrar | `{"senha":"Visitante@2026"}` | `200` com `encerradoEm`, `anonimizacaoPrevistaPara` (+5 anos) e `motivoDaRetencao` |
-| L11 | Token antigo | `GET /clientes/me` | `401` · `Seu acesso foi alterado ou desativado; faca login novamente` |
-| L12 | Login de novo | `POST /auth/login` da Ana | `401` · `CPF ou senha invalidos` |
-| L13 | Bruno manda dinheiro para a conta encerrada | transferência Bruno → Ana | `422` · `Conta inativa` |
+| L11 | Token antigo | `GET /clientes/me` | `401` · `ACESSO_ALTERADO` |
+| L12 | Login de novo | `POST /auth/login` da Ana | `401` · `CREDENCIAIS_INVALIDAS` |
+| L13 | Bruno manda dinheiro para a conta encerrada | transferência Bruno → Ana | `422` · `CONTA_INATIVA` |
 
 O que o log mostra: `Cliente <id> corrigiu o cadastro (campos=[telefone, email])` e `Cliente <id> encerrou o cadastro`;
 **nunca** os valores. No banco: `tb_conta.ativa = false`, `tb_usuario.ativo = false` e o cadastro continua lá até a
@@ -917,7 +942,7 @@ vem da requisição) e o `%enc{%m}{CRLF}` do `log4j2-spring.xml`.
 | ☐ | Repetir a transferência **não** debita duas vezes | T07 |
 | ☐ | Extrato soma igual ao saldo | T10 |
 | ☐ | S01–S13 e E01–E20 com o status esperado | 11, 12 |
-| ☐ | Rotas antigas funcionam com `Deprecation` + `Link`; paginação por `page`/`size`; CORS só para a origem permitida | 13 |
+| ☐ | Paginação por `page`/`size`; CORS só para a origem permitida; rotas do contrato 2.x respondem `404` | 13 |
 | ☐ | Tornei alguém ADMIN pela API e pelo banco; token antigo caiu na hora | 8, 14 |
 | ☐ | Vi, corrigi e encerrei um cadastro | 15 |
 | ☐ | Sei dizer em qual camada cada cenário foi barrado | 19 |
