@@ -4,12 +4,13 @@
 //   node scripts/rodar-colecao-insomnia.mjs                                   → ambiente Visitante, coleção pública
 //   node scripts/rodar-colecao-insomnia.mjs --ambiente equipe --arquivo .equipe/testes/rkfbank-equipe.insomnia.json
 //   ... --base-url http://localhost:8081    (outra porta)    ... --pasta 03   (só as pastas que começam com "03")
+//   ... --registrar saida.json   (grava cada pedido e resposta reais, com tokens cortados: base dos roteiros E2E)
 //
 // Imita só o que a coleção usa do Insomnia: {{ _.variavel }}, {% uuid 'v4' %}, Auth Bearer e, nos scripts,
 // insomnia.environment.get/set, insomnia.response.code/json()/headers.get, insomnia.test e insomnia.expect
 // (to.equal, to.include, to.be.ok, to.be.an, to.be.above). Sai com código 1 se algum teste falhar.
 
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 
 const args = process.argv.slice(2);
@@ -30,12 +31,17 @@ const renderizar = (texto) =>
     .replace(/\{%\s*uuid\s+'v4'\s*%\}/g, () => randomUUID())
     .replace(/\{\{\s*_\.(\w+)\s*\}\}/g, (_, nome) => env[nome] ?? "");
 
+// O pedaço do chai que os scripts da coleção usam (o Insomnia de verdade traz o chai inteiro).
 function expect(atual) {
   const falha = (msg) => { throw new Error(msg); };
+  const naoIgual = (esperado) => atual !== esperado || falha(`esperado diferente de ${JSON.stringify(esperado)}`);
   return {
     to: {
       equal: (esperado) => atual === esperado || falha(`esperado ${JSON.stringify(esperado)}, veio ${JSON.stringify(atual)}`),
       include: (trecho) => String(atual).includes(trecho) || falha(`"${atual}" não contém "${trecho}"`),
+      match: (regex) => regex.test(String(atual)) || falha(`"${atual}" não casa com ${regex}`),
+      not: { equal: naoIgual },
+      have: { length: (n) => atual?.length === n || falha(`esperado tamanho ${n}, veio ${atual?.length}`) },
       be: {
         get ok() { return atual || falha(`esperado valor, veio ${JSON.stringify(atual)}`); },
         an: (tipo) => (tipo === "array" ? Array.isArray(atual) : typeof atual === tipo) || falha(`não é ${tipo}`),
@@ -66,6 +72,13 @@ const pastas = recursos.filter((r) => r._type === "request_group").sort((a, b) =
 let falhas = 0;
 const semAdmin = !env.admin_cpf || env.admin_cpf.startsWith("COLE_AQUI");
 let total = 0;
+// --registrar saida.json: grava cada pedido e resposta (base dos roteiros E2E). Tokens saem cortados, nunca inteiros.
+const REGISTRAR = opcao("--registrar", null);
+const registro = [];
+const cortarTokens = (texto) =>
+  String(texto ?? "")
+    .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+/g, "eyJhbGciOiJIUzI1NiJ9...")
+    .replace(/("refreshToken"\s*:\s*")[^"]{12,}"/g, '$1q3Jd0kX4..."');
 
 for (const pasta of pastas) {
   if (PASTA && !pasta.name.startsWith(PASTA)) continue;
@@ -95,9 +108,17 @@ for (const pasta of pastas) {
     total += 1;
     falhas += ruins.length ? 1 : 0;
     console.log(`  ${ruins.length ? "❌" : "✅"} ${resposta.status} ${r.name}`);
+    if (REGISTRAR) {
+      registro.push({
+        pasta: pasta.name, nome: r.name, metodo: r.method, caminho: url.replace(env.base_url, ""),
+        headers: Object.keys(headers), corpo: cortarTokens(r.body?.text ? renderizar(r.body.text) : ""),
+        status: resposta.status, repetida: resposta.headers.get("Idempotency-Replayed"), resposta: cortarTokens(resposta.corpo),
+      });
+    }
     for (const t of ruins) console.log(`       ↳ ${t.nome}: ${t.erro}${resposta.corpo ? ` · corpo: ${resposta.corpo.slice(0, 160)}` : ""}`);
   }
 }
 
+if (REGISTRAR) writeFileSync(REGISTRAR, JSON.stringify(registro, null, 2));
 console.log(`\n${falhas ? "❌" : "✅"} ${total - falhas}/${total} requisições como o esperado (ambiente ${AMBIENTE})`);
 process.exit(falhas ? 1 : 0);

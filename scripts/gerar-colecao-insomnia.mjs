@@ -1,6 +1,6 @@
 // Gera a coleção do Insomnia do RKF Bank (formato de exportação v4, que o Insomnia 9 a 13 importa).
 //
-//   node scripts/gerar-colecao-insomnia.mjs              → backend/insomnia/rkfbank.insomnia.json (pública)
+//   node scripts/gerar-colecao-insomnia.mjs              → backend/insomnia/rkfbank.insomnia.json e .yaml (pública)
 //   node scripts/gerar-colecao-insomnia.mjs --equipe     → também .equipe/testes/rkfbank-equipe.insomnia.json
 //                                                          (privada: lê EQUIPE_SENHA, ADMIN_CPF e ADMIN_SENHA do .env)
 //
@@ -36,10 +36,14 @@ const guardaLogin = (variavelToken, variavelCliente) =>
     "if (insomnia.response.code === 200) {",
     "  const login = insomnia.response.json();",
     `  insomnia.environment.set("${variavelToken}", login.token);`,
+    `  insomnia.environment.set("${variavelToken.replace("token_", "refresh_")}", login.refreshToken);`,
     variavelCliente ? `  insomnia.environment.set("${variavelCliente}", login.clienteId ?? "");` : "",
-    '  console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s");',
+    '  console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");',
     "}",
   ].filter(Boolean).join("\n");
+
+// Contrato 3.1: o cadastro exige o aceite dos termos (LGPD). Sem `termosVersao`, vale a versão vigente.
+const ACEITE = '  "senha": "senha-forte-1",\n  "aceiteTermos": true\n}';
 
 // Grava no ambiente só quando a resposta veio com o status esperado: um erro não pode apagar o que já estava certo.
 const guardaSe = (codigo, linha) => [status(codigo), `if (insomnia.response.code === ${codigo}) ${linha}`].join("\n");
@@ -109,14 +113,19 @@ const PASTAS = [
         depois: status(200) + '\ninsomnia.test("UP", () => insomnia.expect(insomnia.response.json().status).to.equal("UP"));',
         descricao: "Pública. Usada pelo Docker e pelo deploy para saber se a API respondeu.",
       }),
+      req("Versão dos termos (pública)", "GET", "/termos", {
+        depois: guardaSe(200, 'insomnia.environment.set("termos_versao", insomnia.response.json().versao);'),
+        descricao: "Versão vigente dos Termos de Uso e da Política de Privacidade (contrato 3.1). A tela de cadastro mostra estes textos e manda a versão aceita em `termosVersao`.",
+      }),
     ],
   },
   {
     nome: "01 · Login (guarda o token sozinho)",
     descricao:
-      "Cada login roda um script que salva o token no ambiente (`token_origem`, `token_destino`, `token_admin`). " +
-      "As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token vence (15 min no MySQL, 60 min no H2): " +
-      "deu `401 Token inválido ou expirado`? Mande o login de novo.",
+      "Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`, `token_admin`) e o " +
+      "de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de " +
+      "acesso vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou " +
+      "renove pela pasta **09 · Sessão**.",
     itens: [
       req("Login · cliente ORIGEM (Ana / Fellipe)", "POST", "/auth/login", {
         corpo: '{\n  "cpf": "{{ _.cpf_origem }}",\n  "senha": "{{ _.senha_clientes }}"\n}',
@@ -148,17 +157,19 @@ const PASTAS = [
         corpo:
           '{\n  "nomeCompleto": "Cliente Novo do Insomnia",\n  "cpf": "{{ _.novo_cpf_mascara }}",\n  "email": "{{ _.novo_email }}",\n' +
           '  "telefone": "(11) 99999-8888",\n  "cep": "06020-010",\n  "numero": "123",\n  "complemento": "Apto 45",\n' +
-          '  "senha": "{{ _.novo_senha }}"\n}',
+          '  "senha": "{{ _.novo_senha }}",\n  "aceiteTermos": true\n}',
         depois: [
           guardaSe(201, 'insomnia.environment.set("novo_cliente_id", insomnia.response.json().id);'),
           'const c = insomnia.response.code === 201 ? insomnia.response.json() : null;',
           'insomnia.test("ViaCEP preencheu a cidade", () => insomnia.expect(c.endereco.cidade).to.equal("Osasco"));',
           'insomnia.test("CEP higienizado", () => insomnia.expect(c.endereco.cep.replace(/\\D/g, "")).to.equal("06020010"));',
+          'insomnia.test("CPF mascarado na resposta", () => insomnia.expect(c.cpf).to.match(/^\\*\\*\\*\\.\\d{3}\\.\\d{3}-\\*\\*$/));',
+          'insomnia.test("aceite gravado", () => insomnia.expect(c.termosAceitosEm).to.be.ok);',
         ].join("\n"),
         descricao:
-          "Manda CPF, CEP e telefone **com máscara**, como a pessoa digita: a API higieniza (fica só com os dígitos), " +
+          "`aceiteTermos: true` é obrigatório (LGPD, contrato 3.1). Manda CPF, CEP e telefone **com máscara**, como a pessoa digita: a API higieniza (fica só com os dígitos), " +
           "valida o CPF pelos dígitos verificadores e busca o endereço no **ViaCEP** (Osasco/SP). `201` com o cliente. " +
-          "O cadastro **não** devolve token: faça o login.",
+          "A resposta traz o CPF **mascarado** e a versão dos termos aceita. O cadastro **não** devolve token: faça o login.",
       }),
       req("Login · cliente novo", "POST", "/auth/login", {
         corpo: '{\n  "cpf": "{{ _.novo_cpf }}",\n  "senha": "{{ _.novo_senha }}"\n}',
@@ -205,6 +216,11 @@ const PASTAS = [
           'insomnia.test("origem 75", () => insomnia.expect(saldo("conta_nova_id")).to.equal(75));',
           'insomnia.test("destino 25", () => insomnia.expect(saldo("conta_nova_destino_id")).to.equal(25));',
         ].join("\n"),
+      }),
+      req("Ver só a conta ORIGEM", "GET", "/contas/{{ _.conta_nova_id }}", {
+        auth: "token_novo",
+        depois: status(200) + '\ninsomnia.test("saldo 75", () => insomnia.expect(Number(insomnia.response.json().saldo)).to.equal(75));',
+        descricao: "`GET /contas/{contaId}` (contrato 3.1): uma conta só, para atualizar o saldo sem buscar a lista inteira.",
       }),
       req("Extrato da ORIGEM (3 lançamentos)", "GET", "/contas/{{ _.conta_nova_id }}/lancamentos", {
         auth: "token_novo",
@@ -362,11 +378,25 @@ const PASTAS = [
         antes: 'insomnia.environment.set("senha_redefinida", "redefinida-" + Date.now().toString(36));',
         corpo: '{\n  "novaSenha": "{{ _.senha_redefinida }}"\n}',
         depois: guardaSe(204, 'insomnia.environment.set("novo_senha", insomnia.environment.get("senha_redefinida"));'),
-        descricao: "O script passa a senha nova para `novo_senha`: o próximo login do cliente novo já usa ela.",
+        descricao: "O script passa a senha nova para `novo_senha`. Ela é **temporária** (contrato 3.1): no próximo login a pessoa precisa trocá-la.",
       }),
-      req("Login · cliente novo (de novo)", "POST", "/auth/login", {
+      req("Login com a senha temporária (deveTrocarSenha)", "POST", "/auth/login", {
         corpo: '{\n  "cpf": "{{ _.novo_cpf }}",\n  "senha": "{{ _.novo_senha }}"\n}',
-        depois: guardaLogin("token_novo"),
+        depois: guardaLogin("token_novo") + '\ninsomnia.test("deveTrocarSenha", () => insomnia.expect(insomnia.response.json().deveTrocarSenha).to.equal(true));',
+      }),
+      req("Senha temporária em outra rota → 403", "GET", "/contas", {
+        auth: "token_novo", depois: [status(403), codigo("TROCA_DE_SENHA_OBRIGATORIA")].join("\n"),
+        descricao: "Com a senha temporária, o token só abre `PATCH /usuarios/me/senha`.",
+      }),
+      req("Trocar a senha temporária", "PATCH", "/usuarios/me/senha", {
+        auth: "token_novo",
+        antes: 'insomnia.environment.set("senha_escolhida", "escolhida-" + Date.now().toString(36));',
+        corpo: '{\n  "senhaAtual": "{{ _.novo_senha }}",\n  "novaSenha": "{{ _.senha_escolhida }}"\n}',
+        depois: guardaSe(204, 'insomnia.environment.set("novo_senha", insomnia.environment.get("senha_escolhida"));'),
+      }),
+      req("Login · cliente novo (de novo, senha escolhida)", "POST", "/auth/login", {
+        corpo: '{\n  "cpf": "{{ _.novo_cpf }}",\n  "senha": "{{ _.novo_senha }}"\n}',
+        depois: guardaLogin("token_novo") + '\ninsomnia.test("sem troca pendente", () => insomnia.expect(insomnia.response.json().deveTrocarSenha).to.equal(false));',
       }),
       req("Trava: ADMIN mexe no próprio perfil → 422", "PATCH", "/admin/usuarios/{{ _.usuario_admin_id }}/perfil", {
         auth: "token_admin", corpo: { perfil: "ADMIN" },
@@ -404,6 +434,15 @@ const PASTAS = [
       }),
       req("ADMIN vê o extrato de um cliente → 403", "GET", "/contas/{{ _.conta_origem_id }}/lancamentos", {
         auth: "token_admin", depois: status(403),
+      }),
+      req("ADMIN vê uma conta de cliente → 200", "GET", "/contas/{{ _.conta_origem_id }}", {
+        auth: "token_admin", depois: status(200),
+        descricao: "Ver pode (como em `GET /contas`); movimentar e ver o extrato, não.",
+      }),
+      req("Conciliação: saldo × extrato", "GET", "/admin/conciliacao", {
+        auth: "token_admin",
+        depois: status(200) + '\ninsomnia.test("nenhuma conta divergente", () => insomnia.expect(insomnia.response.json()).to.have.length(0));',
+        descricao: "Contas cujo saldo não bate com a soma do extrato. Lista vazia é o normal; qualquer linha é bug ou alteração manual no banco.",
       }),
     ],
   },
@@ -509,6 +548,10 @@ const PASTAS = [
       req("Ver o extrato de outro cliente → 403", "GET", "/contas/{{ _.conta_origem_id }}/lancamentos", {
         auth: "token_destino", depois: status(403),
       }),
+      req("Ver a conta de outro cliente → 403", "GET", "/contas/{{ _.conta_origem_id }}", {
+        auth: "token_destino", depois: [status(403), codigo("CONTA_DE_OUTRO_CLIENTE")].join("\n"),
+      }),
+      req("CLIENTE na conciliação → 403", "GET", "/admin/conciliacao", { auth: "token_origem", depois: status(403) }),
       req("Sacar mais que o saldo → 422", "POST", "/contas/{{ _.conta_origem_id }}/saques", {
         auth: "token_origem", headers: [CHAVE_NOVA], corpo: { valor: 999999.0 },
         depois: [status(422), codigo("SALDO_INSUFICIENTE")].join("\n"),
@@ -526,6 +569,9 @@ const PASTAS = [
       req("Conta que não existe → 404", "GET", "/contas/00000000-0000-4000-8000-000000000000/lancamentos", {
         auth: "token_origem", depois: status(404),
       }),
+      req("Ver conta que não existe → 404", "GET", "/contas/00000000-0000-4000-8000-000000000000", {
+        auth: "token_origem", depois: [status(404), codigo("CONTA_NAO_ENCONTRADA")].join("\n"),
+      }),
       req("Id que não é UUID → 400", "GET", "/contas/abc/lancamentos", { auth: "token_origem", depois: status(400) }),
       req("Paginação inválida → 400", "GET", "/contas?size=0", { auth: "token_origem", depois: status(400) }),
       req("Tipo de conta inválido → 400", "POST", "/contas", {
@@ -538,20 +584,36 @@ const PASTAS = [
         auth: "token_origem", headers: [CHAVE_NOVA], corpo: '{\n  "valor": 10.001\n}', depois: status(400),
       }),
       req("Cadastro inválido → 400 com os campos", "POST", "/clientes", {
-        corpo: { nomeCompleto: "", cpf: "11111111111", email: "nao-e-email", telefone: "", cep: "", numero: "", senha: "curta" },
+        corpo: { nomeCompleto: "", cpf: "11111111111", email: "nao-e-email", telefone: "", cep: "", numero: "", senha: "curta", aceiteTermos: true },
         depois: status(400) + '\ninsomnia.test("lista os campos", () => insomnia.expect(insomnia.response.json().campos.length).to.be.above(0));',
       }),
       req("CPF já cadastrado → 409", "POST", "/clientes", {
         corpo:
           '{\n  "nomeCompleto": "CPF Repetido",\n  "cpf": "{{ _.cpf_origem }}",\n  "email": "repetido.{% uuid \'v4\' %}@exemplo.test",\n' +
-          '  "telefone": "11999998888",\n  "cep": "01001000",\n  "numero": "1",\n  "senha": "senha-forte-1"\n}',
+          '  "telefone": "11999998888",\n  "cep": "01001000",\n  "numero": "1",\n' + ACEITE,
         depois: [status(409), codigo("CPF_JA_CADASTRADO")].join("\n"),
+      }),
+      req("Cadastro sem aceitar os termos → 400", "POST", "/clientes", {
+        antes: SORTEIA_CPF_EXTRA,
+        corpo:
+          '{\n  "nomeCompleto": "Sem Aceite",\n  "cpf": "{{ _.cpf_extra }}",\n  "email": "aceite.{% uuid \'v4\' %}@exemplo.test",\n' +
+          '  "telefone": "11999998888",\n  "cep": "01001000",\n  "numero": "1",\n  "senha": "senha-forte-1",\n  "aceiteTermos": false\n}',
+        depois: [status(400), codigo("CAMPOS_INVALIDOS"), 'insomnia.test("campo aceiteTermos", () => insomnia.expect(insomnia.response.json().campos[0].campo).to.equal("aceiteTermos"));'].join("\n"),
+        descricao: "LGPD (contrato 3.1): sem o aceite dos Termos de Uso e da Política de Privacidade, o cadastro nem chega ao banco.",
+      }),
+      req("Cadastro com termos antigos → 422", "POST", "/clientes", {
+        antes: SORTEIA_CPF_EXTRA,
+        corpo:
+          '{\n  "nomeCompleto": "Termos Antigos",\n  "cpf": "{{ _.cpf_extra }}",\n  "email": "termos.{% uuid \'v4\' %}@exemplo.test",\n' +
+          '  "telefone": "11999998888",\n  "cep": "01001000",\n  "numero": "1",\n  "senha": "senha-forte-1",\n  "aceiteTermos": true,\n  "termosVersao": "2000-01-01"\n}',
+        depois: [status(422), codigo("TERMOS_DESATUALIZADOS")].join("\n"),
+        descricao: "A pessoa aceitou uma versão dos termos que não vale mais (página aberta antes de eles mudarem): recarregar e aceitar de novo.",
       }),
       req("CEP que não existe → 422", "POST", "/clientes", {
         antes: SORTEIA_CPF_EXTRA,
         corpo:
           '{\n  "nomeCompleto": "CEP Inexistente",\n  "cpf": "{{ _.cpf_extra }}",\n  "email": "cep.{% uuid \'v4\' %}@exemplo.test",\n' +
-          '  "telefone": "11999998888",\n  "cep": "99999999",\n  "numero": "1",\n  "senha": "senha-forte-1"\n}',
+          '  "telefone": "11999998888",\n  "cep": "99999999",\n  "numero": "1",\n' + ACEITE,
         depois: [status(422), codigo("CEP_NAO_ENCONTRADO")].join("\n"),
         descricao: "O endereço vem do ViaCEP: CEP inexistente → `422`; ViaCEP fora do ar → `503`.",
       }),
@@ -580,6 +642,57 @@ const PASTAS = [
       }),
     ],
   },
+  {
+    nome: "09 · Sessão: renovar e sair (refresh token)",
+    descricao:
+      "Contrato 3.1. O login devolve, além do token de acesso (15 min), um **token de renovação** (7 dias) que troca o par " +
+      "sem pedir a senha. Ele é de **uso único**: usar de novo um já trocado é sinal de roubo e derruba todas as sessões da " +
+      "pessoa. Mande na ordem; usa o cliente DESTINO, e no fim ele entra de novo para as outras pastas continuarem.",
+    itens: [
+      req("Login · cliente DESTINO", "POST", "/auth/login", {
+        corpo: '{\n  "cpf": "{{ _.cpf_destino }}",\n  "senha": "{{ _.senha_clientes }}"\n}',
+        depois: guardaLogin("token_destino") + '\nif (insomnia.response.code === 200) insomnia.environment.set("refresh_usado", insomnia.response.json().refreshToken);',
+      }),
+      req("Renovar: troca o par", "POST", "/auth/refresh", {
+        corpo: '{\n  "refreshToken": "{{ _.refresh_destino }}"\n}',
+        depois: [
+          guardaLogin("token_destino"),
+          'insomnia.test("token de renovação novo", () => insomnia.expect(insomnia.response.json().refreshToken).to.not.equal(insomnia.environment.get("refresh_usado")));',
+        ].join("\n"),
+        descricao: "Público: o token de renovação vai no corpo (o de acesso pode já ter vencido). Mesmo formato do login.",
+      }),
+      req("O token novo funciona", "GET", "/contas", { auth: "token_destino", depois: status(200) }),
+      req("Reusar o token já trocado → 401", "POST", "/auth/refresh", {
+        corpo: '{\n  "refreshToken": "{{ _.refresh_usado }}"\n}',
+        depois: [status(401), codigo("SESSAO_EXPIRADA")].join("\n"),
+        descricao: "Reuso = alguém copiou o token. A API derruba **todas** as renovações da pessoa, inclusive a legítima.",
+      }),
+      req("Depois do reuso, a renovação legítima também caiu → 401", "POST", "/auth/refresh", {
+        corpo: '{\n  "refreshToken": "{{ _.refresh_destino }}"\n}',
+        depois: [status(401), codigo("SESSAO_EXPIRADA")].join("\n"),
+      }),
+      req("Login · cliente DESTINO (de novo)", "POST", "/auth/login", {
+        corpo: '{\n  "cpf": "{{ _.cpf_destino }}",\n  "senha": "{{ _.senha_clientes }}"\n}',
+        depois: guardaLogin("token_destino") + '\nif (insomnia.response.code === 200) insomnia.environment.set("refresh_usado", insomnia.response.json().refreshToken);',
+      }),
+      req("Sair (logout)", "POST", "/auth/logout", {
+        corpo: '{\n  "refreshToken": "{{ _.refresh_usado }}"\n}', depois: status(204),
+        descricao: "Revoga o token de renovação. O de acesso continua valendo até vencer (no máximo 15 min): o front o apaga.",
+      }),
+      req("Renovar depois de sair → 401", "POST", "/auth/refresh", {
+        corpo: '{\n  "refreshToken": "{{ _.refresh_usado }}"\n}', depois: [status(401), codigo("SESSAO_EXPIRADA")].join("\n"),
+      }),
+      req("Sair com token desconhecido → 204", "POST", "/auth/logout", {
+        corpo: { refreshToken: "token-que-nunca-existiu" }, depois: status(204),
+        descricao: "Sair nunca falha (nem revela se o token existia).",
+      }),
+      req("Renovar sem o token → 400", "POST", "/auth/refresh", { corpo: {}, depois: status(400) }),
+      req("Login · cliente DESTINO (para as outras pastas)", "POST", "/auth/login", {
+        corpo: '{\n  "cpf": "{{ _.cpf_destino }}",\n  "senha": "{{ _.senha_clientes }}"\n}',
+        depois: guardaLogin("token_destino", "cliente_destino_id"),
+      }),
+    ],
+  },
 ];
 
 // ── Ambientes ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -587,9 +700,10 @@ const PASTAS = [
 // Variáveis que os scripts preenchem: começam vazias e aparecem no ambiente para quem quiser olhar.
 const PREENCHIDAS_PELOS_SCRIPTS = {
   token_origem: "", token_destino: "", token_admin: "", token_novo: "",
+  refresh_origem: "", refresh_destino: "", refresh_admin: "", refresh_novo: "", refresh_usado: "", termos_versao: "",
   cliente_origem_id: "", cliente_destino_id: "",
   novo_cpf: "", novo_email: "", novo_senha: "", novo_cliente_id: "", conta_nova_id: "", conta_nova_destino_id: "", usuario_novo_id: "",
-  chave_fixa: "", novo_cpf_mascara: "", senha_redefinida: "", senha_trocada: "", usuario_admin_id: "", cpf_extra: "",
+  chave_fixa: "", novo_cpf_mascara: "", senha_redefinida: "", senha_trocada: "", senha_escolhida: "", usuario_admin_id: "", cpf_extra: "",
   // JWT de mentira (payload com perfil ADMIN e assinatura falsa) para o teste "Token adulterado".
   token_falso: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJxdWFscXVlci11bSIsInBlcmZpbCI6IkFETUlOIn0.assinatura-que-nao-bate",
 };
@@ -664,21 +778,90 @@ function lerEnv() {
   return valores;
 }
 
-function salvar(caminho, colecao) {
+// ── Exportação v5 (YAML), o formato que o Insomnia 10+ exporta e importa ─────────────────────────────────────
+
+// YAML sem biblioteca: texto de várias linhas vira bloco "|-"; o resto vai entre aspas duplas (JSON é YAML válido).
+function yaml(valor, nivel = 0) {
+  const pad = "  ".repeat(nivel);
+  if (Array.isArray(valor)) {
+    if (!valor.length) return " []";
+    return "\n" + valor.map((item) => `${pad}-${yaml(item, nivel + 1).replace(/^\n\s*/, " ")}`).join("\n");
+  }
+  if (valor && typeof valor === "object") {
+    const entradas = Object.entries(valor).filter(([, v]) => v !== undefined);
+    if (!entradas.length) return " {}";
+    return "\n" + entradas.map(([k, v]) => `${pad}${k}:${yaml(v, nivel + 1)}`).join("\n");
+  }
+  if (typeof valor === "string" && valor.includes("\n")) {
+    return " |-\n" + valor.split("\n").map((linha) => (linha ? `${pad}${linha}` : "")).join("\n");
+  }
+  return " " + JSON.stringify(valor ?? "");
+}
+
+function montarV5(valores) {
+  const amb = ambientes(valores);
+  const agora = Date.now();
+  const meta = (id, extra = {}) => ({ id, created: agora, modified: agora, ...extra });
+  const pastas = PASTAS.map((pasta, p) => ({
+    name: pasta.nome,
+    meta: meta(`fld_rkfbank_${String(p).padStart(2, "0")}`, { sortKey: p, description: pasta.descricao }),
+    children: pasta.itens.map((r, i) => ({
+      url: `{{ _.base_url }}${r.caminho}`,
+      name: r.nome,
+      meta: meta(`req_rkfbank_${String(p).padStart(2, "0")}_${String(i).padStart(2, "0")}`, {
+        isPrivate: false, description: r.descricao, sortKey: i,
+      }),
+      method: r.metodo,
+      body: r.corpo === undefined ? undefined : { mimeType: "application/json", text: r.corpo },
+      headers: r.headers.length ? r.headers : undefined,
+      authentication: r.auth,
+      scripts: r.antes || r.depois ? { preRequest: r.antes || undefined, afterResponse: r.depois || undefined } : undefined,
+      settings: {
+        renderRequestBody: true, encodeUrl: true, followRedirects: "global",
+        cookies: { send: false, store: false }, rebuildPath: true,
+      },
+    })),
+  }));
+  const colecao = {
+    type: "collection.insomnia.rest/5.0",
+    schema_version: "5.1",
+    name: "RKF Bank API",
+    meta: meta("wrk_rkfbank", { description: "Coleção gerada por scripts/gerar-colecao-insomnia.mjs. Guia: backend/README_TESTES_E2E.md." }),
+    collection: pastas,
+    environments: {
+      name: "Base Environment",
+      meta: meta("env_rkfbank_base", { isPrivate: false }),
+      data: amb.base,
+      subEnvironments: [
+        { name: "Visitante (H2, Ana e Bruno)", meta: meta("env_rkfbank_visitante", { isPrivate: false, sortKey: 1 }), data: amb.visitante, color: "#2e7d32" },
+        { name: "Equipe (MySQL ou H2, Fellipe e Renan)", meta: meta("env_rkfbank_equipe", { isPrivate: false, sortKey: 2 }), data: amb.equipe, color: "#1565c0" },
+      ],
+    },
+  };
+  return yaml(colecao).replace(/^\n/, "") + "\n";
+}
+
+function salvar(caminho, colecao, valores) {
   mkdirSync(dirname(caminho), { recursive: true });
   writeFileSync(caminho, JSON.stringify(colecao, null, 2) + "\n");
   const total = colecao.resources.filter((r) => r._type === "request").length;
   console.log(`✅ ${total} requisições → ${caminho}`);
+  // A mesma coleção no formato v5 (YAML), ao lado: Import → File aceita os dois.
+  const caminhoYaml = caminho.replace(/\.json$/, ".yaml");
+  writeFileSync(caminhoYaml, montarV5(valores));
+  console.log(`✅ ${total} requisições → ${caminhoYaml}`);
 }
 
 // Pública: senhas da equipe como instrução, nunca o valor (o repositório é público).
-salvar(SAIDA_PUBLICA, montar({
+const PUBLICOS = {
   equipeSenha: "COLE_AQUI_A_EQUIPE_SENHA_DO_SEU_.env",
   adminCpf: "COLE_AQUI_O_ADMIN_CPF_DO_SEU_.env",
   adminSenha: "COLE_AQUI_A_ADMIN_SENHA_DO_SEU_.env",
-}));
+};
+salvar(SAIDA_PUBLICA, montar(PUBLICOS), PUBLICOS);
 
 if (process.argv.includes("--equipe")) {
   const env = lerEnv();
-  salvar(SAIDA_EQUIPE, montar({ equipeSenha: env.EQUIPE_SENHA ?? "", adminCpf: env.ADMIN_CPF ?? "", adminSenha: env.ADMIN_SENHA ?? "" }));
+  const daEquipe = { equipeSenha: env.EQUIPE_SENHA ?? "", adminCpf: env.ADMIN_CPF ?? "", adminSenha: env.ADMIN_SENHA ?? "" };
+  salvar(SAIDA_EQUIPE, montar(daEquipe), daEquipe);
 }
