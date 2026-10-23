@@ -14,7 +14,7 @@ import { env } from "@/lib/env";
 export async function PATCH(request: Request) {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_TOKEN)?.value;
-  if (!token) return erro(401, "Unauthorized", "Autenticacao necessaria: entre de novo para trocar a senha");
+  if (!token) return erro(401, "Unauthorized", "Autenticação necessária: entre de novo para trocar a senha");
 
   const dados = (await request.json().catch(() => ({}))) as Partial<TrocarSenhaRequest>;
 
@@ -27,7 +27,7 @@ export async function PATCH(request: Request) {
       cache: "no-store",
     });
   } catch {
-    return erro(503, "Service Unavailable", "Nao foi possivel conectar a API");
+    return erro(503, "Service Unavailable", "Não foi possível conectar à API");
   }
 
   // Erro da API (400, 401, 422, 429…): devolve como veio, no formato padrão que o `apiRequest` já entende.

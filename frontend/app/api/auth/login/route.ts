@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       cache: "no-store",
     });
   } catch {
-    return erro(503, "Nao foi possivel conectar a API");
+    return erro(503, "Não foi possível conectar à API");
   }
 
   // Erro da API (400, 401…): devolve como veio, no formato padrão que o `apiRequest` já entende.

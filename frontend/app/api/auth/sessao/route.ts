@@ -13,7 +13,7 @@ export async function GET() {
       status: 401,
       error: "Unauthorized",
       codigo: "TOKEN_INVALIDO",
-      message: "Sessao expirada; faca login novamente",
+      message: "Sessão expirada; faça login novamente",
       path: "/auth/sessao",
       campos: [],
     };
