@@ -17,9 +17,8 @@ export const clientesApi = {
   },
 
   async listar({ page = 0, size = 10 }: PageRequest = {}) {
-    const pagina = await apiRequest<Page<ClienteResponse>>("/clientes", {
-      query: { paginado: true, page, size },
-    });
+    // `page`/`size` já pedem a página (contrato 2.6).
+    const pagina = await apiRequest<Page<ClienteResponse>>("/clientes", { query: { page, size } });
     logClientes.debug("Clientes listados", { page, size, totalElements: pagina.totalElements });
     return pagina;
   },
