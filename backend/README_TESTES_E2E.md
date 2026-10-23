@@ -327,7 +327,7 @@ Mudou uma entidade? Crie `V10__descricao.sql` (e rode `/revisar-migracao`). Deta
 
 ## 6. Insomnia: importar a coleção e testar sem copiar e colar
 
-A coleção [`backend/insomnia/rkfbank.insomnia.json`](insomnia/rkfbank.insomnia.json) tem **49 requisições** em 9
+A coleção [`backend/insomnia/rkfbank.insomnia.json`](insomnia/rkfbank.insomnia.json) tem **89 requisições** em 10
 pastas, na ordem de um teste completo. Ninguém copia token nem id: os scripts guardam tudo sozinhos.
 
 ### 6.1 Importar (uma vez)
@@ -339,6 +339,15 @@ pastas, na ordem de um teste completo. Ninguém copia token nem id: os scripts g
    - **Equipe (MySQL ou H2, Felipe e Renan)** → edite o ambiente (ícone ⚙️) e troque os três `COLE_AQUI_...` pelos
      valores do seu `.env`. A equipe importa o arquivo privado, que já vem preenchido (guia privado).
 3. Mudou a coleção no Git? Importe de novo: ela substitui a anterior (mesmos ids).
+
+Atalho no Windows (PowerShell, na raiz do repositório): abre o Insomnia já na tela de importação.
+
+```powershell
+Start-Process ("insomnia://app/import?uri=" + [uri]::EscapeDataString("file://" + (Resolve-Path backend/insomnia/rkfbank.insomnia.json).Path.Replace('\','/')))
+```
+
+> Escreva `file://C:/...`, com **duas** barras. Com três (`file:///C:/...`), o Insomnia monta `C:\C:\...` e
+> responde `ENOENT: no such file or directory`.
 
 ### 6.2 Usar
 
@@ -359,10 +368,11 @@ Mande as requisições **de cima para baixo**, começando por `00 · Comece aqui
 | `02` Cliente novo | cadastro com **CPF válido sorteado**, login, abrir corrente e poupança | internet (ViaCEP) |
 | `03` Dinheiro | contas, depósito, saque, transferência, extrato (simples e paginado) | `01` |
 | `04` Idempotência | a mesma chave não movimenta duas vezes | `01` |
-| `05` ADMIN | listar clientes/contas/usuários, promover, rebaixar, desativar, reativar, redefinir senha | `01` (ADMIN) e `02` |
-| `06` Meus dados (LGPD) | ver e corrigir os próprios dados, trocar senha, encerrar o cadastro | `02` |
-| `07` Erros | `401`, `403`, `404`, `400`, `422`: cada proteção funcionando | `01` |
+| `05` ADMIN (26) | listar clientes (array e página), todas as contas e os usuários; promover (e ver o token antigo cair e o promovido entrar como ADMIN), rebaixar, desativar, reativar, redefinir senha; **as travas**: mexer em si mesmo, redefinir a própria senha pela gestão, rebaixar o admin do `.env`, perfil/usuário inexistente; e o que o ADMIN **não** faz: abrir conta, `/clientes/me`, movimentar ou ver extrato de cliente | `01` (ADMIN) e `02` |
+| `06` Meus dados (LGPD) | ver e corrigir os próprios dados (telefone, endereço pelo CEP), erros da correção e da troca de senha, trocar senha, encerrar o cadastro (com senha errada, com saldo, de verdade) e o ADMIN não conseguir reativar | `02` |
+| `07` Erros | `400`, `401` (sem token, token adulterado, senha errada), `403`, `404`, `409` (CPF repetido), `422` (saldo, mesma conta, CEP inexistente): cada proteção funcionando | `01` |
 | `08` Rotas obsoletas | as rotas antigas ainda respondem, com `Deprecation: true` | `01` |
+| `09` CORS | *preflight* de origem permitida (`200`) e de origem estranha (`403`) | — |
 
 No ambiente **Visitante**, o login do ADMIN e a pasta `05` dão `401`: é o esperado (o visitante não tem ADMIN). Para
 testá-las, suba o perfil equipe (seção 4.2) e use o ambiente **Equipe**.
@@ -372,8 +382,8 @@ testá-las, suba o perfil equipe (seção 4.2) e use o ambiente **Equipe**.
 Para conferir tudo de uma vez (ou sem abrir o Insomnia), com a API no ar:
 
 ```bash
-node scripts/rodar-colecao-insomnia.mjs                       # ambiente Visitante: 38/38 (pula o ADMIN)
-node scripts/rodar-colecao-insomnia.mjs --ambiente equipe     # precisa do ADMIN no ambiente: 49/49
+node scripts/rodar-colecao-insomnia.mjs                       # ambiente Visitante: 62/62 (pula o ADMIN)
+node scripts/rodar-colecao-insomnia.mjs --ambiente equipe     # precisa do ADMIN no ambiente: 89/89
 node scripts/rodar-colecao-insomnia.mjs --pasta 03            # só uma pasta
 ```
 

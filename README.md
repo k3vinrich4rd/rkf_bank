@@ -1006,7 +1006,7 @@ privado da equipe, fora do repositório. As migrações foram reorganizadas em 2
 | Quero... | Como |
 |---|---|
 | rodar pela IntelliJ | o projeto traz 3 configurações prontas (pasta `.run/`): **API · Visitante (H2)**, **API · Equipe (H2)** e **API · MySQL (Docker)** |
-| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) no Insomnia: 49 requisições em ordem, e o login guarda o token sozinho |
+| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) no Insomnia: 89 requisições em ordem, e o login guarda o token sozinho |
 | ver as tabelas no H2 | `http://localhost:8080/h2-console` · JDBC URL `jdbc:h2:mem:rkfbank-visitante` (ou `rkfbank-equipe`) · usuário `sa`, senha vazia |
 | ver as tabelas no MySQL | `localhost:5441` com o usuário do `.env` (IntelliJ *Database*, DBeaver) ou `docker exec` no container `rkfbank-mysql` |
 | tornar alguém ADMIN | pelo `.env` (primeiro admin), pela API (`PATCH /admin/usuarios/{id}/perfil`) ou por SQL num banco local |
