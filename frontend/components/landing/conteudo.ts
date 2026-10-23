@@ -101,7 +101,7 @@ export const TIME = {
       github: { usuario: "renanbarrostech-cmd", url: "https://github.com/renanbarrostech-cmd" },
     },
     {
-      nome: "Kevin",
+      nome: "Kevin Richard",
       papel: "Desenvolvedor backend",
       faz: "API, segurança e banco de dados",
       github: { usuario: "k3vinrich4rd", url: "https://github.com/k3vinrich4rd" },
