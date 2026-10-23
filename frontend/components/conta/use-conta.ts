@@ -62,17 +62,16 @@ export function useConta(logTela: TelaLogger) {
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [escolhida, setEscolhida] = useState<string | null>(null);
 
-  // Lido depois de montar: no servidor não há localStorage, e ler no render quebraria a hidratação.
-  useEffect(() => {
-    setEscolhida(lerContaEscolhida());
-  }, []);
 
   useEffect(() => {
     let ativa = true;
 
     contasApi.minhas().then(
       (contas) => {
-        if (ativa) setResultado({ tentativa, contas });
+        if (!ativa) return;
+        // Lida aqui, com as contas já no navegador: no servidor não há localStorage (ler no render quebraria a hidratação).
+        setEscolhida(lerContaEscolhida());
+        setResultado({ tentativa, contas });
       },
       (error: unknown) => {
         if (!ativa) return;

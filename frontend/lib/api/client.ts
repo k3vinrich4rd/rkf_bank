@@ -138,7 +138,9 @@ function irParaLogin() {
 /** Senha temporária (contrato 3.1): qualquer rota além da troca de senha responde 403; a tela vai para a troca. */
 function irParaTrocaDeSenha() {
   if (typeof window === "undefined" || window.location.pathname === ROUTES.trocarSenha) return;
-  window.location.assign(`${ROUTES.trocarSenha}?temporaria=1`);
+  const troca = new URL(ROUTES.trocarSenha, window.location.origin);
+  troca.searchParams.set("temporaria", "1");
+  window.location.assign(troca);
 }
 
 /** 4xx é falha esperada (validação/regra de negócio) → warn; 5xx é falha do servidor → error. */

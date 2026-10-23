@@ -8,7 +8,7 @@ import { SeletorConta } from "./seletor-conta";
 afterEach(cleanup);
 
 function conta(id: string, tipoConta: ContaResponse["tipoConta"], numeroConta: string): ContaResponse {
-  return { id, clienteId: "cliente", agencia: "0001", numeroConta, tipoConta, saldo: "0.00", ativa: true };
+  return { id, clienteId: "cliente", agencia: "0001", numeroConta, tipoConta, saldo: 0, ativa: true };
 }
 
 const CORRENTE = conta("c1", "CORRENTE", "11111111");
