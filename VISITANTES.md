@@ -54,6 +54,14 @@ curl -s $API/contas/$ANA/lancamentos -H "Authorization: Bearer $TOKEN"    # extr
 curl -s -i $API/contas/$BRUNO/lancamentos -H "Authorization: Bearer $TOKEN" | head -1   # 403: a conta é do Bruno
 ```
 
+## 3½. Prefere clicar? Insomnia e o banco no navegador
+
+- **Insomnia:** *Import* → arquivo [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) →
+  ambiente **Visitante (H2, Ana e Bruno)** → mande as requisições de cima para baixo. O login guarda o token sozinho:
+  nada de copiar e colar.
+- **Ver as tabelas:** abra `http://localhost:8080/h2-console`, troque a JDBC URL para `jdbc:h2:mem:rkfbank-visitante`
+  (usuário `sa`, senha vazia) e rode `SELECT numero_conta, saldo FROM tb_conta;` antes e depois da transferência.
+
 ## 4. O que tentar depois
 
 | Experimento | O que deve acontecer |
@@ -64,7 +72,8 @@ curl -s -i $API/contas/$BRUNO/lancamentos -H "Authorization: Bearer $TOKEN" | he
 | Abrir uma poupança: `POST /contas` com `{"tipoConta":"POUPANCA"}` (a conta nasce no cadastro de quem está logado) | `201` com número de conta **gerado pelo banco** |
 | Trocar uma letra do token | `401`: a assinatura não bate |
 
-Roteiro completo, com cada resposta esperada e a explicação de Spring Security, OAuth2 e JWT:
+Guia completo (rodar pela IDE, H2 ou MySQL, permissões de cada rota, como tornar alguém ADMIN, todos os payloads, os
+roteiros com cada resposta esperada e a explicação de Spring Security, OAuth2 e JWT):
 [backend/README_TESTES_E2E.md](backend/README_TESTES_E2E.md).
 
 ## 5. O que este perfil garante (e por quê)

@@ -16,7 +16,8 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 |---|---|
 | [README_CONTRATO_API.md](README_CONTRATO_API.md) | **fonte da verdade** de rotas, payloads, regras e erros |
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
-| [README_TESTES_E2E.md](README_TESTES_E2E.md) | **guia público de testes manuais** com as contas de visitante (Spring Security + OAuth2, idempotência, 401/403/429, erros) |
+| [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou MySQL), ver o banco (console do H2, MySQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
+| [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia (49 requisições encadeadas: o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
 | `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Felipe, do Renan e do admin, roteiro ponta a ponta completo |
 | [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md) | checklist de validação do MVP com o resultado da última execução |
 
@@ -43,10 +44,12 @@ Os scripts de shell que usam as variáveis (`scripts/testar-no-mysql.sh`, `docke
 `.env` por conta própria.
 
 Conferindo: `curl -s http://localhost:8080/actuator/health` → `{"status":"UP",...}` e
-`curl -i http://localhost:8080/contas` → `401` (a API está no ar e exige login). Para as rotas protegidas, faça
+`curl -i http://localhost:8080/contas` → `401` (a API está no ar e exige login). Nos perfis com H2, o banco abre no
+navegador em `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:rkfbank-visitante` ou `rkfbank-equipe`,
+usuário `sa`, senha vazia; [guia, seção 5](README_TESTES_E2E.md#5-olhar-o-banco-h2-ou-mysql)). Para as rotas protegidas, faça
 `POST /auth/login` e mande `Authorization: Bearer <token>` em toda chamada, e `Idempotency-Key` nas movimentações
 ([contrato](README_CONTRATO_API.md#autenticação-jwt) e
-[guia, seção 3](README_TESTES_E2E.md#3-como-a-segurança-funciona-spring-security--oauth2--jwt)).
+[guia, seção 18](README_TESTES_E2E.md#18-como-a-segurança-funciona-spring-security--oauth2--jwt)).
 
 ### Variáveis de ambiente
 
@@ -182,7 +185,7 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | **rota, request ou response** | `scripts/validar.sh backend` → suba a API → smoke | [contrato da API](README_CONTRATO_API.md), [roteiro E2E](README_TESTES_E2E.md), `/verificar-contrato` e recado para o frontend |
 | **dependência** (`pom.xml`) | `scripts/validar.sh backend` → suba a API no MySQL → smoke → `node scripts/varrer-cves.js backend` | testes com mock não provam que a biblioteca nova funciona: a API precisa subir de verdade |
 | **configuração** (`application*.properties`) | `scripts/validar.sh backend` → suba a API no perfil padrão (MySQL) | a mudança vale nos dois perfis? (`test` usa H2) |
-| **segurança** (rotas públicas, perfis, regra de dono, JWT) | `scripts/validar.sh backend` → `scripts/testar-no-mysql.sh` → suba a API → smoke → `node scripts/engenharia-reversa-jwt.mjs` | `SegurancaIntegracaoTest` cobre o cenário novo; nenhum ataque do script de engenharia reversa passa; [guia, seção 3](README_TESTES_E2E.md#3-como-a-segurança-funciona-spring-security--oauth2--jwt) |
+| **segurança** (rotas públicas, perfis, regra de dono, JWT) | `scripts/validar.sh backend` → `scripts/testar-no-mysql.sh` → suba a API → smoke → `node scripts/engenharia-reversa-jwt.mjs` | `SegurancaIntegracaoTest` cobre o cenário novo; nenhum ataque do script de engenharia reversa passa; [guia, seção 18](README_TESTES_E2E.md#18-como-a-segurança-funciona-spring-security--oauth2--jwt) |
 | **qualquer coisa e quer provar no MySQL** (não só no H2) | `docker compose up -d` → `scripts/testar-no-mysql.sh` | a saída mostra `Database dialect: MySQLDialect`; não apaga dados |
 | **só documentação** | nada | links e comandos citados continuam funcionando |
 
@@ -322,7 +325,8 @@ src/main/resources/db/
 │   ├── V5__criar_tabela_usuario.sql      (login por CPF, hash BCrypt, perfil CLIENTE/ADMIN)
 │   ├── V6__criar_tabela_idempotencia.sql (Idempotency-Key das movimentações)
 │   ├── V7__adicionar_ativo_usuario.sql   (acesso revogável pelo ADMIN)
-│   └── V8__adicionar_versao_credencial_usuario.sql (troca de senha derruba tokens antigos)
+│   ├── V8__adicionar_versao_credencial_usuario.sql (troca de senha derruba tokens antigos)
+│   └── V9__adicionar_encerramento_cliente.sql (LGPD: encerramento pelo titular e anonimização)
 └── seed/                              ← dados prontos: só onde spring.flyway.locations incluir a pasta
     ├── equipe/afterMigrate__dados_equipe.sql         (Felipe = origem, Renan = destino; sem senha)
     └── visitante/afterMigrate__dados_visitantes.sql  (Ana e Bruno Visitante; senha pública)
@@ -330,7 +334,7 @@ src/main/resources/db/
 
 | Pasta | Quando roda | Perfis |
 |---|---|---|
-| `db/migration` | uma vez por versão, na ordem (`V1` → `V8`) | todos |
+| `db/migration` | uma vez por versão, na ordem (`V1` → `V9`) | todos |
 | `db/seed/equipe` | **a cada subida** (callback `afterMigrate`), sem entrar no histórico; idempotente | padrão e `equipe` |
 | `db/seed/visitante` | idem | só `visitante` |
 
@@ -338,7 +342,7 @@ O seed **só insere o que falta**: saldo já movimentado nunca é resetado, e ap
 próxima subida. Começar do zero de verdade: `docker compose down -v && docker compose up -d`. Testes que garantem:
 `DadosEquipeIntegracaoTest` e `PerfilVisitanteIntegracaoTest`.
 
-**Criar uma migração nova:** `db/migration/V9__descricao_em_snake_case.sql` (dois sublinhados), SQL que rode no MySQL
+**Criar uma migração nova:** `db/migration/V10__descricao_em_snake_case.sql` (dois sublinhados), SQL que rode no MySQL
 **e** no H2 dos testes, e `scripts/validar.sh backend`. Mudou uma tabela que o seed usa? Ajuste os
 `afterMigrate__*.sql` no mesmo PR (callback não tem checksum, pode ser editado). Com o Claude Code,
 `/revisar-migracao` confere antes do commit.

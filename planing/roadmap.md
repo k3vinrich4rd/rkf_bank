@@ -15,7 +15,7 @@ O cliente consegue:
 
 ## Como estamos (19/10)
 
-- **Backend:** tudo do MVP pronto e testado (261 testes), com Flyway, login JWT, idempotência nas movimentações, gestão de usuários e troca de senha. Falta buscar uma conta específica.
+- **Backend:** tudo do MVP pronto e testado (264 testes), com Flyway, login JWT, idempotência nas movimentações, gestão de usuários e troca de senha. Falta buscar uma conta específica.
 - **Frontend:** landing page, cadastro, login, abertura de conta, tela da conta, movimentações e extrato prontos na `develop` (PR #27).
 - **Antes de ir ao ar:** LGPD mínimo (política de privacidade, aceite dos termos e encarregado) — ver `debitos-tecnicos.md`.
 

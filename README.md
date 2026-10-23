@@ -16,7 +16,7 @@
 [![Flyway](https://img.shields.io/badge/Flyway-V1→V8_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-261_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-264_✔-22C55E)](#-qualidade-e-testes)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
 <a href="#-conheça-o-rkf-bank"><img src="assets/readme/botoes/abrir-conta.svg" alt="🏦 Conheça o banco" height="46"/></a>
@@ -32,7 +32,7 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 261 testes, 17 rotas REST, 9 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 264 testes, 17 rotas REST, 9 migrações Flyway, JWT de 15 minutos, 3 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -98,7 +98,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Felipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **261 testes**, CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **264 testes**, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -707,7 +707,7 @@ curl -X POST $API/contas/$CONTA_ID/depositos -H "Authorization: Bearer $TOKEN" -
 curl $API/contas/$CONTA_ID/lancamentos -H "Authorization: Bearer $TOKEN"
 ```
 
-CPFs válidos para teste: `52998224725`, `16899535009`, `39053344705`, `11144477735`.
+CPFs válidos para teste: `52998224725`, `70483726052`, `39053344705`, `11144477735`.
 Ou rode tudo de uma vez com a API no ar: `node scripts/smoke-e2e.mjs`.
 
 </details>
@@ -963,8 +963,8 @@ Não existe admin nem conta da equipe nesse perfil. Guia de 5 minutos: **[VISITA
 | **Ana Visitante (Origem)** | `246.813.579-28` | `Visitante@2026` | 0001 / 900001 · R$ 1.000,00 |
 | **Bruno Visitante (Destino)** | `975.318.642-82` | `Visitante@2026` | 0001 / 900002 · R$ 500,00 |
 
-Roteiro completo (caminho feliz, idempotência, 401/403/429, erros, Spring Security + OAuth2):
-[guia de testes manuais](backend/README_TESTES_E2E.md). Quando usar cada perfil:
+Roteiro completo (H2, MySQL, Insomnia, permissões, caminho feliz, idempotência, 401/403/429, erros, Spring Security + OAuth2):
+[como testar o projeto](backend/README_TESTES_E2E.md). Quando usar cada perfil:
 [backend/README.md → Perfis](backend/README.md#-perfis-qual-usar-e-quando).
 
 </details>
@@ -991,11 +991,28 @@ O Spring **lê o `.env` da raiz sozinho** (desde 20/10/2026): basta rodar da rai
 ./mvnw spring-boot:run        # PowerShell: .\mvnw.cmd spring-boot:run
 ```
 
-As tabelas nascem pelo **Flyway** (`V1` a `V8`) e, a cada subida, o callback `afterMigrate` garante as contas da
+As tabelas nascem pelo **Flyway** (`V1` a `V9`) e, a cada subida, o callback `afterMigrate` garante as contas da
 equipe (Felipe = origem, Renan = destino). O login delas vem da `EQUIPE_SENHA` do `.env`: os acessos ficam no guia
 privado da equipe, fora do repositório. As migrações foram reorganizadas em 20/10/2026: se a API recusar com
 *Migration checksum mismatch* ou *applied migration not resolved locally*, rode
 `docker compose down -v && docker compose up -d` **uma vez** (apaga os dados locais).
+
+</details>
+
+<details open>
+<summary><b>🧪 Testar: pela IDE, no Insomnia e olhando o banco</b></summary>
+<br/>
+
+| Quero... | Como |
+|---|---|
+| rodar pela IntelliJ | o projeto traz 3 configurações prontas (pasta `.run/`): **API · Visitante (H2)**, **API · Equipe (H2)** e **API · MySQL (Docker)** |
+| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.json`](backend/insomnia/rkfbank.insomnia.json) no Insomnia: 49 requisições em ordem, e o login guarda o token sozinho |
+| ver as tabelas no H2 | `http://localhost:8080/h2-console` · JDBC URL `jdbc:h2:mem:rkfbank-visitante` (ou `rkfbank-equipe`) · usuário `sa`, senha vazia |
+| ver as tabelas no MySQL | `localhost:5441` com o usuário do `.env` (IntelliJ *Database*, DBeaver) ou `docker exec` no container `rkfbank-mysql` |
+| tornar alguém ADMIN | pelo `.env` (primeiro admin), pela API (`PATCH /admin/usuarios/{id}/perfil`) ou por SQL num banco local |
+
+Passo a passo de tudo isso, com as permissões de cada rota e todos os payloads:
+**[Como testar o projeto, do zero](backend/README_TESTES_E2E.md)**.
 
 </details>
 
@@ -1038,7 +1055,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 261 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 264 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1046,6 +1063,7 @@ scripts/validar.sh backend          # testes em H2, resumo curto (sem Docker)
 scripts/validar.sh frontend         # lint + typecheck + build
 scripts/testar-no-mysql.sh          # testes de integração contra o MySQL do Docker
 node scripts/smoke-e2e.mjs          # fluxo real contra a API no ar
+node scripts/rodar-colecao-insomnia.mjs  # a coleção do Insomnia inteira pelo terminal
 node scripts/engenharia-reversa-jwt.mjs  # tenta forjar o JWT: tudo tem que dar 401
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no pnpm
 ```
@@ -1069,6 +1087,7 @@ node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no 
 | `ViaCepClientTest` | CEP encontrado, inexistente (`422`) e ViaCEP fora (`503`) |
 | `CpfValidoValidatorTest` | dígitos verificadores e máscara |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e rejeitado contra log forjado |
+| `ConsoleH2LigadoTest` / `ConsoleH2DesligadoTest` | console do H2 aberto só nos perfis com H2, sem afrouxar a segurança da API |
 | `*RepositoryTest` | consultas, constraints, cascata, `@Version` e `tb_usuario` (`@DataJpaTest` com as migrações do Flyway) |
 
 Relatório de cobertura: `target/site/jacoco/index.html`. Teste manual de aceite: [roteiro E2E](backend/README_TESTES_E2E.md) + [checklist](backend/CHECKLIST_TESTES_E2E.md).
@@ -1450,7 +1469,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | Segurança | [Spring Security + OAuth2 + JWT](backend/README_SEGURANCA.md) | como o login, o token, os filtros, a autorização e o cookie do front funcionam, e por que é assim |
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
-| Backend | [Guia de testes (visitante)](backend/README_TESTES_E2E.md) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) · [Visitantes](VISITANTES.md) | testar a API na sua máquina; aceite do MVP |
+| Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Checklist E2E](backend/CHECKLIST_TESTES_E2E.md) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou MySQL), ver o banco, permissões, payloads e roteiros; aceite do MVP |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
 | Planejamento | [planing/](planing/README.md) · [Proposta de nomes](planing/proposta-de-nomes.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e nomes a padronizar |
 
