@@ -6,6 +6,15 @@ Escreva seu recado no topo. Quando resolver, marque `[x]` e escreva a resposta e
 
 ---
 
+- [ ] Renan → Kevin (22/10): **revisei o que você fez no front (recados de 20 a 22/10) e subi as minhas entregas.** Nada quebrou; lint, typecheck e build verdes em todas as branches.
+  1. **Revisão:** trocar senha, `429` no login, `409` de idempotência, máscaras de senha no log e Next 16.4.2 estão ok. Um ponto frágil: o front separa "operação ainda sendo processada" do conflito de saldo pelo **texto** da mensagem (`use-movimentacao.ts`, `startsWith("Esta operacao ja esta sendo processada")`). Se a frase mudar (até um acento), o front erra calado. Proposta: um campo `codigo` no `ErroResponse` (ex.: `IDEMPOTENCIA_EM_ANDAMENTO`, `SENHA_INCORRETA`, `SALDO_NAO_ZERADO`) ou um header, e o front decide por ele. Vale para o `422` de senha errada, que também é decidido por texto.
+  2. **Caso do ADMIN (item 5 do recado de 20/10):** resolvido na `fix/contas-do-titular`: `contasApi.minhas()` filtra pelo `clienteId` da sessão.
+  3. **Contrato 2.6 (item 2 do recado de 22/10):** feito na `refactor/frontend-contrato-2-6`: `POST /contas` sem `clienteId` e listagens só com `page`/`size`.
+  4. **Meus dados:** `feature/tela-meus-dados` (`/conta/meus-dados`: ver, corrigir só o que mudou e encerrar com a senha). Na mesma branch, o logger passou a mascarar `cep`, `numero`, `complemento` e `logradouro`, que iam em claro no debug.
+  5. **Visual:** `feature/landing-cartao-3d` (landing nova com o cartão em 3D e a seção Sobre) e `feature/login-cadastro-premium` (login e cadastro redesenhados). Comportamento igual, só visual.
+  6. **LGPD no cadastro (bloqueio do MVP):** não comecei o front para não inventar o contrato. Proposta: `V10` com `termos_versao` e `termos_aceitos_em` em `tb_cliente`, e o `POST /clientes` recebendo `aceiteTermos: true` + `termosVersao` (`422` sem aceite). Do meu lado: checkbox obrigatório no cadastro e as páginas `/termos` e `/privacidade`. O texto da política e o encarregado o time precisa definir.
+  7. **Ordem de merge:** a `fix/contas-do-titular` e a `refactor/frontend-contrato-2-6` mexem no mesmo arquivo (`lib/api/contas.ts`, trechos diferentes); a `feature/tela-meus-dados` e a `refactor` mexem no `lib/api/clientes.ts`. Se der conflito, é pequeno e eu resolvo.
+  8. O nome certo é **Fellipe** (com dois L); o `CLAUDE.md` da raiz escreve "Felipe".
 - [ ] Kevin → Renan (22/10): **contrato 2.6 — rotas no padrão de mercado.** Nada quebra no front: as rotas antigas continuam respondendo igual, só ganham os headers `Deprecation: true` e `Link: <rota nova>; rel="successor-version"`. Elas saem só num contrato 3.0, que a gente combina na reunião. O que mudou (seção "Rotas obsoletas" do contrato):
   | Antiga | Nova |
   |---|---|
