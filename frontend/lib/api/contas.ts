@@ -1,4 +1,5 @@
 import { logContas } from "@/lib/logger";
+import { authApi } from "./auth";
 import { apiRequest } from "./client";
 import type {
   AbrirContaRequest,
@@ -16,29 +17,35 @@ export const HEADER_IDEMPOTENCIA = "Idempotency-Key";
 
 export const contasApi = {
   /**
-   * Contas do usuário logado: com token de CLIENTE, `GET /contas` já devolve só as dele (contrato 2.0, R13).
+   * Contas do usuário logado. Com token de CLIENTE, `GET /contas` já devolve só as dele (contrato 2.0, R13), mas
+   * com token de ADMIN devolve **todas**: por isso o filtro pelo `clienteId` da sessão. ADMIN sem cadastro de
+   * cliente (`clienteId` nulo) não tem conta própria → lista vazia.
    * Lista simples, sem paginação: um cliente tem poucas contas.
    */
   async minhas() {
-    const contas = await apiRequest<ContaResponse[]>("/contas");
-    logContas.debug("Contas do usuário carregadas", { quantidade: contas.length });
-    return contas;
+    const [contas, { clienteId }] = await Promise.all([
+      apiRequest<ContaResponse[]>("/contas"),
+      authApi.sessao(),
+    ]);
+    const minhas = contas.filter((conta) => conta.clienteId === clienteId);
+    logContas.debug("Contas do usuário carregadas", { quantidade: minhas.length });
+    return minhas;
   },
 
-  async abrir(clienteId: Uuid, data: AbrirContaRequest) {
-    logContas.info("Abrindo conta", { clienteId, tipoConta: data.tipoContaEnum });
-    const conta = await apiRequest<ContaResponse>(`/contas/clientes/${clienteId}`, {
-      method: "POST",
-      body: data,
-    });
-    logContas.info("Conta aberta", { contaId: conta.id, clienteId });
+  /**
+   * Abre conta no cadastro do usuário logado: a API tira o cliente do token, então não há
+   * `clienteId` para mandar nem para errar. ADMIN sem cadastro de cliente → `422`.
+   */
+  async abrir(data: AbrirContaRequest) {
+    logContas.info("Abrindo conta", { tipoConta: data.tipoConta });
+    const conta = await apiRequest<ContaResponse>("/contas", { method: "POST", body: data });
+    logContas.info("Conta aberta", { contaId: conta.id, clienteId: conta.clienteId });
     return conta;
   },
 
+  /** `page` ou `size` na URL pedem a página. */
   async listar({ page = 0, size = 10 }: PageRequest = {}) {
-    const pagina = await apiRequest<Page<ContaResponse>>("/contas", {
-      query: { paginado: true, page, size },
-    });
+    const pagina = await apiRequest<Page<ContaResponse>>("/contas", { query: { page, size } });
     logContas.debug("Contas listadas", { page, size, totalElements: pagina.totalElements });
     return pagina;
   },

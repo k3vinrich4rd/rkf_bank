@@ -12,7 +12,8 @@ export async function GET() {
       timestamp: new Date().toISOString(),
       status: 401,
       error: "Unauthorized",
-      message: "Sessao expirada; faca login novamente",
+      codigo: "TOKEN_INVALIDO",
+      message: "Sessão expirada; faça login novamente",
       path: "/auth/sessao",
       campos: [],
     };

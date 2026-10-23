@@ -25,7 +25,7 @@ class CorsIntegracaoTest {
 
     @Test
     void preflightDeOrigemPermitidaNaRotaDeContasRespondeSemToken() throws Exception {
-        mockMvc.perform(options("/contas/transferencia")
+        mockMvc.perform(options("/transferencias")
                         .header("Origin", "http://localhost:3000")
                         .header("Access-Control-Request-Method", "POST")
                         .header("Access-Control-Request-Headers", "authorization,content-type,idempotency-key"))

@@ -6,6 +6,7 @@ import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.dto.response.cliente.EncerramentoResponseDto;
 import com.br.rkfbank.security.UsuarioLogado;
 import com.br.rkfbank.services.TitularService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 // Direitos do titular (LGPD): "me" = o cliente do token. Nao existe /clientes/{id} aqui de proposito: o id viria
 // do usuario e seria mais uma porta para ver o cadastro de outra pessoa. Exige token (anyRequest().authenticated()).
+@Tag(name = "Meus dados (LGPD)", description = "o titular vê, corrige e encerra o próprio cadastro")
 @RestController
 @RequestMapping("/clientes/me")
 public class TitularController {

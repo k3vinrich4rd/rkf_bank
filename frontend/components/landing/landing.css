@@ -1,0 +1,134 @@
+/*
+ * Landing RKF: tokens próprios em cima da identidade (marinho + azul→ciano).
+ * O ciano é o único acento e aparece só em pontos pequenos (ponto, fio, marcador).
+ */
+.landing {
+  --l-fundo: #0a0f1c;
+  --l-texto: #e8edf4;
+  --l-suave: #8f9bb0;
+  --l-fio: rgb(148 163 184 / 0.16);
+  --l-palavra: #cdd5e0;
+  --l-acento: #06b6d4;
+  --l-azul: #3b82f6;
+
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgb(59 130 246 / 0.07), transparent 60%),
+    radial-gradient(140% 120% at 50% 50%, transparent 55%, rgb(0 0 0 / 0.55) 100%),
+    var(--l-fundo);
+  color: var(--l-texto);
+}
+
+/* Grão fino por cima de tudo: tira o aspecto "plástico" dos gradientes. */
+.landing::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+.fonte-larga {
+  font-family: var(--font-larga), "Plus Jakarta Sans", sans-serif;
+  font-stretch: 125%;
+}
+
+.fonte-mono {
+  font-family: var(--font-mono-landing), ui-monospace, monospace;
+  font-feature-settings: "tnum";
+}
+
+/* Palavra gigante: uma linha, sem quebra, com a largura ajustada por JS (`ajustarPalavra`). */
+.palavra {
+  display: inline-block;
+  white-space: nowrap;
+  line-height: 0.78;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.ponto-acento {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--l-acento);
+  box-shadow: 0 0 12px rgb(6 182 212 / 0.7);
+}
+
+.fio-x {
+  height: 1px;
+  background: var(--l-fio);
+}
+
+/* ── Celular do hero ──────────────────────────────────────────────────── */
+
+.celular {
+  --cw: min(330px, 34svh);
+  position: absolute;
+  z-index: 2;
+  left: calc(66% - var(--cw) / 2);
+  top: calc(50% - var(--cw) * 1.0833);
+  width: var(--cw);
+  height: calc(var(--cw) * 2.1667);
+  border-radius: calc(var(--cw) * 0.15);
+  padding: calc(var(--cw) * 0.03);
+  background: #05070c;
+  box-shadow:
+    0 0 0 1px rgb(148 163 184 / 0.18),
+    0 40px 120px -20px rgb(0 0 0 / 0.8);
+  opacity: 0;
+  visibility: hidden;
+}
+
+.celular__tela {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: calc(var(--cw) * 0.125);
+  background: linear-gradient(180deg, #121a2b, #0c1220 60%);
+  padding: calc(var(--cw) * 0.13) calc(var(--cw) * 0.06) 0;
+  font-size: calc(var(--cw) * 0.04);
+}
+
+.celular__ilha {
+  position: absolute;
+  top: calc(var(--cw) * 0.03);
+  left: 50%;
+  width: 30%;
+  height: calc(var(--cw) * 0.07);
+  translate: -50% 0;
+  border-radius: 999px;
+  background: #000;
+}
+
+/* A vaga onde o cartão 3D encaixa: mede-se o retângulo dela no DOM. */
+.app__vaga {
+  aspect-ratio: 85.6 / 53.98;
+  width: 100%;
+  border-radius: calc(var(--cw) * 0.035);
+  background: rgb(255 255 255 / 0.03);
+}
+
+@media (max-width: 767px) {
+  .celular {
+    --cw: min(84vw, 380px);
+    left: calc(50% - var(--cw) / 2);
+    top: 34svh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing * {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Textos que a timeline revela: os filhos começam escondidos e o GSAP os mostra (o estilo inline vence a classe).
+   Não esconda o contêiner: o `autoAlpha` dá `visibility: inherit` aos filhos, que herdariam o "escondido". */
+.entra-depois > * {
+  visibility: hidden;
+}

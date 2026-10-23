@@ -7,6 +7,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.ServicoExternoIndisponivelException;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,8 @@ class ViaCepClientTest {
         when(restClient.get().uri("/{cep}/json/", "99999999").retrieve().onStatus(any(), any()).body(ViaCepResponseDto.class))
                 .thenReturn(new ViaCepResponseDto(null, null, null, null, null, null, true));
 
-        assertThrows(RegraNegocioException.class, () -> viaCepClient.buscarPorCep("99999999"));
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> viaCepClient.buscarPorCep("99999999"));
+        assertEquals(CodigoErroEnum.CEP_NAO_ENCONTRADO, ex.getCodigo());
     }
 
     @Test
@@ -65,16 +67,16 @@ class ViaCepClientTest {
                 .thenThrow(new RuntimeException("timeout"));
 
         ServicoExternoIndisponivelException ex = assertThrows(ServicoExternoIndisponivelException.class, () -> viaCepClient.buscarPorCep("01001000"));
-        assertEquals("Falha ao consultar ViaCEP", ex.getMessage());
+        assertEquals(CodigoErroEnum.SERVICO_INDISPONIVEL, ex.getCodigo());
     }
 
     @Test
     void devePropagarServicoExternoExceptionSemAlterarMensagem() {
         when(restClient.get().uri("/{cep}/json/", "01001000").retrieve().onStatus(any(), any()).body(ViaCepResponseDto.class))
-                .thenThrow(new ServicoExternoIndisponivelException("ViaCEP indisponível"));
+                .thenThrow(new ServicoExternoIndisponivelException());
 
         ServicoExternoIndisponivelException ex = assertThrows(ServicoExternoIndisponivelException.class, () -> viaCepClient.buscarPorCep("01001000"));
-        assertEquals("ViaCEP indisponível", ex.getMessage());
+        assertEquals(CodigoErroEnum.SERVICO_INDISPONIVEL, ex.getCodigo());
     }
 
     @Test
@@ -88,6 +90,6 @@ class ViaCepClientTest {
 
         InvocationTargetException ex = assertThrows(InvocationTargetException.class, () -> lambda.invoke(viaCepClient, null, null));
         assertTrue(ex.getCause() instanceof ServicoExternoIndisponivelException);
-        assertEquals("ViaCEP indisponível", ex.getCause().getMessage());
+        assertEquals("ViaCEP indisponível; tente novamente em instantes", ex.getCause().getMessage());
     }
 }

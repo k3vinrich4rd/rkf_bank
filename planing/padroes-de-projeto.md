@@ -11,7 +11,7 @@
 
 | Argumento a favor do `Impl` | No RKF Bank |
 |---|---|
-| "Facilita mockar nos testes" | o Mockito moca classe direto (`@Mock ContaService`); os 237 testes já fazem isso |
+| "Facilita mockar nos testes" | o Mockito moca classe direto (`@Mock ContaService`); os 307 testes já fazem isso |
 | "O Spring precisa de interface para o proxy do `@Transactional`" | precisava no Spring antigo (proxy JDK); desde o Boot 2 o padrão é proxy de **classe** (CGLIB) |
 | "Permite trocar a implementação" | cada service tem **uma** implementação e não há segunda à vista: seria uma interface que só repete a classe |
 | "É o padrão de mercado" | é comum em código legado; o guia do próprio Spring e projetos modernos usam a classe direto |
@@ -57,7 +57,7 @@ portfólio. Padrão "porque é bonito" fica de fora.
 | 1 | **Modelo de domínio rico** (*Tell, don't ask*) | a regra de saldo mora no `ContaService` (`getSaldo` + `setSaldo` em cada movimentação: 5 `setSaldo` no service); a `Conta` é só um saco de dados (*modelo anêmico*) | 🟢 baixo | ⭐⭐⭐ | **antes do MVP** (31/10): pouco código, menos bug |
 | 2 | **Value Object `Dinheiro`** | `BigDecimal` solto: escala 2, arredondamento e "maior que zero" repetidos | 🟡 médio | ⭐⭐⭐ | depois do 1 |
 | 3 | **Ports & Adapters no CEP** + **Decorator** de cache e reserva | ViaCEP fora = cadastro fora (`503`); CEP consultado de novo a cada cadastro | 🟡 médio | ⭐⭐⭐ | logo depois do MVP |
-| 4 | **Mapper** dedicado | conversão entidade → DTO espalhada (`toResponse`, `paraContaResponse`, `paraResponse`) | 🟢 baixo | ⭐⭐ | junto com os renomes da [proposta de nomes](proposta-de-nomes.md) |
+| 4 | **Mapper** dedicado | conversão entidade → DTO espalhada (`toResponse`, `paraContaResponse`, `paraResponse`) | 🟢 baixo | ⭐⭐ | quando os services crescerem (hoje os `paraResponse` são poucos e locais) |
 | 5 | **Domain Events** (*Observer*) + **Outbox** | nada avisa "transferência feita" (comprovante, notificação, auditoria) | 🔴 alto | ⭐⭐⭐⭐ | feature 6 (mensageria) |
 | 6 | **Test Data Builder** | testes montam `Cliente`/`Conta` campo a campo; ruído esconde o que o teste prova | 🟢 baixo | ⭐⭐ | qualquer hora (só testes) |
 | 7 | **Specification** | — (ainda não há busca com filtros) | — | ⭐ | só quando o extrato ganhar filtro |

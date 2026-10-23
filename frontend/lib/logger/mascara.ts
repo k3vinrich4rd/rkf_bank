@@ -23,6 +23,11 @@ const MASCARAS: Record<string, (valor: string) => string> = {
   telefone: (valor) => `${OCULTO}${valor.replace(/\D/g, "").slice(-4)}`,
   // Joao Silva → Joao ***
   nomeCompleto: (valor) => `${valor.trim().split(/\s+/)[0] ?? ""} ${OCULTO}`,
+  // Endereço: CEP + número identificam a casa. 01001000 → 01***; a região (cidade/UF) continua útil para diagnóstico.
+  cep: (valor) => `${valor.replace(/\D/g, "").slice(0, 2)}${OCULTO}`,
+  numero: () => OCULTO,
+  complemento: () => OCULTO,
+  logradouro: () => OCULTO,
   // Credenciais nunca aparecem, nem em parte.
   senha: () => OCULTO,
   confirmarSenha: () => OCULTO,

@@ -17,7 +17,7 @@ public class InicializadorAcessoEquipe implements ApplicationRunner {
 
     private static final Logger log = LogManager.getLogger(InicializadorAcessoEquipe.class);
 
-    // Ids fixos do afterMigrate__dados_equipe.sql: "Felipe Santana (Teste Origem)" e "Renan Barros (Teste Destino)".
+    // Ids fixos do afterMigrate__dados_equipe.sql: "Fellipe Santana (Teste Origem)" e "Renan Barros (Teste Destino)".
     static final List<UUID> CLIENTES_DA_EQUIPE = List.of(
             UUID.fromString("5eed0000-0000-4000-8000-000000000012"),
             UUID.fromString("5eed0000-0000-4000-8000-000000000022"));

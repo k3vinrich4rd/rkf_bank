@@ -11,7 +11,7 @@ public record ContaResponseDto(
     UUID clienteId,
     String agencia,
     String numeroConta,
-    TipoContaEnum tipoContaEnum,
+    TipoContaEnum tipoConta,
     BigDecimal saldo,
     boolean ativa
 ) {}

@@ -43,25 +43,25 @@ class GestaoUsuarioServiceTest {
 
     @Test
     void promoveClienteAAdmin() {
-        Usuario felipe = usuario(PerfilEnum.CLIENTE, "12345678909", "Felipe Santana");
-        when(usuarioRepository.findById(felipe.getId())).thenReturn(Optional.of(felipe));
+        Usuario fellipe = usuario(PerfilEnum.CLIENTE, "12345678909", "Fellipe Santana");
+        when(usuarioRepository.findById(fellipe.getId())).thenReturn(Optional.of(fellipe));
 
-        UsuarioAdminResponseDto resposta = service.alterarPerfil(felipe.getId(), PerfilEnum.ADMIN, ADMIN);
+        UsuarioAdminResponseDto resposta = service.alterarPerfil(fellipe.getId(), PerfilEnum.ADMIN, ADMIN);
 
-        assertEquals(PerfilEnum.ADMIN, felipe.getPerfil());
+        assertEquals(PerfilEnum.ADMIN, fellipe.getPerfil());
         assertEquals(PerfilEnum.ADMIN, resposta.perfil());
         assertEquals("***.456.789-**", resposta.cpf());
-        assertEquals("Felipe Santana", resposta.nome());
+        assertEquals("Fellipe Santana", resposta.nome());
     }
 
     @Test
     void rebaixaAdminQueTemCadastroDeCliente() {
-        Usuario felipe = usuario(PerfilEnum.ADMIN, "12345678909", "Felipe Santana");
-        when(usuarioRepository.findById(felipe.getId())).thenReturn(Optional.of(felipe));
+        Usuario fellipe = usuario(PerfilEnum.ADMIN, "12345678909", "Fellipe Santana");
+        when(usuarioRepository.findById(fellipe.getId())).thenReturn(Optional.of(fellipe));
 
-        service.alterarPerfil(felipe.getId(), PerfilEnum.CLIENTE, ADMIN);
+        service.alterarPerfil(fellipe.getId(), PerfilEnum.CLIENTE, ADMIN);
 
-        assertEquals(PerfilEnum.CLIENTE, felipe.getPerfil());
+        assertEquals(PerfilEnum.CLIENTE, fellipe.getPerfil());
     }
 
     @Test
@@ -109,7 +109,7 @@ class GestaoUsuarioServiceTest {
         RegraNegocioException ex = assertThrows(RegraNegocioException.class,
                 () -> service.redefinirSenha(ADMIN.usuarioId(), "senha-temporaria-1", ADMIN));
 
-        assertEquals("Para trocar a sua propria senha use PATCH /auth/senha", ex.getMessage());
+        assertEquals("Para trocar a sua própria senha use PATCH /usuarios/me/senha", ex.getMessage());
         verifyNoInteractions(usuarioRepository, passwordEncoder);
     }
 

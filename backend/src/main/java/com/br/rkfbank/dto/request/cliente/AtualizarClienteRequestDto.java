@@ -10,17 +10,17 @@ import jakarta.validation.constraints.Size;
 public record AtualizarClienteRequestDto(
         @Size(min = 1, max = 120, message = "nomeCompleto deve ter entre 1 e 120 caracteres")
         String nomeCompleto,
-        @Email(message = "email invalido")
-        @Size(max = 255, message = "email deve ter no maximo 255 caracteres")
+        @Email(message = "email inválido")
+        @Size(max = 255, message = "email deve ter no máximo 255 caracteres")
         String email,
-        @Pattern(regexp = "[\\d()\\s+-]{10,20}", message = "telefone invalido")
+        @Pattern(regexp = "[\\d()\\s+-]{10,20}", message = "telefone inválido")
         String telefone,
-        @Pattern(regexp = "\\d{5}-?\\d{3}", message = "cep deve ter 8 digitos")
+        @Pattern(regexp = "\\d{5}-?\\d{3}", message = "cep deve ter 8 dígitos")
         String cep,
         @Size(min = 1, max = 20, message = "numero deve ter entre 1 e 20 caracteres")
         String numero,
         // "" apaga o complemento; null deixa como esta.
-        @Size(max = 80, message = "complemento deve ter no maximo 80 caracteres")
+        @Size(max = 80, message = "complemento deve ter no máximo 80 caracteres")
         String complemento
 ) {
 

@@ -53,7 +53,7 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 
 | Rota | Arquivo | Status |
 |---|---|---|
-| `/` | [`app/page.tsx`](app/page.tsx) | ✅ landing page (estática) |
+| `/` | [`app/page.tsx`](app/page.tsx) | ✅ landing com o cartão RKF em 3D preso ao scroll (Three.js + GSAP + Lenis); roteiro em [`docs/landing.md`](docs/landing.md) |
 | `/cadastro` | [`app/cadastro/page.tsx`](app/cadastro/page.tsx) | ✅ cadastro de cliente integrado à API |
 | `/login` | [`app/login/page.tsx`](app/login/page.tsx) | ✅ login com CPF e senha (volta para a tela de origem com `?voltar=`) |
 | `/conta/abrir` | [`app/conta/abrir/page.tsx`](app/conta/abrir/page.tsx) | ✅ abertura de conta (passo seguinte ao cadastro) |
@@ -62,8 +62,8 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 | `/conta/sacar` | [`app/conta/sacar/page.tsx`](app/conta/sacar/page.tsx) | ✅ saque (valida o saldo antes de enviar) |
 | `/conta/transferir` | [`app/conta/transferir/page.tsx`](app/conta/transferir/page.tsx) | ✅ transferência pelo ID da conta de destino |
 | `/conta/extrato` | [`app/conta/extrato/page.tsx`](app/conta/extrato/page.tsx) | ✅ extrato agrupado por dia, entradas em verde |
-| `/conta/senha` | [`app/conta/senha/page.tsx`](app/conta/senha/page.tsx) | ✅ trocar a própria senha (o Route Handler chama `PATCH /usuarios/me/senha`, contrato 2.6); a sessão cai e o login mostra "senha trocada" |
-| `/conta/meus-dados` | — | ⏳ **planejada**: a API já tem ver, corrigir e encerrar o cadastro (`/clientes/me`, contrato 2.5) e os tipos estão em `lib/api/types.ts` |
+| `/conta/senha` | [`app/conta/senha/page.tsx`](app/conta/senha/page.tsx) | ✅ trocar a própria senha (o Route Handler chama `PATCH /usuarios/me/senha`); a sessão cai e o login mostra "senha trocada" |
+| `/conta/meus-dados` | [`app/conta/meus-dados/page.tsx`](app/conta/meus-dados/page.tsx) | ✅ meus dados (LGPD): ver, corrigir só o que mudou (`PATCH /clientes/me`) e encerrar o cadastro com a senha; depois do encerramento a sessão é apagada |
 
 As três movimentações são **uma tela só** (`components/movimentacao`), configurada por tipo em `movimentacoes.ts`:
 o contrato é o mesmo (`valor` + `descricao`) e a transferência só acrescenta o destino. As telas da conta
@@ -105,7 +105,8 @@ flowchart TB
    [contrato de API](../backend/README_CONTRATO_API.md). Mudou o contrato? Mude o tipo primeiro — o
    TypeScript aponta tudo que quebrou.
 4. **Server Component por padrão.** Só use `"use client"` quando precisar de estado, efeito ou evento
-   (formulários, botões interativos). A landing page inteira é estática.
+   (formulários, botões interativos). A landing sai pronta do servidor; só o movimento (cartão 3D, pins e rolagem
+   suave) liga no navegador, dentro de cada seção (`components/landing`).
 
 ### Por que existe um proxy `/api`?
 
@@ -125,7 +126,8 @@ try {
 } catch (error) {
   if (error instanceof ApiError) {
     error.status;       // 400, 404, 409, 422, 503...
-    error.message;      // mensagem do backend
+    error.codigo;       // "SALDO_INSUFICIENTE", "IDEMPOTENCIA_EM_ANDAMENTO"... (contrato 3.0; null fora do formato padrão)
+    error.message;      // mensagem do backend, só para exibir
     error.fieldErrors;  // { valor: "valor deve ser maior que zero" } → direto no formulário
   } else {
     // sem resposta: backend fora do ar ou rede caiu
@@ -133,8 +135,10 @@ try {
 }
 ```
 
-**Decida pelo `status`, nunca pelo texto da mensagem.** Exemplo real: `mensagemDeErro` em
-[`components/cadastro/use-cadastro-form.ts`](components/cadastro/use-cadastro-form.ts).
+**Decida pelo `status` e, quando o mesmo status tem causas diferentes, pelo `codigo`. Nunca pelo texto da
+mensagem**, que pode mudar. Exemplos reais: o `409` de `use-movimentacao.ts` (`IDEMPOTENCIA_EM_ANDAMENTO` ×
+concorrência) e o `422` de `use-trocar-senha.ts` (`SENHA_ATUAL_INCORRETA` × `SENHA_REPETIDA`). A lista completa de
+códigos é o tipo `CodigoErro` em [`lib/api/types.ts`](lib/api/types.ts), espelho do `CodigoErroEnum` do backend.
 
 ### Login e sessão (JWT em cookie `httpOnly`)
 
@@ -186,7 +190,8 @@ frontend/
 ├── components/
 │   ├── ui/                     # peças genéricas (Button, Input, FormField) — base shadcn
 │   ├── brand/                  # logo
-│   ├── marketing/              # seções da landing page
+│   ├── landing/                # seções da landing, textos (conteudo.ts), fontes e CSS próprio
+│   ├── marketing/bank-card.tsx # cartão RKF em CSS (usado no cadastro; o 3D copia o desenho dele)
 │   ├── cadastro/               # tela de cadastro: screen, form, showcase, sucesso e o hook
 │   ├── abrir-conta/            # tela de abertura de conta: screen, form, aviso, sucesso e o hook
 │   ├── conta/                  # tela da conta + peças compartilhadas (useConta, ContaEstado, ContaShell, BotaoSair)
@@ -195,16 +200,16 @@ frontend/
 │   ├── login/                  # tela de login e o hook
 │   └── logs/                   # useLogDeTela e <LogDeTela />
 ├── config/
-│   ├── site.ts                 # nome, slogan, descrição, menu
-│   └── marketing.ts            # textos e dados da landing page
+│   └── site.ts                 # nome, slogan e descrição (SEO)
 ├── lib/
 │   ├── api/                    # client HTTP, tipos do contrato, authApi, clientesApi, contasApi
 │   ├── auth/cookies.ts         # cookies da sessão (só o servidor usa)
 │   ├── logger/                 # logger com mascaramento LGPD (ver README próprio)
 │   ├── env.ts                  # variáveis de ambiente
 │   ├── format.ts               # moeda (formatCurrency, decimalToCents) e tipo de conta
+│   ├── motion/                 # cartão 3D (Three.js), registro do GSAP, rolagem suave e ajuste de palavra
 │   ├── masks.ts                # máscaras de CPF, CEP, telefone + onlyDigits
-│   ├── routes.ts               # rotas e âncoras da landing
+│   ├── routes.ts               # rotas da aplicação
 │   └── utils.ts                # cn() para juntar classes
 ├── types/index.ts              # tipos do front que não vêm da API (Cents)
 ├── proxy.ts                    # Bearer nas chamadas /api e proteção das telas /conta

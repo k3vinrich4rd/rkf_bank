@@ -1,30 +1,34 @@
-import { CardSection } from "@/components/marketing/card-section";
-import { CtaSection } from "@/components/marketing/cta-section";
-import { FaqSection } from "@/components/marketing/faq-section";
-import { FeaturesSection } from "@/components/marketing/features-section";
-import { Hero } from "@/components/marketing/hero";
-import { Highlights } from "@/components/marketing/highlights";
-import { HowItWorksSection } from "@/components/marketing/how-it-works-section";
-import { SecuritySection } from "@/components/marketing/security-section";
-import { SiteFooter } from "@/components/marketing/site-footer";
-import { SiteHeader } from "@/components/marketing/site-header";
+import { fonteLarga, fonteMono } from "@/components/landing/fontes";
+import { HeroCartao } from "@/components/landing/hero-cartao";
+import { LandingMovimento } from "@/components/landing/landing-movimento";
+import { LandingNav } from "@/components/landing/landing-nav";
+import { LandingRodape } from "@/components/landing/landing-rodape";
+import { SecaoCep } from "@/components/landing/secao-cep";
+import { SecaoContas } from "@/components/landing/secao-contas";
+import { SecaoExtrato } from "@/components/landing/secao-extrato";
+import { SecaoTime } from "@/components/landing/secao-time";
+import { SecaoUmaVez } from "@/components/landing/secao-uma-vez";
+import "@/components/landing/landing.css";
 
-/** Landing page institucional (estática, renderizada no build). */
+/**
+ * Landing page. O HTML sai pronto do servidor (SEO e primeira pintura); o movimento (cartão 3D, pins e
+ * rolagem suave) liga no navegador, dentro de cada seção.
+ */
 export default function HomePage() {
   return (
-    <>
-      <SiteHeader />
-      <main className="flex-1">
-        <Hero />
-        <Highlights />
-        <FeaturesSection />
-        <HowItWorksSection />
-        <CardSection />
-        <SecuritySection />
-        <FaqSection />
-        <CtaSection />
-      </main>
-      <SiteFooter />
-    </>
+    <div className={`landing ${fonteLarga.variable} ${fonteMono.variable} flex-1`}>
+      <LandingMovimento>
+        <LandingNav />
+        <main>
+          <HeroCartao />
+          <SecaoExtrato />
+          <SecaoUmaVez />
+          <SecaoCep />
+          <SecaoTime />
+          <SecaoContas />
+        </main>
+        <LandingRodape />
+      </LandingMovimento>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 package com.br.rkfbank.security;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -9,8 +10,16 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 
+// Contra o banco de verdade do teste (H2 com as migracoes do Flyway, incluindo a V12 da tb_tentativa_login).
+@DataJpaTest
+@ActiveProfiles("test")
 class LimitadorTentativasLoginTest {
 
     private static final String CPF = "52998224725";
@@ -39,8 +48,16 @@ class LimitadorTentativasLoginTest {
         }
     }
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private final RelogioManual relogio = new RelogioManual();
-    private final LimitadorTentativasLogin limitador = new LimitadorTentativasLogin(relogio);
+    private LimitadorTentativasLogin limitador;
+
+    @BeforeEach
+    void setUp() {
+        limitador = new LimitadorTentativasLogin(jdbcTemplate, relogio);
+    }
 
     @Test
     void quatroErrosAindaDeixamTentar() {
@@ -81,6 +98,26 @@ class LimitadorTentativasLoginTest {
         errar(LimitadorTentativasLogin.MAX_FALHAS);
 
         assertDoesNotThrow(() -> limitador.conferir("11144477735"));
+    }
+
+    @Test
+    void falhaDepoisDaJanelaVencidaComecaContagemNova() {
+        errar(LimitadorTentativasLogin.MAX_FALHAS - 1);
+        relogio.avancar(LimitadorTentativasLogin.JANELA.plusSeconds(1));
+        errar(LimitadorTentativasLogin.MAX_FALHAS - 1);
+
+        assertDoesNotThrow(() -> limitador.conferir(CPF));
+    }
+
+    @Test
+    void cpfNaoFicaNaTabelaSoOHashEJanelasVencidasSaem() {
+        errar(1);
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM tb_tentativa_login WHERE chave_login LIKE ?", Integer.class, "%" + CPF + "%"));
+        assertEquals(64, jdbcTemplate.queryForObject("SELECT chave_login FROM tb_tentativa_login", String.class).length());
+
+        relogio.avancar(LimitadorTentativasLogin.JANELA.plusSeconds(1));
+        assertEquals(1, limitador.apagarJanelasVencidas());
     }
 
     private void errar(int vezes) {

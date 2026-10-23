@@ -35,7 +35,7 @@ class LogSeguroTest {
 
     @Test
     void deveManterTextoNormalENullLegivel() {
-        assertEquals("/contas/123/saque", LogSeguro.texto("/contas/123/saque"));
+        assertEquals("/contas/123/saques", LogSeguro.texto("/contas/123/saques"));
         assertEquals("null", LogSeguro.texto(null));
     }
 }

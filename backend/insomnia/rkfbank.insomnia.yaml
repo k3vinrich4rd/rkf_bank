@@ -1,0 +1,3905 @@
+type: "collection.insomnia.rest/5.0"
+schema_version: "5.1"
+name: "RKF Bank API"
+meta:
+  id: "wrk_rkfbank"
+  created: 1792777656439
+  modified: 1792777656439
+  description: "Coleção gerada por scripts/gerar-colecao-insomnia.mjs. Guia: backend/README_TESTES_E2E.md."
+collection:
+  - name: "00 · Comece aqui"
+    meta:
+      id: "fld_rkfbank_00"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 0
+      description: "Escolha o **ambiente** no canto superior esquerdo (Visitante ou Equipe) e mande a primeira requisição. `{\"status\":\"UP\"}` = a API está no ar. Sem resposta? Ela não subiu: veja o guia `backend/README_TESTES_E2E.md`."
+    children:
+      - url: "{{ _.base_url }}/actuator/health"
+        name: "Saúde da API"
+        meta:
+          id: "req_rkfbank_00_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Pública. Usada pelo Docker e pelo deploy para saber se a API respondeu."
+          sortKey: 0
+        method: "GET"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("UP", () => insomnia.expect(insomnia.response.json().status).to.equal("UP"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/termos"
+        name: "Versão dos termos (pública)"
+        meta:
+          id: "req_rkfbank_00_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Versão vigente dos Termos de Uso e da Política de Privacidade (contrato 3.1). A tela de cadastro mostra estes textos e manda a versão aceita em `termosVersao`."
+          sortKey: 1
+        method: "GET"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) insomnia.environment.set("termos_versao", insomnia.response.json().versao);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "01 · Login (guarda o token sozinho)"
+    meta:
+      id: "fld_rkfbank_01"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 1
+      description: "Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`, `token_admin`) e o de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de acesso vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou renove pela pasta **09 · Sessão**."
+    children:
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente ORIGEM (Ana / Fellipe)"
+        meta:
+          id: "req_rkfbank_01_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 0
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_origem }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_origem", login.token);
+              insomnia.environment.set("refresh_origem", login.refreshToken);
+              insomnia.environment.set("cliente_origem_id", login.clienteId ?? "");
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente DESTINO (Bruno / Renan)"
+        meta:
+          id: "req_rkfbank_01_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 1
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_destino }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              insomnia.environment.set("cliente_destino_id", login.clienteId ?? "");
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · ADMIN (só perfil equipe ou MySQL)"
+        meta:
+          id: "req_rkfbank_01_02"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "O ADMIN não nasce por rota: a API cria na subida se `ADMIN_CPF` e `ADMIN_SENHA` estiverem no ambiente. No perfil **visitante** não existe ADMIN (de propósito): este login dá `401`."
+          sortKey: 2
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.admin_cpf }}",
+              "senha": "{{ _.admin_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_admin", login.token);
+              insomnia.environment.set("refresh_admin", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            if (insomnia.response.code === 200) {
+              const payload = insomnia.response.json().token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+              insomnia.environment.set("usuario_admin_id", JSON.parse(atob(payload)).sub);
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "02 · Fluxo E2E: cliente novo, do cadastro ao extrato"
+    meta:
+      id: "fld_rkfbank_02"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 2
+      description: "O roteiro E2E principal, na ordem: cadastro (CPF, CEP e telefone com máscara, endereço pelo ViaCEP) → login → contas ORIGEM e DESTINO → depósito, saque e transferência → extratos. O cadastro sorteia CPF e e-mail novos a cada envio, então pode repetir à vontade. Precisa de internet: o endereço vem do ViaCEP."
+    children:
+      - url: "{{ _.base_url }}/clientes"
+        name: "Cadastrar cliente (público)"
+        meta:
+          id: "req_rkfbank_02_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "`aceiteTermos: true` é obrigatório (LGPD, contrato 3.1). Manda CPF, CEP e telefone **com máscara**, como a pessoa digita: a API higieniza (fica só com os dígitos), valida o CPF pelos dígitos verificadores e busca o endereço no **ViaCEP** (Osasco/SP). `201` com o cliente. A resposta traz o CPF **mascarado** e a versão dos termos aceita. O cadastro **não** devolve token: faça o login."
+          sortKey: 0
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "Cliente Novo do Insomnia",
+              "cpf": "{{ _.novo_cpf_mascara }}",
+              "email": "{{ _.novo_email }}",
+              "telefone": "(11) 99999-8888",
+              "cep": "06020-010",
+              "numero": "123",
+              "complemento": "Apto 45",
+              "senha": "{{ _.novo_senha }}",
+              "aceiteTermos": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          preRequest: |-
+            const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+            if (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;
+            for (const tamanho of [9, 10]) {
+              const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);
+              const resto = (soma * 10) % 11;
+              n.push(resto === 10 ? 0 : resto);
+            }
+            const sufixo = Date.now().toString(36);
+            insomnia.environment.set("novo_cpf", n.join(""));
+            const d = n.join("");
+            insomnia.environment.set("novo_cpf_mascara", d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6, 9) + "-" + d.slice(9));
+            insomnia.environment.set("novo_email", "cliente.novo." + sufixo + "@exemplo.test");
+            insomnia.environment.set("novo_senha", "senha-do-novo-" + sufixo);
+            console.log("CPF sorteado:", n.join(""));
+          afterResponse: |-
+            insomnia.test("status 201", () => insomnia.expect(insomnia.response.code).to.equal(201));
+            if (insomnia.response.code === 201) insomnia.environment.set("novo_cliente_id", insomnia.response.json().id);
+            const c = insomnia.response.code === 201 ? insomnia.response.json() : null;
+            insomnia.test("ViaCEP preencheu a cidade", () => insomnia.expect(c.endereco.cidade).to.equal("Osasco"));
+            insomnia.test("CEP higienizado", () => insomnia.expect(c.endereco.cep.replace(/\D/g, "")).to.equal("06020010"));
+            insomnia.test("CPF mascarado na resposta", () => insomnia.expect(c.cpf).to.match(/^\*\*\*\.\d{3}\.\d{3}-\*\*$/));
+            insomnia.test("aceite gravado", () => insomnia.expect(c.termosAceitosEm).to.be.ok);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente novo"
+        meta:
+          id: "req_rkfbank_02_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 1
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_novo", login.token);
+              insomnia.environment.set("refresh_novo", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Abrir conta ORIGEM: corrente"
+        meta:
+          id: "req_rkfbank_02_02"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Corpo só com `tipoConta`: o dono vem do **token**, a agência é `0001` e o número (com dígito verificador) é gerado pelo banco."
+          sortKey: 2
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "tipoConta": "CORRENTE"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 201", () => insomnia.expect(insomnia.response.code).to.equal(201));
+            if (insomnia.response.code === 201) insomnia.environment.set("conta_nova_id", insomnia.response.json().id);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Abrir conta DESTINO: poupança"
+        meta:
+          id: "req_rkfbank_02_03"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Um cliente pode ter mais de uma conta. Esta recebe a transferência logo abaixo."
+          sortKey: 3
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "tipoConta": "POUPANCA"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 201", () => insomnia.expect(insomnia.response.code).to.equal(201));
+            if (insomnia.response.code === 201) insomnia.environment.set("conta_nova_destino_id", insomnia.response.json().id);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Minhas contas (as duas com saldo 0,00)"
+        meta:
+          id: "req_rkfbank_02_04"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 4
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("duas contas", () => insomnia.expect(insomnia.response.json().length).to.equal(2));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/depositos"
+        name: "Depositar R$ 150,00 na ORIGEM"
+        meta:
+          id: "req_rkfbank_02_05"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "`204` sem corpo. O header `Idempotency-Key` (aba Headers) gera um UUID novo a cada envio."
+          sortKey: 5
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 150,
+              "descricao": "Deposito pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/saques"
+        name: "Sacar R$ 50,00 da ORIGEM"
+        meta:
+          id: "req_rkfbank_02_06"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 6
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 50,
+              "descricao": "Saque pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Transferir R$ 25,00 ORIGEM → DESTINO"
+        meta:
+          id: "req_rkfbank_02_07"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Débito e crédito na mesma transação: ou os dois acontecem, ou nenhum."
+          sortKey: 7
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "contaOrigemId": "{{ _.conta_nova_id }}",
+              "contaDestinoId": "{{ _.conta_nova_destino_id }}",
+              "valor": 25.00,
+              "descricao": "Transferencia pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Saldos: ORIGEM 75,00 · DESTINO 25,00"
+        meta:
+          id: "req_rkfbank_02_08"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 8
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            const contas = insomnia.response.code === 200 ? insomnia.response.json() : [];
+            const saldo = (id) => Number(contas.find((c) => c.id === insomnia.environment.get(id))?.saldo);
+            insomnia.test("origem 75", () => insomnia.expect(saldo("conta_nova_id")).to.equal(75));
+            insomnia.test("destino 25", () => insomnia.expect(saldo("conta_nova_destino_id")).to.equal(25));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}"
+        name: "Ver só a conta ORIGEM"
+        meta:
+          id: "req_rkfbank_02_09"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "`GET /contas/{contaId}` (contrato 3.1): uma conta só, para atualizar o saldo sem buscar a lista inteira."
+          sortKey: 9
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("saldo 75", () => insomnia.expect(Number(insomnia.response.json().saldo)).to.equal(75));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/lancamentos"
+        name: "Extrato da ORIGEM (3 lançamentos)"
+        meta:
+          id: "req_rkfbank_02_10"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Do mais recente para o mais antigo. `valor` sempre positivo: se `contaDestinoId` é esta conta, é entrada."
+          sortKey: 10
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("transferência, saque e depósito", () => insomnia.expect(insomnia.response.json().length).to.equal(3));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_destino_id }}/lancamentos"
+        name: "Extrato do DESTINO (1 lançamento)"
+        meta:
+          id: "req_rkfbank_02_11"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 11
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("recebeu a transferência", () => insomnia.expect(insomnia.response.json()[0].tipoLancamento).to.equal("TRANSFERENCIA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "03 · Dinheiro entre clientes (contas prontas do seed)"
+    meta:
+      id: "fld_rkfbank_03"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 3
+      description: "Tudo com o token da ORIGEM. Depósito, saque e transferência levam `Idempotency-Key` (aba Headers): o `{% uuid 'v4' %}` gera uma chave nova a cada envio. Resposta `204` não tem corpo: veja o saldo em **Minhas contas**."
+    children:
+      - url: "{{ _.base_url }}/contas"
+        name: "Minhas contas (ORIGEM)"
+        meta:
+          id: "req_rkfbank_03_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "`CLIENTE` vê só as dele; `ADMIN` vê todas. O script guarda a primeira conta em `conta_origem_id`."
+          sortKey: 0
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            const contas = insomnia.response.code === 200 ? insomnia.response.json() : [];
+            if (contas.length) insomnia.environment.set("conta_origem_id", contas[0].id);
+            console.log(contas.map((c) => c.numeroConta + " saldo " + c.saldo).join("\n"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas?page=0&size=10"
+        name: "Minhas contas paginadas"
+        meta:
+          id: "req_rkfbank_03_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Basta `page` **ou** `size` para vir a página: `content`, `totalElements`, `totalPages`, `number`, `size`, `first`, `last`."
+          sortKey: 1
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("é página", () => insomnia.expect(insomnia.response.json().content).to.be.an("array"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Depositar R$ 150,00"
+        meta:
+          id: "req_rkfbank_03_02"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 2
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 150,
+              "descricao": "Deposito pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/saques"
+        name: "Sacar R$ 50,00"
+        meta:
+          id: "req_rkfbank_03_03"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 3
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 50,
+              "descricao": "Saque pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Transferir R$ 25,00 ORIGEM → DESTINO"
+        meta:
+          id: "req_rkfbank_03_04"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Débito e crédito na mesma transação: ou os dois acontecem, ou nenhum."
+          sortKey: 4
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "contaOrigemId": "{{ _.conta_origem_id }}",
+              "contaDestinoId": "{{ _.conta_destino_id }}",
+              "valor": 25.00,
+              "descricao": "Transferencia pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/lancamentos"
+        name: "Extrato da ORIGEM"
+        meta:
+          id: "req_rkfbank_03_05"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Do mais recente para o mais antigo. `valor` sempre positivo."
+          sortKey: 5
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_destino_id }}/lancamentos"
+        name: "Extrato do DESTINO (token do destino)"
+        meta:
+          id: "req_rkfbank_03_06"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 6
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("recebeu a transferência", () => insomnia.expect(insomnia.response.json()[0].tipoLancamento).to.equal("TRANSFERENCIA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "04 · Idempotência (o mesmo pedido não movimenta duas vezes)"
+    meta:
+      id: "fld_rkfbank_04"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 4
+      description: "Mande na ordem. A 1ª sorteia uma chave e guarda em `chave_fixa`; a 2ª repete a MESMA chave com o MESMO corpo (como se a rede tivesse caído): `204` com o header `Idempotency-Replayed: true` e o saldo **não** muda."
+    children:
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "1ª vez: depósito com chave fixa"
+        meta:
+          id: "req_rkfbank_04_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 0
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 10,
+              "descricao": "Idempotencia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{{ _.chave_fixa }}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          preRequest: "insomnia.environment.set(\"chave_fixa\", \"chave-fixa-\" + Date.now() + \"-\" + Math.random().toString(36).slice(2, 8));"
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "2ª vez: mesma chave, mesmo corpo → repetição"
+        meta:
+          id: "req_rkfbank_04_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 1
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 10,
+              "descricao": "Idempotencia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{{ _.chave_fixa }}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 204", () => insomnia.expect(insomnia.response.code).to.equal(204));
+            insomnia.test("Idempotency-Replayed", () => insomnia.expect(insomnia.response.headers.get("Idempotency-Replayed")).to.equal("true"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Mesma chave, outro valor → 422"
+        meta:
+          id: "req_rkfbank_04_02"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 2
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 99,
+              "descricao": "Idempotencia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{{ _.chave_fixa }}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo IDEMPOTENCIA_CHAVE_REUSADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("IDEMPOTENCIA_CHAVE_REUSADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Sem a chave → 400"
+        meta:
+          id: "req_rkfbank_04_03"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 3
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 10
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "05 · ADMIN: gestão de clientes, contas e usuários"
+    meta:
+      id: "fld_rkfbank_05"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 5
+      description: "Tudo o que o ADMIN faz e tudo o que ele **não** pode fazer. Precisa do **Login · ADMIN** (pasta 01) e do **cliente novo** (pasta 02): é nele que o ADMIN mexe, para não estragar as contas fixas. No perfil visitante não há ADMIN: tudo aqui dá `401` (use o ambiente Equipe com a API no perfil `equipe` ou MySQL)."
+    children:
+      - url: "{{ _.base_url }}/clientes"
+        name: "Listar clientes (array)"
+        meta:
+          id: "req_rkfbank_05_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Só ADMIN. Sem `page`/`size` vem um array com todos; com eles, uma página."
+          sortKey: 0
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes?page=0&size=10"
+        name: "Listar clientes (paginado)"
+        meta:
+          id: "req_rkfbank_05_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 1
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("é página", () => insomnia.expect(insomnia.response.json().content).to.be.an("array"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas?page=0&size=20"
+        name: "Listar TODAS as contas (paginado)"
+        meta:
+          id: "req_rkfbank_05_02"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "A mesma rota do cliente, mas o ADMIN recebe as contas de todo mundo."
+          sortKey: 2
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios"
+        name: "Listar usuários (guarda o id do cliente novo)"
+        meta:
+          id: "req_rkfbank_05_03"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "CPF vem mascarado. O `id` daqui (tb_usuario) é o que vai nas rotas abaixo, **não** o `clienteId`."
+          sortKey: 3
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            const usuarios = insomnia.response.code === 200 ? insomnia.response.json() : [];
+            const alvo = usuarios.find((u) => u.clienteId === insomnia.environment.get("novo_cliente_id"));
+            if (alvo) insomnia.environment.set("usuario_novo_id", alvo.id);
+            insomnia.test("achou o cliente novo", () => insomnia.expect(alvo).to.be.ok);
+            insomnia.test("CPF mascarado", () => insomnia.expect(usuarios[0].cpf).to.include("***"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/perfil"
+        name: "Promover o cliente novo a ADMIN"
+        meta:
+          id: "req_rkfbank_05_04"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Vale na próxima requisição: o token antigo do promovido passa a dar `401`."
+          sortKey: 4
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "perfil": "ADMIN"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("virou ADMIN", () => insomnia.expect(insomnia.response.json().perfil).to.equal("ADMIN"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Token antigo do promovido → 401"
+        meta:
+          id: "req_rkfbank_05_05"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 5
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo ACESSO_ALTERADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("ACESSO_ALTERADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login do promovido (já vem ADMIN)"
+        meta:
+          id: "req_rkfbank_05_06"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 6
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_novo", login.token);
+              insomnia.environment.set("refresh_novo", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            insomnia.test("perfil ADMIN", () => insomnia.expect(insomnia.response.json().perfil).to.equal("ADMIN"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes?page=0&size=5"
+        name: "Promovido lista clientes → 200"
+        meta:
+          id: "req_rkfbank_05_07"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Agora ele é ADMIN e continua dono das próprias contas (o cadastro de cliente não some)."
+          sortKey: 7
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_admin_id }}/perfil"
+        name: "Promovido tenta rebaixar o ADMIN do .env → 422"
+        meta:
+          id: "req_rkfbank_05_08"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "O ADMIN do `.env` não é cliente: virar CLIENTE não faz sentido. Para tirá-lo, desative o acesso."
+          sortKey: 8
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "perfil": "CLIENTE"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo PERFIL_CLIENTE_SEM_CADASTRO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("PERFIL_CLIENTE_SEM_CADASTRO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/perfil"
+        name: "Rebaixar de volta a CLIENTE"
+        meta:
+          id: "req_rkfbank_05_09"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 9
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "perfil": "CLIENTE"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/acesso"
+        name: "Desativar o acesso"
+        meta:
+          id: "req_rkfbank_05_10"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "\"Remover\" = desativar: o usuário nunca é apagado (o histórico de movimentações aponta para ele)."
+          sortKey: 10
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "ativo": false
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("ativo false", () => insomnia.expect(insomnia.response.json().ativo).to.equal(false));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login do desativado → 401"
+        meta:
+          id: "req_rkfbank_05_11"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 11
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo CREDENCIAIS_INVALIDAS", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CREDENCIAIS_INVALIDAS"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/acesso"
+        name: "Reativar o acesso"
+        meta:
+          id: "req_rkfbank_05_12"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 12
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "ativo": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/senha"
+        name: "Redefinir a senha (quem esqueceu)"
+        meta:
+          id: "req_rkfbank_05_13"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "O script passa a senha nova para `novo_senha`. Ela é **temporária** (contrato 3.1): no próximo login a pessoa precisa trocá-la."
+          sortKey: 13
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "novaSenha": "{{ _.senha_redefinida }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          preRequest: "insomnia.environment.set(\"senha_redefinida\", \"redefinida-\" + Date.now().toString(36));"
+          afterResponse: |-
+            insomnia.test("status 204", () => insomnia.expect(insomnia.response.code).to.equal(204));
+            if (insomnia.response.code === 204) insomnia.environment.set("novo_senha", insomnia.environment.get("senha_redefinida"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login com a senha temporária (deveTrocarSenha)"
+        meta:
+          id: "req_rkfbank_05_14"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 14
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_novo", login.token);
+              insomnia.environment.set("refresh_novo", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            insomnia.test("deveTrocarSenha", () => insomnia.expect(insomnia.response.json().deveTrocarSenha).to.equal(true));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Senha temporária em outra rota → 403"
+        meta:
+          id: "req_rkfbank_05_15"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Com a senha temporária, o token só abre `PATCH /usuarios/me/senha`."
+          sortKey: 15
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 403", () => insomnia.expect(insomnia.response.code).to.equal(403));
+            insomnia.test("codigo TROCA_DE_SENHA_OBRIGATORIA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("TROCA_DE_SENHA_OBRIGATORIA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/usuarios/me/senha"
+        name: "Trocar a senha temporária"
+        meta:
+          id: "req_rkfbank_05_16"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 16
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senhaAtual": "{{ _.novo_senha }}",
+              "novaSenha": "{{ _.senha_escolhida }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          preRequest: "insomnia.environment.set(\"senha_escolhida\", \"escolhida-\" + Date.now().toString(36));"
+          afterResponse: |-
+            insomnia.test("status 204", () => insomnia.expect(insomnia.response.code).to.equal(204));
+            if (insomnia.response.code === 204) insomnia.environment.set("novo_senha", insomnia.environment.get("senha_escolhida"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente novo (de novo, senha escolhida)"
+        meta:
+          id: "req_rkfbank_05_17"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 17
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_novo", login.token);
+              insomnia.environment.set("refresh_novo", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            insomnia.test("sem troca pendente", () => insomnia.expect(insomnia.response.json().deveTrocarSenha).to.equal(false));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_admin_id }}/perfil"
+        name: "Trava: ADMIN mexe no próprio perfil → 422"
+        meta:
+          id: "req_rkfbank_05_18"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Ninguém mexe em si mesmo: o ADMIN não se tranca para fora e sempre sobra um ADMIN ativo."
+          sortKey: 18
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "perfil": "ADMIN"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo PROPRIO_ACESSO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("PROPRIO_ACESSO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_admin_id }}/senha"
+        name: "Trava: ADMIN redefine a própria senha pela gestão → 422"
+        meta:
+          id: "req_rkfbank_05_19"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "A própria senha se troca em `PATCH /usuarios/me/senha`, que exige a atual (um token roubado não basta)."
+          sortKey: 19
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "novaSenha": "nao-vai-mudar-123"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo PROPRIA_SENHA_PELA_GESTAO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("PROPRIA_SENHA_PELA_GESTAO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/perfil"
+        name: "Perfil que não existe → 400"
+        meta:
+          id: "req_rkfbank_05_20"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 20
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "perfil": "GERENTE"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/00000000-0000-4000-8000-000000000000/perfil"
+        name: "Usuário que não existe → 404"
+        meta:
+          id: "req_rkfbank_05_21"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 21
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "perfil": "ADMIN"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 404", () => insomnia.expect(insomnia.response.code).to.equal(404));
+            insomnia.test("codigo USUARIO_NAO_ENCONTRADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("USUARIO_NAO_ENCONTRADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/acesso"
+        name: "Acesso sem o campo → 400"
+        meta:
+          id: "req_rkfbank_05_22"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 22
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: "{}"
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/senha"
+        name: "Senha curta na redefinição → 400"
+        meta:
+          id: "req_rkfbank_05_23"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 23
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "novaSenha": "curta"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "ADMIN do .env abre conta → 422"
+        meta:
+          id: "req_rkfbank_05_24"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 24
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "tipoConta": "CORRENTE"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SEM_CADASTRO_CLIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SEM_CADASTRO_CLIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "ADMIN do .env em /clientes/me → 422"
+        meta:
+          id: "req_rkfbank_05_25"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 25
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SEM_CADASTRO_CLIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SEM_CADASTRO_CLIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "ADMIN deposita na conta de um cliente → 403"
+        meta:
+          id: "req_rkfbank_05_26"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "O ADMIN **vê** todas as contas, mas não **mexe** no dinheiro dos outros: a regra de dono vale para todos."
+          sortKey: 26
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 1
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 403", () => insomnia.expect(insomnia.response.code).to.equal(403));
+            insomnia.test("codigo CONTA_DE_OUTRO_CLIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CONTA_DE_OUTRO_CLIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/lancamentos"
+        name: "ADMIN vê o extrato de um cliente → 403"
+        meta:
+          id: "req_rkfbank_05_27"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 27
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}"
+        name: "ADMIN vê uma conta de cliente → 200"
+        meta:
+          id: "req_rkfbank_05_28"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Ver pode (como em `GET /contas`); movimentar e ver o extrato, não."
+          sortKey: 28
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/conciliacao"
+        name: "Conciliação: saldo × extrato"
+        meta:
+          id: "req_rkfbank_05_29"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Contas cujo saldo não bate com a soma do extrato. Lista vazia é o normal; qualquer linha é bug ou alteração manual no banco."
+          sortKey: 29
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("nenhuma conta divergente", () => insomnia.expect(insomnia.response.json()).to.have.length(0));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "06 · Meus dados (LGPD) e senha"
+    meta:
+      id: "fld_rkfbank_06"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 6
+      description: "O titular vê, corrige e encerra o próprio cadastro (`/clientes/me`: o `me` é sempre o dono do token). Troca de senha e encerramento são feitos no **cliente novo**, para as contas fixas continuarem entrando."
+    children:
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Ver meus dados (ORIGEM)"
+        meta:
+          id: "req_rkfbank_06_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 0
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Corrigir meu telefone (ORIGEM)"
+        meta:
+          id: "req_rkfbank_06_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Só muda o que vier no corpo. CPF não muda."
+          sortKey: 1
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "telefone": "11912345678"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Mudar de endereço: CEP + número (ORIGEM)"
+        meta:
+          id: "req_rkfbank_06_02"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "O endereço vem do ViaCEP de novo (precisa de internet). CEP novo exige `numero`."
+          sortKey: 2
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cep": "01001000",
+              "numero": "10"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("endereço do ViaCEP", () => insomnia.expect(insomnia.response.json().endereco.numero).to.equal("10"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "CEP sem número → 400"
+        meta:
+          id: "req_rkfbank_06_03"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 3
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cep": "01001000"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Corpo vazio → 400"
+        meta:
+          id: "req_rkfbank_06_04"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 4
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: "{}"
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "E-mail de outra pessoa → 409"
+        meta:
+          id: "req_rkfbank_06_05"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 5
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "email": "{{ _.email_destino }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 409", () => insomnia.expect(insomnia.response.code).to.equal(409));
+            insomnia.test("codigo EMAIL_JA_CADASTRADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("EMAIL_JA_CADASTRADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/usuarios/me/senha"
+        name: "Trocar senha com a atual errada → 422"
+        meta:
+          id: "req_rkfbank_06_06"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 6
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senhaAtual": "chute-errado-1",
+              "novaSenha": "outra-senha-123"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SENHA_ATUAL_INCORRETA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SENHA_ATUAL_INCORRETA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/usuarios/me/senha"
+        name: "Nova senha igual à atual → 422"
+        meta:
+          id: "req_rkfbank_06_07"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 7
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senhaAtual": "{{ _.novo_senha }}",
+              "novaSenha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SENHA_REPETIDA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SENHA_REPETIDA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/usuarios/me/senha"
+        name: "Trocar a própria senha (cliente novo)"
+        meta:
+          id: "req_rkfbank_06_08"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Depois do `204`, todo token antigo (inclusive este) dá `401`. O script já guarda a senha nova."
+          sortKey: 8
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senhaAtual": "{{ _.novo_senha }}",
+              "novaSenha": "{{ _.senha_trocada }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          preRequest: "insomnia.environment.set(\"senha_trocada\", \"trocada-\" + Date.now().toString(36));"
+          afterResponse: |-
+            insomnia.test("status 204", () => insomnia.expect(insomnia.response.code).to.equal(204));
+            if (insomnia.response.code === 204) insomnia.environment.set("novo_senha", insomnia.environment.get("senha_trocada"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Token antigo depois da troca → 401"
+        meta:
+          id: "req_rkfbank_06_09"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 9
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo ACESSO_ALTERADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("ACESSO_ALTERADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente novo com a senha nova"
+        meta:
+          id: "req_rkfbank_06_10"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 10
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_novo", login.token);
+              insomnia.environment.set("refresh_novo", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me/encerramento"
+        name: "Encerrar com a senha errada → 422"
+        meta:
+          id: "req_rkfbank_06_11"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 11
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senha": "chute-errado-2"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SENHA_INCORRETA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SENHA_INCORRETA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me/encerramento"
+        name: "Encerrar com saldo (ORIGEM) → 422"
+        meta:
+          id: "req_rkfbank_06_12"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Dinheiro não some: com saldo, o encerramento é recusado (e nada muda na conta de origem)."
+          sortKey: 12
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SALDO_NAO_ZERADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SALDO_NAO_ZERADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/saques"
+        name: "Zerar a ORIGEM (saque de R$ 75,00)"
+        meta:
+          id: "req_rkfbank_06_13"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Dinheiro não some: antes de encerrar, o titular tira o saldo das contas (as da pasta 02)."
+          sortKey: 13
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 75,
+              "descricao": "Saque antes de encerrar"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_destino_id }}/saques"
+        name: "Zerar o DESTINO (saque de R$ 25,00)"
+        meta:
+          id: "req_rkfbank_06_14"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 14
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 25,
+              "descricao": "Saque antes de encerrar"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me/encerramento"
+        name: "⚠️ Encerrar o cadastro (cliente novo)"
+        meta:
+          id: "req_rkfbank_06_15"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Exige saldo zero em todas as contas (as do cliente novo estão zeradas). Contas ficam inativas, o login é desativado e os dados são anonimizados depois de 5 anos. Para repetir, cadastre outro cliente novo (pasta 02)."
+          sortKey: 15
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("prazo de anonimização", () => insomnia.expect(insomnia.response.json().anonimizacaoPrevistaPara).to.be.ok);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Token do encerrado → 401"
+        meta:
+          id: "req_rkfbank_06_16"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 16
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login do encerrado → 401"
+        meta:
+          id: "req_rkfbank_06_17"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 17
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/acesso"
+        name: "ADMIN tenta reativar o encerrado → 422"
+        meta:
+          id: "req_rkfbank_06_18"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Só com ADMIN (ambiente Equipe). Quem encerrou não volta pelas mãos do ADMIN: a decisão é do titular."
+          sortKey: 18
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "ativo": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_admin }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo CADASTRO_ENCERRADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CADASTRO_ENCERRADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "07 · Erros que DEVEM acontecer"
+    meta:
+      id: "fld_rkfbank_07"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 7
+      description: "Cada uma testa uma proteção. Se alguma passar com 2xx, achamos um bug."
+    children:
+      - url: "{{ _.base_url }}/contas"
+        name: "Sem token → 401"
+        meta:
+          id: "req_rkfbank_07_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 0
+        method: "GET"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo AUTENTICACAO_NECESSARIA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("AUTENTICACAO_NECESSARIA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Token adulterado → 401"
+        meta:
+          id: "req_rkfbank_07_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Um JWT com payload trocado e assinatura que não bate: o Resource Server recusa."
+          sortKey: 1
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_falso }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo TOKEN_INVALIDO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("TOKEN_INVALIDO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Senha errada no login → 401"
+        meta:
+          id: "req_rkfbank_07_02"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "CPF sem cadastro e senha errada dão a MESMA resposta: não dá para descobrir quem é cliente. 5 erros seguidos no mesmo CPF → `429` (mande esta 6 vezes para ver; o CPF fica 15 min bloqueado)."
+          sortKey: 2
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "39053344705",
+              "senha": "errada-123"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo CREDENCIAIS_INVALIDAS", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CREDENCIAIS_INVALIDAS"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "CLIENTE em rota de ADMIN → 403"
+        meta:
+          id: "req_rkfbank_07_03"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 3
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 403", () => insomnia.expect(insomnia.response.code).to.equal(403));
+            insomnia.test("codigo PERFIL_SEM_PERMISSAO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("PERFIL_SEM_PERMISSAO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios"
+        name: "CLIENTE na gestão de usuários → 403"
+        meta:
+          id: "req_rkfbank_07_04"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 4
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Depositar na conta de outro cliente → 403"
+        meta:
+          id: "req_rkfbank_07_05"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 5
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 1
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 403", () => insomnia.expect(insomnia.response.code).to.equal(403));
+            insomnia.test("codigo CONTA_DE_OUTRO_CLIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CONTA_DE_OUTRO_CLIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/lancamentos"
+        name: "Ver o extrato de outro cliente → 403"
+        meta:
+          id: "req_rkfbank_07_06"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 6
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}"
+        name: "Ver a conta de outro cliente → 403"
+        meta:
+          id: "req_rkfbank_07_07"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 7
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 403", () => insomnia.expect(insomnia.response.code).to.equal(403));
+            insomnia.test("codigo CONTA_DE_OUTRO_CLIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CONTA_DE_OUTRO_CLIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/conciliacao"
+        name: "CLIENTE na conciliação → 403"
+        meta:
+          id: "req_rkfbank_07_08"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 8
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/saques"
+        name: "Sacar mais que o saldo → 422"
+        meta:
+          id: "req_rkfbank_07_09"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 9
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 999999
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SALDO_INSUFICIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SALDO_INSUFICIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Transferir mais que o saldo → 422"
+        meta:
+          id: "req_rkfbank_07_10"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 10
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "contaOrigemId": "{{ _.conta_origem_id }}",
+              "contaDestinoId": "{{ _.conta_destino_id }}",
+              "valor": 999999.00
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SALDO_INSUFICIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SALDO_INSUFICIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Transferir para a mesma conta → 422"
+        meta:
+          id: "req_rkfbank_07_11"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 11
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "contaOrigemId": "{{ _.conta_origem_id }}",
+              "contaDestinoId": "{{ _.conta_origem_id }}",
+              "valor": 1.00
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo MESMA_CONTA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("MESMA_CONTA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/00000000-0000-4000-8000-000000000000/lancamentos"
+        name: "Conta que não existe → 404"
+        meta:
+          id: "req_rkfbank_07_12"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 12
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 404\", () => insomnia.expect(insomnia.response.code).to.equal(404));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/00000000-0000-4000-8000-000000000000"
+        name: "Ver conta que não existe → 404"
+        meta:
+          id: "req_rkfbank_07_13"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 13
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 404", () => insomnia.expect(insomnia.response.code).to.equal(404));
+            insomnia.test("codigo CONTA_NAO_ENCONTRADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CONTA_NAO_ENCONTRADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/abc/lancamentos"
+        name: "Id que não é UUID → 400"
+        meta:
+          id: "req_rkfbank_07_14"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 14
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas?size=0"
+        name: "Paginação inválida → 400"
+        meta:
+          id: "req_rkfbank_07_15"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 15
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Tipo de conta inválido → 400"
+        meta:
+          id: "req_rkfbank_07_16"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 16
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "tipoConta": "SALARIO"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "JSON quebrado → 400"
+        meta:
+          id: "req_rkfbank_07_17"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 17
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: "{ \"valor\": "
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Valor com 3 casas → 400"
+        meta:
+          id: "req_rkfbank_07_18"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 18
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 10.001
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "Cadastro inválido → 400 com os campos"
+        meta:
+          id: "req_rkfbank_07_19"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 19
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "",
+              "cpf": "11111111111",
+              "email": "nao-e-email",
+              "telefone": "",
+              "cep": "",
+              "numero": "",
+              "senha": "curta",
+              "aceiteTermos": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 400", () => insomnia.expect(insomnia.response.code).to.equal(400));
+            insomnia.test("lista os campos", () => insomnia.expect(insomnia.response.json().campos.length).to.be.above(0));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "CPF já cadastrado → 409"
+        meta:
+          id: "req_rkfbank_07_20"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 20
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "CPF Repetido",
+              "cpf": "{{ _.cpf_origem }}",
+              "email": "repetido.{% uuid 'v4' %}@exemplo.test",
+              "telefone": "11999998888",
+              "cep": "01001000",
+              "numero": "1",
+              "senha": "senha-forte-1",
+              "aceiteTermos": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 409", () => insomnia.expect(insomnia.response.code).to.equal(409));
+            insomnia.test("codigo CPF_JA_CADASTRADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CPF_JA_CADASTRADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "Cadastro sem aceitar os termos → 400"
+        meta:
+          id: "req_rkfbank_07_21"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "LGPD (contrato 3.1): sem o aceite dos Termos de Uso e da Política de Privacidade, o cadastro nem chega ao banco."
+          sortKey: 21
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "Sem Aceite",
+              "cpf": "{{ _.cpf_extra }}",
+              "email": "aceite.{% uuid 'v4' %}@exemplo.test",
+              "telefone": "11999998888",
+              "cep": "01001000",
+              "numero": "1",
+              "senha": "senha-forte-1",
+              "aceiteTermos": false
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          preRequest: |-
+            const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+            if (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;
+            for (const tamanho of [9, 10]) {
+              const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);
+              const resto = (soma * 10) % 11;
+              n.push(resto === 10 ? 0 : resto);
+            }
+            insomnia.environment.set("cpf_extra", n.join(""));
+          afterResponse: |-
+            insomnia.test("status 400", () => insomnia.expect(insomnia.response.code).to.equal(400));
+            insomnia.test("codigo CAMPOS_INVALIDOS", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CAMPOS_INVALIDOS"));
+            insomnia.test("campo aceiteTermos", () => insomnia.expect(insomnia.response.json().campos[0].campo).to.equal("aceiteTermos"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "Cadastro com termos antigos → 422"
+        meta:
+          id: "req_rkfbank_07_22"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "A pessoa aceitou uma versão dos termos que não vale mais (página aberta antes de eles mudarem): recarregar e aceitar de novo."
+          sortKey: 22
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "Termos Antigos",
+              "cpf": "{{ _.cpf_extra }}",
+              "email": "termos.{% uuid 'v4' %}@exemplo.test",
+              "telefone": "11999998888",
+              "cep": "01001000",
+              "numero": "1",
+              "senha": "senha-forte-1",
+              "aceiteTermos": true,
+              "termosVersao": "2000-01-01"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          preRequest: |-
+            const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+            if (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;
+            for (const tamanho of [9, 10]) {
+              const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);
+              const resto = (soma * 10) % 11;
+              n.push(resto === 10 ? 0 : resto);
+            }
+            insomnia.environment.set("cpf_extra", n.join(""));
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo TERMOS_DESATUALIZADOS", () => insomnia.expect(insomnia.response.json().codigo).to.equal("TERMOS_DESATUALIZADOS"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "CEP que não existe → 422"
+        meta:
+          id: "req_rkfbank_07_23"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "O endereço vem do ViaCEP: CEP inexistente → `422`; ViaCEP fora do ar → `503`."
+          sortKey: 23
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "CEP Inexistente",
+              "cpf": "{{ _.cpf_extra }}",
+              "email": "cep.{% uuid 'v4' %}@exemplo.test",
+              "telefone": "11999998888",
+              "cep": "99999999",
+              "numero": "1",
+              "senha": "senha-forte-1",
+              "aceiteTermos": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          preRequest: |-
+            const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+            if (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;
+            for (const tamanho of [9, 10]) {
+              const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);
+              const resto = (soma * 10) % 11;
+              n.push(resto === 10 ? 0 : resto);
+            }
+            insomnia.environment.set("cpf_extra", n.join(""));
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo CEP_NAO_ENCONTRADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CEP_NAO_ENCONTRADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "08 · CORS (navegador chamando a API direto)"
+    meta:
+      id: "fld_rkfbank_08"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 8
+      description: "O site de hoje passa pelo proxy do Next e não usa CORS. Isto vale para um navegador chamando a API direto. As origens permitidas vêm de `CORS_ORIGENS` (padrão `http://localhost:3000`)."
+    children:
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Preflight de origem permitida → 200"
+        meta:
+          id: "req_rkfbank_08_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 0
+        method: "OPTIONS"
+        headers:
+          - name: "Origin"
+            value: "http://localhost:3000"
+          - name: "Access-Control-Request-Method"
+            value: "POST"
+          - name: "Access-Control-Request-Headers"
+            value: "authorization,content-type,idempotency-key"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("Allow-Origin", () => insomnia.expect(insomnia.response.headers.get("Access-Control-Allow-Origin")).to.equal("http://localhost:3000"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Preflight de origem estranha → 403"
+        meta:
+          id: "req_rkfbank_08_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 1
+        method: "OPTIONS"
+        headers:
+          - name: "Origin"
+            value: "https://site-estranho.example"
+          - name: "Access-Control-Request-Method"
+            value: "POST"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "09 · Sessão: renovar e sair (refresh token)"
+    meta:
+      id: "fld_rkfbank_09"
+      created: 1792777656439
+      modified: 1792777656439
+      sortKey: 9
+      description: "Contrato 3.1. O login devolve, além do token de acesso (15 min), um **token de renovação** (7 dias) que troca o par sem pedir a senha. Ele é de **uso único**: usar de novo um já trocado é sinal de roubo e derruba todas as sessões da pessoa. Mande na ordem; usa o cliente DESTINO, e no fim ele entra de novo para as outras pastas continuarem."
+    children:
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente DESTINO"
+        meta:
+          id: "req_rkfbank_09_00"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 0
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_destino }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            if (insomnia.response.code === 200) insomnia.environment.set("refresh_usado", insomnia.response.json().refreshToken);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Renovar: troca o par"
+        meta:
+          id: "req_rkfbank_09_01"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Público: o token de renovação vai no corpo (o de acesso pode já ter vencido). Mesmo formato do login."
+          sortKey: 1
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_destino }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            insomnia.test("token de renovação novo", () => insomnia.expect(insomnia.response.json().refreshToken).to.not.equal(insomnia.environment.get("refresh_usado")));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "O token novo funciona"
+        meta:
+          id: "req_rkfbank_09_02"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 2
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Reusar o token já trocado → 401"
+        meta:
+          id: "req_rkfbank_09_03"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Reuso = alguém copiou o token. A API derruba **todas** as renovações da pessoa, inclusive a legítima."
+          sortKey: 3
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_usado }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo SESSAO_EXPIRADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SESSAO_EXPIRADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Depois do reuso, a renovação legítima também caiu → 401"
+        meta:
+          id: "req_rkfbank_09_04"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 4
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_destino }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo SESSAO_EXPIRADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SESSAO_EXPIRADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente DESTINO (de novo)"
+        meta:
+          id: "req_rkfbank_09_05"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 5
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_destino }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            if (insomnia.response.code === 200) insomnia.environment.set("refresh_usado", insomnia.response.json().refreshToken);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/logout"
+        name: "Sair (logout)"
+        meta:
+          id: "req_rkfbank_09_06"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Revoga o token de renovação. O de acesso continua valendo até vencer (no máximo 15 min): o front o apaga."
+          sortKey: 6
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_usado }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Renovar depois de sair → 401"
+        meta:
+          id: "req_rkfbank_09_07"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 7
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_usado }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo SESSAO_EXPIRADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SESSAO_EXPIRADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/logout"
+        name: "Sair com token desconhecido → 204"
+        meta:
+          id: "req_rkfbank_09_08"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: "Sair nunca falha (nem revela se o token existia)."
+          sortKey: 8
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "token-que-nunca-existiu"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Renovar sem o token → 400"
+        meta:
+          id: "req_rkfbank_09_09"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 9
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: "{}"
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente DESTINO (para as outras pastas)"
+        meta:
+          id: "req_rkfbank_09_10"
+          created: 1792777656439
+          modified: 1792777656439
+          isPrivate: false
+          description: ""
+          sortKey: 10
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_destino }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              insomnia.environment.set("cliente_destino_id", login.clienteId ?? "");
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+environments:
+  name: "Base Environment"
+  meta:
+    id: "env_rkfbank_base"
+    created: 1792777656439
+    modified: 1792777656439
+    isPrivate: false
+  data:
+    base_url: "http://localhost:8080"
+    token_origem: ""
+    token_destino: ""
+    token_admin: ""
+    token_novo: ""
+    refresh_origem: ""
+    refresh_destino: ""
+    refresh_admin: ""
+    refresh_novo: ""
+    refresh_usado: ""
+    termos_versao: ""
+    cliente_origem_id: ""
+    cliente_destino_id: ""
+    novo_cpf: ""
+    novo_email: ""
+    novo_senha: ""
+    novo_cliente_id: ""
+    conta_nova_id: ""
+    conta_nova_destino_id: ""
+    usuario_novo_id: ""
+    chave_fixa: ""
+    novo_cpf_mascara: ""
+    senha_redefinida: ""
+    senha_trocada: ""
+    senha_escolhida: ""
+    usuario_admin_id: ""
+    cpf_extra: ""
+    token_falso: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJxdWFscXVlci11bSIsInBlcmZpbCI6IkFETUlOIn0.assinatura-que-nao-bate"
+  subEnvironments:
+    - name: "Visitante (H2, Ana e Bruno)"
+      meta:
+        id: "env_rkfbank_visitante"
+        created: 1792777656439
+        modified: 1792777656439
+        isPrivate: false
+        sortKey: 1
+      data:
+        cpf_origem: "24681357928"
+        cpf_destino: "97531864282"
+        senha_clientes: "Visitante@2026"
+        email_destino: "bruno.visitante@exemplo.test"
+        conta_origem_id: "a0000000-0000-4000-8000-000000000114"
+        conta_destino_id: "a0000000-0000-4000-8000-000000000124"
+        admin_cpf: ""
+        admin_senha: ""
+      color: "#2e7d32"
+    - name: "Equipe (MySQL ou H2, Fellipe e Renan)"
+      meta:
+        id: "env_rkfbank_equipe"
+        created: 1792777656439
+        modified: 1792777656439
+        isPrivate: false
+        sortKey: 2
+      data:
+        cpf_origem: "12345678909"
+        cpf_destino: "98765432100"
+        senha_clientes: "COLE_AQUI_A_EQUIPE_SENHA_DO_SEU_.env"
+        email_destino: "renan.barros@rkfbank.test"
+        conta_origem_id: "5eed0000-0000-4000-8000-000000000014"
+        conta_destino_id: "5eed0000-0000-4000-8000-000000000024"
+        admin_cpf: "COLE_AQUI_O_ADMIN_CPF_DO_SEU_.env"
+        admin_senha: "COLE_AQUI_A_ADMIN_SENHA_DO_SEU_.env"
+      color: "#1565c0"
