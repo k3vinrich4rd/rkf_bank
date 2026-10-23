@@ -31,7 +31,7 @@ function mensagemDeErro(error: unknown): string {
  * `logTela` é o log da tela que chamou, para as falhas aparecerem no nome dela.
  *
  * Um cliente pode ter mais de uma conta (contrato 4.1), mas a interface ainda trabalha com uma só:
- * a primeira que a API devolve.
+ * a primeira do próprio cliente (`contasApi.minhas` filtra pela sessão, o que importa para o ADMIN).
  */
 export function useConta(logTela: TelaLogger) {
   const [tentativa, setTentativa] = useState(0);
