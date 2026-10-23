@@ -15,7 +15,9 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
-.run/
+# Configuracoes de execucao da IDE: as API_* sao do time (versionadas); qualquer outra e pessoal.
+.run/*
+!.run/API_*.run.xml
 *.iws
 *.iml
 *.ipr
