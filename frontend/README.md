@@ -53,7 +53,7 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 
 | Rota | Arquivo | Status |
 |---|---|---|
-| `/` | [`app/page.tsx`](app/page.tsx) | ✅ landing page (estática) |
+| `/` | [`app/page.tsx`](app/page.tsx) | ✅ landing com o cartão RKF em 3D preso ao scroll (Three.js + GSAP + Lenis); roteiro em [`docs/landing.md`](docs/landing.md) |
 | `/cadastro` | [`app/cadastro/page.tsx`](app/cadastro/page.tsx) | ✅ cadastro de cliente integrado à API |
 | `/login` | [`app/login/page.tsx`](app/login/page.tsx) | ✅ login com CPF e senha (volta para a tela de origem com `?voltar=`) |
 | `/conta/abrir` | [`app/conta/abrir/page.tsx`](app/conta/abrir/page.tsx) | ✅ abertura de conta (passo seguinte ao cadastro) |
@@ -105,7 +105,8 @@ flowchart TB
    [contrato de API](../backend/README_CONTRATO_API.md). Mudou o contrato? Mude o tipo primeiro — o
    TypeScript aponta tudo que quebrou.
 4. **Server Component por padrão.** Só use `"use client"` quando precisar de estado, efeito ou evento
-   (formulários, botões interativos). A landing page inteira é estática.
+   (formulários, botões interativos). A landing sai pronta do servidor; só o movimento (cartão 3D, pins e rolagem
+   suave) liga no navegador, dentro de cada seção (`components/landing`).
 
 ### Por que existe um proxy `/api`?
 
@@ -186,7 +187,8 @@ frontend/
 ├── components/
 │   ├── ui/                     # peças genéricas (Button, Input, FormField) — base shadcn
 │   ├── brand/                  # logo
-│   ├── marketing/              # seções da landing page
+│   ├── landing/                # seções da landing, textos (conteudo.ts), fontes e CSS próprio
+│   ├── marketing/bank-card.tsx # cartão RKF em CSS (usado no cadastro; o 3D copia o desenho dele)
 │   ├── cadastro/               # tela de cadastro: screen, form, showcase, sucesso e o hook
 │   ├── abrir-conta/            # tela de abertura de conta: screen, form, aviso, sucesso e o hook
 │   ├── conta/                  # tela da conta + peças compartilhadas (useConta, ContaEstado, ContaShell, BotaoSair)
@@ -195,16 +197,16 @@ frontend/
 │   ├── login/                  # tela de login e o hook
 │   └── logs/                   # useLogDeTela e <LogDeTela />
 ├── config/
-│   ├── site.ts                 # nome, slogan, descrição, menu
-│   └── marketing.ts            # textos e dados da landing page
+│   └── site.ts                 # nome, slogan e descrição (SEO)
 ├── lib/
 │   ├── api/                    # client HTTP, tipos do contrato, authApi, clientesApi, contasApi
 │   ├── auth/cookies.ts         # cookies da sessão (só o servidor usa)
 │   ├── logger/                 # logger com mascaramento LGPD (ver README próprio)
 │   ├── env.ts                  # variáveis de ambiente
 │   ├── format.ts               # moeda (formatCurrency, decimalToCents) e tipo de conta
+│   ├── motion/                 # cartão 3D (Three.js), registro do GSAP, rolagem suave e ajuste de palavra
 │   ├── masks.ts                # máscaras de CPF, CEP, telefone + onlyDigits
-│   ├── routes.ts               # rotas e âncoras da landing
+│   ├── routes.ts               # rotas da aplicação
 │   └── utils.ts                # cn() para juntar classes
 ├── types/index.ts              # tipos do front que não vêm da API (Cents)
 ├── proxy.ts                    # Bearer nas chamadas /api e proteção das telas /conta
