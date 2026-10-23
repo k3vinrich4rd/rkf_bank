@@ -8,12 +8,13 @@ import {
   type ClienteResponse,
 } from "@/lib/api";
 import { useLogDeTela } from "@/components/logs";
+import { TERMOS_VERSAO } from "@/lib/legal/termos";
 import { maskCep, maskCpf, maskTelefone, onlyDigits } from "@/lib/masks";
 
-/** Campos da tela: os do contrato mais a confirmação da senha, que não vai para a API. */
-export type Campo = keyof CadastroClienteRequest | "confirmarSenha";
+/** Campos de texto da tela: os do contrato mais a confirmação da senha, que não vai para a API. O aceite é à parte. */
+export type Campo = Exclude<keyof CadastroClienteRequest, "aceiteTermos" | "termosVersao"> | "confirmarSenha";
 type Valores = Record<Campo, string>;
-type ErrosPorCampo = Partial<Record<Campo, string>>;
+type ErrosPorCampo = Partial<Record<Campo | "aceiteTermos", string>>;
 
 const VALORES_INICIAIS: Valores = {
   nomeCompleto: "",
@@ -65,6 +66,9 @@ const MASCARAS: Partial<Record<Campo, (valor: string) => string>> = {
 /** Converte o que está na tela para o formato que a API espera. */
 function toRequest(valores: Valores): CadastroClienteRequest {
   return {
+    // LGPD: o envio só acontece com o aceite marcado; a versão diz qual texto a pessoa viu.
+    aceiteTermos: true,
+    termosVersao: TERMOS_VERSAO,
     nomeCompleto: valores.nomeCompleto.trim(),
     cpf: onlyDigits(valores.cpf),
     email: valores.email.trim(),
@@ -87,6 +91,10 @@ function mensagemDeErro(error: unknown): string {
     return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
   }
 
+  if (error.codigo === "TERMOS_DESATUALIZADOS") {
+    return "Os termos de uso foram atualizados. Recarregue a página e aceite a versão atual.";
+  }
+
   switch (error.status) {
     case 400:
       return "Confira os campos destacados.";
@@ -105,6 +113,7 @@ function mensagemDeErro(error: unknown): string {
 export function useCadastroForm() {
   const logTela = useLogDeTela("cadastro");
   const [valores, setValores] = useState<Valores>(VALORES_INICIAIS);
+  const [aceiteTermos, setAceiteTermos] = useState(false);
   const [erros, setErros] = useState<ErrosPorCampo>({});
   const [erroGeral, setErroGeral] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -126,7 +135,10 @@ export function useCadastroForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const errosDeSenha = validarSenha(valores);
+    const errosDeSenha: ErrosPorCampo = validarSenha(valores);
+    if (!aceiteTermos) {
+      errosDeSenha.aceiteTermos = "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.";
+    }
     if (Object.keys(errosDeSenha).length > 0) {
       setErros(errosDeSenha);
       setErroGeral(null);
@@ -186,10 +198,18 @@ export function useCadastroForm() {
     }
   }
 
+  /** O aceite dos termos (LGPD): marcar limpa o erro, como nos outros campos. */
+  function alternarAceite(aceito: boolean) {
+    setAceiteTermos(aceito);
+    setErros((atual) => ({ ...atual, aceiteTermos: undefined }));
+    setErroGeral(null);
+  }
+
   const preenchido = (nome: Campo) => valores[nome].trim() !== "";
   const preenchidos = CAMPOS_OBRIGATORIOS.filter(preenchido).length;
 
   return {
+    termos: { aceito: aceiteTermos, alternar: alternarAceite, erro: erros.aceiteTermos, disabled: enviando },
     nome: valores.nomeCompleto.trim(),
     progresso: preenchidos / CAMPOS_OBRIGATORIOS.length,
     /** Cada bloco do formulário com todos os obrigatórios preenchidos (os indicadores "acendem"). */

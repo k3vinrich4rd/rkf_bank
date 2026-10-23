@@ -14,6 +14,8 @@ export const ROUTES = {
   extrato: "/conta/extrato",
   trocarSenha: "/conta/senha",
   meusDados: "/conta/meus-dados",
+  termos: "/termos",
+  privacidade: "/privacidade",
 } as const;
 
 /**

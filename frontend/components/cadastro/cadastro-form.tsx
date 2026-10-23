@@ -1,18 +1,20 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { ArrowRight, Check, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/form-alert";
 import { FormField } from "@/components/ui/form-field";
 import { PasswordField } from "@/components/ui/password-field";
+import { ROUTES } from "@/lib/routes";
 import { ForcaSenha } from "./forca-senha";
 import type { CadastroFormState } from "./use-cadastro-form";
 
 type CadastroFormProps = Pick<
   CadastroFormState,
-  "campo" | "handleSubmit" | "enviando" | "erroGeral" | "etapasCompletas" | "senhaDigitada"
+  "campo" | "handleSubmit" | "enviando" | "erroGeral" | "etapasCompletas" | "senhaDigitada" | "termos"
 >;
 
-export function CadastroForm({ campo, handleSubmit, enviando, erroGeral, etapasCompletas, senhaDigitada }: CadastroFormProps) {
+export function CadastroForm({ campo, handleSubmit, enviando, erroGeral, etapasCompletas, senhaDigitada, termos }: CadastroFormProps) {
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-10">
       <FormSection step="01" title="Dados pessoais" completa={etapasCompletas.dados}>
@@ -93,6 +95,8 @@ export function CadastroForm({ campo, handleSubmit, enviando, erroGeral, etapasC
       </FormSection>
 
       <div className="flex flex-col gap-4">
+        <AceiteTermos {...termos} />
+
         {erroGeral && <FormAlert>{erroGeral}</FormAlert>}
 
         <Button type="submit" variant="brand" size="xl" disabled={enviando} className="h-[3.25rem] w-full">
@@ -113,11 +117,54 @@ export function CadastroForm({ campo, handleSubmit, enviando, erroGeral, etapasC
           )}
         </Button>
 
-        <p className="text-center text-xs leading-relaxed text-muted-foreground/70">
-          Ao continuar, você concorda com os Termos de Uso e a Política de Privacidade do RKF.
-        </p>
       </div>
     </form>
+  );
+}
+
+interface AceiteTermosProps {
+  aceito: boolean;
+  alternar: (aceito: boolean) => void;
+  erro?: string;
+  disabled: boolean;
+}
+
+/**
+ * Aceite dos termos (LGPD, contrato 3.1): obrigatório e registrado pela API com a versão e a data.
+ * Os links abrem em outra aba para a pessoa ler sem perder o que já preencheu.
+ */
+function AceiteTermos({ aceito, alternar, erro, disabled }: AceiteTermosProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-muted-foreground">
+        <input
+          type="checkbox"
+          name="aceiteTermos"
+          checked={aceito}
+          disabled={disabled}
+          onChange={(event) => alternar(event.target.checked)}
+          aria-invalid={erro ? true : undefined}
+          aria-describedby={erro ? "aceiteTermos-erro" : undefined}
+          className="mt-0.5 size-4 shrink-0 accent-brand-cyan"
+        />
+        <span>
+          Li e aceito os{" "}
+          <Link href={ROUTES.termos} target="_blank" className="text-foreground underline underline-offset-4">
+            Termos de Uso
+          </Link>{" "}
+          e a{" "}
+          <Link href={ROUTES.privacidade} target="_blank" className="text-foreground underline underline-offset-4">
+            Política de Privacidade
+          </Link>{" "}
+          do RKF.
+        </span>
+      </label>
+      {erro && (
+        <p id="aceiteTermos-erro" role="alert" className="text-sm text-destructive">
+          {erro}
+        </p>
+      )}
+    </div>
   );
 }
 

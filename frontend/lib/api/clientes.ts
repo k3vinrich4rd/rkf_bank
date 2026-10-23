@@ -6,6 +6,7 @@ import type {
   ClienteResponse,
   EncerramentoResponse,
   EncerrarCadastroRequest,
+  TermosResponse,
   Page,
   PageRequest,
 } from "./types";
@@ -17,6 +18,11 @@ export const clientesApi = {
     const cliente = await apiRequest<ClienteResponse>("/clientes", { method: "POST", body: data });
     logClientes.info("Cliente cadastrado", { clienteId: cliente.id, uf: cliente.endereco.uf });
     return cliente;
+  },
+
+  /** Versão vigente dos termos (pública). O cadastro manda `TERMOS_VERSAO`; isto serve para conferir. */
+  termos() {
+    return apiRequest<TermosResponse>("/termos");
   },
 
   async listar({ page = 0, size = 10 }: PageRequest = {}) {

@@ -38,6 +38,10 @@ export interface CadastroClienteRequest {
   complemento?: string;
   /** 8 a 72 caracteres (e no máximo 72 bytes). Nunca volta na resposta. */
   senha: string;
+  /** LGPD (contrato 3.1): sem `true`, a API responde `400` no campo `aceiteTermos`. */
+  aceiteTermos: boolean;
+  /** Versão dos termos que a pessoa viu (`TERMOS_VERSAO`); diferente da vigente → `422 TERMOS_DESATUALIZADOS`. */
+  termosVersao?: string;
 }
 
 export interface EnderecoResponse {
@@ -54,10 +58,19 @@ export interface EnderecoResponse {
 export interface ClienteResponse {
   id: Uuid;
   nomeCompleto: string;
+  /** Já vem **mascarado** da API (`***.982.247-**`, contrato 3.1): exiba como está. */
   cpf: string;
   email: string;
   telefone: string;
   endereco: EnderecoResponse;
+  /** Versão dos termos aceita no cadastro; `null` em cadastros anteriores ao aceite (contrato 3.1). */
+  termosVersao: string | null;
+  termosAceitosEm: IsoDateTime | null;
+}
+
+/** `GET /termos` (público): a versão dos termos que o cadastro espera. */
+export interface TermosResponse {
+  versao: string;
 }
 
 /**
@@ -258,6 +271,7 @@ export type CodigoErro =
   | "CADASTRO_ENCERRADO"
   | "PROPRIA_SENHA_PELA_GESTAO"
   | "PROPRIO_ACESSO"
+  | "TERMOS_DESATUALIZADOS"
   | "IDEMPOTENCIA_CHAVE_REUSADA"
   | "MUITAS_TENTATIVAS"
   | "SERVICO_INDISPONIVEL";

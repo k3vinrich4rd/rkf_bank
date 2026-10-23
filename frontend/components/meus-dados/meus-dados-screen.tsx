@@ -63,7 +63,13 @@ function FormularioDados({ dados, cliente }: { dados: MeusDadosState; cliente: C
       <div className="flex items-center justify-between rounded-2xl border border-white/[0.08] bg-white/[0.02] px-4 py-3.5">
         <div>
           <p className="text-[0.8rem] font-medium text-foreground/80">CPF</p>
-          <p className="mt-0.5 font-mono text-sm tracking-wide">{mascararCpf(cliente.cpf)}</p>
+          {/* A API já devolve o CPF mascarado (contrato 3.1): o número inteiro nem chega ao navegador. */}
+          <p className="mt-0.5 font-mono text-sm tracking-wide">{cliente.cpf}</p>
+          {cliente.termosAceitosEm && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Termos aceitos em {DATA_HORA.format(new Date(cliente.termosAceitosEm))} (versão {cliente.termosVersao})
+            </p>
+          )}
         </div>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <ShieldCheck className="size-3.5 text-brand-cyan" aria-hidden="true" />
@@ -210,10 +216,4 @@ const DATA_HORA = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeSty
 function dataSemFuso(data: string) {
   const [ano, mes, dia] = data.split("-");
   return `${dia}/${mes}/${ano}`;
-}
-
-/** Mesma máscara dos logs: só os 5 últimos dígitos aparecem. */
-function mascararCpf(cpf: string) {
-  const digitos = cpf.replace(/\D/g, "");
-  return digitos.length === 11 ? `***.***.${digitos.slice(6, 9)}-${digitos.slice(9)}` : "***";
 }
