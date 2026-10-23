@@ -2,7 +2,7 @@
 # Valida o projeto e imprime só o resumo (o log completo fica em .validar/*.log).
 # Uso: scripts/validar.sh [backend|frontend|tudo]   (padrão: backend)
 #   backend  -> ./mvnw clean verify com o perfil "test" (H2, não precisa de Docker)
-#   frontend -> pnpm lint + typecheck + build dentro de frontend/
+#   frontend -> pnpm lint + typecheck + test + build dentro de frontend/
 # Sai com código 0 se tudo passou e 1 se algo falhou.
 
 set -u
@@ -38,14 +38,14 @@ pnpm_cmd() {
 validar_frontend() {
   local log="$RAIZ/.validar/frontend.log"
   : >"$log"
-  echo ">>> Frontend: pnpm lint, typecheck e build"
+  echo ">>> Frontend: pnpm lint, typecheck, test e build"
   (
     cd frontend || exit 1
     if [ ! -d node_modules ]; then
       echo "    instalando dependências (pnpm install --frozen-lockfile)..."
       pnpm_cmd install --frozen-lockfile >>"$log" 2>&1 || exit 1
     fi
-    for etapa in lint typecheck build; do
+    for etapa in lint typecheck test build; do
       if pnpm_cmd run "$etapa" >>"$log" 2>&1; then
         echo "    ✅ $etapa"
       else
