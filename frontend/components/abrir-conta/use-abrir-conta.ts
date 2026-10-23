@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { ApiError, authApi, contasApi, isFalhaDeServidor, type ContaResponse, type TipoConta } from "@/lib/api";
+import { ApiError, contasApi, isFalhaDeServidor, type ContaResponse, type TipoConta } from "@/lib/api";
 import { useConta, type ContaState } from "@/components/conta/use-conta";
 import { useLogDeTela } from "@/components/logs";
 
@@ -13,17 +13,15 @@ import { useLogDeTela } from "@/components/logs";
  */
 export type EtapaAbrirConta = "carregando" | "erro-conta" | "ja-tem-conta" | "formulario" | "sucesso";
 
-
-/** Perfil sem cliente (o ADMIN): não tem cadastro em que abrir conta. */
-class SemCadastroDeCliente extends Error {}
-
 /** Traduz qualquer falha da abertura numa mensagem para o usuário. */
 function mensagemDeErro(error: unknown): string {
-  if (error instanceof SemCadastroDeCliente) {
-    return "Seu usuário não tem cadastro de cliente, então não pode abrir conta.";
-  }
   if (isFalhaDeServidor(error)) {
     return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+  }
+
+  // Perfil sem cliente (o ADMIN do `.env`): a API responde 422, não há cadastro em que abrir conta.
+  if (error instanceof ApiError && error.status === 422) {
+    return "Seu usuário não tem cadastro de cliente, então não pode abrir conta.";
   }
 
   // A API gera agência e número (contrato 2.1); 409 aqui só se ela não achar número livre.
@@ -36,7 +34,7 @@ function mensagemDeErro(error: unknown): string {
 
 /**
  * Toda a lógica da abertura de conta: quem é o cliente, tipo escolhido, envio e erros.
- * O cliente é o usuário logado: o `clienteId` vem da sessão (resposta do login).
+ * O cliente é o usuário logado: a API o tira do token (`POST /contas`, contrato 2.6).
  */
 export function useAbrirConta() {
   const logTela = useLogDeTela("abrir-conta");
@@ -58,10 +56,8 @@ export function useAbrirConta() {
     logTela.acao("Abertura de conta enviada", { tipoConta });
 
     try {
-      const { clienteId } = await authApi.sessao();
-      if (!clienteId) throw new SemCadastroDeCliente();
       // Sem agência e número: a API usa a 0001 e gera o número com dígito verificador.
-      const conta = await contasApi.abrir(clienteId, { tipoContaEnum: tipoConta });
+      const conta = await contasApi.abrir({ tipoContaEnum: tipoConta });
       logTela.sucesso("Conta aberta", { contaId: conta.id });
       setContaAberta(conta);
     } catch (error) {
