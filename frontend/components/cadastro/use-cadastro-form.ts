@@ -186,11 +186,20 @@ export function useCadastroForm() {
     }
   }
 
-  const preenchidos = CAMPOS_OBRIGATORIOS.filter((nome) => valores[nome].trim()).length;
+  const preenchido = (nome: Campo) => valores[nome].trim() !== "";
+  const preenchidos = CAMPOS_OBRIGATORIOS.filter(preenchido).length;
 
   return {
     nome: valores.nomeCompleto.trim(),
     progresso: preenchidos / CAMPOS_OBRIGATORIOS.length,
+    /** Cada bloco do formulário com todos os obrigatórios preenchidos (os indicadores "acendem"). */
+    etapasCompletas: {
+      dados: (["nomeCompleto", "cpf", "telefone", "email"] as const).every(preenchido),
+      endereco: (["cep", "numero"] as const).every(preenchido),
+      acesso: (["senha", "confirmarSenha"] as const).every(preenchido),
+    },
+    /** Só para o medidor de força: a senha nunca sai do hook por outro caminho. */
+    senhaDigitada: valores.senha,
     erroGeral,
     enviando,
     cliente,
