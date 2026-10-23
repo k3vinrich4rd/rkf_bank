@@ -44,7 +44,7 @@ Camadas, de trás para a frente: "RKF" gigante (DOM, largura total) → celular 
 | 02 | Extrato que se escreve (pin curto) | lançamentos entram por cima empurrando os antigos; o saldo anda até o final; ponto ciano no mais novo |
 | 03 | Segurança (pin curto) | "Clicou duas vezes? / Cobramos uma.": 3 envios, 1 débito (idempotência); specs de sessão, hash e limite de senha |
 | 04 | Cadastro (respiro) | o CEP `01001-000` se digita com o scroll, o endereço aparece e uma linha percorre os 4 passos |
-| 05 | Quem faz | Kevin, Renan e Fellipe em letras gigantes, subindo por máscara; relógio ao vivo de Osasco |
+| 05 | Sobre | três amigos da mesma rua em Osasco: a história, Renan e Kevin (devs, com link do GitHub) e Fellipe (testes); nomes sobem por máscara; relógio ao vivo de Osasco |
 | 06 | Contas | três colunas só com fios: Corrente R$ 0, Poupança R$ 0, Cartão "Em breve" (ponto ciano) |
 | — | Rodapé | "Abrir conta leva poucos minutos." + botão; "RKF" gigante cortado pela borda, subindo com o scroll |
 

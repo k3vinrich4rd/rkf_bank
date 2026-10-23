@@ -8,6 +8,7 @@ export const NAV = [
   { rotulo: "Extrato", href: "#extrato" },
   { rotulo: "Segurança", href: "#seguranca" },
   { rotulo: "Cartão", href: "#contas" },
+  { rotulo: "Sobre", href: "#sobre" },
 ] as const;
 
 export const HERO = {
@@ -78,14 +79,39 @@ export const CEP = {
   marcos: ["Seus dados", "CEP", "Senha", "Conta aberta"],
 };
 
+export interface Pessoa {
+  nome: string;
+  papel: string;
+  faz: string;
+  github?: { usuario: string; url: string };
+}
+
 export const TIME = {
-  rotulo: "05 — Quem faz",
-  titulo: ["Três amigos de Osasco.", "Um banco que eles mesmos usam."],
-  pessoas: [
-    { nome: "Kevin", papel: "Backend · API, segurança e banco de dados" },
-    { nome: "Renan", papel: "Frontend · telas, sessão e logs" },
-    { nome: "Fellipe", papel: "Produto e qualidade · o primeiro cliente" },
+  rotulo: "05 — Sobre",
+  titulo: ["Três amigos da mesma rua.", "Um banco feito a seis mãos."],
+  historia: [
+    "Renan, Kevin e Fellipe moram na mesma rua, em Osasco, desde que nasceram. Cresceram juntos e, um dia, decidiram construir algo sério juntos.",
+    "O RKF é esse projeto: um banco digital completo, do cadastro ao extrato, feito com o cuidado de quem usa o próprio produto.",
   ],
+  pessoas: [
+    {
+      nome: "Renan Barros",
+      papel: "Desenvolvedor frontend",
+      faz: "Telas, sessão segura e logs",
+      github: { usuario: "renanbarrostech-cmd", url: "https://github.com/renanbarrostech-cmd" },
+    },
+    {
+      nome: "Kevin",
+      papel: "Desenvolvedor backend",
+      faz: "API, segurança e banco de dados",
+      github: { usuario: "k3vinrich4rd", url: "https://github.com/k3vinrich4rd" },
+    },
+    {
+      nome: "Fellipe Santana",
+      papel: "Testes e produto",
+      faz: "Testa cada versão antes de ir ao ar · o primeiro cliente",
+    },
+  ] satisfies Pessoa[],
 };
 
 export const CONTAS = {
