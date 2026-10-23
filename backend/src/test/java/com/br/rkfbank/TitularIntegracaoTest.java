@@ -97,7 +97,7 @@ class TitularIntegracaoTest {
         mockMvc.perform(get("/clientes/me")).andExpect(status().isUnauthorized());
         mockMvc.perform(get("/clientes/me").header("Authorization", "Bearer " + login(CPF_ADMIN, SENHA_ADMIN)))
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.message").value("Seu usuario nao tem cadastro de cliente"));
+                .andExpect(jsonPath("$.message").value("Seu usuário não tem cadastro de cliente"));
     }
 
     // ---------- corrigir ----------
@@ -142,7 +142,7 @@ class TitularIntegracaoTest {
 
         corrigir(token, "{\"email\":\"" + emailDoRenan + "\"}")
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Email ja cadastrado"));
+                .andExpect(jsonPath("$.message").value("E-mail já cadastrado"));
         corrigir(token, "{}")
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.campos[0].campo").value("corpo"));
@@ -177,7 +177,7 @@ class TitularIntegracaoTest {
                 .andExpect(status().isUnauthorized());
 
         // Conta encerrada nao recebe mais dinheiro.
-        mockMvc.perform(post("/contas/transferencia").header("Authorization", "Bearer " + login(CPF_RENAN, SENHA_EQUIPE))
+        mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + login(CPF_RENAN, SENHA_EQUIPE))
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contaOrigemId\":\"" + CONTA_RENAN + "\",\"contaDestinoId\":\"" + CONTA_FELIPE + "\",\"valor\":1.00}"))
@@ -194,7 +194,7 @@ class TitularIntegracaoTest {
         mockMvc.perform(patch("/admin/usuarios/" + usuarioFelipe + "/acesso").header("Authorization", "Bearer " + tokenAdmin)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"ativo\":true}"))
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.message").value("O titular encerrou o cadastro; o acesso nao pode ser reativado"));
+                .andExpect(jsonPath("$.message").value("O titular encerrou o cadastro; o acesso não pode ser reativado"));
     }
 
     // ---------- anonimizar ----------
@@ -236,7 +236,7 @@ class TitularIntegracaoTest {
         String token = login(CPF_FELIPE, SENHA_EQUIPE);
         String saldo = jsonMapper.readTree(mockMvc.perform(get("/contas").header("Authorization", "Bearer " + token))
                 .andReturn().getResponse().getContentAsString()).get(0).get("saldo").asString();
-        mockMvc.perform(post("/contas/transferencia").header("Authorization", "Bearer " + token)
+        mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + token)
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contaOrigemId\":\"" + CONTA_FELIPE + "\",\"contaDestinoId\":\"" + CONTA_RENAN + "\",\"valor\":" + saldo + "}"))

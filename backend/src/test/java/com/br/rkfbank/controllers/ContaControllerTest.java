@@ -66,11 +66,10 @@ class ContaControllerTest {
 
     @Test
     void deveRetornar201AoAbrirConta() {
-        UUID clienteId = UUID.fromString("d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e");
-        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
-        when(contaService.abrir(clienteId, request, USUARIO)).thenReturn(contaResponse());
+        AberturaContaRequestDto request = new AberturaContaRequestDto(TipoContaEnum.CORRENTE);
+        when(contaService.abrir(request, USUARIO)).thenReturn(contaResponse());
 
-        ResponseEntity<ContaResponseDto> response = contaController.abrir(clienteId, request, JWT);
+        ResponseEntity<ContaResponseDto> response = contaController.abrir(request, JWT);
 
         assertEquals(201, response.getStatusCode().value());
         assertEquals("12345678", response.getBody().numeroConta());
@@ -168,7 +167,7 @@ class ContaControllerTest {
     void deveListarContasSemPaginacao() {
         when(contaService.listarTodas(USUARIO)).thenReturn(List.of(contaResponse()));
 
-        ResponseEntity<?> response = contaController.listar(false, 0, 10, JWT);
+        ResponseEntity<?> response = contaController.listar(null, null, JWT);
 
         assertEquals(200, response.getStatusCode().value());
         assertInstanceOf(List.class, response.getBody());
@@ -179,7 +178,7 @@ class ContaControllerTest {
         when(contaService.listarPaginado(PageRequest.of(0, 10), USUARIO))
                 .thenReturn(new PageImpl<>(List.of(contaResponse()), PageRequest.of(0, 10), 1));
 
-        ResponseEntity<?> response = contaController.listar(true, 0, 10, JWT);
+        ResponseEntity<?> response = contaController.listar(0, 10, JWT);
 
         assertEquals(200, response.getStatusCode().value());
         PaginaResponse<?> pagina = assertInstanceOf(PaginaResponse.class, response.getBody());
@@ -192,7 +191,7 @@ class ContaControllerTest {
     void deveRejeitarPaginacaoComPaginaNegativa() {
         RequisicaoInvalidaException exception = assertThrows(
                 RequisicaoInvalidaException.class,
-                () -> contaController.listar(true, -1, 10, JWT)
+                () -> contaController.listar(-1, 10, JWT)
         );
 
         assertEquals("page", exception.getCampo());
@@ -202,7 +201,7 @@ class ContaControllerTest {
     void deveRejeitarPaginacaoComTamanhoNaoPositivo() {
         RequisicaoInvalidaException exception = assertThrows(
                 RequisicaoInvalidaException.class,
-                () -> contaController.listar(true, 0, 0, JWT)
+                () -> contaController.listar(0, 0, JWT)
         );
 
         assertEquals("size", exception.getCampo());

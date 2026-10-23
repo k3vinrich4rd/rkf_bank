@@ -3,7 +3,7 @@ package com.br.rkfbank.dto.request.auth;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-// Troca da propria senha (PATCH /auth/senha). A senha atual prova que e o dono, e nao alguem com um token roubado.
+// Troca da propria senha (PATCH /usuarios/me/senha). A senha atual prova que e o dono, e nao alguem com um token roubado.
 public record TrocarSenhaRequestDto(
         @NotBlank(message = "senhaAtual e obrigatória")
         @Size(max = 72, message = "senhaAtual deve ter no máximo 72 caracteres")

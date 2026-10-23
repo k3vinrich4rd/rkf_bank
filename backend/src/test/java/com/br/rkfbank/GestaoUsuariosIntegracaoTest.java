@@ -77,7 +77,7 @@ class GestaoUsuariosIntegracaoTest {
         // O token antigo dizia CLIENTE; o banco agora diz ADMIN: 401 e login de novo.
         mockMvc.perform(get("/contas").header("Authorization", "Bearer " + tokenAntigoDoFelipe))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Seu acesso foi alterado ou desativado; faca login novamente"));
+                .andExpect(jsonPath("$.message").value("Seu acesso foi alterado ou desativado; faça login novamente"));
 
         mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson(CPF_FELIPE, SENHA_EQUIPE)))
                 .andExpect(status().isOk())
@@ -117,7 +117,7 @@ class GestaoUsuariosIntegracaoTest {
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson(CPF_RENAN, SENHA_EQUIPE)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("CPF ou senha invalidos"));
+                .andExpect(jsonPath("$.message").value("CPF ou senha inválidos"));
 
         alterar(tokenAdmin, renanId, "acesso", "{\"ativo\":true}").andExpect(status().isOk());
 
@@ -129,14 +129,14 @@ class GestaoUsuariosIntegracaoTest {
     void trocarAPropriaSenhaDerrubaOTokenAntigoESoANovaEntra() throws Exception {
         String tokenAntigo = login(CPF_RENAN, SENHA_EQUIPE);
 
-        mockMvc.perform(patch("/auth/senha").header("Authorization", "Bearer " + tokenAntigo)
+        mockMvc.perform(patch("/usuarios/me/senha").header("Authorization", "Bearer " + tokenAntigo)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"senhaAtual\":\"" + SENHA_EQUIPE + "\",\"novaSenha\":\"senha-nova-do-renan\"}"))
                 .andExpect(status().isNoContent());
 
         mockMvc.perform(get("/contas").header("Authorization", "Bearer " + tokenAntigo))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Seu acesso foi alterado ou desativado; faca login novamente"));
+                .andExpect(jsonPath("$.message").value("Seu acesso foi alterado ou desativado; faça login novamente"));
         mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson(CPF_RENAN, SENHA_EQUIPE)))
                 .andExpect(status().isUnauthorized());
         mockMvc.perform(get("/contas").header("Authorization", "Bearer " + login(CPF_RENAN, "senha-nova-do-renan")))
@@ -145,7 +145,7 @@ class GestaoUsuariosIntegracaoTest {
 
     @Test
     void senhaAtualErradaNaTrocaE422() throws Exception {
-        mockMvc.perform(patch("/auth/senha").header("Authorization", "Bearer " + login(CPF_RENAN, SENHA_EQUIPE))
+        mockMvc.perform(patch("/usuarios/me/senha").header("Authorization", "Bearer " + login(CPF_RENAN, SENHA_EQUIPE))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"senhaAtual\":\"chute-errado\",\"novaSenha\":\"senha-nova-do-renan\"}"))
                 .andExpect(status().is(422))
@@ -174,7 +174,7 @@ class GestaoUsuariosIntegracaoTest {
 
         alterar(tokenAdmin, idDoUsuario(tokenAdmin, CPF_ADMIN), "acesso", "{\"ativo\":false}")
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.message").value("Voce nao pode alterar o seu proprio perfil ou acesso; peca a outro ADMIN"));
+                .andExpect(jsonPath("$.message").value("Você não pode alterar o seu próprio perfil ou acesso; peça a outro ADMIN"));
     }
 
     @Test
@@ -183,7 +183,7 @@ class GestaoUsuariosIntegracaoTest {
 
         alterar(tokenAdmin, "00000000-0000-0000-0000-000000000000", "acesso", "{\"ativo\":false}")
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Usuario nao encontrado"));
+                .andExpect(jsonPath("$.message").value("Usuário não encontrado"));
         alterar(tokenAdmin, idDoUsuario(tokenAdmin, CPF_FELIPE), "perfil", "{\"perfil\":\"GERENTE\"}")
                 .andExpect(status().isBadRequest());
     }

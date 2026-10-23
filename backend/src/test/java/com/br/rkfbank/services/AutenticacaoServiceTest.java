@@ -173,7 +173,7 @@ class AutenticacaoServiceTest {
                 () -> autenticacaoService.login(new LoginRequestDto("52998224725", "senha-forte-1")));
 
         // Mesma mensagem de senha errada: de fora nao da para saber que a conta existe e foi desativada.
-        assertEquals("CPF ou senha invalidos", ex.getMessage());
+        assertEquals("CPF ou senha inválidos", ex.getMessage());
         verifyNoInteractions(tokenService);
     }
 
@@ -185,7 +185,7 @@ class AutenticacaoServiceTest {
         CredenciaisInvalidasException ex = assertThrows(CredenciaisInvalidasException.class,
                 () -> autenticacaoService.login(new LoginRequestDto("52998224725", "senha-errada")));
 
-        assertEquals("CPF ou senha invalidos", ex.getMessage());
+        assertEquals("CPF ou senha inválidos", ex.getMessage());
         verifyNoInteractions(tokenService);
         verify(limitador).registrarFalha("52998224725");
     }
@@ -210,7 +210,7 @@ class AutenticacaoServiceTest {
         CredenciaisInvalidasException ex = assertThrows(CredenciaisInvalidasException.class,
                 () -> autenticacaoService.login(new LoginRequestDto("11144477735", "qualquer-senha")));
 
-        assertEquals("CPF ou senha invalidos", ex.getMessage());
+        assertEquals("CPF ou senha inválidos", ex.getMessage());
         // Confere contra o hash falso para gastar o mesmo tempo de um CPF que existe.
         verify(passwordEncoder).matches("qualquer-senha", HASH_FALSO);
         verifyNoInteractions(tokenService);

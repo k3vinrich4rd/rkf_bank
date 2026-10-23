@@ -39,15 +39,13 @@ public class ClienteController {
     // uma pagina por vez. ResponseEntity<?> porque o corpo muda de formato conforme os parametros.
     @GetMapping
     public ResponseEntity<?> listar(
-            @RequestParam(required = false) Boolean paginado,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size
     ) {
-        log.debug("Listagem de clientes (paginado={}, page={}, size={})", paginado, page, size);
+        log.debug("Listagem de clientes (page={}, size={})", page, size);
         // A pagina sai no formato do contrato (PaginaResponse), nunca o Page do Spring.
-        // page ou size na URL ja pede a pagina (padrao do Spring Data); paginado=true/false continua valendo (obsoleto).
-        if (Paginacao.querPagina(paginado, page, size)) {
-            Page<ClienteResponseDto> pagina = clienteService.listarPaginado(Paginacao.criar(page == null ? 0 : page, size == null ? Paginacao.TAMANHO_PADRAO : size));
+        if (Paginacao.querPagina(page, size)) {
+            Page<ClienteResponseDto> pagina = clienteService.listarPaginado(Paginacao.criar(page, size));
             return ResponseEntity.ok(PaginaResponse.de(pagina));
         }
 

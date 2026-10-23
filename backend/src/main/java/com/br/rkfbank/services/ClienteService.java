@@ -10,6 +10,7 @@ import com.br.rkfbank.entities.Endereco;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.entities.enums.PerfilEnum;
 import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.ClienteRepository;
@@ -66,7 +67,7 @@ public class ClienteService {
         // CPF e email ficam fora dos logs por serem dados pessoais.
         if (clienteRepository.existsByCpf(cpfSanitizado)) {
             log.warn("Cadastro de cliente recusado: CPF ja cadastrado");
-            throw new ConflitoException("CPF ja cadastrado");
+            throw new ConflitoException(CodigoErroEnum.CPF_JA_CADASTRADO);
         }
 
         // Email guardado sempre em minúsculas e sem espaços nas pontas (a V2 do Flyway fez o mesmo com os já salvos).
@@ -76,7 +77,7 @@ public class ClienteService {
         // Regra de unicidade de email para evitar conflito de cadastro.
         if (clienteRepository.existsByEmail(emailNormalizado)) {
             log.warn("Cadastro de cliente recusado: email ja cadastrado");
-            throw new ConflitoException("Email ja cadastrado");
+            throw new ConflitoException(CodigoErroEnum.EMAIL_JA_CADASTRADO);
         }
 
         // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Checado antes de chamar o ViaCEP.
@@ -107,7 +108,7 @@ public class ClienteService {
             // Cadastro concorrente passou pelas checagens acima e esbarrou na constraint unica do banco.
             // A mensagem do driver traz o valor duplicado (CPF/email), por isso nao entra no log.
             log.warn("Cadastro de cliente recusado: violacao de unicidade no banco");
-            throw new ConflitoException("CPF ou email ja cadastrado");
+            throw new ConflitoException(CodigoErroEnum.CADASTRO_DUPLICADO);
         }
 
         // Credencial de acesso na mesma transacao: se falhar, o cliente tambem e desfeito (rollback).

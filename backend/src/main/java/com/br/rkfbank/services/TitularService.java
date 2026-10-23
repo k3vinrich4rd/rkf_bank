@@ -10,6 +10,7 @@ import com.br.rkfbank.entities.Cliente;
 import com.br.rkfbank.entities.Conta;
 import com.br.rkfbank.entities.Endereco;
 import com.br.rkfbank.entities.Usuario;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
@@ -93,7 +94,7 @@ public class TitularService {
             String email = request.email().trim().toLowerCase(Locale.ROOT);
             if (!email.equals(cliente.getEmail()) && clienteRepository.existsByEmail(email)) {
                 log.warn("Correcao do cliente {} recusada: email ja cadastrado", cliente.getId());
-                throw new ConflitoException("Email ja cadastrado");
+                throw new ConflitoException(CodigoErroEnum.EMAIL_JA_CADASTRADO);
             }
             cliente.setEmail(email);
             corrigidos.add("email");
@@ -113,7 +114,7 @@ public class TitularService {
         } catch (DataIntegrityViolationException ex) {
             // Outro cadastro pegou o mesmo e-mail entre a checagem e o UPDATE. O valor nao entra no log.
             log.warn("Correcao do cliente {} recusada: violacao de unicidade no banco", cliente.getId());
-            throw new ConflitoException("Email ja cadastrado");
+            throw new ConflitoException(CodigoErroEnum.EMAIL_JA_CADASTRADO);
         }
         // So o nome dos campos: os valores sao dados pessoais.
         log.info("Cliente {} corrigiu o cadastro (campos={})", cliente.getId(), corrigidos);
@@ -153,12 +154,12 @@ public class TitularService {
     public EncerramentoResponseDto encerrar(String senha, UsuarioLogado usuario) {
         Cliente cliente = titular(usuario);
         Usuario credencial = usuarioRepository.findById(usuario.usuarioId())
-                .orElseThrow(() -> new RegraNegocioException("Seu usuario nao tem cadastro de cliente"));
+                .orElseThrow(() -> new RegraNegocioException(CodigoErroEnum.SEM_CADASTRO_CLIENTE));
 
         ClienteService.garantirLimiteDoBcrypt("senha", senha);
         if (!passwordEncoder.matches(senha, credencial.getSenhaHash())) {
             log.warn("Encerramento do cliente {} recusado: senha incorreta", cliente.getId());
-            throw new RegraNegocioException("Senha incorreta");
+            throw new RegraNegocioException(CodigoErroEnum.SENHA_INCORRETA);
         }
 
         List<Conta> contas = contaRepository.findByClienteId(cliente.getId());
@@ -166,7 +167,7 @@ public class TitularService {
         if (saldo.signum() != 0) {
             // Dinheiro nao some: o titular transfere o saldo antes. Valor fora do log (e dado financeiro dele).
             log.warn("Encerramento do cliente {} recusado: contas com saldo", cliente.getId());
-            throw new RegraNegocioException("Transfira o saldo das suas contas antes de encerrar o cadastro");
+            throw new RegraNegocioException(CodigoErroEnum.SALDO_NAO_ZERADO);
         }
 
         Instant agora = Instant.now();
@@ -214,7 +215,7 @@ public class TitularService {
     private Cliente titular(UsuarioLogado usuario) {
         if (usuario.clienteId() == null) {
             // ADMIN criado pelo .env nao tem cadastro de cliente.
-            throw new RegraNegocioException("Seu usuario nao tem cadastro de cliente");
+            throw new RegraNegocioException(CodigoErroEnum.SEM_CADASTRO_CLIENTE);
         }
         return clienteService.buscar(usuario.clienteId());
     }

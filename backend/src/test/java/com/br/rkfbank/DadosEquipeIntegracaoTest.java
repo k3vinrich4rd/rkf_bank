@@ -87,7 +87,7 @@ class DadosEquipeIntegracaoTest {
                 .andExpect(jsonPath("$[0].id").value(CONTA_FELIPE))
                 .andExpect(jsonPath("$[0].agencia").value("0001"))
                 .andExpect(jsonPath("$[0].numeroConta").value("100001"))
-                .andExpect(jsonPath("$[0].tipoContaEnum").value("CORRENTE"))
+                .andExpect(jsonPath("$[0].tipoConta").value("CORRENTE"))
                 .andExpect(jsonPath("$[0].ativa").value(true));
 
         mockMvc.perform(get("/contas").header("Authorization", "Bearer " + login(CPF_RENAN)))
@@ -149,7 +149,7 @@ class DadosEquipeIntegracaoTest {
 
         transferir(tokenFelipe, chave, "500.00")
                 .andExpect(status().is(422))
-                .andExpect(jsonPath("$.message").value("Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao"));
+                .andExpect(jsonPath("$.message").value("Idempotency-Key já usada em outra requisição; gere uma chave nova para esta operação"));
 
         assertEquals(0, saldoDepois.compareTo(saldo(tokenFelipe)));
     }
@@ -159,7 +159,7 @@ class DadosEquipeIntegracaoTest {
         String tokenFelipe = login(CPF_FELIPE);
         BigDecimal antes = saldo(tokenFelipe);
 
-        mockMvc.perform(post("/contas/" + CONTA_FELIPE + "/saque").header("Authorization", "Bearer " + tokenFelipe)
+        mockMvc.perform(post("/contas/" + CONTA_FELIPE + "/saques").header("Authorization", "Bearer " + tokenFelipe)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\":10.00}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.campos[0].campo").value("Idempotency-Key"));
@@ -169,7 +169,7 @@ class DadosEquipeIntegracaoTest {
 
     @Test
     void renanNaoMovimentaAContaDoFelipe() throws Exception {
-        mockMvc.perform(post("/contas/" + CONTA_FELIPE + "/saque").header("Authorization", "Bearer " + login(CPF_RENAN))
+        mockMvc.perform(post("/contas/" + CONTA_FELIPE + "/saques").header("Authorization", "Bearer " + login(CPF_RENAN))
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\":10.00}"))
                 .andExpect(status().isForbidden());
@@ -179,7 +179,7 @@ class DadosEquipeIntegracaoTest {
     void saldoDeCadaContaBateComOExtrato() throws Exception {
         // Movimenta um pouco antes de conciliar, para a prova nao depender so do saldo inicial.
         String tokenFelipe = login(CPF_FELIPE);
-        mockMvc.perform(post("/contas/" + CONTA_FELIPE + "/deposito").header("Authorization", "Bearer " + tokenFelipe)
+        mockMvc.perform(post("/contas/" + CONTA_FELIPE + "/depositos").header("Authorization", "Bearer " + tokenFelipe)
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\":12.34}"))
                 .andExpect(status().isNoContent());
@@ -201,7 +201,7 @@ class DadosEquipeIntegracaoTest {
     @Test
     void rodarOFlywayDeNovoNaoDuplicaNemResetaOsDados() throws Exception {
         String tokenFelipe = login(CPF_FELIPE);
-        mockMvc.perform(post("/contas/" + CONTA_FELIPE + "/deposito").header("Authorization", "Bearer " + tokenFelipe)
+        mockMvc.perform(post("/contas/" + CONTA_FELIPE + "/depositos").header("Authorization", "Bearer " + tokenFelipe)
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\":1.00}"))
                 .andExpect(status().isNoContent());
@@ -229,7 +229,7 @@ class DadosEquipeIntegracaoTest {
     }
 
     private ResultActions transferir(String token, String chave, String valor) throws Exception {
-        return mockMvc.perform(post("/contas/transferencia").header("Authorization", "Bearer " + token)
+        return mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + token)
                 .header("Idempotency-Key", chave)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"contaOrigemId\":\"" + CONTA_FELIPE + "\",\"contaDestinoId\":\"" + CONTA_RENAN

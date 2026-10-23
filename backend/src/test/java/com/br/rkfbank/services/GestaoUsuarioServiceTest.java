@@ -109,7 +109,7 @@ class GestaoUsuarioServiceTest {
         RegraNegocioException ex = assertThrows(RegraNegocioException.class,
                 () -> service.redefinirSenha(ADMIN.usuarioId(), "senha-temporaria-1", ADMIN));
 
-        assertEquals("Para trocar a sua propria senha use PATCH /auth/senha", ex.getMessage());
+        assertEquals("Para trocar a sua própria senha use PATCH /usuarios/me/senha", ex.getMessage());
         verifyNoInteractions(usuarioRepository, passwordEncoder);
     }
 

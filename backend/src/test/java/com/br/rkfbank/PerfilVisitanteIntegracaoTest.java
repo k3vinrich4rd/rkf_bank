@@ -93,7 +93,7 @@ class PerfilVisitanteIntegracaoTest {
 
     @Test
     void visitanteTransfereComIdempotencyKey() throws Exception {
-        mockMvc.perform(post("/contas/transferencia").header("Authorization", "Bearer " + login("24681357928", SENHA_VISITANTE))
+        mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + login("24681357928", SENHA_VISITANTE))
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contaOrigemId\":\"" + CONTA_ANA + "\",\"contaDestinoId\":\"" + CONTA_BRUNO + "\",\"valor\":10.00}"))

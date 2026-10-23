@@ -2,6 +2,7 @@ package com.br.rkfbank.config;
 
 import com.br.rkfbank.dto.comum.ErroResponse;
 import com.br.rkfbank.exceptions.AcessoAlteradoException;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -39,15 +40,13 @@ public class TratadorErrosSeguranca implements AuthenticationEntryPoint, AccessD
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
             throws IOException {
-        String mensagem = ex instanceof AcessoAlteradoException
-                ? "Seu acesso foi alterado ou desativado; faca login novamente"
-                : ex instanceof InvalidBearerTokenException
-                ? "Token invalido ou expirado; faca login novamente"
-                : "Autenticacao necessaria: envie o token no header Authorization (Bearer)";
+        CodigoErroEnum codigo = ex instanceof AcessoAlteradoException ? CodigoErroEnum.ACESSO_ALTERADO
+                : ex instanceof InvalidBearerTokenException ? CodigoErroEnum.TOKEN_INVALIDO
+                : CodigoErroEnum.AUTENTICACAO_NECESSARIA;
         // Nunca o token no log: com ele, qualquer um entra como o usuario ate expirar.
         log.warn("401 em {}: {}", LogSeguro.texto(request.getRequestURI()), ex.getClass().getSimpleName());
         cabecalhoBearer.commence(request, response, ex);
-        escrever(response, HttpStatus.UNAUTHORIZED, mensagem, request.getRequestURI());
+        escrever(response, HttpStatus.UNAUTHORIZED, codigo, request.getRequestURI());
     }
 
     // 403: logado, mas o perfil nao tem acesso a rota (ex.: CLIENTE em GET /clientes).
@@ -55,12 +54,12 @@ public class TratadorErrosSeguranca implements AuthenticationEntryPoint, AccessD
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException ex)
             throws IOException {
         log.warn("403 em {}: perfil sem permissao", LogSeguro.texto(request.getRequestURI()));
-        escrever(response, HttpStatus.FORBIDDEN, "Acesso negado para o seu perfil", request.getRequestURI());
+        escrever(response, HttpStatus.FORBIDDEN, CodigoErroEnum.PERFIL_SEM_PERMISSAO, request.getRequestURI());
     }
 
-    private void escrever(HttpServletResponse response, HttpStatus status, String mensagem, String path)
+    private void escrever(HttpServletResponse response, HttpStatus status, CodigoErroEnum codigo, String path)
             throws IOException {
-        ErroResponse corpo = new ErroResponse(Instant.now(), status.value(), status.getReasonPhrase(), mensagem, path, List.of());
+        ErroResponse corpo = new ErroResponse(Instant.now(), status.value(), status.getReasonPhrase(), codigo, codigo.getMensagem(), path, List.of());
         response.setStatus(status.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");

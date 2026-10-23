@@ -1,5 +1,6 @@
 package com.br.rkfbank.clients.viacep;
 
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.ServicoExternoIndisponivelException;
 import org.apache.logging.log4j.LogManager;
@@ -42,13 +43,13 @@ public class ViaCepClient {
                     .uri("/{cep}/json/", cep)
                     .retrieve()
                     .onStatus(HttpStatusCode::is5xxServerError, (req, res) -> {
-                        throw new ServicoExternoIndisponivelException("ViaCEP indisponível");
+                        throw new ServicoExternoIndisponivelException();
                     })
                     .body(ViaCepResponseDto.class);
 
             // ViaCEP retorna "erro=true" para CEP inexistente mesmo com status HTTP 200.
             if (resposta == null || Boolean.TRUE.equals(resposta.erro())) {
-                throw new RegraNegocioException("CEP não encontrado");
+                throw new RegraNegocioException(CodigoErroEnum.CEP_NAO_ENCONTRADO);
             }
             log.debug("ViaCEP respondeu CEP {} em {} ms", cep, duracaoMs(inicio));
             return resposta;
@@ -62,7 +63,7 @@ public class ViaCepClient {
         } catch (RuntimeException ex) {
             // Qualquer falha inesperada vira erro de servico externo padronizado; a causa fica no log.
             log.error("Falha ao consultar ViaCEP para CEP {} ({} ms)", cep, duracaoMs(inicio), ex);
-            throw new ServicoExternoIndisponivelException("Falha ao consultar ViaCEP", ex);
+            throw new ServicoExternoIndisponivelException(ex);
         }
     }
 

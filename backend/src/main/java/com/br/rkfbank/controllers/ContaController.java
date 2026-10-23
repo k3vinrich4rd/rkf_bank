@@ -8,7 +8,6 @@ import com.br.rkfbank.dto.request.conta.TransferenciaRequestDto;
 import com.br.rkfbank.dto.response.conta.ContaResponseDto;
 import com.br.rkfbank.dto.response.conta.LancamentoResponseDto;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
-import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.security.UsuarioLogado;
 import com.br.rkfbank.services.ContaService;
 import com.br.rkfbank.services.IdempotenciaService;
@@ -46,33 +45,17 @@ public class ContaController {
         this.idempotenciaService = idempotenciaService;
     }
 
-    // Abre conta no PROPRIO cadastro: o cliente vem do token, entao nao existe "cadastro de outro" para conferir.
-    // Rota canonica desde o contrato 2.6. ADMIN do .env nao e cliente: 422.
+    // Abre conta no cadastro de quem esta logado: o cliente vem do token (ContaService.abrir), nunca da URL.
+    // 201 Created com a conta como ficou salva (agencia 0001 e numero gerados pelo banco).
     @PostMapping("/contas")
-    public ResponseEntity<ContaResponseDto> abrirNoProprioCadastro(@Valid @RequestBody AberturaContaRequestDto request,
-                                                                   @AuthenticationPrincipal Jwt jwt) {
-        UsuarioLogado usuario = UsuarioLogado.de(jwt);
-        if (usuario.clienteId() == null) {
-            throw new RegraNegocioException("Seu usuario nao tem cadastro de cliente");
-        }
-        log.debug("Recebida abertura de conta {} no proprio cadastro", request.tipoContaEnum());
-        return ResponseEntity.status(201).body(contaService.abrir(usuario.clienteId(), request, usuario));
-    }
-
-    // OBSOLETA (contrato 2.6): use POST /contas. Continua funcionando ate o contrato 3.0, com o header Deprecation.
-    // O clienteId da URL so serve para ser conferido contra o token (403 se for de outro cadastro).
-    @PostMapping("/contas/clientes/{clienteId}")
-    public ResponseEntity<ContaResponseDto> abrir(@PathVariable UUID clienteId, @Valid @RequestBody AberturaContaRequestDto request,
+    public ResponseEntity<ContaResponseDto> abrir(@Valid @RequestBody AberturaContaRequestDto request,
                                                   @AuthenticationPrincipal Jwt jwt) {
-        // Criação de conta vinculada ao cliente com retorno 201.
-        log.debug("Recebida abertura de conta {} para cliente {}", request.tipoContaEnum(), clienteId);
-        return ResponseEntity.status(201).body(contaService.abrir(clienteId, request, UsuarioLogado.de(jwt)));
+        log.debug("Recebida abertura de conta {}", request.tipoConta());
+        return ResponseEntity.status(201).body(contaService.abrir(request, UsuarioLogado.de(jwt)));
     }
 
-    // Duas rotas no mesmo metodo: a primeira e a canonica (substantivo no plural, padrao REST); a segunda e a
-    // antiga, mantida para nao quebrar quem ja chama. O FiltroRotasObsoletas marca a antiga com Deprecation.
     // Movimentacoes exigem o header Idempotency-Key: repetir a chamada com a mesma chave nao movimenta de novo.
-    @PostMapping({"/contas/{contaId}/depositos", "/contas/{contaId}/deposito"})
+    @PostMapping("/contas/{contaId}/depositos")
     public ResponseEntity<Void> depositar(@PathVariable UUID contaId, @Valid @RequestBody DepositoRequestDto request,
                                           @RequestHeader(name = IdempotenciaService.HEADER, required = false) String chave,
                                           @AuthenticationPrincipal Jwt jwt) {
@@ -85,7 +68,7 @@ public class ContaController {
     }
 
     // Mesmo desenho do deposito: a movimentacao so roda dentro do IdempotenciaService.executarUmaVez.
-    @PostMapping({"/contas/{contaId}/saques", "/contas/{contaId}/saque"})
+    @PostMapping("/contas/{contaId}/saques")
     public ResponseEntity<Void> sacar(@PathVariable UUID contaId, @Valid @RequestBody SaqueRequestDto request,
                                       @RequestHeader(name = IdempotenciaService.HEADER, required = false) String chave,
                                       @AuthenticationPrincipal Jwt jwt) {
@@ -99,7 +82,7 @@ public class ContaController {
 
     // A "assinatura" (contas + valor + descricao) e o que torna uma repeticao reconhecivel: mesma chave com a
     // mesma assinatura = repeticao (204 sem mover dinheiro); mesma chave com outra = erro do cliente (422).
-    @PostMapping({"/transferencias", "/contas/transferencia"})
+    @PostMapping("/transferencias")
     public ResponseEntity<Void> transferir(@Valid @RequestBody TransferenciaRequestDto request,
                                            @RequestHeader(name = IdempotenciaService.HEADER, required = false) String chave,
                                            @AuthenticationPrincipal Jwt jwt) {
@@ -137,17 +120,16 @@ public class ContaController {
     // Contas do usuario logado (ou todas, para o ADMIN), em lista ou paginadas.
     @GetMapping("/contas")
     public ResponseEntity<?> listar(
-            @RequestParam(required = false) Boolean paginado,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        log.debug("Listagem de contas (paginado={}, page={}, size={})", paginado, page, size);
+        log.debug("Listagem de contas (page={}, size={})", page, size);
         UsuarioLogado usuario = UsuarioLogado.de(jwt);
         // A pagina sai no formato do contrato (PaginaResponse). ADMIN ve todas; CLIENTE so as dele.
-        // page ou size na URL ja pede a pagina (padrao do Spring Data); paginado=true/false continua valendo (obsoleto).
-        if (Paginacao.querPagina(paginado, page, size)) {
-            Page<ContaResponseDto> pagina = contaService.listarPaginado(Paginacao.criar(page == null ? 0 : page, size == null ? Paginacao.TAMANHO_PADRAO : size), usuario);
+        // page ou size na URL pede a pagina (padrao do Spring Data); sem nenhum dos dois, a lista inteira.
+        if (Paginacao.querPagina(page, size)) {
+            Page<ContaResponseDto> pagina = contaService.listarPaginado(Paginacao.criar(page, size), usuario);
             return ResponseEntity.ok(PaginaResponse.de(pagina));
         }
 

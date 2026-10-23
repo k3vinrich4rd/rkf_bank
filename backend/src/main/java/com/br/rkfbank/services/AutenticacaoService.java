@@ -4,6 +4,7 @@ import com.br.rkfbank.dto.request.auth.LoginRequestDto;
 import com.br.rkfbank.dto.request.auth.TrocarSenhaRequestDto;
 import com.br.rkfbank.dto.response.auth.LoginResponseDto;
 import com.br.rkfbank.entities.Usuario;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.CredenciaisInvalidasException;
 import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.UsuarioNaoEncontradoException;
@@ -92,10 +93,10 @@ public class AutenticacaoService {
         if (!senhaAtualNoLimite || !passwordEncoder.matches(request.senhaAtual(), usuario.getSenhaHash())) {
             limitador.registrarFalha(usuario.getLogin());
             log.warn("Troca de senha recusada: senha atual incorreta (usuario {})", usuario.getId());
-            throw new RegraNegocioException("Senha atual incorreta");
+            throw new RegraNegocioException(CodigoErroEnum.SENHA_ATUAL_INCORRETA);
         }
         if (passwordEncoder.matches(request.novaSenha(), usuario.getSenhaHash())) {
-            throw new RegraNegocioException("A nova senha precisa ser diferente da atual");
+            throw new RegraNegocioException(CodigoErroEnum.SENHA_REPETIDA);
         }
 
         limitador.limpar(usuario.getLogin());
