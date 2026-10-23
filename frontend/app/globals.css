@@ -143,6 +143,11 @@
   background-size: 56px 56px;
 }
 
+/* Grão fino (ruído SVG): tira o aspecto "plástico" dos gradientes. Use numa camada por cima, com opacidade baixa. */
+@utility bg-grao {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
