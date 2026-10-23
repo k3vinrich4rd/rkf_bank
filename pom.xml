@@ -18,9 +18,9 @@
 
 	<properties>
 		<java.version>25</java.version>
-		<!-- H2 2.4.240 quebra CHECK ... IN (...) das colunas de enum: a constraint guarda a sessao que rodou o DDL
-		     e todo insert em tb_conta/tb_lancamento falha com "The database has been closed" depois que ela fecha. -->
-		<h2.version>2.3.232</h2.version>
+		<!-- O Boot 4.1.2 traz o H2 2.4.240, que quebra CHECK ... IN (...) das colunas de enum ("The database has been
+		     closed" em todo insert). O 2.5.252 corrige; ele so aceita DATETIME com MODE=MySQL nas URLs do H2. -->
+		<h2.version>2.5.252</h2.version>
 		<!-- springdoc 3.x e a linha para o Spring Boot 4 (a 2.x e do Boot 3). -->
 		<springdoc.version>3.1.1</springdoc.version>
 		<shedlock.version>7.10.1</shedlock.version>

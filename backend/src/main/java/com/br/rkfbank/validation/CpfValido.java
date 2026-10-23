@@ -18,7 +18,7 @@ import java.lang.annotation.Target;
 // message/groups/payload sao obrigatorios pela especificacao, mesmo sem uso aqui.
 public @interface CpfValido {
 
-    String message() default "cpf invalido";
+    String message() default "cpf inválido";
 
     Class<?>[] groups() default {};
 

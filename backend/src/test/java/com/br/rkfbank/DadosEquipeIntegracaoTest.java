@@ -32,7 +32,7 @@ import tools.jackson.databind.json.JsonMapper;
 // H2 com outro nome: o testdb e compartilhado pelos outros testes da mesma JVM.
 @SpringBootTest(properties = {
         "spring.flyway.locations=classpath:db/migration,classpath:db/seed/equipe",
-        "spring.datasource.url=jdbc:h2:mem:dados-equipe;DB_CLOSE_DELAY=-1",
+        "spring.datasource.url=jdbc:h2:mem:dados-equipe;MODE=MySQL;DB_CLOSE_DELAY=-1",
         "rkfbank.equipe.senha=" + DadosEquipeIntegracaoTest.SENHA_EQUIPE
 })
 @AutoConfigureMockMvc

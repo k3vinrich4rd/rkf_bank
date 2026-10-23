@@ -143,7 +143,7 @@ public class ClienteService {
     // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Usado no cadastro e nas trocas de senha.
     static void garantirLimiteDoBcrypt(String campo, String senha) {
         if (senha.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES_SENHA) {
-            throw new RequisicaoInvalidaException(campo, campo + " deve ter no maximo " + MAX_BYTES_SENHA + " bytes");
+            throw new RequisicaoInvalidaException(campo, campo + " deve ter no máximo " + MAX_BYTES_SENHA + " bytes");
         }
     }
 

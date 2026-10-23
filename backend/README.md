@@ -376,4 +376,5 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 | `Migration checksum mismatch` ou `Detected applied migration not resolved locally` | banco local de antes da reestruturação de 20/10, ou alguém editou uma migração já aplicada | primeira vez depois de 20/10: `docker compose down -v && docker compose up -d`; fora isso, desfaça a edição e crie um `V` novo |
 | Fellipe e Renan não aparecem | API no perfil `visitante`/`test` ou `FLYWAY_LOCATIONS` sem `db/seed/equipe` | suba sem perfil (MySQL) ou com `equipe` |
 | `mvnw: Permission denied` (Linux/macOS) | arquivo sem permissão de execução | `chmod +x mvnw` |
-| Testes de repositório falham com `The database has been closed` | H2 2.4.x quebra o `CHECK ... IN (...)` das colunas de enum | mantenha `<h2.version>2.3.232</h2.version>` no `pom.xml` até o H2 corrigir |
+| Testes de repositório falham com `The database has been closed` | H2 2.4.x (o que o Boot traz) quebra o `CHECK ... IN (...)` das colunas de enum | mantenha `<h2.version>2.5.252</h2.version>` no `pom.xml` |
+| `Unknown data type: "DATETIME"` ao subir com H2 | URL do H2 sem `MODE=MySQL` (o H2 2.5 só aceita `DATETIME` nesse modo) | acrescente `;MODE=MySQL` à URL (`jdbc:h2:mem:nome;MODE=MySQL`) |

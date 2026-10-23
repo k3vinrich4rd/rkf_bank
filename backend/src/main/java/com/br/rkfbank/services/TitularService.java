@@ -106,7 +106,7 @@ public class TitularService {
         if (request.telefone() != null) {
             String telefone = request.telefone().replaceAll("\\D", "");
             if (telefone.length() < 10 || telefone.length() > 11) {
-                throw new RequisicaoInvalidaException("telefone", "telefone deve ter DDD + 8 ou 9 digitos");
+                throw new RequisicaoInvalidaException("telefone", "telefone deve ter DDD + 8 ou 9 dígitos");
             }
             cliente.setTelefone(telefone);
             corrigidos.add("telefone");
@@ -128,7 +128,7 @@ public class TitularService {
     private void corrigirEndereco(Endereco endereco, AtualizarClienteRequestDto request, List<String> corrigidos) {
         if (request.cep() != null) {
             if (request.numero() == null) {
-                throw new RequisicaoInvalidaException("numero", "numero e obrigatorio quando o cep muda");
+                throw new RequisicaoInvalidaException("numero", "numero é obrigatório quando o cep muda");
             }
             ViaCepResponseDto viaCep = viaCepClient.buscarPorCep(request.cep().replaceAll("\\D", ""));
             String cep = viaCep.cep() != null && viaCep.cep().matches("\\d{8}")

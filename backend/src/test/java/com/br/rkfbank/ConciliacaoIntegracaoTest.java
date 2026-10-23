@@ -24,7 +24,7 @@ import tools.jackson.databind.json.JsonMapper;
 // Conciliacao (GET /admin/conciliacao) e limpeza da idempotencia, com as contas do seed da equipe.
 @SpringBootTest(properties = {
         "spring.flyway.locations=classpath:db/migration,classpath:db/seed/equipe",
-        "spring.datasource.url=jdbc:h2:mem:conciliacao",
+        "spring.datasource.url=jdbc:h2:mem:conciliacao;MODE=MySQL",
         "rkfbank.equipe.senha=" + ConciliacaoIntegracaoTest.SENHA_EQUIPE,
         "rkfbank.admin.cpf=" + ConciliacaoIntegracaoTest.CPF_ADMIN,
         "rkfbank.admin.senha=" + ConciliacaoIntegracaoTest.SENHA_ADMIN

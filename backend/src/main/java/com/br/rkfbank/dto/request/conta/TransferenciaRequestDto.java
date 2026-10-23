@@ -10,17 +10,17 @@ import java.util.UUID;
 // Corpo do POST /transferencias. As duas contas vem no corpo porque a operacao envolve duas;
 // o service confere que a de ORIGEM e do usuario logado (403) e que a de destino existe e esta ativa.
 public record TransferenciaRequestDto(
-    @NotNull(message = "contaOrigemId e obrigatoria")
+    @NotNull(message = "contaOrigemId é obrigatória")
     UUID contaOrigemId,
 
-    @NotNull(message = "contaDestinoId e obrigatoria")
+    @NotNull(message = "contaDestinoId é obrigatória")
     UUID contaDestinoId,
 
-    @NotNull(message = "valor e obrigatorio")
+    @NotNull(message = "valor é obrigatório")
     @DecimalMin(value = "0.01", message = "valor deve ser maior que zero")
-    @Digits(integer = 17, fraction = 2, message = "valor deve ter no maximo 2 casas decimais")
+    @Digits(integer = 17, fraction = 2, message = "valor deve ter no máximo 2 casas decimais")
     BigDecimal valor,
 
-    @Size(max = 140, message = "descricao deve ter no maximo 140 caracteres")
+    @Size(max = 140, message = "descricao deve ter no máximo 140 caracteres")
     String descricao
 ) {}

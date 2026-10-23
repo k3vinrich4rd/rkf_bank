@@ -98,7 +98,7 @@ public class IdempotenciaService {
     private static void validarFormato(String chave) {
         if (chave == null || chave.isBlank()) {
             throw new RequisicaoInvalidaException(HEADER,
-                    "header Idempotency-Key e obrigatorio nas movimentacoes (gere um UUID novo por operacao)");
+                    "header Idempotency-Key é obrigatório nas movimentações (gere um UUID novo por operação)");
         }
         if (!FORMATO_CHAVE.matcher(chave).matches()) {
             throw new RequisicaoInvalidaException(HEADER,

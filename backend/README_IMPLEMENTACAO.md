@@ -112,7 +112,7 @@ public ResponseEntity<ClienteResponseDto> cadastrar(@Valid @RequestBody Cadastro
 
 ```java
 public record CadastroClienteRequestDto(
-        @NotBlank(message = "cpf e obrigatório")
+        @NotBlank(message = "cpf é obrigatório")
         @CpfValido(message = "cpf inválido")
         String cpf,
         ...

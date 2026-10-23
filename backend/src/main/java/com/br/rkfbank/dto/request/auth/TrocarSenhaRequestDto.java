@@ -5,10 +5,10 @@ import jakarta.validation.constraints.Size;
 
 // Troca da propria senha (PATCH /usuarios/me/senha). A senha atual prova que e o dono, e nao alguem com um token roubado.
 public record TrocarSenhaRequestDto(
-        @NotBlank(message = "senhaAtual e obrigatória")
+        @NotBlank(message = "senhaAtual é obrigatória")
         @Size(max = 72, message = "senhaAtual deve ter no máximo 72 caracteres")
         String senhaAtual,
-        @NotBlank(message = "novaSenha e obrigatória")
+        @NotBlank(message = "novaSenha é obrigatória")
         @Size(min = 8, max = 72, message = "novaSenha deve ter entre 8 e 72 caracteres")
         String novaSenha
 ) {

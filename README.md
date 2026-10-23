@@ -517,7 +517,7 @@ Suba o perfil `visitante` ([VISITANTES.md](VISITANTES.md)), entre como a Ana e t
 <summary>6. Sacar mais do que o saldo, ou com três casas decimais</summary>
 <br/>
 
-**`422`** `Saldo insuficiente` e **`400`** `valor deve ter no maximo 2 casas decimais`. Dinheiro é `BigDecimal` com 2 casas e lock otimista: nenhum centavo aparece ou some.
+**`422`** `Saldo insuficiente` e **`400`** `valor deve ter no máximo 2 casas decimais`. Dinheiro é `BigDecimal` com 2 casas e lock otimista: nenhum centavo aparece ou some.
 
 </details>
 
@@ -1017,7 +1017,7 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 | Lado | Tecnologias |
 |---|---|
 | Backend | Java 25 · Spring Boot 4.1 · Spring Web MVC · Spring Data JPA (Hibernate 7) · Spring Security + OAuth2 Resource Server · Bean Validation · `RestClient` · Flyway · Log4j2 |
-| Banco | MySQL 8.4 (Docker Compose) · H2 2.3.232 nos testes |
+| Banco | MySQL 8.4 (Docker Compose) · H2 2.5.252 (modo MySQL) nos testes · MySQL real com Testcontainers |
 | Testes | JUnit 5 · Mockito · `@DataJpaTest` · `@SpringBootTest` · JaCoCo |
 | Frontend | Next.js 16 (App Router) · React 19 · TypeScript 5 · Tailwind CSS 4 · shadcn/ui · Lucide · pnpm 10 |
 | Esteira | GitHub Actions · CodeQL · Dependency Review · Dependabot · Conventional Commits |

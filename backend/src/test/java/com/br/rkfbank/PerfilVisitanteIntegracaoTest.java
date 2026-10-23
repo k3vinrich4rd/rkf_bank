@@ -31,7 +31,7 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 // VISITANTES.md: entram so a Ana e o Bruno, nenhuma conta da equipe nem admin existe, e nem o segredo de teste
 // nem o do .env assinam token aceito (a chave e sorteada na subida).
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:perfil-visitante;DB_CLOSE_DELAY=-1",
+        "spring.datasource.url=jdbc:h2:mem:perfil-visitante;MODE=MySQL;DB_CLOSE_DELAY=-1",
         // Mesmo que alguem tenha esses valores no ambiente, o perfil visitante nao pode usa-los.
         "ADMIN_CPF=11144477735", "ADMIN_SENHA=senha-de-admin-do-ambiente", "EQUIPE_SENHA=senha-da-equipe-do-ambiente",
         "JWT_SEGREDO=" + PerfilVisitanteIntegracaoTest.SEGREDO_DO_AMBIENTE

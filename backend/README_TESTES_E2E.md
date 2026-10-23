@@ -737,16 +737,16 @@ Token da Ana e conta dela, salvo quando dito; toda movimentação com `Idempoten
 | # | Cenário | Request | Esperado (`status` · `codigo` · `campos`) |
 |---|---|---|---|
 | E01 | CPF inválido | T12 com `"cpf":"12345678900"` | `400` · `cpf: cpf inválido` |
-| E02 | Campo vazio | T12 com CPF novo e `"nomeCompleto":""` | `400` · `nomeCompleto: nomeCompleto e obrigatório` |
+| E02 | Campo vazio | T12 com CPF novo e `"nomeCompleto":""` | `400` · `nomeCompleto: nomeCompleto é obrigatório` |
 | E03 | CPF repetido | T12 com `"cpf":"24681357928"` | `409` · `CPF_JA_CADASTRADO` |
 | E04 | E-mail repetido | CPF novo, `"email":"ana.visitante@exemplo.test"` | `409` · `EMAIL_JA_CADASTRADO` |
 | E05 | CEP inexistente | `"cep":"99999999"` | `422` · `CEP não encontrado` |
-| E06 | Abrir conta sem o tipo | `POST /contas` `{}` | `400` · `CAMPOS_INVALIDOS` · `tipoConta: tipoConta e obrigatorio e deve ser CORRENTE ou POUPANCA` |
+| E06 | Abrir conta sem o tipo | `POST /contas` `{}` | `400` · `CAMPOS_INVALIDOS` · `tipoConta: tipoConta é obrigatório e deve ser CORRENTE ou POUPANCA` |
 | E07 | Nome de campo antigo | `POST /contas` `{"tipoContaEnum":"POUPANCA"}` | `400` · `CAMPOS_INVALIDOS` (`tipoConta` ausente): o nome do contrato 2.x saiu na 3.0 |
 | E08 | Transferir para conta inexistente | T06 com `contaDestinoId` = `00000000-0000-4000-8000-000000000000` | `404` · `CONTA_NAO_ENCONTRADA` |
 | E09 | Tipo inválido | `{"tipoConta":"SALARIO"}` | `400` · `JSON_INVALIDO` |
 | E10 | Valor zero | depósito `{"valor":0}` | `400` · `valor: valor deve ser maior que zero` |
-| E11 | Três casas | depósito `{"valor":10.555}` | `400` · `valor: valor deve ter no maximo 2 casas decimais` |
+| E11 | Três casas | depósito `{"valor":10.555}` | `400` · `valor: valor deve ter no máximo 2 casas decimais` |
 | E12 | Saldo insuficiente (saque) | `{"valor":999999.00}` | `422` · `SALDO_INSUFICIENTE` |
 | E13 | Saldo insuficiente (transferência) | T06 com `999999.00` | `422` · `SALDO_INSUFICIENTE` |
 | E14 | Mesma conta | T06 com destino = conta da Ana | `422` · `MESMA_CONTA` |
@@ -754,7 +754,7 @@ Token da Ana e conta dela, salvo quando dito; toda movimentação com `Idempoten
 | E16 | Id inválido | `GET /contas/abc/lancamentos` | `400` · `contaId: Tipo invalido para o parametro contaId` |
 | E17 | Paginação inválida | `GET /contas?size=0` | `400` · `size: deve estar entre 1 e 100` |
 | E18 | JSON quebrado | corpo `{ "valor": ` | `400` · `JSON_INVALIDO` |
-| E19 | Sem `Idempotency-Key` | depósito sem o header | `400` · `Idempotency-Key: header Idempotency-Key e obrigatorio nas movimentacoes (gere um UUID novo por operacao)` |
+| E19 | Sem `Idempotency-Key` | depósito sem o header | `400` · `Idempotency-Key: header Idempotency-Key é obrigatório nas movimentações (gere um UUID novo por operação)` |
 | E20 | Chave reaproveitada com outro valor | repita a chave da T06 com `"valor":999.00` | `422` · `IDEMPOTENCIA_CHAVE_REUSADA` |
 
 Depois de E10–E20, o saldo da Ana **não muda** (confira no banco). Mapa de status: `400` entrada · `401` identidade ·
@@ -849,7 +849,7 @@ O João é cadastrado no A02; os ids `<joao>` e `<admin>` saem da lista do A06.
 | A17 | Admin redefine a **própria** senha pela gestão | `PATCH /admin/usuarios/<admin>/senha` | `422` · `PROPRIA_SENHA_PELA_GESTAO` |
 | A18 | Perfil que não existe | `{"perfil":"GERENTE"}` | `400` · `JSON_INVALIDO` |
 | A19 | Usuário que não existe | `PATCH /admin/usuarios/00000000-0000-0000-0000-000000000000/perfil` | `404` · `USUARIO_NAO_ENCONTRADO` |
-| A20 | Sem o campo | `PATCH .../acesso` `{}` | `400` · `ativo: ativo e obrigatorio (true ou false)` |
+| A20 | Sem o campo | `PATCH .../acesso` `{}` | `400` · `ativo: ativo é obrigatório (true ou false)` |
 | A21 | Gestão sem token | `GET /admin/usuarios` | `401` |
 | A22 | Admin vê todas as contas | `GET /contas` (token admin) | `200` com as contas de todos (mas não movimenta nenhuma: `403`) |
 | A23 | Senha curta na redefinição | `{"novaSenha":"curta"}` | `400` · `novaSenha: novaSenha deve ter entre 8 e 72 caracteres` |
@@ -894,7 +894,7 @@ dito. No Insomnia, a pasta `06` faz o encerramento num cliente novo, sem estraga
 | L01 | Ver os próprios dados | `GET /clientes/me` | `200`, cadastro da Ana (o mesmo formato do cadastro, sem senha) |
 | L02 | Corrigir e-mail e telefone | `PATCH /clientes/me` `{"telefone":"(11) 91234-5678","email":"Ana.Nova@Exemplo.test"}` | `200`; e-mail salvo em minúsculas, telefone formatado, CPF igual |
 | L03 | Mudar de endereço | `PATCH /clientes/me` `{"cep":"01001000","numero":"10"}` | `200`; endereço vindo do ViaCEP, número `10` |
-| L04 | CEP sem número | `{"cep":"01001000"}` | `400` · `numero: numero e obrigatorio quando o cep muda` |
+| L04 | CEP sem número | `{"cep":"01001000"}` | `400` · `numero: numero é obrigatório quando o cep muda` |
 | L05 | Corpo vazio | `{}` | `400` · `corpo: envie pelo menos um campo para corrigir` |
 | L06 | E-mail de outra pessoa | `{"email":"bruno.visitante@exemplo.test"}` | `409` · `EMAIL_JA_CADASTRADO` |
 | L07 | Encerrar com senha errada | `POST /clientes/me/encerramento` `{"senha":"errada123"}` | `422` · `SENHA_INCORRETA` |

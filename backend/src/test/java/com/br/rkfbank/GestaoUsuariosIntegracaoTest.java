@@ -24,7 +24,7 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringBootTest(properties = {
         "spring.flyway.locations=classpath:db/migration,classpath:db/seed/equipe",
         // Sem DB_CLOSE_DELAY=-1: o H2 some quando o contexto fecha, e o proximo teste recebe banco novo.
-        "spring.datasource.url=jdbc:h2:mem:gestao-usuarios",
+        "spring.datasource.url=jdbc:h2:mem:gestao-usuarios;MODE=MySQL",
         "rkfbank.equipe.senha=" + GestaoUsuariosIntegracaoTest.SENHA_EQUIPE,
         "rkfbank.admin.cpf=" + GestaoUsuariosIntegracaoTest.CPF_ADMIN,
         "rkfbank.admin.senha=" + GestaoUsuariosIntegracaoTest.SENHA_ADMIN

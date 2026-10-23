@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 // Redefinicao pelo ADMIN (PATCH /admin/usuarios/{id}/senha): para quem esqueceu a senha. O admin passa a senha nova
 // para a pessoa por canal privado, e ela troca pela propria no primeiro acesso (PATCH /usuarios/me/senha).
 public record RedefinirSenhaRequestDto(
-        @NotBlank(message = "novaSenha e obrigatória")
+        @NotBlank(message = "novaSenha é obrigatória")
         @Size(min = 8, max = 72, message = "novaSenha deve ter entre 8 e 72 caracteres")
         String novaSenha
 ) {
