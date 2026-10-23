@@ -1,5 +1,4 @@
 import { fileURLToPath } from "node:url";
-import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 /**
@@ -8,7 +7,6 @@ import { defineConfig } from "vitest/config";
  * teste de componente pede o navegador simulado com o comentário `// @vitest-environment jsdom` no topo do arquivo.
  */
 export default defineConfig({
-  plugins: [react()],
   resolve: {
     alias: { "@": fileURLToPath(new URL("./", import.meta.url)) },
   },
