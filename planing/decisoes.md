@@ -62,7 +62,7 @@ Por quê: com `localStorage`/`sessionStorage`, qualquer script que rode na pági
 
 ## Papéis do time
 Data: 19/10
-Decisão: o RKF Bank foi **idealizado pelos três**: Kevin Richard, Renan Barros e Felipe Santana. Kevin cuida do backend, Renan do frontend e **Felipe** é o PO & QA e o **primeiro cliente** (tem acesso antes de todo mundo para os primeiros testes). O time inteiro é de Osasco, SP. (Atualizado em 19/10: antes só o Felipe constava como idealizador.)
+Decisão: o RKF Bank foi **idealizado pelos três**: Kevin Richard, Renan Barros e Fellipe Santana. Kevin cuida do backend, Renan do frontend e **Fellipe** é o PO & QA e o **primeiro cliente** (tem acesso antes de todo mundo para os primeiros testes). O time inteiro é de Osasco, SP. (Atualizado em 19/10: antes só o Fellipe constava como idealizador.)
 Por quê: deixa claro quem decide prioridade de produto e quem dá o aceite do MVP.
 
 ## LGPD: mínimo antes do deploy, resto depois do MVP
@@ -72,7 +72,7 @@ Por quê: hoje só há dados de teste no ambiente local, então o risco real com
 
 ## Flyway reestruturado e contas de demonstração
 Data: 20/10
-Decisão: as migrações viram uma tabela por versão (`V1__criar_tabela_endereco` a `V5__criar_tabela_usuario`), substituindo `V1__schema_inicial`, `V2__email_minusculo` e `V3__usuarios`. Dados prontos ficam em callbacks `afterMigrate` do Flyway, que rodam a cada subida e só inserem o que falta: **Felipe Santana** (conta de origem, R$ 1.000,00) e **Renan Barros** (conta de destino, R$ 500,00), em `db/seed/equipe`. Ligados no perfil padrão; desligados no `test` e em produção (`FLYWAY_LOCATIONS=classpath:db/migration`). (Atualizado no mesmo dia: o login dessas contas saiu do Git, ver "Acesso da equipe × visitantes".) Cada máquina recria o MySQL local uma vez (`docker compose down -v`).
+Decisão: as migrações viram uma tabela por versão (`V1__criar_tabela_endereco` a `V5__criar_tabela_usuario`), substituindo `V1__schema_inicial`, `V2__email_minusculo` e `V3__usuarios`. Dados prontos ficam em callbacks `afterMigrate` do Flyway, que rodam a cada subida e só inserem o que falta: **Fellipe Santana** (conta de origem, R$ 1.000,00) e **Renan Barros** (conta de destino, R$ 500,00), em `db/seed/equipe`. Ligados no perfil padrão; desligados no `test` e em produção (`FLYWAY_LOCATIONS=classpath:db/migration`). (Atualizado no mesmo dia: o login dessas contas saiu do Git, ver "Acesso da equipe × visitantes".) Cada máquina recria o MySQL local uma vez (`docker compose down -v`).
 Por quê: sem produção, reorganizar agora é barato e deixa o histórico legível (a `V2` só corrigia dados de um banco que ninguém mais tem). Contas prontas tiram o ViaCEP e o cadastro do caminho de quem só quer testar, e ids fixos deixam o guia de testes igual em toda máquina. Callback em vez de `V6__`: roda sempre (recria o que foi apagado), não entra no histórico e pode ser ajustado sem quebrar checksum. Seed fora do `test` para os testes continuarem partindo de banco vazio. Daqui para frente, migração aplicada volta a ser intocável.
 
 ## Movimentações idempotentes (Idempotency-Key)
@@ -97,7 +97,7 @@ Por quê: freia força bruta sem infraestrutura nova; com mais de uma instância
 
 ## Acesso da equipe × visitantes
 Data: 20/10
-Decisão: o repositório é público, então **nenhuma senha real fica no Git**. As contas do Felipe e do Renan (seed `db/seed/equipe`) não têm usuário no SQL: o `CriadorAcessoEquipe` cria o login na subida com a `EQUIPE_SENHA` do `.env`, como o admin. Os acessos e o roteiro ponta a ponta da equipe ficam em `.equipe/GUIA_TESTES_EQUIPE.md`, no `.gitignore`, compartilhado só por canal privado entre os três. Para quem chega pelo GitHub há o perfil `visitante`: H2, contas fictícias (Ana e Bruno) com senha pública, **sem** admin e sem contas da equipe, segredo do JWT sorteado a cada subida e `.env` ignorado para segredos. O perfil `demo` (que tinha segredo e senhas fixos) foi removido antes de ir para o Git, e o `application-test.properties` saiu do jar (`src/test/resources`). O Spring passa a ler o `.env` sozinho.
+Decisão: o repositório é público, então **nenhuma senha real fica no Git**. As contas do Fellipe e do Renan (seed `db/seed/equipe`) não têm usuário no SQL: o `CriadorAcessoEquipe` cria o login na subida com a `EQUIPE_SENHA` do `.env`, como o admin. Os acessos e o roteiro ponta a ponta da equipe ficam em `.equipe/GUIA_TESTES_EQUIPE.md`, no `.gitignore`, compartilhado só por canal privado entre os três. Para quem chega pelo GitHub há o perfil `visitante`: H2, contas fictícias (Ana e Bruno) com senha pública, **sem** admin e sem contas da equipe, segredo do JWT sorteado a cada subida e `.env` ignorado para segredos. O perfil `demo` (que tinha segredo e senhas fixos) foi removido antes de ir para o Git, e o `application-test.properties` saiu do jar (`src/test/resources`). O Spring passa a ler o `.env` sozinho.
 Por quê: documentação pública com senha e ids das contas da equipe expunha o ambiente de teste do time; um segredo de JWT escrito no Git deixa qualquer leitor emitir token de admin. O visitante continua conseguindo testar tudo, sem nada que dê acesso ao que é do time.
 
 ## Gestão de usuários e revogação imediata
@@ -112,7 +112,7 @@ Por quê: senha que não se troca é débito de segurança (vazou, não há o qu
 
 ## Ordem até o MVP
 Data: 20/10
-Decisão: Testcontainers (3) segue como a próxima; em seguida os bloqueios do lançamento: `GET /contas/{contaId}`, LGPD mínimo, deploy simples (Docker + perfil `prod` sem seed + banco gerenciado) e testes do Felipe. Swagger (4) fica para logo depois do MVP; AWS (5) e Mensageria (6) continuam futuro.
+Decisão: Testcontainers (3) segue como a próxima; em seguida os bloqueios do lançamento: `GET /contas/{contaId}`, LGPD mínimo, deploy simples (Docker + perfil `prod` sem seed + banco gerenciado) e testes do Fellipe. Swagger (4) fica para logo depois do MVP; AWS (5) e Mensageria (6) continuam futuro.
 Por quê: faltam 11 dias para 31/10. Swagger melhora a experiência, mas não bloqueia ninguém; deploy e LGPD mínimo bloqueiam o lançamento. Testcontainers vem antes porque automatiza a validação no MySQL real (feita à mão em 20/10) e reduz o risco do deploy.
 
 ## Nomes e rotas de mercado (contratos 2.6 e 3.0)

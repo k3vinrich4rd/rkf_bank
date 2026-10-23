@@ -27,7 +27,7 @@ Legenda: ⬜ não começou · 🎬 estudando · 🛠️ implementando · ✅ mer
 > 🧭 **Ordem revisada em 20/10/2026** (11 dias para o MVP): **3. Testcontainers** continua a próxima (automatiza a validação
 > no MySQL que hoje é manual e protege o deploy). Depois dela vêm os **bloqueios do lançamento**, antes do Swagger:
 > `GET /contas/{contaId}` → LGPD mínimo → **colocar no ar de um jeito simples** (Docker + perfil `prod` sem dados de teste +
-> banco gerenciado) → testes do Felipe. A **feature 4 (Swagger)** fica para logo depois do MVP; **5 (AWS)** e **6 (Mensageria)**
+> banco gerenciado) → testes do Fellipe. A **feature 4 (Swagger)** fica para logo depois do MVP; **5 (AWS)** e **6 (Mensageria)**
 > seguem como futuro. Detalhes em `decisoes.md`.
 
 ---

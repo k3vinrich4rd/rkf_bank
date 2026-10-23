@@ -1,6 +1,6 @@
 # 🔐 RKF Bank — Como a segurança funciona (Spring Security + OAuth2 + JWT)
 
-> **Para quem é:** o time (Kevin, Renan, Felipe) e quem chegar no projeto. Explica **o que** cada peça faz, **por que**
+> **Para quem é:** o time (Kevin, Renan, Fellipe) e quem chegar no projeto. Explica **o que** cada peça faz, **por que**
 > foi feita assim e **onde** está no código. Sem senha nenhuma aqui: o repositório é público.
 > Para testar na prática: [guia de testes](README_TESTES_E2E.md) (seções 3, 6 e 8). Contrato: [README_CONTRATO_API.md](README_CONTRATO_API.md).
 
@@ -50,7 +50,7 @@ OAuth2 é um **padrão de delegação de acesso**: define papéis e como um toke
 
 | Papel do OAuth2 | O que faz | No RKF Bank |
 |---|---|---|
-| *Resource Owner* | dono dos dados | o cliente (Felipe, Ana...) |
+| *Resource Owner* | dono dos dados | o cliente (Fellipe, Ana...) |
 | *Client* | o app que pede acesso | o site Next.js (ou o Postman) |
 | *Authorization Server* | confere a identidade e **emite** o token | a própria API, no `POST /auth/login` (login próprio, não é um Authorization Server OAuth2 completo) |
 | *Resource Server* | **valida** o token e protege as rotas | a própria API, com `spring-boot-starter-security-oauth2-resource-server` ✅ |

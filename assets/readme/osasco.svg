@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="Feito em Osasco, São Paulo: o RKF Bank nasceu da ideia de três amigos de Osasco, Kevin, Renan e Felipe.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="Feito em Osasco, São Paulo: o RKF Bank nasceu da ideia de três amigos de Osasco, Kevin, Renan e Fellipe.">
   <!-- Gerado por scripts/gerar-svgs-readme.mjs. Não edite à mão. -->
   <defs><linearGradient id="marca" x1="0" x2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#06B6D4"/></linearGradient>
     <radialGradient id="ceu" cx=".75" cy=".1" r=".9"><stop offset="0" stop-color="#3B82F6" stop-opacity=".35"/><stop offset="1" stop-color="#3B82F6" stop-opacity="0"/></radialGradient>
@@ -36,7 +36,7 @@
   </g>
   <g class="entra" style="animation-delay:0.62s">
     <rect x="180" y="226" width="120" height="36" rx="18" fill="#e2c98a" fill-opacity=".12" stroke="#e2c98a" stroke-opacity=".6"/>
-    <text x="240" y="250" text-anchor="middle" style="font: 700 14px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🧪 Felipe</text>
+    <text x="240" y="250" text-anchor="middle" style="font: 700 14px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🧪 Fellipe</text>
   </g>
   <g class="entra" style="animation-delay:0.74s">
     <rect x="312" y="226" width="120" height="36" rx="18" fill="#06B6D4" fill-opacity=".12" stroke="#06B6D4" stroke-opacity=".6"/>

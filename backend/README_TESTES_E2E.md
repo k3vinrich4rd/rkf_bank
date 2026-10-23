@@ -57,7 +57,7 @@ o código é o mesmo.
 |---|---|---|---|
 | Banco | H2 em memória (`rkfbank-visitante`) | H2 em memória (`rkfbank-equipe`) | MySQL 8.4 no Docker (porta `5441`) |
 | Ao parar a API | tudo some | tudo some | **fica gravado** (volume do Docker) |
-| Contas prontas | Ana (origem) e Bruno (destino) | Felipe (origem) e Renan (destino) | Felipe e Renan |
+| Contas prontas | Ana (origem) e Bruno (destino) | Fellipe (origem) e Renan (destino) | Fellipe e Renan |
 | ADMIN | não existe (de propósito) | o do `.env` (`ADMIN_CPF`/`ADMIN_SENHA`) | o do `.env` |
 | Precisa de | só o JDK | JDK + `.env` | JDK + `.env` + Docker |
 | Console do H2 | ✅ `/h2-console` | ✅ `/h2-console` | ❌ (use o cliente do MySQL) |
@@ -80,7 +80,7 @@ tabelas nos dois, então o comportamento da API é igual.
 
 | | 🟠 **Origem** (visitante) | 🔵 **Destino** (visitante) | 🟠 **Origem** (equipe) | 🔵 **Destino** (equipe) |
 |---|---|---|---|---|
-| Quem | Ana Visitante (Origem) | Bruno Visitante (Destino) | Felipe Santana (Teste Origem) | Renan Barros (Teste Destino) |
+| Quem | Ana Visitante (Origem) | Bruno Visitante (Destino) | Fellipe Santana (Teste Origem) | Renan Barros (Teste Destino) |
 | CPF (login) | `246.813.579-28` | `975.318.642-82` | `123.456.789-09` | `987.654.321-00` |
 | Senha | `Visitante@2026` | `Visitante@2026` | `EQUIPE_SENHA` do `.env` | `EQUIPE_SENHA` do `.env` |
 | `clienteId` | `a0000000-0000-4000-8000-000000000112` | `a0000000-0000-4000-8000-000000000122` | `5eed0000-0000-4000-8000-000000000012` | `5eed0000-0000-4000-8000-000000000022` |
@@ -120,7 +120,7 @@ cp .env.example .env      # na raiz do repositório; depois edite os valores
 |---|---|---|
 | `JWT_SEGREDO` | chave que assina os tokens (mín. 32 bytes). **Obrigatória**: sem ela a API não sobe | `openssl rand -base64 48` (Git Bash) |
 | `ADMIN_CPF` / `ADMIN_SENHA` | o primeiro ADMIN, criado na subida se ainda não existir | um CPF válido seu de teste, ex. `11144477735`, e uma senha de 8+ caracteres |
-| `EQUIPE_SENHA` | senha do Felipe e do Renan (mín. 12 bytes) | equipe: a do guia privado · visitante: invente uma |
+| `EQUIPE_SENHA` | senha do Fellipe e do Renan (mín. 12 bytes) | equipe: a do guia privado · visitante: invente uma |
 | `MYSQL_*` | usuário, senha, banco e porta do MySQL do Docker | os do `.env.example` servem |
 
 **Onde a API procura o `.env`:** na **pasta de onde ela é iniciada** (`spring.config.import=optional:file:.env`). Por
@@ -352,7 +352,7 @@ pastas, na ordem de um teste completo. Ninguém copia token nem id: os scripts g
    `backend/insomnia/rkfbank.insomnia.json` → **Import**. Aparece a coleção **RKF Bank API**.
 2. Abra a coleção e, no seletor de ambiente (canto superior esquerdo), escolha:
    - **Visitante (H2, Ana e Bruno)** → API no perfil visitante. Já vem pronto.
-   - **Equipe (MySQL ou H2, Felipe e Renan)** → edite o ambiente (ícone ⚙️) e troque os três `COLE_AQUI_...` pelos
+   - **Equipe (MySQL ou H2, Fellipe e Renan)** → edite o ambiente (ícone ⚙️) e troque os três `COLE_AQUI_...` pelos
      valores do seu `.env`. A equipe importa o arquivo privado, que já vem preenchido (guia privado).
 3. Mudou a coleção no Git? Importe de novo: ela substitui a anterior (mesmos ids).
 
@@ -382,7 +382,7 @@ Mande as requisições **de cima para baixo**, começando por `00 · Comece aqui
 | `00` Comece aqui | a API está no ar | — |
 | `01` Login | guarda `token_origem`, `token_destino`, `token_admin` | — |
 | `02` **Fluxo E2E** | o roteiro principal: cadastro com CPF/CEP/telefone **com máscara** (higienização + ViaCEP), login, conta ORIGEM e DESTINO, depósito, saque, transferência, saldos e extratos | internet (ViaCEP) |
-| `03` Dinheiro entre clientes | as contas prontas do seed (Ana → Bruno ou Felipe → Renan): contas, página, depósito, saque, transferência e extratos | `01` |
+| `03` Dinheiro entre clientes | as contas prontas do seed (Ana → Bruno ou Fellipe → Renan): contas, página, depósito, saque, transferência e extratos | `01` |
 | `04` Idempotência | a mesma chave não movimenta duas vezes | `01` |
 | `05` ADMIN (26) | listar clientes (array e página), todas as contas e os usuários; promover (e ver o token antigo cair e o promovido entrar como ADMIN), rebaixar, desativar, reativar, redefinir senha; **as travas**: mexer em si mesmo, redefinir a própria senha pela gestão, rebaixar o admin do `.env`, perfil/usuário inexistente; e o que o ADMIN **não** faz: abrir conta, `/clientes/me`, movimentar ou ver extrato de cliente | `01` (ADMIN) e `02` |
 | `06` Meus dados (LGPD) | ver e corrigir os próprios dados (telefone, endereço pelo CEP), erros da correção e da troca de senha, trocar senha, zerar as contas e encerrar o cadastro (com senha errada, com saldo, de verdade) e o ADMIN não conseguir reativar | `02` |
@@ -594,7 +594,7 @@ PATCH /admin/usuarios/{usuarioId}/senha         🔑   { "novaSenha": "senha-tem
 # Parte 2 · Roteiros de teste
 
 Os roteiros abaixo são os mesmos da coleção do Insomnia, com o **porquê** de cada resultado. Usam as contas de
-visitante; no perfil equipe, troque Ana → Felipe e Bruno → Renan (os ids estão na seção 1).
+visitante; no perfil equipe, troque Ana → Fellipe e Bruno → Renan (os ids estão na seção 1).
 
 ### Pelo terminal, se preferir (Git Bash / PowerShell)
 
@@ -652,7 +652,7 @@ saldos não mudam (pasta `04` da coleção).
 
 ### 10.2 Contas prontas: Ana e Bruno (T01 a T12)
 
-É a pasta **03** da coleção, com as contas do seed (no perfil equipe, Felipe e Renan).
+É a pasta **03** da coleção, com as contas do seed (no perfil equipe, Fellipe e Renan).
 
 ```mermaid
 flowchart LR
@@ -1119,7 +1119,7 @@ flowchart TB
 | Console do H2 conecta, mas não há tabelas | ficou a URL sugerida `jdbc:h2:mem:testdb` | use `jdbc:h2:mem:rkfbank-visitante` ou `rkfbank-equipe` (seção 5.1) |
 | `/h2-console` dá `401` | API no perfil MySQL (o console só existe nos perfis H2) | suba com `visitante` ou `equipe`, ou use o cliente do MySQL |
 | Login da Ana dá `401` | a API não está no perfil `visitante` | suba com `-Dspring-boot.run.profiles=visitante` |
-| Login do Felipe/Renan dá `401` | `EQUIPE_SENHA` vazia no `.env`, ou a API ainda não terminou de subir | preencha e reinicie; espere o `health` dar `UP` |
+| Login do Fellipe/Renan dá `401` | `EQUIPE_SENHA` vazia no `.env`, ou a API ainda não terminou de subir | preencha e reinicie; espere o `health` dar `UP` |
 | `health` dá `OUT_OF_SERVICE` | a API ainda está subindo | espere alguns segundos |
 | Insomnia: tudo dá `401` depois de um tempo | o token venceu (15 ou 60 min) | mande de novo o login da pasta `01` |
 | Insomnia: `{{ _.token_origem }}` vazio | nenhum ambiente escolhido, ou o login não rodou | escolha o ambiente (6.1) e rode a pasta `01` |

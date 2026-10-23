@@ -487,7 +487,7 @@ Tudo de uma vez pelo terminal: `node scripts/rodar-colecao-insomnia.mjs` (o rote
 ```mermaid
 flowchart TD
     Q{"O que eu quero?"} -->|"conhecer a API sem instalar nada<br/>além do JDK 25"| VIS["perfil visitante<br/>H2 · Ana e Bruno · segredo sorteado<br/>sem admin"]
-    Q -->|"testar como admin<br/>ou com as contas da equipe"| EQ["perfil equipe<br/>H2 · Felipe e Renan · admin do .env"]
+    Q -->|"testar como admin<br/>ou com as contas da equipe"| EQ["perfil equipe<br/>H2 · Fellipe e Renan · admin do .env"]
     Q -->|"desenvolver com o banco real"| PAD["perfil padrão<br/>MySQL 8.4 no Docker · .env completo"]
     Q -->|"rodar a suíte automática"| TST["perfil test<br/>scripts/validar.sh backend<br/>H2 · sem seeds"]
     VIS --> G1["VISITANTES.md"]

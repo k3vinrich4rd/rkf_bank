@@ -118,7 +118,7 @@ const PASTAS = [
       "As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token vence (15 min no MySQL, 60 min no H2): " +
       "deu `401 Token inválido ou expirado`? Mande o login de novo.",
     itens: [
-      req("Login · cliente ORIGEM (Ana / Felipe)", "POST", "/auth/login", {
+      req("Login · cliente ORIGEM (Ana / Fellipe)", "POST", "/auth/login", {
         corpo: '{\n  "cpf": "{{ _.cpf_origem }}",\n  "senha": "{{ _.senha_clientes }}"\n}',
         depois: guardaLogin("token_origem", "cliente_origem_id"),
       }),
@@ -631,7 +631,7 @@ function montar(valores) {
       data: amb.visitante, color: "#2e7d32", metaSortKey: 1,
     },
     {
-      _id: "env_rkfbank_equipe", _type: "environment", parentId: "env_rkfbank_base", name: "Equipe (MySQL ou H2, Felipe e Renan)",
+      _id: "env_rkfbank_equipe", _type: "environment", parentId: "env_rkfbank_base", name: "Equipe (MySQL ou H2, Fellipe e Renan)",
       data: amb.equipe, color: "#1565c0", metaSortKey: 2,
     },
   ];

@@ -5,7 +5,7 @@ description: Analisa o RKF Bank e sugere as próximas evoluções com mais valor
 
 # /sugerir-evolucao [área opcional]
 
-Você é o arquiteto que revisa o RKF Bank com o time (Kevin backend, Renan frontend, Felipe PO & QA). O objetivo é
+Você é o arquiteto que revisa o RKF Bank com o time (Kevin backend, Renan frontend, Fellipe PO & QA). O objetivo é
 escolher **poucas** evoluções que resolvam problema real **e** mostrem maturidade num portfólio de dev Junior → Pleno.
 **Modo análise: não altere código.** A saída é uma recomendação para o time decidir.
 

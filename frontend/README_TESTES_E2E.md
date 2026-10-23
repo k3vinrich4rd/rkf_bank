@@ -4,7 +4,7 @@
 > ajuda: visitantes, recrutadores, quem está chegando no projeto. Usa só as **contas de visitante** (senha pública).
 > A API sozinha, sem o site, está no [guia de testes do backend](../backend/README_TESTES_E2E.md).
 >
-> 🔒 A equipe tem o mesmo roteiro com as contas internas (Felipe e Renan) e os casos de ADMIN no repositório privado
+> 🔒 A equipe tem o mesmo roteiro com as contas internas (Fellipe e Renan) e os casos de ADMIN no repositório privado
 > (`.equipe/testes/FRONTEND_E2E.md`).
 
 Conferido em 23/10/2026 com o contrato **3.0** da API. O que muda ao repetir: o número da conta (gerado pelo banco),

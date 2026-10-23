@@ -3,7 +3,7 @@
 // Cria dados novos a cada execução (CPF, e-mail e número de conta aleatórios), então pode rodar
 // várias vezes no mesmo banco. Segue o roteiro de backend/README_TESTES_E2E.md em versão resumida.
 // Login: cada cliente se cadastra com senha e entra em POST /auth/login; as rotas de conta vão com o token.
-// Contas do seed (só leitura): visitantes Ana e Bruno no perfil visitante; Felipe e Renan com EQUIPE_SENHA no ambiente.
+// Contas do seed (só leitura): visitantes Ana e Bruno no perfil visitante; Fellipe e Renan com EQUIPE_SENHA no ambiente.
 // Admin (opcional): com ADMIN_CPF e ADMIN_SENHA no ambiente (os mesmos da API), também confere GET /clientes.
 // Sai com código 0 se todas as verificações passaram e 1 se alguma falhou.
 
@@ -149,7 +149,7 @@ try {
   verificar("Movimentação sem Idempotency-Key → 400", r.status === 400 && (r.json?.campos ?? []).some((c) => c.campo === "Idempotency-Key"), `status ${r.status}`);
 
   // Contas que o Flyway (db/seed) cria a cada subida. Só leitura: o smoke nunca mexe no saldo delas.
-  // Perfil visitante: Ana e Bruno com a senha pública. Perfil padrão/equipe: Felipe e Renan com a EQUIPE_SENHA do ambiente.
+  // Perfil visitante: Ana e Bruno com a senha pública. Perfil padrão/equipe: Fellipe e Renan com a EQUIPE_SENHA do ambiente.
   console.log("\nContas pré-criadas pelo seed");
   const ana = await login("24681357928", "Visitante@2026");
   if (ana.status === 200) {
@@ -157,16 +157,16 @@ try {
     verificar("Visitante Ana vê só a conta 0001/900001", r.json?.length >= 1 && r.json.every((c) => c.clienteId === ana.json.clienteId)
         && r.json.some((c) => c.numeroConta === "900001"), JSON.stringify(r.json));
   } else if (process.env.EQUIPE_SENHA) {
-    const felipe = await login("12345678909", process.env.EQUIPE_SENHA);
+    const fellipe = await login("12345678909", process.env.EQUIPE_SENHA);
     const renan = await login("98765432100", process.env.EQUIPE_SENHA);
-    if (verificar("Login do Felipe e do Renan com a EQUIPE_SENHA → 200", felipe.status === 200 && renan.status === 200,
-        `Felipe ${felipe.status}, Renan ${renan.status} (a API leu a mesma EQUIPE_SENHA? db/seed/equipe ligado?)`)) {
-      r = await chamar("GET", "/contas", undefined, felipe.json.token);
-      verificar("Felipe vê só as próprias contas, entre elas a 0001/100001", r.json?.length >= 1
-          && r.json.every((c) => c.clienteId === felipe.json.clienteId)
+    if (verificar("Login do Fellipe e do Renan com a EQUIPE_SENHA → 200", fellipe.status === 200 && renan.status === 200,
+        `Fellipe ${fellipe.status}, Renan ${renan.status} (a API leu a mesma EQUIPE_SENHA? db/seed/equipe ligado?)`)) {
+      r = await chamar("GET", "/contas", undefined, fellipe.json.token);
+      verificar("Fellipe vê só as próprias contas, entre elas a 0001/100001", r.json?.length >= 1
+          && r.json.every((c) => c.clienteId === fellipe.json.clienteId)
           && r.json.some((c) => c.id === "5eed0000-0000-4000-8000-000000000014" && c.numeroConta === "100001"), JSON.stringify(r.json));
       r = await chamar("GET", "/contas/5eed0000-0000-4000-8000-000000000014/lancamentos", undefined, renan.json.token);
-      verificar("Renan não vê o extrato do Felipe → 403", r.status === 403, `status ${r.status}`);
+      verificar("Renan não vê o extrato do Fellipe → 403", r.status === 403, `status ${r.status}`);
     }
   } else {
     console.log("⏭️  Contas do seed puladas (perfil visitante não está no ar e EQUIPE_SENHA não está no ambiente)");

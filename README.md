@@ -41,7 +41,7 @@
 ## 🏦 Conheça o RKF Bank
 
 > **Mais que um banco, um parceiro para o seu amanhã.**
-> O RKF Bank é um **banco digital full stack** (API REST + site) idealizado e construído por três amigos de **Osasco, SP** — **Kevin Richard**, **Renan Barros** e **Felipe Santana**, com processo de time de verdade: contrato de API, Git Flow, Pull Requests revisados, decisões registradas, testes automatizados, CI e um MVP com data marcada.
+> O RKF Bank é um **banco digital full stack** (API REST + site) idealizado e construído por três amigos de **Osasco, SP** — **Kevin Richard**, **Renan Barros** e **Fellipe Santana**, com processo de time de verdade: contrato de API, Git Flow, Pull Requests revisados, decisões registradas, testes automatizados, CI e um MVP com data marcada.
 
 <table>
   <tr>
@@ -100,7 +100,7 @@
 | Pergunta | Resposta rápida |
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
-| Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Felipe Santana**: idealizador, PO & QA e primeiro cliente |
+| Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
 | Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **266 testes**, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
@@ -120,7 +120,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 | [`ConfiguracaoSeguranca.java`](backend/src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java) | `SecurityFilterChain`, JWT HS256 com algoritmo fixo, BCrypt |
 | [`AutenticacaoService.java`](backend/src/main/java/com/br/rkfbank/services/AutenticacaoService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
 | [`db/migration/`](backend/src/main/resources/db/migration) | `V1` a `V5`: uma tabela por versão (endereço, cliente, conta, lançamento, usuário) |
-| [`db/seed/`](backend/src/main/resources/db/seed) | callbacks `afterMigrate`: `equipe/` (Felipe e Renan, login só pelo `.env`) e `visitante/` (Ana e Bruno, contas públicas) |
+| [`db/seed/`](backend/src/main/resources/db/seed) | callbacks `afterMigrate`: `equipe/` (Fellipe e Renan, login só pelo `.env`) e `visitante/` (Ana e Bruno, contas públicas) |
 | [`FiltroLogRequisicao.java`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) | `X-Request-Id` em todas as linhas de log, com proteção contra log forjado |
 | [`SegurancaIntegracaoTest.java`](backend/src/test/java/com/br/rkfbank/SegurancaIntegracaoTest.java) | ataques ao token (`alg: none`, payload adulterado) |
 | [`planing/decisoes.md`](planing/decisoes.md) | por que cada escolha foi feita |
@@ -135,7 +135,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 2. Suba tudo: [rodando o projeto](#-rodando-o-projeto).
 3. Branch nova **sempre** da `origin/develop` atualizada: `git switch -c feature/minha-tarefa origin/develop`.
 4. Antes do PR: `scripts/validar.sh backend` (ou `frontend` / `tudo`).
-5. **Felipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); a conferência automática é `node scripts/rodar-colecao-insomnia.mjs` (91 requisições).
+5. **Fellipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); a conferência automática é `node scripts/rodar-colecao-insomnia.mjs` (91 requisições).
 6. Recados entre o time: [planing/recados.md](planing/recados.md).
 
 </details>
@@ -144,7 +144,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 
 ## 🎮 Aventura: sua primeira semana no RKF Bank
 
-> Você é o Felipe, um dos idealizadores e o primeiro cliente do RKF Bank. Faça as escolhas e veja o que a API responde. 👇 Clique para decidir.
+> Você é o Fellipe, um dos idealizadores e o primeiro cliente do RKF Bank. Faça as escolhas e veja o que a API responde. 👇 Clique para decidir.
 
 **Segunda-feira.** Você abre o site para criar a conta. O seu CEP é de Osasco.
 
@@ -1079,7 +1079,7 @@ O Spring **lê o `.env` da raiz sozinho** (desde 20/10/2026): basta rodar da rai
 ```
 
 As tabelas nascem pelo **Flyway** (`V1` a `V9`) e, a cada subida, o callback `afterMigrate` garante as contas da
-equipe (Felipe = origem, Renan = destino). O login delas vem da `EQUIPE_SENHA` do `.env`: os acessos ficam no guia
+equipe (Fellipe = origem, Renan = destino). O login delas vem da `EQUIPE_SENHA` do `.env`: os acessos ficam no guia
 privado da equipe, fora do repositório. As migrações foram reorganizadas em 20/10/2026: se a API recusar com
 *Migration checksum mismatch* ou *applied migration not resolved locally*, rode
 `docker compose down -v && docker compose up -d` **uma vez** (apaga os dados locais).
@@ -1236,7 +1236,7 @@ gantt
     GET conta e contas do cliente        :        m1, after m0, 1d
     LGPD mínimo                          :        m2, after m1, 2d
     Deploy (Docker, perfil prod, banco)  :crit,   m4, after m2, 3d
-    Testes do Felipe e correções         :        m3, after m4, 2d
+    Testes do Fellipe e correções         :        m3, after m4, 2d
     section Depois
     Swagger / OpenAPI                    :        p2, 2026-11-02, 2d
     Pix, boleto e cartão (simulados)     :        p3, 2026-11-05, 20d
@@ -1248,7 +1248,7 @@ gantt
 
 - [x] Cadastro com ViaCEP, abertura de conta, depósito, saque, transferência e extrato
 - [x] Logs rastreáveis, CI, CodeQL e Dependabot
-- [x] Banco versionado com Flyway (V1 a V9), contas da equipe (Felipe e Renan) e perfil público de visitante
+- [x] Banco versionado com Flyway (V1 a V9), contas da equipe (Fellipe e Renan) e perfil público de visitante
 - [x] Idempotência nas movimentações, número de conta gerado pelo banco, limite de tentativas no login e health check
 - [x] Login com Spring Security + JWT, perfis e regra de dono
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
@@ -1256,7 +1256,7 @@ gantt
 - [ ] Testes de integração com Testcontainers + MySQL real (protege o deploy)
 - [ ] Backend: `GET /contas/{id}` e `GET /clientes/{id}/contas`
 - [ ] LGPD mínimo: política de privacidade, aceite dos termos e encarregado
-- [ ] Felipe testa tudo como primeiro cliente e os bugs são corrigidos
+- [ ] Fellipe testa tudo como primeiro cliente e os bugs são corrigidos
 - [ ] Colocar no ar (Docker, perfil `prod` sem dados de teste, banco gerenciado) e atualizar este README com link e prints
 
 </details>
@@ -1281,10 +1281,10 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
 
 ## 👥 Quem faz o RKF Bank
 
-> Os três são **idealizadores** do RKF Bank: tiveram a ideia juntos, em Osasco, e dividiram o banco em três frentes, cada um com a sua função: **API** (Kevin), **site** (Renan) e **produto** (Felipe).
+> Os três são **idealizadores** do RKF Bank: tiveram a ideia juntos, em Osasco, e dividiram o banco em três frentes, cada um com a sua função: **API** (Kevin), **site** (Renan) e **produto** (Fellipe).
 
 <div align="center">
-  <img src="assets/readme/time.svg" width="100%" alt="Os três idealizadores do RKF Bank, todos de Osasco: Kevin Richard, idealizador e backend; Felipe Santana, idealizador, PO e QA e primeiro cliente; Renan Barros, idealizador e frontend"/>
+  <img src="assets/readme/time.svg" width="100%" alt="Os três idealizadores do RKF Bank, todos de Osasco: Kevin Richard, idealizador e backend; Fellipe Santana, idealizador, PO e QA e primeiro cliente; Renan Barros, idealizador e frontend"/>
 </div>
 
 <table>
@@ -1301,8 +1301,8 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
       <a href="https://github.com/k3vinrich4rd"><img src="https://img.shields.io/badge/GitHub-k3vinrich4rd-181717?logo=github&logoColor=white" alt="GitHub de Kevin"/></a>
     </td>
     <td align="center" valign="top" width="33%">
-      <h3>Felipe Santana</h3>
-      <img src="https://img.shields.io/badge/LinkedIn-em_breve-6B7280?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn de Felipe Santana: em breve"/>
+      <h3>Fellipe Santana</h3>
+      <img src="https://img.shields.io/badge/LinkedIn-em_breve-6B7280?style=for-the-badge&logo=linkedin&logoColor=white" alt="LinkedIn de Fellipe Santana: em breve"/>
       <br/>
       <img src="https://img.shields.io/badge/Idealizador-PO_%26_QA-E2C98A" alt="Idealizador, PO e QA"/>
       <p align="left"><sub><i>“Se não funciona para o cliente, não está pronto.”</i> Olha o banco pelos olhos de quem usa: transforma ideia em prioridade, prioridade em critério de aceite e só dá o ok quando o fluxo funciona de ponta a ponta.</sub></p>
@@ -1341,15 +1341,15 @@ TypeScript, Tailwind, Drizzle e PostgreSQL) que trocou um processo manual e suje
 faz freelas de sites, landing pages, dashboards e automações para pequenas empresas. Meta: primeira vaga como Dev Full
 Stack Júnior, rumo a Engenheiro de Software.
 
-**Felipe Santana — produto e qualidade.** É quem garante que o banco resolve o problema de quem usa: decide prioridade,
+**Fellipe Santana — produto e qualidade.** É quem garante que o banco resolve o problema de quem usa: decide prioridade,
 escreve o que "pronto" significa e testa como cliente — por isso a conta de origem que nasce em todo ambiente é a dele.
-<sub>(Texto provisório, montado a partir do papel dele no time; será trocado pelo "Sobre" do LinkedIn assim que o Felipe enviar o link.)</sub>
+<sub>(Texto provisório, montado a partir do papel dele no time; será trocado pelo "Sobre" do LinkedIn assim que o Fellipe enviar o link.)</sub>
 
 </details>
 
 <div align="center">
 
-Dúvida sobre a API ou o banco? **Kevin**. Telas e site? **Renan**. Produto, prioridade e testes de aceite? **Felipe**.
+Dúvida sobre a API ou o banco? **Kevin**. Telas e site? **Renan**. Produto, prioridade e testes de aceite? **Fellipe**.
 Bug ou sugestão? Abra uma [issue](https://github.com/k3vinrich4rd/rkf_bank/issues).
 
 </div>
@@ -1370,7 +1370,7 @@ O RKF Bank nasceu em **Osasco**, na Grande São Paulo, da ideia de três amigos 
       "type": "Feature",
       "properties": {
         "title": "RKF Bank · Osasco, SP",
-        "description": "Kevin, Renan e Felipe: o time inteiro é de Osasco",
+        "description": "Kevin, Renan e Fellipe: o time inteiro é de Osasco",
         "marker-color": "#3B82F6",
         "marker-size": "large",
         "marker-symbol": "bank"
@@ -1566,7 +1566,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 
 <a href="planing/roadmap.md"><img src="assets/readme/chamada.svg" width="100%" alt="Mais que um banco, um parceiro para o seu amanhã. Ver o roadmap."/></a>
 
-<sub>📍 RKF Banco Digital — idealizado e feito em Osasco, SP, por Kevin Richard, Renan Barros e Felipe Santana.</sub>
+<sub>📍 RKF Banco Digital — idealizado e feito em Osasco, SP, por Kevin Richard, Renan Barros e Fellipe Santana.</sub>
 <br/>
 <a href="#readme">⬆️ voltar ao topo</a>
 

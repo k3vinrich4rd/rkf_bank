@@ -63,7 +63,7 @@
       "_id": "env_rkfbank_equipe",
       "_type": "environment",
       "parentId": "env_rkfbank_base",
-      "name": "Equipe (MySQL ou H2, Felipe e Renan)",
+      "name": "Equipe (MySQL ou H2, Fellipe e Renan)",
       "data": {
         "cpf_origem": "12345678909",
         "cpf_destino": "98765432100",
@@ -118,7 +118,7 @@
       "_id": "req_rkfbank_01_00",
       "_type": "request",
       "parentId": "fld_rkfbank_01",
-      "name": "Login · cliente ORIGEM (Ana / Felipe)",
+      "name": "Login · cliente ORIGEM (Ana / Fellipe)",
       "description": "",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",

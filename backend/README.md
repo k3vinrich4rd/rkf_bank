@@ -18,7 +18,7 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
 | [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou MySQL), ver o banco (console do H2, MySQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
 | [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia (91 requisições encadeadas; a pasta 02 é o roteiro E2E completo e o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
-| `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Felipe, do Renan e do admin, roteiro ponta a ponta completo |
+| `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Fellipe, do Renan e do admin, roteiro ponta a ponta completo |
 
 ---
 
@@ -63,7 +63,7 @@ usuário `sa`, senha vazia; [guia, seção 5](README_TESTES_E2E.md#5-olhar-o-ban
 | `JWT_SEGREDO` | valor de exemplo: **troque** | Spring: assina e confere o JWT. **Obrigatório**, mínimo 32 bytes; sem ele a API não sobe |
 | `JWT_EXPIRACAO` | `15m` | Spring: validade do token (opcional) |
 | `ADMIN_CPF` / `ADMIN_SENHA` | vazios | Spring: criam o primeiro `ADMIN` na subida, se preenchidos (opcional) |
-| `EQUIPE_SENHA` | vazio | Spring: login do Felipe e do Renan (contas da equipe); mín. 12 bytes. Valor real só no guia privado |
+| `EQUIPE_SENHA` | vazio | Spring: login do Fellipe e do Renan (contas da equipe); mín. 12 bytes. Valor real só no guia privado |
 | `FLYWAY_LOCATIONS` | (não está no exemplo) | Spring: em produção, `classpath:db/migration` (sem dados prontos) |
 
 > O Spring lê o `.env` da raiz sozinho. Sem ele (ou rodando de outra pasta), usa os padrões do
@@ -115,7 +115,7 @@ Ativa-se com `-Dspring-boot.run.profiles=<nome>` (Maven), `--spring.profiles.act
 
 | Perfil | Para quem | Banco | Contas prontas | Segredos | Arquivo |
 |---|---|---|---|---|---|
-| **padrão** (nenhum) | equipe, dia a dia | MySQL (Docker), dados **ficam** | Felipe e Renan (login com `EQUIPE_SENHA`) + admin do `.env` | todos do `.env`; sem `JWT_SEGREDO` não sobe | `application.properties` |
+| **padrão** (nenhum) | equipe, dia a dia | MySQL (Docker), dados **ficam** | Fellipe e Renan (login com `EQUIPE_SENHA`) + admin do `.env` | todos do `.env`; sem `JWT_SEGREDO` não sobe | `application.properties` |
 | **`equipe`** | equipe, teste rápido sem Docker | H2 em memória, dados **somem** | iguais ao padrão | todos do `.env` | `application-equipe.properties` |
 | **`visitante`** | quem chega pelo GitHub | H2 em memória, dados **somem** | Ana e Bruno Visitante (senha pública) — **sem** equipe, **sem** admin | JWT sorteado a cada subida; `.env` ignorado para segredos | `application-visitante.properties` |
 | **`test`** | testes automatizados | H2 em memória, **vazio** | nenhuma (os testes criam as suas) | fixos de teste | `src/test/resources/application-test.properties` (fora do jar) |
@@ -128,12 +128,12 @@ quem está sem Docker; o `visitante` existe para o repositório público poder s
 - **Senha pública só abre contas de mentira:** Ana e Bruno existem apenas nesse perfil, num banco que some ao parar.
 - **Ninguém forja token:** `rkfbank.jwt.segredo-aleatorio=true` sorteia 48 bytes com `SecureRandom` na subida. Não
   há segredo escrito em lugar nenhum: com um segredo fixo no Git, quem o lesse emitiria token de admin.
-- **Nada da equipe vaza para ele:** não existe admin, não existem Felipe e Renan, e `JWT_SEGREDO`, `ADMIN_*` e
+- **Nada da equipe vaza para ele:** não existe admin, não existem Fellipe e Renan, e `JWT_SEGREDO`, `ADMIN_*` e
   `EQUIPE_SENHA` do `.env` de quem roda são ignorados. O `PerfilVisitanteIntegracaoTest` prova os três pontos.
 
 ### Por que as contas da equipe não têm senha no Git
 
-O repositório é público. O seed `db/seed/equipe` cria clientes, contas e lançamentos do Felipe e do Renan **sem
+O repositório é público. O seed `db/seed/equipe` cria clientes, contas e lançamentos do Fellipe e do Renan **sem
 usuário**; na subida, o `InicializadorAcessoEquipe` cria o login deles com a `EQUIPE_SENHA` do `.env` (mesmo raciocínio
 do `InicializadorAdmin`). Sem `EQUIPE_SENHA`, as contas existem mas ninguém entra. Trocou a senha no `.env`? Na próxima
 subida a nova vale. Os acessos ficam no **guia privado da equipe**, em `.equipe/` (pasta no `.gitignore`).
@@ -327,7 +327,7 @@ src/main/resources/db/
 │   ├── V8__adicionar_versao_credencial_usuario.sql (troca de senha derruba tokens antigos)
 │   └── V9__adicionar_encerramento_cliente.sql (LGPD: encerramento pelo titular e anonimização)
 └── seed/                              ← dados prontos: só onde spring.flyway.locations incluir a pasta
-    ├── equipe/afterMigrate__dados_equipe.sql         (Felipe = origem, Renan = destino; sem senha)
+    ├── equipe/afterMigrate__dados_equipe.sql         (Fellipe = origem, Renan = destino; sem senha)
     └── visitante/afterMigrate__dados_visitantes.sql  (Ana e Bruno Visitante; senha pública)
 ```
 
@@ -352,7 +352,7 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 > 🔁 **Reestruturação de 20/10/2026** ([decisão](../planing/decisoes.md)): os antigos `V1__schema_inicial`,
 > `V2__email_minusculo` e `V3__usuarios` viraram `V1`→`V5` (uma tabela por versão; a `V6` veio depois, com a idempotência), aproveitando que ainda não existe
 > banco de produção. **Uma vez por máquina**, recrie o MySQL local: `docker compose down -v && docker compose up -d`
-> (apaga os dados locais; as contas do Felipe e do Renan voltam sozinhas na subida).
+> (apaga os dados locais; as contas do Fellipe e do Renan voltam sozinhas na subida).
 
 ---
 
@@ -363,7 +363,7 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 | `Access denied for user 'rkfbank'` | rodou fora da raiz (o `.env` não foi achado) ou `.env` sem `MYSQL_*` | rode da raiz; confira o `.env` |
 | `Could not resolve placeholder 'JWT_SEGREDO'` ou `JWT_SEGREDO ausente ou curto` | `.env` sem `JWT_SEGREDO` (ou com menos de 32 bytes), ou não carregado | gere com `openssl rand -base64 48`, ponha no `.env` e rode da raiz |
 | Toda chamada devolve `401` | sem `Authorization: Bearer`, token vencido (15 min) ou `JWT_SEGREDO` trocado | faça login de novo |
-| Felipe/Renan dão `401` | `EQUIPE_SENHA` vazia ou diferente da do guia privado (o log diz `0 de 2 contas com login`) | confira o `.env` e reinicie |
+| Fellipe/Renan dão `401` | `EQUIPE_SENHA` vazia ou diferente da do guia privado (o log diz `0 de 2 contas com login`) | confira o `.env` e reinicie |
 | Toda movimentação dá `400` | faltou o header `Idempotency-Key` (contrato 2.1) | gere um UUID por operação |
 | Login dá `429` | 5 senhas erradas seguidas para o mesmo CPF | espere 15 min ou reinicie a API |
 | `Communications link failure` | MySQL não está no ar ou ainda subindo | `docker compose ps` — espere `healthy` |
@@ -374,6 +374,6 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 | `Schema validation: missing column` / `wrong column type` | mudou a entidade sem criar migração | crie um `V<n>__...sql` com a alteração; o Hibernate não altera mais o banco |
 | `Found non-empty schema(s) ... but no schema history table` | MySQL local criado pelo Hibernate antes do Flyway | `docker compose down -v && docker compose up -d` uma vez (apaga os dados locais) |
 | `Migration checksum mismatch` ou `Detected applied migration not resolved locally` | banco local de antes da reestruturação de 20/10, ou alguém editou uma migração já aplicada | primeira vez depois de 20/10: `docker compose down -v && docker compose up -d`; fora isso, desfaça a edição e crie um `V` novo |
-| Felipe e Renan não aparecem | API no perfil `visitante`/`test` ou `FLYWAY_LOCATIONS` sem `db/seed/equipe` | suba sem perfil (MySQL) ou com `equipe` |
+| Fellipe e Renan não aparecem | API no perfil `visitante`/`test` ou `FLYWAY_LOCATIONS` sem `db/seed/equipe` | suba sem perfil (MySQL) ou com `equipe` |
 | `mvnw: Permission denied` (Linux/macOS) | arquivo sem permissão de execução | `chmod +x mvnw` |
 | Testes de repositório falham com `The database has been closed` | H2 2.4.x quebra o `CHECK ... IN (...)` das colunas de enum | mantenha `<h2.version>2.3.232</h2.version>` no `pom.xml` até o H2 corrigir |
