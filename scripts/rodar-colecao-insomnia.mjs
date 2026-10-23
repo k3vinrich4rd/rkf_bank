@@ -1,0 +1,103 @@
+// Roda a coleção do Insomnia pelo terminal, na ordem das pastas, contra a API no ar. Serve para conferir a coleção
+// depois de mudar o contrato (sem abrir o Insomnia) e para quem prefere o terminal.
+//
+//   node scripts/rodar-colecao-insomnia.mjs                                   → ambiente Visitante, coleção pública
+//   node scripts/rodar-colecao-insomnia.mjs --ambiente equipe --arquivo .equipe/testes/rkfbank-equipe.insomnia.json
+//   ... --base-url http://localhost:8081    (outra porta)    ... --pasta 03   (só as pastas que começam com "03")
+//
+// Imita só o que a coleção usa do Insomnia: {{ _.variavel }}, {% uuid 'v4' %}, Auth Bearer e, nos scripts,
+// insomnia.environment.get/set, insomnia.response.code/json()/headers.get, insomnia.test e insomnia.expect
+// (to.equal, to.include, to.be.ok, to.be.an, to.be.above). Sai com código 1 se algum teste falhar.
+
+import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+
+const args = process.argv.slice(2);
+const opcao = (nome, padrao) => (args.includes(nome) ? args[args.indexOf(nome) + 1] : padrao);
+const ARQUIVO = opcao("--arquivo", "backend/insomnia/rkfbank.insomnia.json");
+const AMBIENTE = opcao("--ambiente", "visitante");
+const BASE_URL = opcao("--base-url", null);
+const PASTA = opcao("--pasta", null);
+
+const recursos = JSON.parse(readFileSync(ARQUIVO, "utf8")).resources;
+const ambienteBase = recursos.find((r) => r._id === "env_rkfbank_base");
+const subAmbiente = recursos.find((r) => r._id === `env_rkfbank_${AMBIENTE}`);
+if (!subAmbiente) throw new Error(`ambiente "${AMBIENTE}" não existe na coleção (use visitante ou equipe)`);
+const env = { ...ambienteBase.data, ...subAmbiente.data, ...(BASE_URL ? { base_url: BASE_URL } : {}) };
+
+const renderizar = (texto) =>
+  String(texto ?? "")
+    .replace(/\{%\s*uuid\s+'v4'\s*%\}/g, () => randomUUID())
+    .replace(/\{\{\s*_\.(\w+)\s*\}\}/g, (_, nome) => env[nome] ?? "");
+
+function expect(atual) {
+  const falha = (msg) => { throw new Error(msg); };
+  return {
+    to: {
+      equal: (esperado) => atual === esperado || falha(`esperado ${JSON.stringify(esperado)}, veio ${JSON.stringify(atual)}`),
+      include: (trecho) => String(atual).includes(trecho) || falha(`"${atual}" não contém "${trecho}"`),
+      be: {
+        get ok() { return atual || falha(`esperado valor, veio ${JSON.stringify(atual)}`); },
+        an: (tipo) => (tipo === "array" ? Array.isArray(atual) : typeof atual === tipo) || falha(`não é ${tipo}`),
+        above: (n) => atual > n || falha(`${atual} não é maior que ${n}`),
+      },
+    },
+  };
+}
+
+function rodarScript(codigo, resposta, testes) {
+  if (!codigo) return;
+  const insomnia = {
+    environment: { get: (k) => env[k], set: (k, v) => { env[k] = v; } },
+    response: resposta && {
+      code: resposta.status,
+      json: () => JSON.parse(resposta.corpo),
+      headers: { get: (nome) => resposta.headers.get(nome) },
+    },
+    expect,
+    test: (nome, fn) => {
+      try { fn(); testes.push({ nome, ok: true }); } catch (e) { testes.push({ nome, ok: false, erro: e.message }); }
+    },
+  };
+  new Function("insomnia", "console", codigo)(insomnia, { log: () => {} });
+}
+
+const pastas = recursos.filter((r) => r._type === "request_group").sort((a, b) => a.metaSortKey - b.metaSortKey);
+let falhas = 0;
+const semAdmin = !env.admin_cpf || env.admin_cpf.startsWith("COLE_AQUI");
+let total = 0;
+
+for (const pasta of pastas) {
+  if (PASTA && !pasta.name.startsWith(PASTA)) continue;
+  console.log(`\n📁 ${pasta.name}`);
+  // Sem ADMIN no ambiente (o perfil visitante não tem, de propósito): a gestão de usuários não tem como rodar.
+  if (semAdmin && pasta.name.includes("ADMIN")) { console.log("  ⏭️  pulada: este ambiente não tem ADMIN"); continue; }
+  const requisicoes = recursos.filter((r) => r._type === "request" && r.parentId === pasta._id)
+    .sort((a, b) => a.metaSortKey - b.metaSortKey);
+  for (const r of requisicoes) {
+    if (semAdmin && JSON.stringify(r).includes("admin_cpf")) { console.log(`  ⏭️  ${r.name}: este ambiente não tem ADMIN`); continue; }
+    const testes = [];
+    rodarScript(r.preRequestScript, null, testes);
+    const headers = Object.fromEntries(r.headers.map((h) => [h.name, renderizar(h.value)]));
+    if (r.authentication?.type === "bearer") headers.Authorization = `Bearer ${renderizar(r.authentication.token)}`;
+    const url = renderizar(r.url);
+    let resposta;
+    try {
+      const http = await fetch(url, { method: r.method, headers, body: r.body?.text ? renderizar(r.body.text) : undefined });
+      resposta = { status: http.status, headers: http.headers, corpo: await http.text() };
+    } catch (e) {
+      console.log(`  ❌ ${r.name}: API fora do ar em ${url} (${e.cause?.code ?? e.message})`);
+      process.exit(1);
+    }
+    try { rodarScript(r.afterResponseScript, resposta, testes); }
+    catch (e) { testes.push({ nome: "script", ok: false, erro: e.message }); }
+    const ruins = testes.filter((t) => !t.ok);
+    total += 1;
+    falhas += ruins.length ? 1 : 0;
+    console.log(`  ${ruins.length ? "❌" : "✅"} ${resposta.status} ${r.name}`);
+    for (const t of ruins) console.log(`       ↳ ${t.nome}: ${t.erro}${resposta.corpo ? ` · corpo: ${resposta.corpo.slice(0, 160)}` : ""}`);
+  }
+}
+
+console.log(`\n${falhas ? "❌" : "✅"} ${total - falhas}/${total} requisições como o esperado (ambiente ${AMBIENTE})`);
+process.exit(falhas ? 1 : 0);
