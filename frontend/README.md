@@ -63,7 +63,7 @@ Todas são lidas em um único lugar: [`lib/env.ts`](lib/env.ts). Não use `proce
 | `/conta/transferir` | [`app/conta/transferir/page.tsx`](app/conta/transferir/page.tsx) | ✅ transferência pelo ID da conta de destino |
 | `/conta/extrato` | [`app/conta/extrato/page.tsx`](app/conta/extrato/page.tsx) | ✅ extrato agrupado por dia, entradas em verde |
 | `/conta/senha` | [`app/conta/senha/page.tsx`](app/conta/senha/page.tsx) | ✅ trocar a própria senha (o Route Handler chama `PATCH /usuarios/me/senha`, contrato 2.6); a sessão cai e o login mostra "senha trocada" |
-| `/conta/meus-dados` | — | ⏳ **planejada**: a API já tem ver, corrigir e encerrar o cadastro (`/clientes/me`, contrato 2.5) e os tipos estão em `lib/api/types.ts` |
+| `/conta/meus-dados` | [`app/conta/meus-dados/page.tsx`](app/conta/meus-dados/page.tsx) | ✅ meus dados (LGPD): ver, corrigir só o que mudou (`PATCH /clientes/me`) e encerrar o cadastro com a senha; depois do encerramento a sessão é apagada |
 
 As três movimentações são **uma tela só** (`components/movimentacao`), configurada por tipo em `movimentacoes.ts`:
 o contrato é o mesmo (`valor` + `descricao`) e a transferência só acrescenta o destino. As telas da conta
