@@ -23,16 +23,3 @@ export function destinoDepoisDoLogin(voltar: string | undefined): string {
   if (!voltar?.startsWith("/") || voltar.startsWith("//") || voltar.startsWith("/\\")) return ROUTES.conta;
   return voltar;
 }
-
-/** Âncoras da landing page (ids das seções). */
-export const SECTIONS = {
-  features: "beneficios",
-  howItWorks: "como-funciona",
-  card: "cartao",
-  security: "seguranca",
-  faq: "faq",
-} as const;
-
-export type SectionId = (typeof SECTIONS)[keyof typeof SECTIONS];
-
-export const sectionHref = (id: SectionId) => `#${id}` as const;
