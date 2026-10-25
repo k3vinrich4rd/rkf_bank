@@ -16,7 +16,8 @@ import java.util.UUID;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-// Credencial de acesso. Fica fora do Cliente para que dado cadastral e segredo nao andem juntos (V3).
+// Credencial de acesso (tb_usuario, V5). Fica fora do Cliente para que dado cadastral e segredo nao andem juntos:
+// quem le o cadastro nao carrega o hash da senha, e o ADMIN pode existir sem ser cliente (cliente_id nulo).
 @Entity
 @Table(name = "tb_usuario", uniqueConstraints = {
     @UniqueConstraint(name = "uk_usuario_login", columnNames = "login"),
@@ -49,6 +50,10 @@ public class Usuario {
     @Column(name = "versao_credencial", nullable = false)
     private int versaoCredencial;
 
+    // Senha temporaria (V14): o ADMIN redefiniu a senha, entao so a troca de senha e liberada ate a pessoa escolher outra.
+    @Column(name = "deve_trocar_senha", nullable = false)
+    private boolean deveTrocarSenha;
+
     // Nulo para o ADMIN, que nao e cliente.
     @OneToOne
     @JoinColumn(name = "cliente_id")
@@ -65,11 +70,20 @@ public class Usuario {
     public boolean isAtivo() { return ativo; }
     public void setAtivo(boolean ativo) { this.ativo = ativo; }
     public int getVersaoCredencial() { return versaoCredencial; }
+    public boolean isDeveTrocarSenha() { return deveTrocarSenha; }
 
     // Troca de senha de quem ja existe: novo hash e nova versao, para derrubar os tokens emitidos com a senha antiga.
+    // Quem escolhe a propria senha deixa de ter senha temporaria.
     public void trocarSenha(String novoHash) {
         this.senhaHash = novoHash;
         this.versaoCredencial++;
+        this.deveTrocarSenha = false;
+    }
+
+    // Senha que o ADMIN definiu e passou para a pessoa: ela entra, mas so pode trocar a senha (V14).
+    public void redefinirSenhaTemporaria(String novoHash) {
+        trocarSenha(novoHash);
+        this.deveTrocarSenha = true;
     }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }
 }

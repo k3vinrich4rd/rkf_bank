@@ -6,6 +6,7 @@ import com.br.rkfbank.dto.request.usuario.RedefinirSenhaRequestDto;
 import com.br.rkfbank.dto.response.usuario.UsuarioAdminResponseDto;
 import com.br.rkfbank.security.UsuarioLogado;
 import com.br.rkfbank.services.GestaoUsuarioService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 // So ADMIN (ConfiguracaoSeguranca: /admin/** -> hasRole("ADMIN")). Sem tela no frontend: usa-se pelo Postman/curl.
+@Tag(name = "Administração", description = "gestão de usuários e conciliação (só ADMIN)")
 @RestController
 @RequestMapping("/admin/usuarios")
 public class AdminUsuarioController {
@@ -30,11 +32,15 @@ public class AdminUsuarioController {
         this.gestaoUsuarioService = gestaoUsuarioService;
     }
 
+    // Lista todos os usuarios com o CPF mascarado (***.456.789-**): da para o admin reconhecer a pessoa sem
+    // que a tela exponha o CPF inteiro (LGPD: so o necessario para a finalidade).
     @GetMapping
     public ResponseEntity<List<UsuarioAdminResponseDto>> listar() {
         return ResponseEntity.ok(gestaoUsuarioService.listar());
     }
 
+    // Promove a ADMIN ou rebaixa a CLIENTE. PATCH (e nao PUT) porque muda so um atributo do usuario.
+    // UsuarioLogado.de(jwt) leva ao service QUEM esta pedindo: ele recusa se o alvo for a propria pessoa.
     @PatchMapping("/{usuarioId}/perfil")
     public ResponseEntity<UsuarioAdminResponseDto> alterarPerfil(@PathVariable UUID usuarioId,
                                                                  @Valid @RequestBody AlterarPerfilRequestDto request,
@@ -42,6 +48,7 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(gestaoUsuarioService.alterarPerfil(usuarioId, request.perfil(), UsuarioLogado.de(jwt)));
     }
 
+    // Desativa (ativo=false) ou reativa o login. Usuario nunca e apagado: o historico aponta para ele.
     @PatchMapping("/{usuarioId}/acesso")
     public ResponseEntity<UsuarioAdminResponseDto> alterarAcesso(@PathVariable UUID usuarioId,
                                                                  @Valid @RequestBody AlterarAcessoRequestDto request,

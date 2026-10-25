@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { Lock } from "lucide-react";
-import { Logo } from "@/components/brand/logo";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { BankCard } from "@/components/marketing/bank-card";
 import { ROUTES } from "@/lib/routes";
 import { CadastroForm } from "./cadastro-form";
 import { CadastroShowcase } from "./cadastro-showcase";
@@ -18,47 +17,32 @@ export function CadastroScreen() {
   const form = useCadastroForm();
 
   return (
-    <div className="grid flex-1 lg:min-h-dvh lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
-      <section className="flex flex-col px-5 py-6 sm:px-10 lg:px-16 lg:py-8">
-        <header className="flex items-center justify-between">
-          <Link href={ROUTES.home} aria-label="Voltar para o início" className="rounded-lg">
-            <Logo />
-          </Link>
-          <p className="text-sm text-muted-foreground">
-            Já tem conta?{" "}
-            <Link href={ROUTES.login} className="font-medium text-foreground underline-offset-4 hover:underline">
-              Entrar
-            </Link>
-          </p>
-        </header>
+    <AuthShell
+      atalho={{ pergunta: "Já tem conta?", rotulo: "Entrar", href: ROUTES.login }}
+      vitrine={<CadastroShowcase nome={form.nome} />}
+    >
+      {form.cliente ? (
+        <CadastroSucesso cliente={form.cliente} logado={form.logado} />
+      ) : (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+          {/* No celular a vitrine some: o cartão com o nome vem para cima do formulário, menor. */}
+          <BankCard
+            holder={form.nome || "Seu nome aqui"}
+            className="mx-auto mb-10 max-w-[17rem] -rotate-3 shadow-[0_30px_60px_-20px_rgb(0_0_0/0.8)] lg:hidden"
+          />
 
-        <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-14">
-          {form.cliente ? (
-            <CadastroSucesso cliente={form.cliente} logado={form.logado} />
-          ) : (
-            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <ProgressBar value={form.progresso} />
+          <ProgressBar value={form.progresso} />
 
-              <h1 className="mt-8 text-3xl font-semibold tracking-tight sm:text-[2.1rem]">
-                Abra sua conta
-              </h1>
-              <p className="mt-3 mb-10 text-muted-foreground">
-                Leva menos de 2 minutos. Sem mensalidade, sem papelada.
-              </p>
+          <p className="mt-8 font-mono text-xs tracking-[0.2em] text-brand-cyan uppercase">Abrir conta</p>
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight text-balance sm:text-[2.6rem] sm:leading-[1.1]">
+            Sua conta em poucos minutos.
+          </h1>
+          <p className="mt-3 mb-10 text-muted-foreground">Sem mensalidade e sem papelada. Três blocos e pronto.</p>
 
-              <CadastroForm {...form} />
-            </div>
-          )}
-        </main>
-
-        <footer className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
-          <Lock className="size-3" aria-hidden="true" />
-          Seus dados trafegam com criptografia
-        </footer>
-      </section>
-
-      <CadastroShowcase nome={form.nome} />
-    </div>
+          <CadastroForm {...form} />
+        </div>
+      )}
+    </AuthShell>
   );
 }
 
@@ -77,7 +61,7 @@ function ProgressBar({ value }: { value: number }) {
         className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]"
       >
         <div
-          className="h-full rounded-full bg-gradient-brand transition-[width] duration-500 ease-out"
+          className="h-full rounded-full bg-gradient-brand shadow-[0_0_12px_rgb(6_182_212/0.6)] transition-[width] duration-500 ease-out"
           style={{ width: `${percent}%` }}
         />
       </div>

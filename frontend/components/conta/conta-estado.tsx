@@ -5,6 +5,7 @@ import { FormAlert } from "@/components/ui/form-alert";
 import type { ContaResponse } from "@/lib/api";
 import { ROUTES } from "@/lib/routes";
 import { ContaAviso } from "./conta-aviso";
+import { SeletorConta } from "./seletor-conta";
 import type { ContaState } from "./use-conta";
 
 interface ContaEstadoProps {
@@ -17,10 +18,11 @@ interface ContaEstadoProps {
 
 /**
  * Etapas comuns a todas as telas da conta (ver `useConta`): carregando, sem conta e erro.
- * Cada tela só se preocupa com o caso feliz, recebido em `children`.
+ * Cada tela só se preocupa com o caso feliz, recebido em `children`. Com duas ou mais contas, o seletor aparece
+ * em cima da tela, e `children` recebe a conta escolhida.
  */
 export function ContaEstado({ estado, esqueleto, children }: ContaEstadoProps) {
-  const { etapa, conta, erro, tentarDeNovo } = estado;
+  const { etapa, conta, contas, escolherConta, erro, tentarDeNovo } = estado;
 
   switch (etapa) {
     case "carregando":
@@ -50,6 +52,13 @@ export function ContaEstado({ estado, esqueleto, children }: ContaEstadoProps) {
       );
 
     case "pronta":
-      return conta && children(conta);
+      return (
+        conta && (
+          <>
+            <SeletorConta contas={contas} contaId={conta.id} onEscolher={escolherConta} />
+            {children(conta)}
+          </>
+        )
+      );
   }
 }

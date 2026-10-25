@@ -12,8 +12,8 @@ Features do backend em **ordem de prioridade**. Para cada uma o ciclo é o mesmo
 |:-:|---|---|:-:|
 | 1 | [Flyway](#1-flyway--migrações-de-banco) | base de tudo: a tabela de usuários do login já nasce como migração | ✅ |
 | 2 | [Spring Security + JWT](#2-spring-security--jwt) | débito mais grave: qualquer pessoa movimentava qualquer conta | ✅ |
-| 3 | [Testcontainers](#3-testcontainers--testes-com-mysql-real) | testa migrações, segurança e concorrência contra o MySQL de verdade | ⏫ próxima |
-| 4 | [Swagger / OpenAPI](#4-swagger--openapi) | documentação viva da API, já com o login no botão *Authorize* | ⬜ |
+| 3 | [Testcontainers](#3-testcontainers--testes-com-mysql-real) | testa migrações, segurança e concorrência contra o MySQL de verdade | ✅ |
+| 4 | [Swagger / OpenAPI](#4-swagger--openapi) | documentação viva da API, já com o login no botão *Authorize* | ✅ |
 | 5 | [Deploy na AWS](#5-deploy-na-aws---futuro) 🔮 | **futuro**: ainda não sabemos como fazer | 🔮 |
 | 6 | [Mensageria](#6-mensageria---futuro) 🔮 | **futuro**: ainda não sabemos como fazer | 🔮 |
 
@@ -27,8 +27,13 @@ Legenda: ⬜ não começou · 🎬 estudando · 🛠️ implementando · ✅ mer
 > 🧭 **Ordem revisada em 20/10/2026** (11 dias para o MVP): **3. Testcontainers** continua a próxima (automatiza a validação
 > no MySQL que hoje é manual e protege o deploy). Depois dela vêm os **bloqueios do lançamento**, antes do Swagger:
 > `GET /contas/{contaId}` → LGPD mínimo → **colocar no ar de um jeito simples** (Docker + perfil `prod` sem dados de teste +
-> banco gerenciado) → testes do Felipe. A **feature 4 (Swagger)** fica para logo depois do MVP; **5 (AWS)** e **6 (Mensageria)**
+> banco gerenciado) → testes do Fellipe. A **feature 4 (Swagger)** fica para logo depois do MVP; **5 (AWS)** e **6 (Mensageria)**
 > seguem como futuro. Detalhes em `decisoes.md`.
+
+> ✅ **Atualizado em 23/10/2026:** features 1 a 4 prontas (PR #60). Também saíram os bloqueios de produto do lançamento:
+> `GET /contas/{contaId}`, aceite LGPD versionado (`/termos`, telas de Termos e Privacidade) e *refresh token*.
+> O que falta para o MVP é **colocar no ar** e o teste do Fellipe: análise completa em
+> [analise-mvp.md](analise-mvp.md).
 
 ---
 
@@ -118,7 +123,7 @@ Durante o vídeo, prestar atenção em:
 - [x] Validação do token em todas as outras rotas
 - [x] **Regra de dono:** depósito, saque, transferência e extrato só nas contas do usuário logado → `403`
 - [x] `GET /clientes` só para perfil admin (ou removido do uso público)
-- [x] `401` e `403` no mesmo formato de erro do `ControllerExceptionHandler`
+- [x] `401` e `403` no mesmo formato de erro do `TratadorGlobalDeErros`
 - [x] Segredo do JWT em variável de ambiente (`.env`), nunca no código
 - [x] Testes: login ok, senha errada, sem token, token expirado, conta de outro cliente
 - [x] Combinar com o Renan as mudanças no frontend (guardar e enviar o token) — feito: cookie `httpOnly` no Next (decisão de 17/10, PR #27)
@@ -161,19 +166,20 @@ Durante o vídeo, prestar atenção em:
 3. Como provar num teste que o lock otimista funciona com duas requisições ao mesmo tempo?
 
 ### 🛠️ Implementação
-- [ ] Dependências `spring-boot-testcontainers` + módulo MySQL do Testcontainers
-- [ ] Classe base de teste com MySQL 8.4 (a mesma versão do `docker-compose.yml`)
-- [ ] Rodar os testes de repositório contra o MySQL real (com as migrações do Flyway)
-- [ ] Teste de concorrência: 2 threads transferindo da mesma conta → um `409` e o saldo certo
-- [ ] Testes de rota com `MockMvc`: cadastro, abertura de conta, transferência, extrato e login
-- [ ] `RkfbankApplicationTests` sem precisar do MySQL do Docker ligado (fecha um débito 🔴)
-- [ ] Conferir que o `backend-ci.yml` roda os testes com Docker
-- [ ] Atualizar `backend/README.md` (seção Testes) e os débitos
+- [x] Dependências `spring-boot-testcontainers` + módulo MySQL do Testcontainers (2.0.5)
+- [x] Classe base de teste com MySQL 8.4 (a mesma versão do `docker-compose.yml`): `mysql/MySqlIntegracaoBase`, com `@ServiceConnection` e um container só para todas as classes
+- [x] Migrações V1 a V15 rodando no MySQL real, com os tipos de produção conferidos (`MigracoesMySqlTest`)
+- [x] Teste de concorrência: transferências simultâneas não criam nem somem dinheiro, e a cópia desatualizada perde para o lock otimista (`ConcorrenciaMySqlTest`)
+- [x] Fluxo do cadastro ao extrato no MySQL, e saldo insuficiente sem gravar nada (`FluxoBancarioMySqlTest`)
+- [x] Testes de rota com `MockMvc`: `@WebMvcTest` nos controllers de conta e cliente (JSON, validação, formato de erro e regras de rota) e `@SpringBootTest` + `MockMvc` nos fluxos de login, refresh, LGPD e gestão de usuários
+- [x] `RkfbankApplicationTests` sem precisar do MySQL do Docker ligado (perfil `test`, H2)
+- [x] `backend-ci.yml` roda tudo, inclusive os testes no MySQL (o runner `ubuntu-latest` já tem Docker); sem Docker na máquina, as classes de MySQL são puladas (`disabledWithoutDocker`)
+- [x] Atualizar `backend/README.md` (seção Testes) e os débitos
 
 ### ✅ Pronto quando
-- [ ] `./run-test.sh` e o CI verdes
-- [ ] Pelo menos 1 teste de concorrência real passando
-- [ ] PR revisado e mergeado na `develop`
+- [x] `./run-test.sh` e o CI verdes (23/10: 307 testes, 7 deles no MySQL 8.4)
+- [x] Pelo menos 1 teste de concorrência real passando
+- [ ] PR revisado e mergeado na `develop` (PR #60, aberto)
 
 ### 📝 Minhas anotações
 
@@ -193,15 +199,15 @@ Durante o vídeo, prestar atenção em:
 - [ ] Como configurar o botão *Authorize* com o JWT
 
 ### 🛠️ Implementação
-- [ ] Dependência do springdoc compatível com o Spring Boot 4 (conferir a versão)
-- [ ] Liberar `/swagger-ui` e `/v3/api-docs` na `SecurityFilterChain`
-- [ ] Descrever as rotas, os DTOs e os status de erro (`400`, `401`, `403`, `404`, `409`, `422`, `503`)
-- [ ] Esquema de segurança Bearer JWT
-- [ ] Link do Swagger no `README.md` e no contrato da API
+- [x] Dependência do springdoc compatível com o Spring Boot 4 (springdoc 3.1.1)
+- [x] Liberar `/swagger-ui` e `/v3/api-docs` na `SecurityFilterChain` (só leitura; em produção, `springdoc.*.enabled=false` no perfil `prod`, que ainda não existe)
+- [x] Descrever as rotas por grupo (`@Tag`) e marcar as públicas sem o cadeado (`@SecurityRequirements`); os erros seguem o `ErroResponse` com `codigo` do contrato
+- [x] Esquema de segurança Bearer JWT (`ConfiguracaoOpenApi`)
+- [x] Link do Swagger no `README.md` e no contrato da API
 
 ### ✅ Pronto quando
-- [ ] Dá para fazer o fluxo completo (cadastro → login → depósito → extrato) só pelo Swagger UI
-- [ ] PR revisado e mergeado na `develop`
+- [x] Dá para fazer o fluxo completo (cadastro → login → depósito → extrato) só pelo Swagger UI (`SwaggerIntegracaoTest` confere a especificação e as rotas públicas)
+- [ ] PR revisado e mergeado na `develop` (PR #60, aberto)
 
 ### 📝 Minhas anotações
 

@@ -1,0 +1,2962 @@
+type: "collection.insomnia.rest/5.0"
+schema_version: "5.1"
+name: "RKF Bank API"
+meta:
+  id: "wrk_rkfbank"
+  created: 1792952515093
+  modified: 1792952515093
+  description: "Coleção gerada por scripts/gerar-colecao-insomnia.mjs. Guia: backend/README_TESTES_E2E.md."
+collection:
+  - name: "00 · Comece aqui"
+    meta:
+      id: "fld_rkfbank_00"
+      created: 1792952515093
+      modified: 1792952515093
+      sortKey: 0
+      description: |-
+        💡 Antes de testar qualquer coisa, confira se a API está ligada. É como ver se a luz da maquininha acendeu.
+
+        Escolha o **ambiente** no canto superior esquerdo (Visitante ou Equipe) e mande a primeira requisição. `{"status":"UP"}` = a API está no ar. Sem resposta? Ela não subiu: veja o guia `backend/README_TESTES_E2E.md`.
+    children:
+      - url: "{{ _.base_url }}/actuator/health"
+        name: "Saúde da API"
+        meta:
+          id: "req_rkfbank_00_00"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** A primeira pergunta: "você está aí?". Resposta `UP` = a API está ligada e pronta. Sem resposta, nada mais vai funcionar: suba a API antes.
+
+            Pública. Usada pelo Docker e pelo deploy para saber se a API respondeu.
+          sortKey: 0
+        method: "GET"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("UP", () => insomnia.expect(insomnia.response.json().status).to.equal("UP"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/termos"
+        name: "Versão dos termos (pública)"
+        meta:
+          id: "req_rkfbank_00_01"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Mostra qual versão dos Termos de Uso está valendo. O cadastro precisa dizer que a pessoa aceitou esses termos, igual ao "li e aceito" de qualquer app.
+
+            Versão vigente dos Termos de Uso e da Política de Privacidade (contrato 3.1). A tela de cadastro mostra estes textos e manda a versão aceita em `termosVersao`.
+          sortKey: 1
+        method: "GET"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) insomnia.environment.set("termos_versao", insomnia.response.json().versao);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "01 · Login (guarda o token sozinho)"
+    meta:
+      id: "fld_rkfbank_01"
+      created: 1792952515093
+      modified: 1792952515093
+      sortKey: 1
+      description: |-
+        💡 Entrar no banco, como no app: CPF e senha. A API devolve um "crachá" (o token) que as próximas requisições mostram para provar quem você é. O Insomnia guarda esse crachá sozinho.
+
+        Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`...) e o de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de acesso vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou renove pela pasta **09 · Sessão**.
+    children:
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente ORIGEM (Ana / Fellipe)"
+        meta:
+          id: "req_rkfbank_01_00"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Entra como o cliente que vai MANDAR dinheiro. Na resposta, o `token` é o crachá de acesso; o Insomnia guarda ele em `token_origem` e as próximas requisições usam sozinhas."
+          sortKey: 0
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_origem }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_origem", login.token);
+              insomnia.environment.set("refresh_origem", login.refreshToken);
+              insomnia.environment.set("cliente_origem_id", login.clienteId ?? "");
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente DESTINO (Bruno / Renan)"
+        meta:
+          id: "req_rkfbank_01_01"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Entra como o cliente que vai RECEBER dinheiro. Ter dois clientes logados permite provar que um não enxerga a conta do outro."
+          sortKey: 1
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_destino }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              insomnia.environment.set("cliente_destino_id", login.clienteId ?? "");
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "02 · Fluxo E2E: cliente novo, do cadastro ao extrato"
+    meta:
+      id: "fld_rkfbank_02"
+      created: 1792952515093
+      modified: 1792952515093
+      sortKey: 2
+      description: |-
+        💡 A vida inteira de um cliente novo, na ordem em que acontece de verdade: criar o cadastro, entrar, abrir duas contas, colocar dinheiro, tirar, transferir e conferir o extrato centavo a centavo.
+
+        O roteiro E2E principal, na ordem: cadastro (CPF, CEP e telefone com máscara, endereço pelo ViaCEP) → login → contas ORIGEM e DESTINO → depósito, saque e transferência → extratos. O cadastro sorteia CPF e e-mail novos a cada envio, então pode repetir à vontade. Precisa de internet: o endereço vem do ViaCEP.
+    children:
+      - url: "{{ _.base_url }}/clientes"
+        name: "Cadastrar cliente (público)"
+        meta:
+          id: "req_rkfbank_02_00"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Cria um cliente do zero, sem precisar estar logado (como abrir conta pelo app). O CPF é sorteado a cada envio, então dá para repetir. Repare: a resposta devolve o CPF escondido (`***.982.247-**`) e o endereço que a API buscou sozinha pelo CEP.
+
+            `aceiteTermos: true` é obrigatório (LGPD, contrato 3.1). Manda CPF, CEP e telefone **com máscara**, como a pessoa digita: a API higieniza (fica só com os dígitos), valida o CPF pelos dígitos verificadores e busca o endereço no **ViaCEP** (Osasco/SP). `201` com o cliente. A resposta traz o CPF **mascarado** e a versão dos termos aceita. O cadastro **não** devolve token: faça o login.
+          sortKey: 0
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "Cliente Novo do Insomnia",
+              "cpf": "{{ _.novo_cpf_mascara }}",
+              "email": "{{ _.novo_email }}",
+              "telefone": "(11) 99999-8888",
+              "cep": "06020-010",
+              "numero": "123",
+              "complemento": "Apto 45",
+              "senha": "{{ _.novo_senha }}",
+              "aceiteTermos": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          preRequest: |-
+            const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+            if (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;
+            for (const tamanho of [9, 10]) {
+              const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);
+              const resto = (soma * 10) % 11;
+              n.push(resto === 10 ? 0 : resto);
+            }
+            const sufixo = Date.now().toString(36);
+            insomnia.environment.set("novo_cpf", n.join(""));
+            const d = n.join("");
+            insomnia.environment.set("novo_cpf_mascara", d.slice(0, 3) + "." + d.slice(3, 6) + "." + d.slice(6, 9) + "-" + d.slice(9));
+            insomnia.environment.set("novo_email", "cliente.novo." + sufixo + "@exemplo.test");
+            insomnia.environment.set("novo_senha", "senha-do-novo-" + sufixo);
+            console.log("CPF sorteado:", n.join(""));
+          afterResponse: |-
+            insomnia.test("status 201", () => insomnia.expect(insomnia.response.code).to.equal(201));
+            if (insomnia.response.code === 201) insomnia.environment.set("novo_cliente_id", insomnia.response.json().id);
+            const c = insomnia.response.code === 201 ? insomnia.response.json() : null;
+            insomnia.test("ViaCEP preencheu a cidade", () => insomnia.expect(c.endereco.cidade).to.equal("Osasco"));
+            insomnia.test("CEP higienizado", () => insomnia.expect(c.endereco.cep.replace(/\D/g, "")).to.equal("06020010"));
+            insomnia.test("CPF mascarado na resposta", () => insomnia.expect(c.cpf).to.match(/^\*\*\*\.\d{3}\.\d{3}-\*\*$/));
+            insomnia.test("aceite gravado", () => insomnia.expect(c.termosAceitosEm).to.be.ok);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente novo"
+        meta:
+          id: "req_rkfbank_02_01"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O cadastro não faz login automático: agora o cliente novo entra com o CPF e a senha que acabou de criar."
+          sortKey: 1
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_novo", login.token);
+              insomnia.environment.set("refresh_novo", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Abrir conta ORIGEM: corrente"
+        meta:
+          id: "req_rkfbank_02_02"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Abre uma conta corrente. Você só diz o tipo: o banco sabe de quem é pelo token e gera o número da conta sozinho. Status `201` = criado.
+
+            Corpo só com `tipoConta`: o dono vem do **token**, a agência é `0001` e o número (com dígito verificador) é gerado pelo banco.
+          sortKey: 2
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "tipoConta": "CORRENTE"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 201", () => insomnia.expect(insomnia.response.code).to.equal(201));
+            if (insomnia.response.code === 201) insomnia.environment.set("conta_nova_id", insomnia.response.json().id);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Abrir conta DESTINO: poupança"
+        meta:
+          id: "req_rkfbank_02_03"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Abre uma segunda conta, poupança, para o mesmo cliente. Ela vai receber a transferência mais adiante.
+
+            Um cliente pode ter mais de uma conta. Esta recebe a transferência logo abaixo.
+          sortKey: 3
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "tipoConta": "POUPANCA"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 201", () => insomnia.expect(insomnia.response.code).to.equal(201));
+            if (insomnia.response.code === 201) insomnia.environment.set("conta_nova_destino_id", insomnia.response.json().id);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Minhas contas (as duas com saldo 0,00)"
+        meta:
+          id: "req_rkfbank_02_04"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Lista as contas do cliente logado. As duas acabaram de nascer, então os saldos são zero."
+          sortKey: 4
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("duas contas", () => insomnia.expect(insomnia.response.json().length).to.equal(2));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/depositos"
+        name: "Depositar R$ 150,00 na ORIGEM"
+        meta:
+          id: "req_rkfbank_02_05"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Coloca dinheiro na conta. A resposta `204` vem vazia de propósito: quer dizer "deu certo, não tenho nada para mostrar". O saldo novo aparece em "Minhas contas".
+
+            `204` sem corpo. O header `Idempotency-Key` (aba Headers) gera um UUID novo a cada envio.
+          sortKey: 5
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 150,
+              "descricao": "Deposito pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/saques"
+        name: "Sacar R$ 50,00 da ORIGEM"
+        meta:
+          id: "req_rkfbank_02_06"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Tira dinheiro da conta. Também responde `204`, vazio. Sobram R$ 100,00."
+          sortKey: 6
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 50,
+              "descricao": "Saque pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Transferir R$ 25,00 ORIGEM → DESTINO"
+        meta:
+          id: "req_rkfbank_02_07"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Move dinheiro de uma conta para a outra. O banco garante que o débito e o crédito acontecem juntos: nunca sai de um lado sem chegar no outro.
+
+            Débito e crédito na mesma transação: ou os dois acontecem, ou nenhum.
+          sortKey: 7
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "contaOrigemId": "{{ _.conta_nova_id }}",
+              "contaDestinoId": "{{ _.conta_nova_destino_id }}",
+              "valor": 25.00,
+              "descricao": "Transferencia pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Saldos: ORIGEM 75,00 · DESTINO 25,00"
+        meta:
+          id: "req_rkfbank_02_08"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** A conferência: 150 − 50 − 25 = 75 na ORIGEM e 25 na DESTINO. Se os números baterem, o dinheiro andou certinho."
+          sortKey: 8
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            const contas = insomnia.response.code === 200 ? insomnia.response.json() : [];
+            const saldo = (id) => Number(contas.find((c) => c.id === insomnia.environment.get(id))?.saldo);
+            insomnia.test("origem 75", () => insomnia.expect(saldo("conta_nova_id")).to.equal(75));
+            insomnia.test("destino 25", () => insomnia.expect(saldo("conta_nova_destino_id")).to.equal(25));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}"
+        name: "Ver só a conta ORIGEM"
+        meta:
+          id: "req_rkfbank_02_09"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Busca uma conta só, pelo id. É o que a tela usa para atualizar o saldo sem pedir a lista inteira.
+
+            `GET /contas/{contaId}` (contrato 3.1): uma conta só, para atualizar o saldo sem buscar a lista inteira.
+          sortKey: 9
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("saldo 75", () => insomnia.expect(Number(insomnia.response.json().saldo)).to.equal(75));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/lancamentos"
+        name: "Extrato da ORIGEM (3 lançamentos)"
+        meta:
+          id: "req_rkfbank_02_10"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** O extrato: cada movimento da conta, do mais novo para o mais antigo. Aqui são três (depósito, saque e transferência).
+
+            Do mais recente para o mais antigo. `valor` sempre positivo: se `contaDestinoId` é esta conta, é entrada.
+          sortKey: 10
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("transferência, saque e depósito", () => insomnia.expect(insomnia.response.json().length).to.equal(3));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_destino_id }}/lancamentos"
+        name: "Extrato do DESTINO (1 lançamento)"
+        meta:
+          id: "req_rkfbank_02_11"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O extrato do outro lado mostra a transferência chegando. É a prova de que a transferência é um lançamento só, visto pelas duas contas."
+          sortKey: 11
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("recebeu a transferência", () => insomnia.expect(insomnia.response.json()[0].tipoLancamento).to.equal("TRANSFERENCIA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "03 · Dinheiro entre clientes (contas prontas do seed)"
+    meta:
+      id: "fld_rkfbank_03"
+      created: 1792952515093
+      modified: 1792952515093
+      sortKey: 3
+      description: |-
+        💡 O mesmo dinheiro, agora entre duas pessoas diferentes (Ana manda para o Bruno), com as contas que já vêm prontas no banco de teste.
+
+        Tudo com o token da ORIGEM. Depósito, saque e transferência levam `Idempotency-Key` (aba Headers): o `{% uuid 'v4' %}` gera uma chave nova a cada envio. Resposta `204` não tem corpo: veja o saldo em **Minhas contas**.
+    children:
+      - url: "{{ _.base_url }}/contas"
+        name: "Minhas contas (ORIGEM)"
+        meta:
+          id: "req_rkfbank_03_00"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Lista as contas da Ana (ou do Fellipe, na equipe), que já vêm com dinheiro do banco de teste. O Insomnia guarda o id da primeira conta para os próximos passos.
+
+            `CLIENTE` vê só as dele; `ADMIN` vê todas. O script guarda a primeira conta em `conta_origem_id`.
+          sortKey: 0
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            const contas = insomnia.response.code === 200 ? insomnia.response.json() : [];
+            if (contas.length) insomnia.environment.set("conta_origem_id", contas[0].id);
+            console.log(contas.map((c) => c.numeroConta + " saldo " + c.saldo).join("\n"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas?page=0&size=10"
+        name: "Minhas contas paginadas"
+        meta:
+          id: "req_rkfbank_03_01"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** A mesma lista, em páginas (`page=0&size=10`). Com muitas contas, a tela pede de 10 em 10 em vez de tudo de uma vez.
+
+            Basta `page` **ou** `size` para vir a página: `content`, `totalElements`, `totalPages`, `number`, `size`, `first`, `last`.
+          sortKey: 1
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("é página", () => insomnia.expect(insomnia.response.json().content).to.be.an("array"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Depositar R$ 150,00"
+        meta:
+          id: "req_rkfbank_03_02"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Depósito na conta da ORIGEM. `204`, sem corpo, é sucesso."
+          sortKey: 2
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 150,
+              "descricao": "Deposito pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/saques"
+        name: "Sacar R$ 50,00"
+        meta:
+          id: "req_rkfbank_03_03"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Saque da conta da ORIGEM. `204` de novo."
+          sortKey: 3
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 50,
+              "descricao": "Saque pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Transferir R$ 25,00 ORIGEM → DESTINO"
+        meta:
+          id: "req_rkfbank_03_04"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Agora de uma PESSOA para OUTRA: Ana manda para o Bruno. Só o dono da conta de origem pode mandar.
+
+            Débito e crédito na mesma transação: ou os dois acontecem, ou nenhum.
+          sortKey: 4
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "contaOrigemId": "{{ _.conta_origem_id }}",
+              "contaDestinoId": "{{ _.conta_destino_id }}",
+              "valor": 25.00,
+              "descricao": "Transferencia pelo Insomnia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/lancamentos"
+        name: "Extrato da ORIGEM"
+        meta:
+          id: "req_rkfbank_03_05"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** O extrato da Ana mostra o depósito, o saque e a transferência que saiu.
+
+            Do mais recente para o mais antigo. `valor` sempre positivo.
+          sortKey: 5
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_destino_id }}/lancamentos"
+        name: "Extrato do DESTINO (token do destino)"
+        meta:
+          id: "req_rkfbank_03_06"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O Bruno entra com o crachá DELE e vê a transferência que chegou. Com o crachá da Ana, este mesmo pedido daria `403` (proibido)."
+          sortKey: 6
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("recebeu a transferência", () => insomnia.expect(insomnia.response.json()[0].tipoLancamento).to.equal("TRANSFERENCIA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "04 · Idempotência (o mesmo pedido não movimenta duas vezes)"
+    meta:
+      id: "fld_rkfbank_04"
+      created: 1792952515093
+      modified: 1792952515093
+      sortKey: 4
+      description: |-
+        💡 Proteção contra o "cliquei duas vezes": se a internet cair e o app mandar o mesmo depósito de novo, o dinheiro não pode entrar duas vezes.
+
+        Mande na ordem. A 1ª sorteia uma chave e guarda em `chave_fixa`; a 2ª repete a MESMA chave com o MESMO corpo (como se a rede tivesse caído): `204` com o header `Idempotency-Replayed: true` e o saldo **não** muda.
+    children:
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "1ª vez: depósito com chave fixa"
+        meta:
+          id: "req_rkfbank_04_00"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Um depósito com uma \"senha de pedido\" (`Idempotency-Key`) que fica guardada. É como o número do pedido de uma compra."
+          sortKey: 0
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 10,
+              "descricao": "Idempotencia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{{ _.chave_fixa }}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          preRequest: "insomnia.environment.set(\"chave_fixa\", \"chave-fixa-\" + Date.now() + \"-\" + Math.random().toString(36).slice(2, 8));"
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "2ª vez: mesma chave, mesmo corpo → repetição"
+        meta:
+          id: "req_rkfbank_04_01"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Manda o MESMO pedido de novo, como se a internet tivesse caído e o app tentasse outra vez. O banco reconhece o número, responde igual e NÃO deposita de novo. Repare no header `Idempotency-Replayed: true`."
+          sortKey: 1
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 10,
+              "descricao": "Idempotencia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{{ _.chave_fixa }}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 204", () => insomnia.expect(insomnia.response.code).to.equal(204));
+            insomnia.test("Idempotency-Replayed", () => insomnia.expect(insomnia.response.headers.get("Idempotency-Replayed")).to.equal("true"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Mesma chave, outro valor → 422"
+        meta:
+          id: "req_rkfbank_04_02"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Mesmo número de pedido, mas outro valor: isso não é repetição, é engano. O banco recusa (`422`) em vez de adivinhar."
+          sortKey: 2
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 99,
+              "descricao": "Idempotencia"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{{ _.chave_fixa }}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo IDEMPOTENCIA_CHAVE_REUSADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("IDEMPOTENCIA_CHAVE_REUSADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Sem a chave → 400"
+        meta:
+          id: "req_rkfbank_04_03"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Movimentar dinheiro sem o número do pedido é recusado (`400`). Assim nenhum app esquece essa proteção."
+          sortKey: 3
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 10
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "06 · Meus dados (LGPD) e senha"
+    meta:
+      id: "fld_rkfbank_06"
+      created: 1792952515093
+      modified: 1792952515093
+      sortKey: 6
+      description: |-
+        💡 Os direitos da pessoa sobre os próprios dados (LGPD): ver o que o banco guarda, corrigir, trocar a senha e encerrar o cadastro.
+
+        O titular vê, corrige e encerra o próprio cadastro (`/clientes/me`: o `me` é sempre o dono do token). Troca de senha e encerramento são feitos no **cliente novo**, para as contas fixas continuarem entrando.
+    children:
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Ver meus dados (ORIGEM)"
+        meta:
+          id: "req_rkfbank_06_00"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O cliente vê tudo o que o banco guarda sobre ele. É um direito da LGPD."
+          sortKey: 0
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Corrigir meu telefone (ORIGEM)"
+        meta:
+          id: "req_rkfbank_06_01"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Corrige um dado. Só o campo enviado muda; os outros ficam como estavam.
+
+            Só muda o que vier no corpo. CPF não muda.
+          sortKey: 1
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "telefone": "11912345678"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Mudar de endereço: CEP + número (ORIGEM)"
+        meta:
+          id: "req_rkfbank_06_02"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Muda o endereço: com o CEP novo, a API busca a rua e a cidade sozinha. O número da casa é obrigatório junto.
+
+            O endereço vem do ViaCEP de novo (precisa de internet). CEP novo exige `numero`.
+          sortKey: 2
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cep": "01001000",
+              "numero": "10"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("endereço do ViaCEP", () => insomnia.expect(insomnia.response.json().endereco.numero).to.equal("10"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "CEP sem número → 400"
+        meta:
+          id: "req_rkfbank_06_03"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** CEP novo sem o número da casa não dá para montar o endereço: `400`."
+          sortKey: 3
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cep": "01001000"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Corpo vazio → 400"
+        meta:
+          id: "req_rkfbank_06_04"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Pedir para corrigir sem mandar nada é recusado: não há o que mudar."
+          sortKey: 4
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: "{}"
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "E-mail de outra pessoa → 409"
+        meta:
+          id: "req_rkfbank_06_05"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Um e-mail que já é de outro cliente dá `409` (conflito): cada e-mail é de uma pessoa só."
+          sortKey: 5
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "email": "{{ _.email_destino }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 409", () => insomnia.expect(insomnia.response.code).to.equal(409));
+            insomnia.test("codigo EMAIL_JA_CADASTRADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("EMAIL_JA_CADASTRADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/usuarios/me/senha"
+        name: "Trocar senha com a atual errada → 422"
+        meta:
+          id: "req_rkfbank_06_06"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Para trocar a senha, é preciso saber a atual. Se alguém pegar o celular desbloqueado, não troca a senha sem saber a antiga."
+          sortKey: 6
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senhaAtual": "chute-errado-1",
+              "novaSenha": "outra-senha-123"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SENHA_ATUAL_INCORRETA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SENHA_ATUAL_INCORRETA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/usuarios/me/senha"
+        name: "Nova senha igual à atual → 422"
+        meta:
+          id: "req_rkfbank_06_07"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Trocar a senha pela mesma não é troca: recusado."
+          sortKey: 7
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senhaAtual": "{{ _.novo_senha }}",
+              "novaSenha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SENHA_REPETIDA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SENHA_REPETIDA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/usuarios/me/senha"
+        name: "Trocar a própria senha (cliente novo)"
+        meta:
+          id: "req_rkfbank_06_08"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** A troca certa: senha atual + senha nova. `204` = trocou.
+
+            Depois do `204`, todo token antigo (inclusive este) dá `401`. O script já guarda a senha nova.
+          sortKey: 8
+        method: "PATCH"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senhaAtual": "{{ _.novo_senha }}",
+              "novaSenha": "{{ _.senha_trocada }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          preRequest: "insomnia.environment.set(\"senha_trocada\", \"trocada-\" + Date.now().toString(36));"
+          afterResponse: |-
+            insomnia.test("status 204", () => insomnia.expect(insomnia.response.code).to.equal(204));
+            if (insomnia.response.code === 204) insomnia.environment.set("novo_senha", insomnia.environment.get("senha_trocada"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Token antigo depois da troca → 401"
+        meta:
+          id: "req_rkfbank_06_09"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Trocou a senha, todos os crachás antigos caem. Se alguém estava logado com a senha velha, foi desconectado."
+          sortKey: 9
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo ACESSO_ALTERADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("ACESSO_ALTERADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente novo com a senha nova"
+        meta:
+          id: "req_rkfbank_06_10"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Entra de novo, agora com a senha nova."
+          sortKey: 10
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_novo", login.token);
+              insomnia.environment.set("refresh_novo", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me/encerramento"
+        name: "Encerrar com a senha errada → 422"
+        meta:
+          id: "req_rkfbank_06_11"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Encerrar o cadastro pede a senha, para ninguém encerrar a conta de outra pessoa por engano."
+          sortKey: 11
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senha": "chute-errado-2"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SENHA_INCORRETA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SENHA_INCORRETA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me/encerramento"
+        name: "Encerrar com saldo (ORIGEM) → 422"
+        meta:
+          id: "req_rkfbank_06_12"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Não dá para encerrar com dinheiro na conta: primeiro a pessoa saca ou transfere tudo.
+
+            Dinheiro não some: com saldo, o encerramento é recusado (e nada muda na conta de origem).
+          sortKey: 12
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SALDO_NAO_ZERADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SALDO_NAO_ZERADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/saques"
+        name: "Zerar a ORIGEM (saque de R$ 75,00)"
+        meta:
+          id: "req_rkfbank_06_13"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Saca o que sobrou na conta ORIGEM do cliente novo, para poder encerrar.
+
+            Dinheiro não some: antes de encerrar, o titular tira o saldo das contas (as da pasta 02).
+          sortKey: 13
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 75,
+              "descricao": "Saque antes de encerrar"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_nova_destino_id }}/saques"
+        name: "Zerar o DESTINO (saque de R$ 25,00)"
+        meta:
+          id: "req_rkfbank_06_14"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Saca o que sobrou na conta DESTINO. As duas ficam com zero."
+          sortKey: 14
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 25,
+              "descricao": "Saque antes de encerrar"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me/encerramento"
+        name: "⚠️ Encerrar o cadastro (cliente novo)"
+        meta:
+          id: "req_rkfbank_06_15"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Encerra o cadastro: o login para de funcionar na hora. Os dados ficam guardados só pelo prazo que a lei exige de um banco (repare em `anonimizacaoPrevistaPara`, 5 anos depois) e então são anonimizados, sem que ninguém precise lembrar.
+
+            Exige saldo zero em todas as contas (as do cliente novo estão zeradas). Contas ficam inativas, o login é desativado e os dados são anonimizados depois de 5 anos. Para repetir, cadastre outro cliente novo (pasta 02).
+          sortKey: 15
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("prazo de anonimização", () => insomnia.expect(insomnia.response.json().anonimizacaoPrevistaPara).to.be.ok);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes/me"
+        name: "Token do encerrado → 401"
+        meta:
+          id: "req_rkfbank_06_16"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Depois de encerrar, o crachá para de funcionar na hora."
+          sortKey: 16
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_novo }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login do encerrado → 401"
+        meta:
+          id: "req_rkfbank_06_17"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** E não dá mais para entrar, nem com a senha certa."
+          sortKey: 17
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.novo_cpf }}",
+              "senha": "{{ _.novo_senha }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "07 · Erros que DEVEM acontecer"
+    meta:
+      id: "fld_rkfbank_07"
+      created: 1792952515093
+      modified: 1792952515093
+      sortKey: 7
+      description: |-
+        💡 Os erros que o banco TEM que dar. Um teste que espera um erro e recebe o erro certo está passando: é a prova de que a proteção funciona.
+
+        Cada uma testa uma proteção. Se alguma passar com 2xx, achamos um bug.
+    children:
+      - url: "{{ _.base_url }}/contas"
+        name: "Sem token → 401"
+        meta:
+          id: "req_rkfbank_07_00"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Pedir as contas sem o crachá: `401` (\"quem é você?\")."
+          sortKey: 0
+        method: "GET"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo AUTENTICACAO_NECESSARIA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("AUTENTICACAO_NECESSARIA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Token adulterado → 401"
+        meta:
+          id: "req_rkfbank_07_01"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Um crachá falsificado, que diz ser ADMIN. A assinatura não bate e o banco recusa: não dá para inventar o próprio crachá.
+
+            Um JWT com payload trocado e assinatura que não bate: o Resource Server recusa.
+          sortKey: 1
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_falso }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo TOKEN_INVALIDO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("TOKEN_INVALIDO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Senha errada no login → 401"
+        meta:
+          id: "req_rkfbank_07_02"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Senha errada não entra. A mensagem não diz se o erro foi o CPF ou a senha, para não ajudar quem tenta adivinhar.
+
+            CPF sem cadastro e senha errada dão a MESMA resposta: não dá para descobrir quem é cliente. 5 erros seguidos no mesmo CPF → `429` (mande esta 6 vezes para ver; o CPF fica 15 min bloqueado).
+          sortKey: 2
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "39053344705",
+              "senha": "errada-123"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo CREDENCIAIS_INVALIDAS", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CREDENCIAIS_INVALIDAS"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "CLIENTE em rota de ADMIN → 403"
+        meta:
+          id: "req_rkfbank_07_03"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Um cliente comum tentando ver a lista de todos os clientes: `403` (\"sei quem você é, mas você não pode\")."
+          sortKey: 3
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 403", () => insomnia.expect(insomnia.response.code).to.equal(403));
+            insomnia.test("codigo PERFIL_SEM_PERMISSAO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("PERFIL_SEM_PERMISSAO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/usuarios"
+        name: "CLIENTE na gestão de usuários → 403"
+        meta:
+          id: "req_rkfbank_07_04"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Um cliente tentando entrar na gestão de usuários do ADMIN: `403`."
+          sortKey: 4
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Depositar na conta de outro cliente → 403"
+        meta:
+          id: "req_rkfbank_07_05"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O Bruno tentando mexer na conta da Ana: `403`. Só o dono movimenta a própria conta."
+          sortKey: 5
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 1
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 403", () => insomnia.expect(insomnia.response.code).to.equal(403));
+            insomnia.test("codigo CONTA_DE_OUTRO_CLIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CONTA_DE_OUTRO_CLIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/lancamentos"
+        name: "Ver o extrato de outro cliente → 403"
+        meta:
+          id: "req_rkfbank_07_06"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O Bruno tentando ver o extrato da Ana: `403`."
+          sortKey: 6
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}"
+        name: "Ver a conta de outro cliente → 403"
+        meta:
+          id: "req_rkfbank_07_07"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O Bruno tentando ver o saldo da Ana: `403`."
+          sortKey: 7
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 403", () => insomnia.expect(insomnia.response.code).to.equal(403));
+            insomnia.test("codigo CONTA_DE_OUTRO_CLIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CONTA_DE_OUTRO_CLIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/admin/conciliacao"
+        name: "CLIENTE na conciliação → 403"
+        meta:
+          id: "req_rkfbank_07_08"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** A auditoria do banco é só do ADMIN: `403` para cliente."
+          sortKey: 8
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/saques"
+        name: "Sacar mais que o saldo → 422"
+        meta:
+          id: "req_rkfbank_07_09"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Sacar mais do que tem: recusado com o `codigo` `SALDO_INSUFICIENTE`. Nenhum centavo sai."
+          sortKey: 9
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 999999
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SALDO_INSUFICIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SALDO_INSUFICIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Transferir mais que o saldo → 422"
+        meta:
+          id: "req_rkfbank_07_10"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Transferir mais do que tem: recusado, e nada muda em nenhuma das duas contas."
+          sortKey: 10
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "contaOrigemId": "{{ _.conta_origem_id }}",
+              "contaDestinoId": "{{ _.conta_destino_id }}",
+              "valor": 999999.00
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo SALDO_INSUFICIENTE", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SALDO_INSUFICIENTE"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Transferir para a mesma conta → 422"
+        meta:
+          id: "req_rkfbank_07_11"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Transferir de uma conta para ela mesma não faz sentido: recusado."
+          sortKey: 11
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "contaOrigemId": "{{ _.conta_origem_id }}",
+              "contaDestinoId": "{{ _.conta_origem_id }}",
+              "valor": 1.00
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo MESMA_CONTA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("MESMA_CONTA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/00000000-0000-4000-8000-000000000000/lancamentos"
+        name: "Conta que não existe → 404"
+        meta:
+          id: "req_rkfbank_07_12"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O extrato de uma conta que não existe: `404` (não encontrado)."
+          sortKey: 12
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 404\", () => insomnia.expect(insomnia.response.code).to.equal(404));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/00000000-0000-4000-8000-000000000000"
+        name: "Ver conta que não existe → 404"
+        meta:
+          id: "req_rkfbank_07_13"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Uma conta que não existe: `404`."
+          sortKey: 13
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 404", () => insomnia.expect(insomnia.response.code).to.equal(404));
+            insomnia.test("codigo CONTA_NAO_ENCONTRADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CONTA_NAO_ENCONTRADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/abc/lancamentos"
+        name: "Id que não é UUID → 400"
+        meta:
+          id: "req_rkfbank_07_14"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O id das contas tem um formato fixo (UUID). `abc` nem chega a ser procurado: `400`."
+          sortKey: 14
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas?size=0"
+        name: "Paginação inválida → 400"
+        meta:
+          id: "req_rkfbank_07_15"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Pedir páginas de tamanho zero: `400`."
+          sortKey: 15
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "Tipo de conta inválido → 400"
+        meta:
+          id: "req_rkfbank_07_16"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Só existem conta CORRENTE e POUPANCA. Outro tipo: `400`."
+          sortKey: 16
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "tipoConta": "SALARIO"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "JSON quebrado → 400"
+        meta:
+          id: "req_rkfbank_07_17"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O corpo do pedido com erro de digitação (JSON inválido): `400`, sem quebrar a API."
+          sortKey: 17
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: "{ \"valor\": "
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos"
+        name: "Valor com 3 casas → 400"
+        meta:
+          id: "req_rkfbank_07_18"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Dinheiro tem duas casas depois da vírgula. R$ 10,999 não existe: `400`."
+          sortKey: 18
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "valor": 10.001
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+          - name: "Idempotency-Key"
+            value: "{% uuid 'v4' %}"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_origem }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "Cadastro inválido → 400 com os campos"
+        meta:
+          id: "req_rkfbank_07_19"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Um cadastro todo errado. Repare em `campos`: a resposta diz o que está errado em CADA campo, para a tela mostrar embaixo de cada um."
+          sortKey: 19
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "",
+              "cpf": "11111111111",
+              "email": "nao-e-email",
+              "telefone": "",
+              "cep": "",
+              "numero": "",
+              "senha": "curta",
+              "aceiteTermos": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 400", () => insomnia.expect(insomnia.response.code).to.equal(400));
+            insomnia.test("lista os campos", () => insomnia.expect(insomnia.response.json().campos.length).to.be.above(0));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "CPF já cadastrado → 409"
+        meta:
+          id: "req_rkfbank_07_20"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Um CPF que já tem cadastro: `409` (conflito). Cada CPF é um cliente só."
+          sortKey: 20
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "CPF Repetido",
+              "cpf": "{{ _.cpf_origem }}",
+              "email": "repetido.{% uuid 'v4' %}@exemplo.test",
+              "telefone": "11999998888",
+              "cep": "01001000",
+              "numero": "1",
+              "senha": "senha-forte-1",
+              "aceiteTermos": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 409", () => insomnia.expect(insomnia.response.code).to.equal(409));
+            insomnia.test("codigo CPF_JA_CADASTRADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CPF_JA_CADASTRADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "Cadastro sem aceitar os termos → 400"
+        meta:
+          id: "req_rkfbank_07_21"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Sem aceitar os termos, não tem cadastro (LGPD).
+
+            LGPD (contrato 3.1): sem o aceite dos Termos de Uso e da Política de Privacidade, o cadastro nem chega ao banco.
+          sortKey: 21
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "Sem Aceite",
+              "cpf": "{{ _.cpf_extra }}",
+              "email": "aceite.{% uuid 'v4' %}@exemplo.test",
+              "telefone": "11999998888",
+              "cep": "01001000",
+              "numero": "1",
+              "senha": "senha-forte-1",
+              "aceiteTermos": false
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          preRequest: |-
+            const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+            if (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;
+            for (const tamanho of [9, 10]) {
+              const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);
+              const resto = (soma * 10) % 11;
+              n.push(resto === 10 ? 0 : resto);
+            }
+            insomnia.environment.set("cpf_extra", n.join(""));
+          afterResponse: |-
+            insomnia.test("status 400", () => insomnia.expect(insomnia.response.code).to.equal(400));
+            insomnia.test("codigo CAMPOS_INVALIDOS", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CAMPOS_INVALIDOS"));
+            insomnia.test("campo aceiteTermos", () => insomnia.expect(insomnia.response.json().campos[0].campo).to.equal("aceiteTermos"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "Cadastro com termos antigos → 422"
+        meta:
+          id: "req_rkfbank_07_22"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Aceitar uma versão velha dos termos não vale: a pessoa precisa aceitar a versão atual.
+
+            A pessoa aceitou uma versão dos termos que não vale mais (página aberta antes de eles mudarem): recarregar e aceitar de novo.
+          sortKey: 22
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "Termos Antigos",
+              "cpf": "{{ _.cpf_extra }}",
+              "email": "termos.{% uuid 'v4' %}@exemplo.test",
+              "telefone": "11999998888",
+              "cep": "01001000",
+              "numero": "1",
+              "senha": "senha-forte-1",
+              "aceiteTermos": true,
+              "termosVersao": "2000-01-01"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          preRequest: |-
+            const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+            if (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;
+            for (const tamanho of [9, 10]) {
+              const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);
+              const resto = (soma * 10) % 11;
+              n.push(resto === 10 ? 0 : resto);
+            }
+            insomnia.environment.set("cpf_extra", n.join(""));
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo TERMOS_DESATUALIZADOS", () => insomnia.expect(insomnia.response.json().codigo).to.equal("TERMOS_DESATUALIZADOS"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/clientes"
+        name: "CEP que não existe → 422"
+        meta:
+          id: "req_rkfbank_07_23"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Um CEP que o ViaCEP não conhece: o cadastro é recusado em vez de salvar um endereço vazio.
+
+            O endereço vem do ViaCEP: CEP inexistente → `422`; ViaCEP fora do ar → `503`.
+          sortKey: 23
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "nomeCompleto": "CEP Inexistente",
+              "cpf": "{{ _.cpf_extra }}",
+              "email": "cep.{% uuid 'v4' %}@exemplo.test",
+              "telefone": "11999998888",
+              "cep": "99999999",
+              "numero": "1",
+              "senha": "senha-forte-1",
+              "aceiteTermos": true
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          preRequest: |-
+            const n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));
+            if (n.every((d) => d === n[0])) n[0] = (n[0] + 1) % 10;
+            for (const tamanho of [9, 10]) {
+              const soma = n.slice(0, tamanho).reduce((acc, d, i) => acc + d * (tamanho + 1 - i), 0);
+              const resto = (soma * 10) % 11;
+              n.push(resto === 10 ? 0 : resto);
+            }
+            insomnia.environment.set("cpf_extra", n.join(""));
+          afterResponse: |-
+            insomnia.test("status 422", () => insomnia.expect(insomnia.response.code).to.equal(422));
+            insomnia.test("codigo CEP_NAO_ENCONTRADO", () => insomnia.expect(insomnia.response.json().codigo).to.equal("CEP_NAO_ENCONTRADO"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "08 · CORS (navegador chamando a API direto)"
+    meta:
+      id: "fld_rkfbank_08"
+      created: 1792952515093
+      modified: 1792952515093
+      sortKey: 8
+      description: |-
+        💡 Uma regra do navegador (CORS): só o site do RKF Bank pode chamar a API de dentro de uma página. Um site estranho é barrado.
+
+        O site de hoje passa pelo proxy do Next e não usa CORS. Isto vale para um navegador chamando a API direto. As origens permitidas vêm de `CORS_ORIGENS` (padrão `http://localhost:3000`).
+    children:
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Preflight de origem permitida → 200"
+        meta:
+          id: "req_rkfbank_08_00"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Antes de chamar a API, o navegador pergunta \"posso?\" (o preflight). Vindo do site do RKF Bank (`localhost:3000`), a resposta é sim."
+          sortKey: 0
+        method: "OPTIONS"
+        headers:
+          - name: "Origin"
+            value: "http://localhost:3000"
+          - name: "Access-Control-Request-Method"
+            value: "POST"
+          - name: "Access-Control-Request-Headers"
+            value: "authorization,content-type,idempotency-key"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            insomnia.test("Allow-Origin", () => insomnia.expect(insomnia.response.headers.get("Access-Control-Allow-Origin")).to.equal("http://localhost:3000"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/transferencias"
+        name: "Preflight de origem estranha → 403"
+        meta:
+          id: "req_rkfbank_08_01"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** A mesma pergunta vinda de um site desconhecido: não (`403`). Assim um site malicioso não usa a sua sessão para mexer na sua conta."
+          sortKey: 1
+        method: "OPTIONS"
+        headers:
+          - name: "Origin"
+            value: "https://site-estranho.example"
+          - name: "Access-Control-Request-Method"
+            value: "POST"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+  - name: "09 · Sessão: renovar e sair (refresh token)"
+    meta:
+      id: "fld_rkfbank_09"
+      created: 1792952515093
+      modified: 1792952515093
+      sortKey: 9
+      description: |-
+        💡 Ficar logado sem digitar a senha de novo, e sair de verdade. O crachá curto (token) é renovado com um segundo crachá, mais longo (refresh token).
+
+        Contrato 3.1. O login devolve, além do token de acesso (15 min), um **token de renovação** (7 dias) que troca o par sem pedir a senha. Ele é de **uso único**: usar de novo um já trocado é sinal de roubo e derruba todas as sessões da pessoa. Mande na ordem; usa o cliente DESTINO, e no fim ele entra de novo para as outras pastas continuarem.
+    children:
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente DESTINO"
+        meta:
+          id: "req_rkfbank_09_00"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Entra de novo para ter um par novinho de crachás: o de acesso (curto) e o de renovação (7 dias)."
+          sortKey: 0
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_destino }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            if (insomnia.response.code === 200) insomnia.environment.set("refresh_usado", insomnia.response.json().refreshToken);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Renovar: troca o par"
+        meta:
+          id: "req_rkfbank_09_01"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Troca o crachá de renovação por um par novo, sem digitar a senha. É assim que o app te mantém logado. O de renovação antigo deixa de valer.
+
+            Público: o token de renovação vai no corpo (o de acesso pode já ter vencido). Mesmo formato do login.
+          sortKey: 1
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_destino }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            insomnia.test("token de renovação novo", () => insomnia.expect(insomnia.response.json().refreshToken).to.not.equal(insomnia.environment.get("refresh_usado")));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/contas"
+        name: "O token novo funciona"
+        meta:
+          id: "req_rkfbank_09_02"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** O crachá novo abre as contas normalmente."
+          sortKey: 2
+        method: "GET"
+        authentication:
+          type: "bearer"
+          token: "{{ _.token_destino }}"
+          prefix: ""
+        scripts:
+          afterResponse: "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Reusar o token já trocado → 401"
+        meta:
+          id: "req_rkfbank_09_03"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Usar de novo um crachá de renovação que já foi trocado é sinal de roubo: o banco recusa E derruba todas as sessões da pessoa.
+
+            Reuso = alguém copiou o token. A API derruba **todas** as renovações da pessoa, inclusive a legítima.
+          sortKey: 3
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_usado }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo SESSAO_EXPIRADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SESSAO_EXPIRADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Depois do reuso, a renovação legítima também caiu → 401"
+        meta:
+          id: "req_rkfbank_09_04"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Prova do passo anterior: até o crachá novo, que era legítimo, foi derrubado. Quem roubou fica sem acesso; o dono só precisa entrar de novo."
+          sortKey: 4
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_destino }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo SESSAO_EXPIRADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SESSAO_EXPIRADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente DESTINO (de novo)"
+        meta:
+          id: "req_rkfbank_09_05"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Entra de novo depois da derrubada."
+          sortKey: 5
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_destino }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+            if (insomnia.response.code === 200) insomnia.environment.set("refresh_usado", insomnia.response.json().refreshToken);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/logout"
+        name: "Sair (logout)"
+        meta:
+          id: "req_rkfbank_09_06"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Sair de verdade: o crachá de renovação é cancelado no banco, não só apagado do aparelho.
+
+            Revoga o token de renovação. O de acesso continua valendo até vencer (no máximo 15 min): o front o apaga.
+          sortKey: 6
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_usado }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Renovar depois de sair → 401"
+        meta:
+          id: "req_rkfbank_09_07"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Depois de sair, o crachá de renovação não serve mais para nada."
+          sortKey: 7
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "{{ _.refresh_usado }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 401", () => insomnia.expect(insomnia.response.code).to.equal(401));
+            insomnia.test("codigo SESSAO_EXPIRADA", () => insomnia.expect(insomnia.response.json().codigo).to.equal("SESSAO_EXPIRADA"));
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/logout"
+        name: "Sair com token desconhecido → 204"
+        meta:
+          id: "req_rkfbank_09_08"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: |-
+            💡 **Em palavras simples:** Sair com um crachá que o banco não conhece também responde `204`: a API não revela se o crachá existia.
+
+            Sair nunca falha (nem revela se o token existia).
+          sortKey: 8
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "refreshToken": "token-que-nunca-existiu"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/refresh"
+        name: "Renovar sem o token → 400"
+        meta:
+          id: "req_rkfbank_09_09"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Pedir renovação sem mandar o crachá: `400`."
+          sortKey: 9
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: "{}"
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));"
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+      - url: "{{ _.base_url }}/auth/login"
+        name: "Login · cliente DESTINO (para as outras pastas)"
+        meta:
+          id: "req_rkfbank_09_10"
+          created: 1792952515093
+          modified: 1792952515093
+          isPrivate: false
+          description: "💡 **Em palavras simples:** Deixa o Bruno logado no fim, para você poder mandar as outras pastas de novo sem refazer o login."
+          sortKey: 10
+        method: "POST"
+        body:
+          mimeType: "application/json"
+          text: |-
+            {
+              "cpf": "{{ _.cpf_destino }}",
+              "senha": "{{ _.senha_clientes }}"
+            }
+        headers:
+          - name: "Content-Type"
+            value: "application/json"
+        authentication:
+          type: "none"
+        scripts:
+          afterResponse: |-
+            insomnia.test("status 200", () => insomnia.expect(insomnia.response.code).to.equal(200));
+            if (insomnia.response.code === 200) {
+              const login = insomnia.response.json();
+              insomnia.environment.set("token_destino", login.token);
+              insomnia.environment.set("refresh_destino", login.refreshToken);
+              insomnia.environment.set("cliente_destino_id", login.clienteId ?? "");
+              console.log("perfil:", login.perfil, "· token vale", login.expiraEmSegundos, "s · renovação vale", login.refreshExpiraEmSegundos, "s");
+            }
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: "global"
+          cookies:
+            send: false
+            store: false
+          rebuildPath: true
+environments:
+  name: "Base Environment"
+  meta:
+    id: "env_rkfbank_base"
+    created: 1792952515093
+    modified: 1792952515093
+    isPrivate: false
+  data:
+    base_url: "http://localhost:8080"
+    token_origem: ""
+    token_destino: ""
+    token_admin: ""
+    token_novo: ""
+    refresh_origem: ""
+    refresh_destino: ""
+    refresh_admin: ""
+    refresh_novo: ""
+    refresh_usado: ""
+    termos_versao: ""
+    cliente_origem_id: ""
+    cliente_destino_id: ""
+    novo_cpf: ""
+    novo_email: ""
+    novo_senha: ""
+    novo_cliente_id: ""
+    conta_nova_id: ""
+    conta_nova_destino_id: ""
+    usuario_novo_id: ""
+    chave_fixa: ""
+    novo_cpf_mascara: ""
+    senha_redefinida: ""
+    senha_trocada: ""
+    senha_escolhida: ""
+    usuario_admin_id: ""
+    cpf_extra: ""
+    token_falso: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJxdWFscXVlci11bSIsInBlcmZpbCI6IkFETUlOIn0.assinatura-que-nao-bate"
+  subEnvironments:
+    - name: "Visitante (H2, Ana e Bruno)"
+      meta:
+        id: "env_rkfbank_visitante"
+        created: 1792952515093
+        modified: 1792952515093
+        isPrivate: false
+        sortKey: 1
+      data:
+        cpf_origem: "24681357928"
+        cpf_destino: "97531864282"
+        senha_clientes: "Visitante@2026"
+        email_destino: "bruno.visitante@exemplo.test"
+        conta_origem_id: "a0000000-0000-4000-8000-000000000114"
+        conta_destino_id: "a0000000-0000-4000-8000-000000000124"
+        admin_cpf: ""
+        admin_senha: ""
+      color: "#2e7d32"

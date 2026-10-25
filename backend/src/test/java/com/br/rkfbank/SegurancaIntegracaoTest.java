@@ -14,8 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.clients.viacep.ClienteViaCep;
-import com.br.rkfbank.clients.viacep.ResponseViaCepDto;
+import com.br.rkfbank.clients.viacep.ViaCepClient;
+import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.repositories.UsuarioRepository;
 import com.br.rkfbank.services.TokenService;
@@ -76,11 +76,11 @@ class SegurancaIntegracaoTest {
 
     // ViaCEP e externo: fora do teste de seguranca.
     @MockitoBean
-    private ClienteViaCep clienteViaCep;
+    private ViaCepClient viaCepClient;
 
     @BeforeEach
     void setUp() {
-        when(clienteViaCep.buscarPorCep(anyString())).thenReturn(new ResponseViaCepDto(
+        when(viaCepClient.buscarPorCep(anyString())).thenReturn(new ViaCepResponseDto(
                 "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false));
     }
 
@@ -93,7 +93,7 @@ class SegurancaIntegracaoTest {
                 .andExpect(header().string("WWW-Authenticate", startsWith("Bearer")))
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.error").value("Unauthorized"))
-                .andExpect(jsonPath("$.message").value("Autenticacao necessaria: envie o token no header Authorization (Bearer)"))
+                .andExpect(jsonPath("$.message").value("Autenticação necessária: envie o token no header Authorization (Bearer)"))
                 .andExpect(jsonPath("$.path").value("/contas"))
                 .andExpect(jsonPath("$.timestamp").isString())
                 .andExpect(jsonPath("$.campos", empty()));
@@ -114,7 +114,7 @@ class SegurancaIntegracaoTest {
         mockMvc.perform(get("/clientes").header("Authorization", "Bearer " + expirado))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.message").value("Token invalido ou expirado; faca login novamente"));
+                .andExpect(jsonPath("$.message").value("Token inválido ou expirado; faça login novamente"));
     }
 
     @Test
@@ -129,7 +129,7 @@ class SegurancaIntegracaoTest {
 
         mockMvc.perform(get("/clientes").header("Authorization", "Bearer " + forjado))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Token invalido ou expirado; faca login novamente"));
+                .andExpect(jsonPath("$.message").value("Token inválido ou expirado; faça login novamente"));
     }
 
     @Test
@@ -247,6 +247,16 @@ class SegurancaIntegracaoTest {
                 .andExpect(jsonPath("$.perfil").value("CLIENTE"));
     }
 
+    // O ADMIN do .env tem login (o CPF) e nenhum cadastro de cliente. Antes, cadastrar alguem com esse CPF passava
+    // pela checagem de tb_cliente e estourava a constraint de tb_usuario.login: 500. Agora e 409, sem chamar o ViaCEP.
+    @Test
+    void cadastroComOCpfDoAdminDa409ENao500() throws Exception {
+        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON).content(cadastroJson(ADMIN_CPF, SENHA)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.codigo").value("CPF_JA_CADASTRADO"));
+        login(ADMIN_CPF, ADMIN_SENHA);
+    }
+
     @Test
     void senhaErradaDa401() throws Exception {
         String cpf = cpfAleatorio();
@@ -255,7 +265,7 @@ class SegurancaIntegracaoTest {
         mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson(cpf, "senha-errada")))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
-                .andExpect(jsonPath("$.message").value("CPF ou senha invalidos"))
+                .andExpect(jsonPath("$.message").value("CPF ou senha inválidos"))
                 .andExpect(jsonPath("$.path").value("/auth/login"));
     }
 
@@ -263,7 +273,7 @@ class SegurancaIntegracaoTest {
     void cpfSemCadastroDaAMesmaRespostaDaSenhaErrada() throws Exception {
         mockMvc.perform(post("/auth/login").contentType(MediaType.APPLICATION_JSON).content(loginJson(cpfAleatorio(), SENHA)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("CPF ou senha invalidos"));
+                .andExpect(jsonPath("$.message").value("CPF ou senha inválidos"));
     }
 
     // ---------- regra de dono (403) ----------
@@ -273,30 +283,30 @@ class SegurancaIntegracaoTest {
         String cpfAna = cpfAleatorio();
         String clienteAna = cadastrar(cpfAna);
         String tokenAna = login(cpfAna, SENHA);
-        String contaAna = abrirConta(clienteAna, tokenAna);
+        String contaAna = abrirConta(tokenAna);
 
         String cpfBeto = cpfAleatorio();
         String clienteBeto = cadastrar(cpfBeto);
         String tokenBeto = login(cpfBeto, SENHA);
-        String contaBeto = abrirConta(clienteBeto, tokenBeto);
+        String contaBeto = abrirConta(tokenBeto);
 
         // A dona movimenta a propria conta.
-        mockMvc.perform(post("/contas/" + contaAna + "/deposito").header("Authorization", "Bearer " + tokenAna)
+        mockMvc.perform(post("/contas/" + contaAna + "/depositos").header("Authorization", "Bearer " + tokenAna)
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\": 100.00, \"descricao\": \"salario\"}"))
                 .andExpect(status().isNoContent());
 
         // Beto, com token valido, tenta mexer na conta da Ana.
-        mockMvc.perform(post("/contas/" + contaAna + "/saque").header("Authorization", "Bearer " + tokenBeto)
+        mockMvc.perform(post("/contas/" + contaAna + "/saques").header("Authorization", "Bearer " + tokenBeto)
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\": 50.00}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.status").value(403))
                 .andExpect(jsonPath("$.error").value("Forbidden"))
-                .andExpect(jsonPath("$.message").value("Conta nao pertence ao usuario logado"))
-                .andExpect(jsonPath("$.path").value("/contas/" + contaAna + "/saque"));
+                .andExpect(jsonPath("$.message").value("Conta não pertence ao usuário logado"))
+                .andExpect(jsonPath("$.path").value("/contas/" + contaAna + "/saques"));
 
-        mockMvc.perform(post("/contas/" + contaAna + "/deposito").header("Authorization", "Bearer " + tokenBeto)
+        mockMvc.perform(post("/contas/" + contaAna + "/depositos").header("Authorization", "Bearer " + tokenBeto)
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON).content("{\"valor\": 1.00}"))
                 .andExpect(status().isForbidden());
@@ -304,18 +314,14 @@ class SegurancaIntegracaoTest {
         mockMvc.perform(get("/contas/" + contaAna + "/lancamentos").header("Authorization", "Bearer " + tokenBeto))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(post("/contas/transferencia").header("Authorization", "Bearer " + tokenBeto)
+        mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + tokenBeto)
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contaOrigemId\": \"" + contaAna + "\", \"contaDestinoId\": \"" + contaBeto + "\", \"valor\": 10.00}"))
                 .andExpect(status().isForbidden());
 
-        mockMvc.perform(post("/contas/clientes/" + clienteAna).header("Authorization", "Bearer " + tokenBeto)
-                        .contentType(MediaType.APPLICATION_JSON).content(contaJson()))
-                .andExpect(status().isForbidden());
-
         // Transferir PARA a conta de outro cliente e permitido: so a origem precisa ser sua.
-        mockMvc.perform(post("/contas/transferencia").header("Authorization", "Bearer " + tokenAna)
+        mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + tokenAna)
                         .header("Idempotency-Key", UUID.randomUUID().toString())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contaOrigemId\": \"" + contaAna + "\", \"contaDestinoId\": \"" + contaBeto + "\", \"valor\": 10.00}"))
@@ -348,9 +354,29 @@ class SegurancaIntegracaoTest {
 
         mockMvc.perform(get("/clientes").header("Authorization", "Bearer " + tokenAdmin))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/contas").param("paginado", "true").header("Authorization", "Bearer " + tokenAdmin))
+        mockMvc.perform(get("/contas").param("page", "0").header("Authorization", "Bearer " + tokenAdmin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content").isArray());
+    }
+
+    @Test
+    void paginaTemSoOsCamposDoContratoENaoOPageDoSpring() throws Exception {
+        String tokenAdmin = login(ADMIN_CPF, ADMIN_SENHA);
+
+        mockMvc.perform(get("/clientes").param("page", "0").param("size", "1")
+                        .header("Authorization", "Bearer " + tokenAdmin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.totalElements").isNumber())
+                .andExpect(jsonPath("$.totalPages").isNumber())
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").isBoolean())
+                // Campos internos do PageImpl nao podem vazar para o contrato.
+                .andExpect(jsonPath("$.pageable").doesNotExist())
+                .andExpect(jsonPath("$.sort").doesNotExist())
+                .andExpect(jsonPath("$.numberOfElements").doesNotExist());
     }
 
     // ---------- apoio ----------
@@ -369,8 +395,9 @@ class SegurancaIntegracaoTest {
         return jsonMapper.readTree(corpo).get("token").asString();
     }
 
-    private String abrirConta(String clienteId, String token) throws Exception {
-        String corpo = mockMvc.perform(post("/contas/clientes/" + clienteId).header("Authorization", "Bearer " + token)
+    // POST /contas abre no cadastro do token: nao existe "abrir conta para outro cliente" para testar.
+    private String abrirConta(String token) throws Exception {
+        String corpo = mockMvc.perform(post("/contas").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON).content(contaJson()))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
@@ -385,7 +412,7 @@ class SegurancaIntegracaoTest {
     private static String cadastroJson(String cpf, String senha) {
         return """
                 {"nomeCompleto": "Cliente Teste", "cpf": "%s", "email": "%s@rkfbank.com", "telefone": "11999998888",
-                 "cep": "01001000", "numero": "10", "senha": "%s"}
+                 "cep": "01001000", "numero": "10", "senha": "%s", "aceiteTermos": true}
                 """.formatted(cpf, cpf, senha);
     }
 
@@ -394,8 +421,7 @@ class SegurancaIntegracaoTest {
     }
 
     private static String contaJson() {
-        String numero = String.valueOf(ThreadLocalRandom.current().nextInt(10_000_000, 99_999_999));
-        return "{\"agencia\": \"0001\", \"numeroConta\": \"" + numero + "\", \"tipoContaEnum\": \"CORRENTE\"}";
+        return "{\"tipoConta\": \"CORRENTE\"}";
     }
 
     // O H2 e compartilhado entre os testes: cada um usa um CPF novo (valido, com os 2 digitos verificadores).

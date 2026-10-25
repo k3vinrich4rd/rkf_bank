@@ -1,7 +1,10 @@
 -- Contas da EQUIPE: as duas que existem sempre que a API sobe (perfil padrao e perfil equipe).
 --
---   Felipe Santana (idealizador, PO & QA e primeiro cliente) -> conta ORIGEM  0001 / 100001, saldo inicial R$ 1.000,00
---   Renan Barros   (idealizador, frontend)                   -> conta DESTINO 0001 / 100002, saldo inicial R$ 500,00
+--   Fellipe Santana (Teste Origem)  -> conta ORIGEM  0001 / 100001, saldo inicial R$ 1.000,00 (o Fellipe e o PO & QA)
+--   Renan Barros (Teste Destino)   -> conta DESTINO 0001 / 100002, saldo inicial R$ 500,00 (o Renan e o frontend)
+--
+-- O "(Teste Origem)" / "(Teste Destino)" no nome e de proposito: na tela, no extrato e na gestao de usuarios fica
+-- obvio que e uma conta de TESTE e qual o papel dela no roteiro (quem manda e quem recebe a transferencia).
 --
 -- SEM senha aqui, de proposito: o repositorio e publico. O login das duas contas e criado na subida pelo
 -- CriadorAcessoEquipe com a EQUIPE_SENHA do .env (o mesmo motivo do CriadorAdmin). Sem EQUIPE_SENHA, as contas
@@ -23,7 +26,7 @@
 -- CPFs ficticios, validos pelos digitos verificadores e diferentes dos usados nos testes automatizados.
 -- Enderecos com CEP real de Osasco (o RKF Bank nasceu la); numero e telefone ficticios.
 
--- ---------- Felipe Santana: conta de ORIGEM ----------
+-- ---------- Fellipe Santana: conta de ORIGEM ----------
 
 INSERT INTO tb_endereco (id, cep, logradouro, bairro, cidade, uf, ibge, numero, complemento)
 SELECT X'5eed0000000040008000000000000011', '06013-000', 'Rua Antônio Agu', 'Centro', 'Osasco', 'SP', '3534401', '1001', NULL
@@ -32,11 +35,11 @@ WHERE NOT EXISTS (SELECT 1 FROM tb_endereco WHERE id = X'5eed0000000040008000000
   AND NOT EXISTS (SELECT 1 FROM tb_cliente WHERE cpf = '12345678909');
 
 INSERT INTO tb_cliente (id, nome_completo, cpf, email, telefone, endereco_id)
-SELECT X'5eed0000000040008000000000000012', 'Felipe Santana', '12345678909', 'felipe.santana@rkfbank.test', '11987650001',
+SELECT X'5eed0000000040008000000000000012', 'Fellipe Santana (Teste Origem)', '12345678909', 'fellipe.santana@rkfbank.test', '11987650001',
        X'5eed0000000040008000000000000011'
 FROM (SELECT 1 AS um) unica
 WHERE NOT EXISTS (SELECT 1 FROM tb_cliente
-                  WHERE id = X'5eed0000000040008000000000000012' OR cpf = '12345678909' OR email = 'felipe.santana@rkfbank.test')
+                  WHERE id = X'5eed0000000040008000000000000012' OR cpf = '12345678909' OR email = 'fellipe.santana@rkfbank.test')
   AND EXISTS (SELECT 1 FROM tb_endereco WHERE id = X'5eed0000000040008000000000000011');
 
 INSERT INTO tb_conta (id, numero_conta, agencia, tipo_conta_enum, saldo, ativa, versao, cliente_id)
@@ -62,7 +65,7 @@ WHERE NOT EXISTS (SELECT 1 FROM tb_endereco WHERE id = X'5eed0000000040008000000
   AND NOT EXISTS (SELECT 1 FROM tb_cliente WHERE cpf = '98765432100');
 
 INSERT INTO tb_cliente (id, nome_completo, cpf, email, telefone, endereco_id)
-SELECT X'5eed0000000040008000000000000022', 'Renan Barros', '98765432100', 'renan.barros@rkfbank.test', '11987650002',
+SELECT X'5eed0000000040008000000000000022', 'Renan Barros (Teste Destino)', '98765432100', 'renan.barros@rkfbank.test', '11987650002',
        X'5eed0000000040008000000000000021'
 FROM (SELECT 1 AS um) unica
 WHERE NOT EXISTS (SELECT 1 FROM tb_cliente
@@ -81,3 +84,18 @@ SELECT X'5eed0000000040008000000000000025', 'DEPOSITO', 500.00, NULL, X'5eed0000
 FROM (SELECT 1 AS um) unica
 WHERE NOT EXISTS (SELECT 1 FROM tb_lancamento WHERE id = X'5eed0000000040008000000000000025')
   AND EXISTS (SELECT 1 FROM tb_conta WHERE id = X'5eed0000000040008000000000000024');
+
+-- ---------- Nomes de teste em bancos criados antes de 22/10/2026 ----------
+
+-- Os INSERTs acima so criam o que falta; quem ja tinha o banco ficou com o nome antigo. Estes UPDATEs trocam so se o
+-- nome ainda for o antigo: rodar de novo nao muda nada (idempotente) e nao desfaz uma correcao feita pelo titular.
+UPDATE tb_cliente SET nome_completo = 'Fellipe Santana (Teste Origem)'
+WHERE id = X'5eed0000000040008000000000000012'
+  AND nome_completo IN ('Felipe Santana', 'Felipe Santana (Teste Origem)');
+
+-- 23/10/2026: a grafia certa e Fellipe, com dois L (o e-mail de teste acompanha).
+UPDATE tb_cliente SET email = 'fellipe.santana@rkfbank.test'
+WHERE id = X'5eed0000000040008000000000000012' AND email = 'felipe.santana@rkfbank.test';
+
+UPDATE tb_cliente SET nome_completo = 'Renan Barros (Teste Destino)'
+WHERE id = X'5eed0000000040008000000000000022' AND nome_completo = 'Renan Barros';

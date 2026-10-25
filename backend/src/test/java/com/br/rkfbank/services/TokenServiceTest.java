@@ -36,7 +36,7 @@ class TokenServiceTest {
     void deveGerarTokenAssinadoComPerfilClienteIdEExpiracao() {
         Usuario usuario = usuario(PerfilEnum.CLIENTE, UUID.fromString("d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e"));
 
-        TokenService.TokenGerado gerado = tokenService.gerar(usuario);
+        TokenService.TokenEmitido gerado = tokenService.emitir(usuario);
         Jwt jwt = decoder.decode(gerado.token());
 
         assertEquals(1800, gerado.expiraEmSegundos());
@@ -52,7 +52,7 @@ class TokenServiceTest {
 
     @Test
     void tokenDoAdminNaoLevaClienteId() {
-        Jwt jwt = decoder.decode(tokenService.gerar(usuario(PerfilEnum.ADMIN, null)).token());
+        Jwt jwt = decoder.decode(tokenService.emitir(usuario(PerfilEnum.ADMIN, null)).token());
 
         assertEquals("ADMIN", jwt.getClaimAsString(TokenService.CLAIM_PERFIL));
         assertNull(jwt.getClaimAsString(TokenService.CLAIM_CLIENTE_ID));
@@ -60,7 +60,7 @@ class TokenServiceTest {
 
     @Test
     void payloadNaoLevaCpf() {
-        String token = tokenService.gerar(usuario(PerfilEnum.CLIENTE, UUID.randomUUID())).token();
+        String token = tokenService.emitir(usuario(PerfilEnum.CLIENTE, UUID.randomUUID())).token();
 
         // O payload e so Base64: qualquer um decodifica sem a chave.
         String payload = new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]), StandardCharsets.UTF_8);
@@ -71,7 +71,7 @@ class TokenServiceTest {
 
     @Test
     void deveRecusarTokenComPayloadAlterado() {
-        String token = tokenService.gerar(usuario(PerfilEnum.CLIENTE, UUID.randomUUID())).token();
+        String token = tokenService.emitir(usuario(PerfilEnum.CLIENTE, UUID.randomUUID())).token();
         String[] partes = token.split("\\.");
         String payloadOriginal = new String(Base64.getUrlDecoder().decode(partes[1]), StandardCharsets.UTF_8);
         String payloadAdmin = payloadOriginal.replace("\"CLIENTE\"", "\"ADMIN\"");
@@ -87,7 +87,7 @@ class TokenServiceTest {
         JwtPropriedades outras = new JwtPropriedades("outro-segredo-qualquer-com-mais-de-32-bytes", Duration.ofMinutes(30));
         TokenService outroEmissor = new TokenService(configuracao.jwtEncoder(configuracao.chaveJwt(outras)), outras);
 
-        String tokenDeFora = outroEmissor.gerar(usuario(PerfilEnum.ADMIN, null)).token();
+        String tokenDeFora = outroEmissor.emitir(usuario(PerfilEnum.ADMIN, null)).token();
 
         assertThrows(JwtException.class, () -> decoder.decode(tokenDeFora));
     }

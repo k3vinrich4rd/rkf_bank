@@ -1,7 +1,8 @@
 package com.br.rkfbank.exceptions;
 
-public class ClienteNaoEncontradoException extends RuntimeException {
+// O cliente pedido nao existe -> 404 no TratadorGlobalDeErros.
+public class ClienteNaoEncontradoException extends ErroApiException {
     public ClienteNaoEncontradoException() {
-        super("Cliente não encontrado");
+        super(CodigoErroEnum.CLIENTE_NAO_ENCONTRADO);
     }
 }

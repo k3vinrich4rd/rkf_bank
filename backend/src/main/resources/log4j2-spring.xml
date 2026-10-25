@@ -3,8 +3,10 @@
 
     <Properties>
         <!-- %X{requestId} vem do FiltroLogRequisicao e liga todas as linhas de uma mesma chamada HTTP;
-             fica vazio em logs fora de requisicao (startup, jobs). -->
-        <Property name="LOG_PATTERN">%style{%d{yyyy-MM-dd HH:mm:ss.SSS}}{cyan} %highlight{%-5p} [%style{%t}{magenta}] [%X{requestId}] %style{%c{1.}}{blue} : %m%n%throwable</Property>
+             fica vazio em logs fora de requisicao (startup, jobs).
+             %enc{%m}{CRLF}: quebra de linha DENTRO da mensagem vira o texto \r\n (visivel, inofensivo). Segunda barreira contra injecao de log
+             (a primeira e o LogSeguro): ninguem consegue forjar uma linha de log falsa mandando %0d%0a na URL. -->
+        <Property name="LOG_PATTERN">%style{%d{yyyy-MM-dd HH:mm:ss.SSS}}{cyan} %highlight{%-5p} [%style{%t}{magenta}] [%X{requestId}] %style{%c{1.}}{blue} : %enc{%m}{CRLF}%n%throwable</Property>
     </Properties>
 
     <Appenders>

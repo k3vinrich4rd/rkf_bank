@@ -29,6 +29,9 @@ public class FiltroLogRequisicao extends OncePerRequestFilter {
     // O id vindo de fora vai parar no log; restringir o formato impede quebra de linha e injecao de texto.
     private static final Pattern REQUEST_ID_VALIDO = Pattern.compile("[A-Za-z0-9-]{1,64}");
 
+    // OncePerRequestFilter garante uma execucao por requisicao (mesmo com forward/erro interno).
+    // ThreadContext e o MDC do Log4j2: um mapa preso a thread atual. O padrao de log do log4j2-spring.xml imprime
+    // %X{requestId}, entao TODA linha de log desta requisicao (controller, service, SQL) sai com o mesmo id.
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
@@ -41,7 +44,9 @@ public class FiltroLogRequisicao extends OncePerRequestFilter {
             chain.doFilter(request, response);
         } finally {
             long duracaoMs = (System.nanoTime() - inicio) / 1_000_000;
-            log.info("{} {} -> {} ({} ms)", request.getMethod(), request.getRequestURI(), response.getStatus(), duracaoMs);
+            // URI e metodo vem do cliente: passam pelo LogSeguro para nao forjarem linhas no log.
+            log.info("{} {} -> {} ({} ms)", LogSeguro.texto(request.getMethod()), LogSeguro.texto(request.getRequestURI()),
+                    response.getStatus(), duracaoMs);
             // Threads do Tomcat sao reaproveitadas: sem limpar, o id vazaria para a proxima requisicao.
             ThreadContext.remove(CHAVE_REQUEST_ID);
         }

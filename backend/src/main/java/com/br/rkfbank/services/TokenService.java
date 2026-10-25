@@ -27,7 +27,11 @@ public class TokenService {
         this.propriedades = propriedades;
     }
 
-    public TokenGerado gerar(Usuario usuario) {
+    // Emite o token depois que o AutenticacaoService conferiu CPF e senha. Claims (dados dentro do token):
+    //  iss = quem emitiu ("rkfbank") · sub = id do USUARIO (nao o CPF) · iat/exp = emitido em / vence em
+    //  perfil = CLIENTE ou ADMIN · clienteId = de quem sao as contas · versaoCredencial = muda quando a senha muda.
+    // Quem garante que ninguem trocou "CLIENTE" por "ADMIN" no payload e a assinatura HMAC-SHA256 com o segredo.
+    public TokenEmitido emitir(Usuario usuario) {
         Instant agora = Instant.now();
         JwtClaimsSet.Builder claims = JwtClaimsSet.builder()
                 .issuer(EMISSOR)
@@ -45,9 +49,10 @@ public class TokenService {
         // Sem o header HS256 explicito o encoder procura uma chave RSA e falha.
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
         String token = jwtEncoder.encode(JwtEncoderParameters.from(header, claims.build())).getTokenValue();
-        return new TokenGerado(token, propriedades.expiracao().toSeconds());
+        return new TokenEmitido(token, propriedades.expiracao().toSeconds());
     }
 
-    public record TokenGerado(String token, long expiraEmSegundos) {
+    // O token e quantos segundos ele vale, para o front saber quando a sessao vai cair.
+    public record TokenEmitido(String token, long expiraEmSegundos) {
     }
 }

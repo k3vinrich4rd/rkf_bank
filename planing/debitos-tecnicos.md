@@ -13,41 +13,21 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
-| 🔴 | **LGPD:** o cadastro diz "você concorda com os Termos de Uso e a Política de Privacidade", mas os documentos não existem e o aceite não é registrado. | Antes de ir ao ar: escrever a política (dados, finalidade, compartilhamento com o ViaCEP, retenção, contato), `V7__` com `termos_versao` e `termos_aceitos_em`, campo obrigatório no cadastro e encarregado definido. |
-| 🟡 | **LGPD:** o titular não consegue ver, corrigir nem pedir o encerramento dos próprios dados. | `GET /clientes/me`, `PATCH /clientes/me` e encerramento de conta com retenção legal e anonimização no fim do prazo. |
-| 🟢 | **LGPD:** o cadastro devolve o CPF completo e o handler de JSON inválido loga a mensagem do Jackson (pode trazer trecho do valor enviado). | Devolver o CPF mascarado e logar só o tipo da exceção. |
-| 🟢 | O limite de tentativas de login fica em memória: reiniciar zera, e com mais de uma instância cada uma conta a sua parte. | Redis ou tabela quando houver deploy com várias instâncias. |
-| 🟢 | A senha redefinida pelo ADMIN não obriga a pessoa a trocá-la no próximo login. | Flag `deve_trocar_senha` e bloqueio das outras rotas até a troca. |
-| 🟢 | O `ConversorTokenUsuario` faz 1 SELECT por requisição. | Cache de poucos segundos se o volume crescer. |
-| 🟢 | `tb_idempotencia` cresce para sempre. | Rotina que apaga chaves com mais de 30 dias (repetições reais acontecem em segundos). |
-| 🟡 | Não há *refresh token* nem revogação: o token vale 15 min e "sair" só apaga o token no front; um token vazado vale até expirar. | `POST /auth/refresh` com token de renovação guardado no banco e revogável. |
-| 🟡 | A configuração de CORS vale para `/api/**`, mas as rotas não têm `/api`. Hoje funciona só por causa do proxy do Next. | Ajustar para `/**` ou remover, se o proxy for mantido. |
-| 🟢 | A conciliação saldo × extrato só roda nos testes (`DadosEquipeIntegracaoTest`). | Rotina agendada ou rota de ADMIN que aponte contas divergentes em produção. |
-| 🟡 | A paginação devolve o `Page` do Spring direto, e esse formato pode mudar entre versões. | Criar um DTO de página próprio. |
-| 🟡 | O `pom.xml` sobrescreve as versões do Tomcat (11.0.27) e do Jackson (3.1.7) por causa de CVEs. | Remover as duas propriedades quando o Spring Boot trouxer versões iguais ou maiores. |
-| 🟢 | O `pom.xml` fixa o H2 em 2.3.232 (o 2.4.240 quebra o `CHECK ... IN` das colunas de enum). | Remover quando o H2 corrigir, ou quando os testes usarem MySQL real (Testcontainers). |
-| 🟢 | O `pom.xml` fica na raiz, mas o código fica em `backend/`. | Mover `pom.xml` e `mvnw` para `backend/`. |
-| 🟢 | O enum de lançamento tem `CREDITO` e `DEBITO`, que não são usados. | Remover ou usar. |
-| 🟢 | Mensagens de erro misturam texto com e sem acento ("nao", "não"). | Padronizar. |
-| 🟢 | Os testes de controller chamam o método direto, sem testar o JSON de verdade. | Usar `MockMvc`. |
+| 🔴 | **LGPD:** a política de privacidade, os termos e o aceite versionado já existem (contrato 3.1), mas o **encarregado** (quem responde pelos dados pessoais) e o canal oficial de contato ainda não foram definidos. A página de privacidade avisa que o canal "será publicado antes do lançamento". | Decidir na reunião quem é o encarregado e qual e-mail atende os titulares; publicar na seção 7 de `frontend/app/privacidade/page.tsx` e subir a versão dos termos (`rkfbank.lgpd.termos-versao`). |
+| 🟢 | O `pom.xml` fica na raiz, mas o código fica em `backend/`. | Mover `pom.xml` e `mvnw` para `backend/` numa semana sem PR aberto: muda o CI (`backend-ci.yml`, CodeQL), o Dependabot, os scripts (`run-test.sh`, `validar.sh`, `testar-no-mysql.sh`), as configurações `.run/` do IntelliJ e o caminho do `.env`. |
 
 ## Frontend
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
-| 🟡 | Sem *refresh token*: a sessão cai a cada 15 minutos e o usuário precisa entrar de novo (o `401` leva ao login e volta para a tela). | Quando o backend tiver `POST /auth/refresh`, renovar o token no Route Handler do Next antes de vencer. |
-| 🟡 | Não há testes automáticos no frontend. | Vitest + Testing Library. |
-| 🟢 | O cliente pode ter mais de uma conta, mas as telas usam só a primeira que `GET /contas` devolve (`components/conta/use-conta.ts`). | Seletor de conta quando o produto pedir várias contas. |
-| 🟢 | `braces` 3.0.3 ([alerta #7 do Dependabot](https://github.com/k3vinrich4rd/rkf_bank/security/dependabot/7), CVE-2026-93687, **alta**: DoS por estouro de pilha com padrões muito aninhados) **ainda sem correção publicada**. Chega por `micromatch` ← `fast-glob`, usados pelo `eslint-config-next` e pelo CLI `shadcn` (`ts-morph`). Fica em 🟢 apesar da gravidade porque só roda no lint e nas ferramentas da máquina de quem desenvolve: não vai para o build do site e nunca recebe entrada de usuário. Revisado em 21/10/2026. | Rodar `node scripts/varrer-cves.js frontend` de vez em quando e atualizar quando sair a correção (ou quando `eslint-config-next`/`shadcn` trocarem de dependência). Área do Renan. |
-| 🟡 | `hono` 4.13.9 ([alerta #17 do Dependabot](https://github.com/k3vinrich4rd/rkf_bank/security/dependabot/17), CVE-2026-111757, moderada: `serveStatic` decodifica o caminho duas vezes e pula middleware) chega pelo CLI `shadcn` → `@modelcontextprotocol/sdk` → `@hono/node-server`. O site não usa o Hono, mas **a correção já existe** (4.13.11) e custa uma linha. Revisado em 21/10/2026. | `pnpm.overrides` com `"hono": "^4.13.11"` no `frontend/package.json` (ou subir o `shadcn` quando ele trouxer a versão nova), `pnpm install`, `scripts/validar.sh frontend` e conferir que o alerta fecha. Área do Renan. |
+| 🟢 | O seletor de conta já troca entre as contas do cliente, mas a tela de abertura só abre a **primeira** conta: quem já tem conta vê "você já tem conta" e não consegue abrir a poupança pela interface (a API aceita, contrato 4.1). | Decidir com o time se o produto oferece a segunda conta; se sim, liberar a abertura do outro tipo em `components/abrir-conta/use-abrir-conta.ts`. |
+| 🟢 | `braces` 3.0.3 ([alerta #7 do Dependabot](https://github.com/k3vinrich4rd/rkf_bank/security/dependabot/7), CVE-2026-93687, **alta**: DoS por estouro de pilha com padrões muito aninhados) **ainda sem correção publicada**. Chega por `micromatch` ← `fast-glob`, usados pelo `eslint-config-next` e pelo CLI `shadcn` (`ts-morph`). Fica em 🟢 apesar da gravidade porque só roda no lint e nas ferramentas da máquina de quem desenvolve: não vai para o build do site e nunca recebe entrada de usuário. Revisado em 23/10/2026: o `braces` continua em 3.0.3 no npm; o OSV passou a registrar a CVE pelo repositório Git, então `scripts/varrer-cves.js` (que consulta por versão do npm) não a mostra mais, mas ela **não foi corrigida**. | Conferir `npm view braces version` de vez em quando e atualizar quando sair a correção (o Dependabot do `frontend/` também avisa), ou quando `eslint-config-next`/`shadcn` trocarem de dependência. Área do Renan. |
 
 ## Projeto
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
-| 🟡 | O frontend não tem CI (o backend já tem: build, testes, CodeQL e revisão de dependências). | Workflow rodando `lint`, `typecheck` e `build` do frontend nos PRs. |
-| 🟡 | O Dependabot só olha o backend (Maven) e as GitHub Actions. | Adicionar o ecossistema `npm` apontando para `frontend/`. |
-| 🟢 | A pasta `planing` está escrita errado (o certo é `planning`). | Renomear quando ninguém estiver mexendo nela. |
+| 🟢 | A pasta `planing` está escrita errado (o certo é `planning`). | Renomear quando ninguém estiver mexendo nela: além dos links do repositório, mudam as skills em `.claude/skills` e os roteiros do `.equipe` que apontam para cá. |
 
 ---
 

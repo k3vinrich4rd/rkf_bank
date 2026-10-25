@@ -21,15 +21,30 @@ const VERMELHO = '#F87171';
 const SANS = "'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif";
 const MONO = "Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace";
 
-// Números exibidos no README. Atualize aqui e rode o script de novo.
+// Números exibidos no README: contados do código sempre que o script roda (só status e time são fixos).
 const NUMEROS = {
   testes: contarTestes(),
-  rotas: 9,
+  rotas: contarRotas(),
   migracoes: fs.readdirSync(path.join(RAIZ, 'backend/src/main/resources/db/migration')).filter((f) => /^V\d+__.*\.sql$/.test(f)).length,
   status: 9, // 400, 401, 403, 404, 409, 422, 503 + 201/204 de sucesso
   workflows: fs.readdirSync(path.join(RAIZ, '.github/workflows')).filter((f) => f.endsWith('.yml')).length,
   time: 3,
 };
+
+// Rotas canônicas dos controllers: em @XxxMapping({"nova", "antiga"}) conta uma só, e o método marcado como
+// OBSOLETA (mantido até o contrato 3.0) não entra. O /actuator/health não conta (é do Spring, não da API).
+function contarRotas() {
+  const pasta = path.join(RAIZ, 'backend/src/main/java/com/br/rkfbank/controllers');
+  let total = 0;
+  for (const nome of fs.readdirSync(pasta).filter((n) => n.endsWith('Controller.java'))) {
+    const linhas = fs.readFileSync(path.join(pasta, nome), 'utf8').split(/\r?\n/);
+    linhas.forEach((linha, i) => {
+      if (!/^\s+@(Get|Post|Put|Patch|Delete)Mapping\b/.test(linha)) return;
+      if (!/OBSOLETA/.test(linhas.slice(Math.max(0, i - 3), i).join(' '))) total++;
+    });
+  }
+  return total;
+}
 
 function contarTestes() {
   let total = 0;
@@ -101,7 +116,7 @@ function celular(x, y, conteudo, { w = 250, h = 470 } = {}) {
 
 function banner() {
   const tela = `
-      <text x="28" y="72" style="font: 600 12px ${SANS}" fill="${APAGADO}">Olá, Felipe 👋</text>
+      <text x="28" y="72" style="font: 600 12px ${SANS}" fill="${APAGADO}">Olá, Fellipe 👋</text>
       <text x="28" y="96" style="font: 700 13px ${SANS}; letter-spacing: 3px" fill="${TEXTO}">RKF</text>
       <rect x="22" y="112" width="206" height="96" rx="16" fill="${SUPERFICIE}" stroke="${BORDA}"/>
       <text x="38" y="138" style="font: 400 11px ${SANS}" fill="${APAGADO}">Saldo disponível</text>
@@ -159,10 +174,10 @@ function banner() {
       <rect x="${dx}" y="296" width="${t.length * 8.4 + 18}" height="30" rx="8" fill="${SUPERFICIE}" stroke="${BORDA}"/>
       <text x="${dx + 10}" y="316" style="font: 600 13px ${SANS}" fill="${TEXTO}">${t}</text>
     </g>`).join('')}
-    <text x="2" y="372" class="entra" style="font: 400 13px ${SANS}; animation-delay:1.2s" fill="${APAGADO}">Idealizado por Kevin Richard · Renan Barros · Felipe Santana</text>
+    <text x="2" y="372" class="entra" style="font: 400 13px ${SANS}; animation-delay:1.2s" fill="${APAGADO}">Idealizado por Kevin Richard · Renan Barros · Fellipe Santana</text>
   </g>
 
-  <g class="flutua" style="transform-origin: 800px 250px">${cartao(600, 176, 300, 'FELIPE SANTANA', '4821')}</g>
+  <g class="flutua" style="transform-origin: 800px 250px">${cartao(600, 176, 300, 'FELLIPE SANTANA', '4821')}</g>
   <g transform="translate(918 24) scale(.84)">${celular(0, 0, tela)}</g>
   <g class="toast">
     <rect x="682" y="44" width="236" height="52" rx="14" fill="${SUPERFICIE}" stroke="${VERDE}" stroke-opacity=".6"/>
@@ -331,7 +346,7 @@ function fluxo() {
     @keyframes acende { 0% { opacity: 0; } 8% { opacity: 1; } 22%, 100% { opacity: 0; } }
   </style>
   <rect width="1200" height="250" rx="20" fill="${FUNDO}" stroke="${BORDA}"/>
-  <text x="40" y="46" style="font: 700 20px ${SANS}" fill="${TEXTO}">🔁 POST /contas/transferencia</text>
+  <text x="40" y="46" style="font: 700 20px ${SANS}" fill="${TEXTO}">🔁 POST /transferencias</text>
   <text x="350" y="46" style="font: 400 14px ${SANS}" fill="${APAGADO}">débito, crédito e lançamento: tudo ou nada</text>
   <path d="M${w / 2} 124 H${1200 - w / 2}" stroke="url(#marca)" stroke-width="2" stroke-dasharray="6 8" opacity=".5"/>
   ${caixas}
@@ -409,7 +424,7 @@ function nariz(sombra) {
   return `<path d="M50 47 L48 53.5 Q50 55 52.5 53.8" stroke="${sombra}" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
 }
 
-/** Camiseta lisa (Kevin e Felipe); o moletom com zíper fica no Renan, com a cor do frontend. */
+/** Camiseta lisa (Kevin e Fellipe); o moletom com zíper fica no Renan, com a cor do frontend. */
 function camiseta(cor, gola) {
   return `<ellipse cx="50" cy="121" rx="30" ry="3" fill="#000" opacity=".35"/>
       <path d="M12 120 C12 92 27 80 50 80 C73 80 88 92 88 120 Z" fill="${cor}"/>
@@ -449,9 +464,9 @@ const AVATARES = {
       <path d="M17 42.5 Q50 30.5 83 42.5" stroke="#a3926f" stroke-width=".9" fill="none" stroke-dasharray="2 2"/>
       </g>`;
   },
-  // Felipe: pele negra clara, black power curto no topo com laterais baixas, risquinho na sobrancelha,
+  // Fellipe: pele negra clara, black power curto no topo com laterais baixas, risquinho na sobrancelha,
   // brinco, bigode leve e camiseta vermelha (a mesma camiseta lisa, na cor que ele pediu).
-  felipe: () => {
+  fellipe: () => {
     const pele = '#a8714a';
     const sombra = '#8a5a3a';
     const cachos = [[30, 26, 7], [36, 18, 8], [44, 13, 8.5], [52, 11.5, 8.5], [60, 14, 8], [67, 20, 7.5], [71, 28, 6],
@@ -494,7 +509,7 @@ const AVATARES = {
 function time() {
   const pessoas = [
     ['kevin', 'Kevin Richard', 'Idealizador · Backend', 'API, banco, segurança, testes', AZUL, '☕'],
-    ['felipe', 'Felipe Santana', 'Idealizador · PO & QA', '1º cliente: testa antes de todo mundo', '#e2c98a', '🧪'],
+    ['fellipe', 'Fellipe Santana', 'Idealizador · PO & QA', '1º cliente: testa antes de todo mundo', '#e2c98a', '🧪'],
     ['renan', 'Renan Barros', 'Idealizador · Frontend', 'telas, marca e experiência', CIANO, '⚛️'],
   ];
   const cards = pessoas.map(([id, nome, papel, desc, cor, ic], i) => `
@@ -510,7 +525,7 @@ function time() {
     <text x="${220 + i * 380}" y="308" text-anchor="middle" style="font: 700 12.5px ${SANS}" fill="${TEXTO}">${ic} ${xml(papel)}</text>
     <text x="${220 + i * 380}" y="340" text-anchor="middle" style="font: 400 13px ${SANS}" fill="${APAGADO}">${xml(desc)}</text>
   </g>`).join('');
-  return `${cabecalho(1200, 390, 'Os três idealizadores do RKF Bank, todos de Osasco, SP: Kevin Richard no backend, Felipe Santana no produto e como primeiro cliente, Renan Barros no frontend.')}
+  return `${cabecalho(1200, 390, 'Os três idealizadores do RKF Bank, todos de Osasco, SP: Kevin Richard no backend, Fellipe Santana no produto e como primeiro cliente, Renan Barros no frontend.')}
   <style>
     ${entra}
     .respira { animation: respira 2.8s ease-in-out infinite; }
@@ -536,7 +551,7 @@ function osasco() {
         `<rect x="${x + 12}" y="${300 - h + 14 + k * 22}" width="8" height="8" rx="1" fill="${k % 2 ? CIANO : AZUL}" class="janela" style="animation-delay:${((i * 3 + k) % 9) * 0.35}s"/>`).join('');
       return `<rect x="${x}" y="${300 - h}" width="40" height="${h}" rx="3" fill="${SUPERFICIE}" stroke="${BORDA}"/>${janelas}`;
     }).join('');
-  return `${cabecalho(1200, 320, 'Feito em Osasco, São Paulo: o RKF Bank nasceu da ideia de três amigos de Osasco, Kevin, Renan e Felipe.')}
+  return `${cabecalho(1200, 320, 'Feito em Osasco, São Paulo: o RKF Bank nasceu da ideia de três amigos de Osasco, Kevin, Renan e Fellipe.')}
   <defs>${marca}
     <radialGradient id="ceu" cx=".75" cy=".1" r=".9"><stop offset="0" stop-color="${AZUL}" stop-opacity=".35"/><stop offset="1" stop-color="${AZUL}" stop-opacity="0"/></radialGradient>
     <linearGradient id="pinoGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${CIANO}"/><stop offset="1" stop-color="${AZUL}"/></linearGradient>
@@ -565,7 +580,7 @@ function osasco() {
   <text x="46" y="134" class="entra" style="font: 800 58px ${SANS}; animation-delay:.15s" fill="${TEXTO}">Osasco, SP</text>
   <text x="48" y="172" class="entra" style="font: 400 17px ${SANS}; animation-delay:.3s" fill="${APAGADO}">Grande São Paulo · onde três amigos tiveram a ideia</text>
   <text x="48" y="196" class="entra" style="font: 400 17px ${SANS}; animation-delay:.35s" fill="${APAGADO}">e decidiram construir um banco digital de verdade.</text>
-  ${[['☕ Kevin', AZUL], ['🧪 Felipe', '#e2c98a'], ['⚛️ Renan', CIANO]].map(([t, c], i) => `
+  ${[['☕ Kevin', AZUL], ['🧪 Fellipe', '#e2c98a'], ['⚛️ Renan', CIANO]].map(([t, c], i) => `
   <g class="entra" style="animation-delay:${(0.5 + i * 0.12).toFixed(2)}s">
     <rect x="${48 + i * 132}" y="226" width="120" height="36" rx="18" fill="${c}" fill-opacity=".12" stroke="${c}" stroke-opacity=".6"/>
     <text x="${108 + i * 132}" y="250" text-anchor="middle" style="font: 700 14px ${SANS}" fill="${TEXTO}">${t}</text>
@@ -580,7 +595,7 @@ function terminal() {
   const linhas = [
     ['$ scripts/validar.sh backend', TEXTO],
     ['>>> Backend: ./mvnw clean verify (perfil test)', APAGADO],
-    ['[INFO] Flyway: Successfully applied 3 migrations (V1, V2, V3)', CIANO],
+    [`[INFO] Flyway: Successfully applied ${NUMEROS.migracoes} migrations (V1 a V${NUMEROS.migracoes})`, CIANO],
     ['[INFO] SegurancaIntegracaoTest .... alg none → 401 ✔  conta de outro → 403 ✔', APAGADO],
     ['[INFO] ContaRepositoryTest ........ @Version → OptimisticLock ✔', APAGADO],
     [`    Tests run: ${NUMEROS.testes}, Failures: 0, Errors: 0, Skipped: 0`, TEXTO],

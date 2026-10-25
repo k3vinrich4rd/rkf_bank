@@ -1,117 +1,118 @@
 package com.br.rkfbank.controllers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.br.rkfbank.dto.request.cliente.CadastroClienteRequestDto;
 import com.br.rkfbank.dto.response.cliente.ClienteResponseDto;
 import com.br.rkfbank.dto.response.cliente.EnderecoResponseDto;
-import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.services.ClienteService;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.data.domain.Page;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@ExtendWith(MockitoExtension.class)
-class ClienteControllerTest {
+@WebMvcTest(ClienteController.class)
+class ClienteControllerTest extends ControllerWebMvcBase {
 
-    @Mock
+    // CPF valido de exemplo (digitos verificadores certos), nunca de uma pessoa da equipe.
+    private static final String CADASTRO = """
+            {"nomeCompleto":"Joao Silva","cpf":"52998224725","email":"joao@rkfbank.com","telefone":"11999998888",
+             "cep":"01001000","numero":"123","complemento":"Apto 45","senha":"senha-forte-1","aceiteTermos":true}
+            """;
+
+    @MockitoBean
     private ClienteService clienteService;
 
-    @InjectMocks
-    private ClienteController clienteController;
-
     @Test
-    void deveRetornar201AoCadastrarCliente() {
-        CadastroClienteRequestDto request = new CadastroClienteRequestDto(
-                "Joao Silva",
-                "52998224725",
-                "joao@rkfbank.com",
-                "11999998888",
-                "01001000",
-                "123",
-                "Apto 45",
-                "senha-forte-1"
-        );
+    void deveRetornar201AoCadastrarClienteSemToken() throws Exception {
+        when(clienteService.cadastrar(any(CadastroClienteRequestDto.class))).thenReturn(clienteResponse());
 
-        when(clienteService.cadastrar(request)).thenReturn(clienteResponse());
-
-        ResponseEntity<ClienteResponseDto> response = clienteController.cadastrar(request);
-
-        assertEquals(201, response.getStatusCode().value());
-        assertEquals("Joao Silva", response.getBody().nomeCompleto());
+        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON).content(CADASTRO))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.nomeCompleto").value("Joao Silva"))
+                .andExpect(jsonPath("$.cpf").value("***.982.247-**"))
+                .andExpect(jsonPath("$.endereco.cep").value("01001-000"))
+                // A senha nunca volta na resposta.
+                .andExpect(jsonPath("$.senha").doesNotExist());
     }
 
     @Test
-    void deveListarClientesSemPaginacao() {
+    void cadastroSemAceiteDosTermosNemChegaAoService() throws Exception {
+        String semAceite = CADASTRO.replace("\"aceiteTermos\":true", "\"aceiteTermos\":false");
+
+        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON).content(semAceite))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("CAMPOS_INVALIDOS"))
+                .andExpect(jsonPath("$.campos[0].campo").value("aceiteTermos"));
+        verifyNoInteractions(clienteService);
+    }
+
+    @Test
+    void jsonQuebradoResponde400ComCodigoDoContrato() throws Exception {
+        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON).content("{\"nomeCompleto\":"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").exists());
+        verifyNoInteractions(clienteService);
+    }
+
+    @Test
+    void listarClientesESoDoAdmin() throws Exception {
+        mockMvc.perform(get("/clientes").with(tokenDoCliente()))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(clienteService);
+    }
+
+    @Test
+    void deveListarClientesSemPaginacao() throws Exception {
         when(clienteService.listarTodos()).thenReturn(List.of(clienteResponse()));
 
-        ResponseEntity<?> response = clienteController.listarClientes(false, 0, 10);
-
-        assertEquals(200, response.getStatusCode().value());
-        assertInstanceOf(List.class, response.getBody());
+        mockMvc.perform(get("/clientes").with(tokenDoAdmin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
     }
 
     @Test
-    void deveListarClientesComPaginacao() {
+    void deveListarClientesComPaginacao() throws Exception {
         when(clienteService.listarPaginado(PageRequest.of(0, 10)))
                 .thenReturn(new PageImpl<>(List.of(clienteResponse()), PageRequest.of(0, 10), 1));
 
-        ResponseEntity<?> response = clienteController.listarClientes(true, 0, 10);
-
-        assertEquals(200, response.getStatusCode().value());
-        assertInstanceOf(Page.class, response.getBody());
+        mockMvc.perform(get("/clientes").param("page", "0").param("size", "10").with(tokenDoAdmin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(10));
     }
 
     @Test
-    void deveRejeitarPaginacaoComPaginaNegativa() {
-        RequisicaoInvalidaException exception = assertThrows(
-                RequisicaoInvalidaException.class,
-                () -> clienteController.listarClientes(true, -1, 10)
-        );
-
-        assertEquals("page", exception.getCampo());
+    void deveRejeitarPaginacaoComPaginaNegativa() throws Exception {
+        mockMvc.perform(get("/clientes").param("page", "-1").param("size", "10").with(tokenDoAdmin()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos[0].campo").value("page"));
     }
 
     @Test
-    void deveRejeitarPaginacaoComTamanhoForaDoLimite() {
-        RequisicaoInvalidaException exception = assertThrows(
-                RequisicaoInvalidaException.class,
-                () -> clienteController.listarClientes(true, 0, 101)
-        );
-
-        assertEquals("size", exception.getCampo());
+    void deveRejeitarPaginacaoComTamanhoForaDoLimite() throws Exception {
+        mockMvc.perform(get("/clientes").param("page", "0").param("size", "101").with(tokenDoAdmin()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.campos[0].campo").value("size"));
     }
 
     private ClienteResponseDto clienteResponse() {
-        EnderecoResponseDto endereco = new EnderecoResponseDto(
-                "01001-000",
-                "Praca da Se",
-                "Se",
-                "Sao Paulo",
-                "SP",
-                "3550308",
-                "123",
-                "Apto 45"
-        );
-
-        return new ClienteResponseDto(
-                UUID.fromString("d0ca7cf7-3ec4-4d3a-8f77-79d89cf45f9e"),
-                "Joao Silva",
-                "52998224725",
-                "joao@rkfbank.com",
-                "11999998888",
-                endereco
-        );
+        EnderecoResponseDto endereco = new EnderecoResponseDto("01001-000", "Praca da Se", "Se", "Sao Paulo", "SP",
+                "3550308", "123", "Apto 45");
+        return new ClienteResponseDto(CLIENTE_ID, "Joao Silva", "***.982.247-**", "joao@rkfbank.com", "11999998888",
+                endereco, "2026-10-23", null);
     }
 }

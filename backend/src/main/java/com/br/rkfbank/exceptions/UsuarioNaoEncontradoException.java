@@ -1,7 +1,8 @@
 package com.br.rkfbank.exceptions;
 
-public class UsuarioNaoEncontradoException extends RuntimeException {
+// Gestao de usuarios (ADMIN): o usuario do id informado nao existe -> 404.
+public class UsuarioNaoEncontradoException extends ErroApiException {
     public UsuarioNaoEncontradoException() {
-        super("Usuario nao encontrado");
+        super(CodigoErroEnum.USUARIO_NAO_ENCONTRADO);
     }
 }

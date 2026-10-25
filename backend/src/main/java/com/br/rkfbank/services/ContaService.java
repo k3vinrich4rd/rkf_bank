@@ -1,9 +1,10 @@
 package com.br.rkfbank.services;
 
-import com.br.rkfbank.dto.request.conta.AbrirContaRequestDto;
-import com.br.rkfbank.dto.request.conta.DepositarRequestDto;
+import com.br.rkfbank.dto.request.conta.AberturaContaRequestDto;
+import com.br.rkfbank.dto.request.conta.DepositoRequestDto;
 import com.br.rkfbank.dto.request.conta.SaqueRequestDto;
-import com.br.rkfbank.dto.request.conta.TransferirRequestDto;
+import com.br.rkfbank.dto.request.conta.TransferenciaRequestDto;
+import com.br.rkfbank.dto.response.conta.ContaDivergenteResponseDto;
 import com.br.rkfbank.dto.response.conta.ContaResponseDto;
 import com.br.rkfbank.dto.response.conta.LancamentoResponseDto;
 import com.br.rkfbank.entities.Cliente;
@@ -11,9 +12,10 @@ import com.br.rkfbank.entities.Conta;
 import com.br.rkfbank.entities.Lancamento;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
 import com.br.rkfbank.exceptions.AcessoNegadoException;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
-import com.br.rkfbank.exceptions.NaoProcessavelException;
-import com.br.rkfbank.exceptions.NegocioException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
+import com.br.rkfbank.exceptions.ConflitoException;
 import com.br.rkfbank.repositories.ContaRepository;
 import com.br.rkfbank.repositories.LancamentoRepository;
 import com.br.rkfbank.security.UsuarioLogado;
@@ -30,6 +32,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// Regras de negocio das contas: abrir, depositar, sacar, transferir e extrato.
+// Toda operacao comeca descobrindo QUEM pede (UsuarioLogado, vindo do token) e checando se a conta e dele
+// (regra de dono -> 403). Toda escrita e @Transactional: saldo e lancamento sao gravados juntos ou nenhum.
+// Nao conhece HTTP: recebe DTOs e o usuario, devolve DTOs ou lanca excecoes que o handler traduz em status.
 @Service
 public class ContaService {
 
@@ -53,32 +59,27 @@ public class ContaService {
         this.clienteService = clienteService;
     }
 
+    // Abre conta no cadastro de quem esta logado: o cliente vem do token, entao nao ha "cadastro de outro" para
+    // conferir. Agencia 0001 e numero gerado pelo banco (com digito verificador): numero de conta e identidade do
+    // banco, nao escolha de quem abre.
     @Transactional
-    public ContaResponseDto abrir(UUID clienteId, AbrirContaRequestDto request, UsuarioLogado usuario) {
-        // Regra de dono: so abre conta no proprio cadastro (o clienteId da URL tem que ser o do token).
-        if (!usuario.ehDonoDoCliente(clienteId)) {
-            log.warn("Abertura de conta recusada: usuario {} tentou abrir conta para o cliente {}", usuario.usuarioId(), clienteId);
-            throw new AcessoNegadoException("Voce so pode abrir conta no seu proprio cadastro");
+    public ContaResponseDto abrir(AberturaContaRequestDto request, UsuarioLogado usuario) {
+        // ADMIN criado pelo .env nao tem cadastro de cliente: nao ha onde pendurar a conta.
+        UUID clienteId = usuario.clienteId();
+        if (clienteId == null) {
+            log.warn("Abertura de conta recusada: usuario {} sem cadastro de cliente", usuario.usuarioId());
+            throw new RegraNegocioException(CodigoErroEnum.SEM_CADASTRO_CLIENTE);
         }
 
         // Garante que a conta sempre nasce vinculada a um cliente existente.
         Cliente cliente = clienteService.buscar(clienteId);
-
-        // Sem numero no pedido, o banco gera um livre (o normal desde o contrato 2.1).
-        String numeroConta = request.numeroConta() != null ? request.numeroConta() : gerarNumeroLivre();
-        String agencia = request.agencia() != null ? request.agencia() : AGENCIA_PADRAO;
-
-        // Regra de unicidade de número da conta.
-        if (contaRepository.existsByNumeroConta(numeroConta)) {
-            log.warn("Abertura de conta recusada para cliente {}: numero {} ja existe", clienteId, numeroConta);
-            throw new NegocioException("Numero de conta ja existe");
-        }
+        String numeroConta = gerarNumeroLivre();
 
         Conta conta = new Conta();
         conta.setCliente(cliente);
-        conta.setAgencia(agencia);
+        conta.setAgencia(AGENCIA_PADRAO);
         conta.setNumeroConta(numeroConta);
-        conta.setTipoConta(request.tipoContaEnum());
+        conta.setTipoConta(request.tipoConta());
         conta.setSaldo(new BigDecimal("0.00"));
         conta.setAtiva(true);
 
@@ -90,14 +91,15 @@ public class ContaService {
             // Abertura concorrente com o mesmo numero passou pela checagem acima e esbarrou na constraint do banco.
             log.warn("Abertura de conta recusada para cliente {}: numero {} ja existe (constraint do banco)",
                     clienteId, numeroConta);
-            throw new NegocioException("Numero de conta ja existe");
+            throw new ConflitoException(CodigoErroEnum.NUMERO_CONTA_INDISPONIVEL);
         }
         log.info("Conta {} ({}) aberta para cliente {}", salva.getId(), salva.getTipoConta(), clienteId);
         return paraContaResponse(salva);
     }
 
+    // Deposito: so na propria conta e ativa. Soma no saldo e grava um lancamento DEPOSITO (so com destino).
     @Transactional
-    public void depositar(UUID contaId, DepositarRequestDto request, UsuarioLogado usuario) {
+    public void depositar(UUID contaId, DepositoRequestDto request, UsuarioLogado usuario) {
         // Só movimenta conta existente, do usuário logado e ativa.
         Conta conta = buscarDoDono(contaId, usuario);
         // Valor monetário validado e normalizado em 2 casas.
@@ -111,6 +113,8 @@ public class ContaService {
         log.info("Deposito de {} na conta {}", valor, contaId);
     }
 
+    // Saque: confere o saldo antes de subtrair (422 se faltar). BigDecimal.compareTo, e nao equals: 10.0 e 10.00
+    // sao iguais em valor, mas equals os acha diferentes por causa da escala.
     @Transactional
     public void sacar(UUID contaId, SaqueRequestDto request, UsuarioLogado usuario) {
         Conta conta = buscarDoDono(contaId, usuario);
@@ -119,7 +123,7 @@ public class ContaService {
         // Regra de saldo antes de debitar.
         if (conta.getSaldo().compareTo(valor) < 0) {
             log.warn("Saque de {} recusado na conta {}: saldo insuficiente", valor, contaId);
-            throw new NaoProcessavelException("Saldo insuficiente");
+            throw new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE);
         }
 
         conta.setSaldo(conta.getSaldo().subtract(valor));
@@ -130,12 +134,14 @@ public class ContaService {
         log.info("Saque de {} na conta {}", valor, contaId);
     }
 
+    // Transferencia: debito na origem, credito no destino e UM lancamento com as duas contas, na mesma transacao.
+    // Se qualquer passo falhar (inclusive o lock otimista no commit), nada acontece: dinheiro nao some nem aparece.
     @Transactional
-    public void transferir(TransferirRequestDto request, UsuarioLogado usuario) {
+    public void transferir(TransferenciaRequestDto request, UsuarioLogado usuario) {
         // Regra para impedir transferência para a mesma conta.
         if (request.contaOrigemId().equals(request.contaDestinoId())) {
             log.warn("Transferencia recusada: origem e destino iguais ({})", request.contaOrigemId());
-            throw new NaoProcessavelException("Conta de origem e destino nao podem ser iguais");
+            throw new RegraNegocioException(CodigoErroEnum.MESMA_CONTA);
         }
 
         BigDecimal valor = validarValor(request.valor());
@@ -147,7 +153,7 @@ public class ContaService {
         if (origem.getSaldo().compareTo(valor) < 0) {
             log.warn("Transferencia de {} recusada da conta {} para {}: saldo insuficiente",
                     valor, origem.getId(), destino.getId());
-            throw new NaoProcessavelException("Saldo insuficiente para transferencia");
+            throw new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE);
         }
 
         origem.setSaldo(origem.getSaldo().subtract(valor));
@@ -162,6 +168,7 @@ public class ContaService {
         log.info("Transferencia de {} da conta {} para {}", valor, origem.getId(), destino.getId());
     }
 
+    // Extrato: tudo que entrou ou saiu da conta, do mais novo para o mais antigo. So o dono ve.
     @Transactional(readOnly = true)
     public List<LancamentoResponseDto> listarLancamentos(UUID contaId, UsuarioLogado usuario) {
         // Valida conta (e o dono) antes de consultar extrato.
@@ -176,6 +183,29 @@ public class ContaService {
         return lancamentos;
     }
 
+    // GET /contas/{contaId}: uma conta so (saldo atualizado depois de uma movimentacao). Mesma regra do GET /contas:
+    // o CLIENTE ve so as dele (403 nas dos outros) e o ADMIN ve qualquer uma. Conta inativa tambem aparece (ativa=false).
+    @Transactional(readOnly = true)
+    public ContaResponseDto buscarPorId(UUID contaId, UsuarioLogado usuario) {
+        Conta conta = buscar(contaId);
+        if (!usuario.isAdmin() && !usuario.ehDono(conta.getCliente().getId())) {
+            log.warn("Consulta recusada: usuario {} nao e dono da conta {}", usuario.usuarioId(), contaId);
+            throw new AcessoNegadoException();
+        }
+        return paraContaResponse(conta);
+    }
+
+    // Conciliacao saldo x extrato (so ADMIN). Lista vazia = tudo certo. Divergencia vira WARN no log para alertar.
+    @Transactional(readOnly = true)
+    public List<ContaDivergenteResponseDto> conciliar() {
+        List<ContaDivergenteResponseDto> divergentes = contaRepository.findDivergentesDoExtrato();
+        if (!divergentes.isEmpty()) {
+            log.warn("Conciliacao: {} conta(s) com saldo diferente do extrato", divergentes.size());
+        }
+        return divergentes;
+    }
+
+    // GET /contas: o ADMIN ve todas; o CLIENTE ve so as dele. A mesma rota muda o resultado conforme o perfil.
     @Transactional(readOnly = true)
     public List<ContaResponseDto> listarTodas(UsuarioLogado usuario) {
         // ADMIN ve todas; CLIENTE so as dele.
@@ -187,6 +217,7 @@ public class ContaService {
         return contas;
     }
 
+    // Versao paginada: o banco devolve so uma fatia (LIMIT/OFFSET) e o total, em vez da tabela inteira.
     @Transactional(readOnly = true)
     public Page<ContaResponseDto> listarPaginado(Pageable pageable, UsuarioLogado usuario) {
         Page<Conta> encontradas = usuario.isAdmin()
@@ -208,7 +239,7 @@ public class ContaService {
             }
             log.debug("Numero de conta gerado ja existia (tentativa {})", tentativa);
         }
-        throw new NegocioException("Nao foi possivel gerar um numero de conta livre; tente novamente");
+        throw new ConflitoException(CodigoErroEnum.NUMERO_CONTA_INDISPONIVEL);
     }
 
     static String gerarNumeroConta(SecureRandom aleatorio) {
@@ -232,9 +263,9 @@ public class ContaService {
     private Conta buscarDoDono(UUID contaId, UsuarioLogado usuario) {
         Conta conta = buscar(contaId);
         // 403 quando a conta existe, mas é de outro cliente (o clienteId vem do token assinado, não do request).
-        if (!usuario.ehDonoDoCliente(conta.getCliente().getId())) {
+        if (!usuario.ehDono(conta.getCliente().getId())) {
             log.warn("Operacao recusada: usuario {} nao e dono da conta {}", usuario.usuarioId(), contaId);
-            throw new AcessoNegadoException("Conta nao pertence ao usuario logado");
+            throw new AcessoNegadoException();
         }
         return garantirAtiva(conta);
     }
@@ -256,7 +287,7 @@ public class ContaService {
         // 422 quando existe, mas está inativa.
         if (!conta.isAtiva()) {
             log.warn("Operacao recusada: conta {} inativa", contaId);
-            throw new NaoProcessavelException("Conta inativa");
+            throw new RegraNegocioException(CodigoErroEnum.CONTA_INATIVA);
         }
         return conta;
     }
@@ -265,7 +296,7 @@ public class ContaService {
         // Garante valor positivo para qualquer movimentação financeira.
         if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
             log.warn("Operacao recusada: valor {} nao e positivo", valor);
-            throw new NaoProcessavelException("Valor deve ser maior que zero");
+            throw new RegraNegocioException(CodigoErroEnum.VALOR_INVALIDO);
         }
         return valor.setScale(2, RoundingMode.HALF_EVEN);
     }

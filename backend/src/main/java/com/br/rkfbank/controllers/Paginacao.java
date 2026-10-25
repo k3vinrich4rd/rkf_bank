@@ -3,22 +3,33 @@ package com.br.rkfbank.controllers;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import org.springframework.data.domain.PageRequest;
 
-// Regras de paginacao compartilhadas pelos endpoints de listagem.
+// Regras de paginacao compartilhadas pelos endpoints de listagem (padrao do Spring Data: page comeca em 0).
 final class Paginacao {
 
     // Teto para impedir que um unico request carregue a tabela inteira.
     static final int MAX_PAGE_SIZE = 100;
 
+    // Tamanho quando so o page vem na URL.
+    static final int TAMANHO_PADRAO = 10;
+
     private Paginacao() {
     }
 
-    static PageRequest criar(int page, int size) {
-        if (page < 0) {
+    // Quer pagina? Basta ter page ou size na URL; sem nenhum dos dois, a rota devolve a lista inteira.
+    static boolean querPagina(Integer page, Integer size) {
+        return page != null || size != null;
+    }
+
+    // O que faltar na URL usa o padrao: page 0, size 10.
+    static PageRequest criar(Integer page, Integer size) {
+        int numero = page == null ? 0 : page;
+        int tamanho = size == null ? TAMANHO_PADRAO : size;
+        if (numero < 0) {
             throw new RequisicaoInvalidaException("page", "deve ser maior ou igual a zero");
         }
-        if (size < 1 || size > MAX_PAGE_SIZE) {
+        if (tamanho < 1 || tamanho > MAX_PAGE_SIZE) {
             throw new RequisicaoInvalidaException("size", "deve estar entre 1 e " + MAX_PAGE_SIZE);
         }
-        return PageRequest.of(page, size);
+        return PageRequest.of(numero, tamanho);
     }
 }
