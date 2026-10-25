@@ -16,10 +16,15 @@ import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 @DataJpaTest
 // Perfil test explicito: roda igual no IDE e no Maven (H2, sem seed, sem o .env de quem roda).
 @ActiveProfiles("test")
+// H2 proprio dos testes de repository: os @SpringBootTest commitam no testdb do perfil test e o contexto deles fica
+// no cache com o banco vivo. Dividindo o testdb, a contagem e a unicidade daqui dependiam da ordem das classes
+// (no CI, rodando depois do SegurancaIntegracaoTest, o ADMIN 11144477735 ja existia).
+@TestPropertySource(properties = "spring.datasource.url=jdbc:h2:mem:repositorios;MODE=MySQL")
 class UsuarioRepositoryTest {
 
     // Hash BCrypt de exemplo: 60 caracteres, o tamanho da coluna senha_hash.

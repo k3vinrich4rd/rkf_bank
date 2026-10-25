@@ -22,10 +22,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 @DataJpaTest
 // Perfil test explicito: roda igual no IDE e no Maven (H2, sem seed, sem o .env de quem roda).
 @ActiveProfiles("test")
+// H2 proprio dos testes de repository (ver UsuarioRepositoryTest).
+@TestPropertySource(properties = "spring.datasource.url=jdbc:h2:mem:repositorios;MODE=MySQL")
 class ContaRepositoryTest {
 
     @Autowired
