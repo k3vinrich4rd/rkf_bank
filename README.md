@@ -13,7 +13,7 @@
 [![Java](https://img.shields.io/badge/Java-25_LTS-0A0F1C?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/25/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-0A0F1C?logo=springboot&logoColor=6DB33F)](https://spring.io/projects/spring-boot)
 [![Spring Security](https://img.shields.io/badge/Spring_Security-JWT-0A0F1C?logo=springsecurity&logoColor=6DB33F)](https://docs.spring.io/spring-security/reference/)
-[![Flyway](https://img.shields.io/badge/Flyway-V1→V8_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
+[![Flyway](https://img.shields.io/badge/Flyway-V1→V15_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![Testes](https://img.shields.io/badge/testes-264_✔-22C55E)](#-qualidade-e-testes)
@@ -32,7 +32,7 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 338 testes, 22 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 4 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 307 testes da API, 22 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 4 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -103,7 +103,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **266 testes**, CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **338 testes** (307 na API e 31 no site), CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -121,7 +121,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 | [`Conta.java`](backend/src/main/java/com/br/rkfbank/entities/Conta.java) | `@Version` para lock otimista |
 | [`ConfiguracaoSeguranca.java`](backend/src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java) | `SecurityFilterChain`, JWT HS256 com algoritmo fixo, BCrypt |
 | [`AutenticacaoService.java`](backend/src/main/java/com/br/rkfbank/services/AutenticacaoService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
-| [`db/migration/`](backend/src/main/resources/db/migration) | `V1` a `V5`: uma tabela por versão (endereço, cliente, conta, lançamento, usuário) |
+| [`db/migration/`](backend/src/main/resources/db/migration) | `V1` a `V15`: as tabelas (endereço, cliente, conta, lançamento, usuário) e cada evolução numa versão nova (idempotência, encerramento LGPD, aceite dos termos, limitador de login, senha temporária, refresh token) |
 | [`db/seed/`](backend/src/main/resources/db/seed) | callbacks `afterMigrate`: `equipe/` (Fellipe e Renan, login só pelo `.env`) e `visitante/` (Ana e Bruno, contas públicas) |
 | [`FiltroLogRequisicao.java`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) | `X-Request-Id` em todas as linhas de log, com proteção contra log forjado |
 | [`SegurancaIntegracaoTest.java`](backend/src/test/java/com/br/rkfbank/SegurancaIntegracaoTest.java) | ataques ao token (`alg: none`, payload adulterado) |
@@ -137,7 +137,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 2. Suba tudo: [rodando o projeto](#-rodando-o-projeto).
 3. Branch nova **sempre** da `origin/develop` atualizada: `git switch -c feature/minha-tarefa origin/develop`.
 4. Antes do PR: `scripts/validar.sh backend` (ou `frontend` / `tudo`).
-5. **Fellipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); a conferência automática é `node scripts/rodar-colecao-insomnia.mjs` (91 requisições).
+5. **Fellipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); a conferência automática é `node scripts/rodar-colecao-insomnia.mjs` com a coleção da equipe (119 requisições, inclusive o ADMIN). A coleção pública tem só o fluxo do cliente (83): o perfil `visitante` não tem ADMIN de propósito.
 6. Recados entre o time: [planing/recados.md](planing/recados.md).
 
 </details>
@@ -756,7 +756,7 @@ curl $API/contas/$DESTINO/lancamentos -H "$AUTH"    # 1 lançamento: a transfer�
 
 Sem `uuidgen`? Use qualquer texto único de 8 a 100 caracteres (`deposito-001`, `saque-001`...).
 CPF já cadastrado? Troque por outro válido: `70483726052`, `39053344705`, `11144477735`.
-A coleção pública inteira (82 requisições do cliente, com os erros esperados) roda pelo terminal: `node scripts/rodar-colecao-insomnia.mjs`.
+A coleção pública inteira (83 requisições do cliente, com os erros esperados) roda pelo terminal: `node scripts/rodar-colecao-insomnia.mjs`.
 
 </details>
 
@@ -810,7 +810,7 @@ flowchart LR
 | 9 | **Clients** | conversam com sistemas de fora (ViaCEP) com timeout | falha externa vira `503`, não `500` | [`ViaCepClient`](backend/src/main/java/com/br/rkfbank/clients/viacep/ViaCepClient.java) |
 | 10 | **Exceções + `CodigoErroEnum`** | o service lança `new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE)`; o enum guarda o código e a mensagem | um lugar só para o texto de cada erro; o front decide pelo `codigo` | [`exceptions/`](backend/src/main/java/com/br/rkfbank/exceptions) |
 | 11 | **Tratador de erros** | escolhe o status HTTP de cada exceção e monta o JSON padrão | todo erro sai no mesmo formato | [`TratadorGlobalDeErros`](backend/src/main/java/com/br/rkfbank/controllers/handlers/TratadorGlobalDeErros.java) |
-| 12 | **Flyway** | cria e evolui o schema (V1 a V9) e carrega as contas de teste | o banco de todo mundo é igual ao de produção | [`db/migration`](backend/src/main/resources/db/migration) |
+| 12 | **Flyway** | cria e evolui o schema (V1 a V15) e carrega as contas de teste | o banco de todo mundo é igual ao de produção | [`db/migration`](backend/src/main/resources/db/migration) |
 
 </details>
 
@@ -929,7 +929,7 @@ sequenceDiagram
 
 <details><summary>...alguém editar a <code>V1</code> depois de aplicada?</summary>
 
-❌ `Migration checksum mismatch`: o Flyway guarda o checksum de cada versão e a API recusa subir. Mudou algo? **Versão nova** (`V9__...`).
+❌ `Migration checksum mismatch`: o Flyway guarda o checksum de cada versão e a API recusa subir. Mudou algo? **Versão nova** (`V16__...`).
 
 </details>
 <details><summary>...alguém criar um campo na entidade e esquecer a migração?</summary>
@@ -953,7 +953,7 @@ sequenceDiagram
 </details>
 
 <details>
-<summary><b>🗃️ Modelo de dados (migrações V1 a V9)</b></summary>
+<summary><b>🗃️ Modelo de dados (migrações V1 a V15)</b></summary>
 <br/>
 
 ```mermaid
@@ -1097,7 +1097,7 @@ O Spring **lê o `.env` da raiz sozinho** (desde 20/10/2026): basta rodar da rai
 ./mvnw spring-boot:run        # PowerShell: .\mvnw.cmd spring-boot:run
 ```
 
-As tabelas nascem pelo **Flyway** (`V1` a `V9`) e, a cada subida, o callback `afterMigrate` garante as contas da
+As tabelas nascem pelo **Flyway** (`V1` a `V15`) e, a cada subida, o callback `afterMigrate` garante as contas da
 equipe (Fellipe = origem, Renan = destino). O login delas vem da `EQUIPE_SENHA` do `.env`: os acessos ficam no guia
 privado da equipe, fora do repositório. As migrações foram reorganizadas em 20/10/2026: se a API recusar com
 *Migration checksum mismatch* ou *applied migration not resolved locally*, rode
@@ -1112,7 +1112,7 @@ privado da equipe, fora do repositório. As migrações foram reorganizadas em 2
 | Quero... | Como |
 |---|---|
 | rodar pela IntelliJ | o projeto traz 3 configurações prontas (pasta `.run/`): **API · Visitante (H2)**, **API · Equipe (H2)** e **API · MySQL (Docker)** |
-| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.yaml`](backend/insomnia/rkfbank.insomnia.yaml) (ou o `.json`, Insomnia 9) no Insomnia: 82 requisições do cliente em ordem, cada uma com uma explicação em palavras simples (a pasta 02 é o roteiro E2E completo), e o login guarda o token sozinho |
+| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.yaml`](backend/insomnia/rkfbank.insomnia.yaml) (ou o `.json`, Insomnia 9) no Insomnia: 83 requisições do cliente em ordem, cada uma com uma explicação em palavras simples (a pasta 02 é o roteiro E2E completo), e o login guarda o token sozinho |
 | ver as tabelas no H2 | `http://localhost:8080/h2-console` · JDBC URL `jdbc:h2:mem:rkfbank-visitante` (ou `rkfbank-equipe`) · usuário `sa`, senha vazia |
 | ver as tabelas no MySQL | `localhost:5441` com o usuário do `.env` (IntelliJ *Database*, DBeaver) ou `docker exec` no container `rkfbank-mysql` |
 | tornar alguém ADMIN | pelo `.env` (primeiro admin), pela API (`PATCH /admin/usuarios/{id}/perfil`) ou por SQL num banco local |
