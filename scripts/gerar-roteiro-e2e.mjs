@@ -121,7 +121,7 @@ function blocoResposta(item) {
 // O que cada pasta prova, em uma linha (a descrição da pasta na coleção é o texto longo).
 const RESUMOS = {
   "00": "a API está no ar e qual versão dos termos o cadastro aceita",
-  "01": "login dos clientes ORIGEM e DESTINO e do ADMIN; tokens de acesso e de renovação guardados",
+  "01": "login dos clientes ORIGEM e DESTINO (e, na coleção da equipe, do ADMIN); tokens de acesso e de renovação guardados",
   "02": "cliente novo do zero: cadastro com aceite e ViaCEP, contas ORIGEM e DESTINO, depósito, saque, transferência, saldo e extrato",
   "03": "dinheiro entre dois clientes diferentes, com as contas prontas do seed",
   "04": "a mesma movimentação repetida não sai duas vezes (`Idempotency-Key`)",

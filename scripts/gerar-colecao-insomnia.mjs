@@ -1,6 +1,7 @@
 // Gera a coleção do Insomnia do RKF Bank (formato de exportação v4, que o Insomnia 9 a 13 importa).
 //
-//   node scripts/gerar-colecao-insomnia.mjs              → backend/insomnia/rkfbank.insomnia.json e .yaml (pública)
+//   node scripts/gerar-colecao-insomnia.mjs              → backend/insomnia/rkfbank.insomnia.json e .yaml (pública: só
+//                                                          o ambiente Visitante, sem o ADMIN)
 //   node scripts/gerar-colecao-insomnia.mjs --equipe     → também .equipe/testes/rkfbank-equipe.insomnia.json
 //                                                          (privada: lê EQUIPE_SENHA, ADMIN_CPF e ADMIN_SENHA do .env)
 //
@@ -15,6 +16,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { EXPLICACOES, PASTAS_SIMPLES } from "./insomnia-explicacoes.mjs";
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SAIDA_PUBLICA = join(RAIZ, "backend", "insomnia", "rkfbank.insomnia.json");
@@ -87,7 +89,9 @@ const JSON_CT = { name: "Content-Type", value: "application/json" };
 const CHAVE_NOVA = { name: "Idempotency-Key", value: "{% uuid 'v4' %}" };
 const token = (variavel) => ({ type: "bearer", token: `{{ _.${variavel} }}`, prefix: "" });
 
-// Atalho: req(nome, método, caminho, { corpo, auth, headers, antes, depois, descricao })
+// Atalho: req(nome, método, caminho, { corpo, auth, headers, antes, depois, descricao, soEquipe })
+// soEquipe: só na coleção privada (.equipe/). O perfil visitante não tem ADMIN de propósito, então a pública não leva
+// nada que dependa dele (a pasta 05 também é soEquipe).
 function req(nome, metodo, caminho, opcoes = {}) {
   const headers = [...(opcoes.headers ?? [])];
   if (opcoes.corpo !== undefined) headers.unshift(JSON_CT);
@@ -99,6 +103,7 @@ function req(nome, metodo, caminho, opcoes = {}) {
     antes: opcoes.antes ?? "",
     depois: opcoes.depois ?? "",
     descricao: opcoes.descricao ?? "",
+    soEquipe: opcoes.soEquipe ?? false,
   };
 }
 
@@ -122,7 +127,7 @@ const PASTAS = [
   {
     nome: "01 · Login (guarda o token sozinho)",
     descricao:
-      "Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`, `token_admin`) e o " +
+      "Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`...) e o " +
       "de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de " +
       "acesso vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou " +
       "renove pela pasta **09 · Sessão**.",
@@ -139,6 +144,7 @@ const PASTAS = [
         corpo: '{\n  "cpf": "{{ _.admin_cpf }}",\n  "senha": "{{ _.admin_senha }}"\n}',
         // O "sub" do token é o id do usuário: é assim que a pasta 05 acha o PRÓPRIO admin sem adivinhar pela lista.
         depois: guardaLogin("token_admin") + "\n" + ID_DO_TOKEN("usuario_admin_id"),
+        soEquipe: true,
         descricao:
           "O ADMIN não nasce por rota: a API cria na subida se `ADMIN_CPF` e `ADMIN_SENHA` estiverem no ambiente. " +
           "No perfil **visitante** não existe ADMIN (de propósito): este login dá `401`.",
@@ -308,6 +314,7 @@ const PASTAS = [
   },
   {
     nome: "05 · ADMIN: gestão de clientes, contas e usuários",
+    soEquipe: true,
     descricao:
       "Tudo o que o ADMIN faz e tudo o que ele **não** pode fazer. Precisa do **Login · ADMIN** (pasta 01) e do " +
       "**cliente novo** (pasta 02): é nele que o ADMIN mexe, para não estragar as contas fixas. No perfil visitante não " +
@@ -517,7 +524,7 @@ const PASTAS = [
         corpo: '{\n  "cpf": "{{ _.novo_cpf }}",\n  "senha": "{{ _.novo_senha }}"\n}', depois: status(401),
       }),
       req("ADMIN tenta reativar o encerrado → 422", "PATCH", "/admin/usuarios/{{ _.usuario_novo_id }}/acesso", {
-        auth: "token_admin", corpo: { ativo: true },
+        auth: "token_admin", corpo: { ativo: true }, soEquipe: true,
         depois: [status(422), codigo("CADASTRO_ENCERRADO")].join("\n"),
         descricao: "Só com ADMIN (ambiente Equipe). Quem encerrou não volta pelas mãos do ADMIN: a decisão é do titular.",
       }),
@@ -730,9 +737,26 @@ function ambientes({ equipeSenha, adminCpf, adminSenha }) {
   };
 }
 
+// ── O que entra em cada coleção, com a explicação em palavras simples na frente ──────────────────────────────
+
+// Pública: sem o que é soEquipe (a numeração não muda: a pasta 05 só falta, e 01.01 é o mesmo passo nas duas).
+// Os ids usam a posição original, para o Insomnia reconhecer a mesma requisição ao importar de novo.
+function pastasDa(publica) {
+  return PASTAS.map((pasta, p) => {
+    const prefixo = pasta.nome.slice(0, 2);
+    const itens = pasta.itens.map((r, i) => {
+      const simples = EXPLICACOES[`${prefixo}|${r.nome}`];
+      if (!simples) throw new Error(`sem explicação em scripts/insomnia-explicacoes.mjs: "${prefixo}|${r.nome}"`);
+      return { ...r, i, descricao: `💡 **Em palavras simples:** ${simples}` + (r.descricao ? `\n\n${r.descricao}` : "") };
+    }).filter((r) => !publica || !r.soEquipe);
+    const descricao = PASTAS_SIMPLES[prefixo] ? `💡 ${PASTAS_SIMPLES[prefixo]}\n\n${pasta.descricao}` : pasta.descricao;
+    return { ...pasta, p, descricao, itens };
+  }).filter((pasta) => !publica || !pasta.soEquipe);
+}
+
 // ── Montagem no formato de exportação v4 do Insomnia ─────────────────────────────────────────────────────────
 
-function montar(valores) {
+function montar(valores, publica) {
   const amb = ambientes(valores);
   const recursos = [
     {
@@ -744,15 +768,19 @@ function montar(valores) {
       _id: "env_rkfbank_visitante", _type: "environment", parentId: "env_rkfbank_base", name: "Visitante (H2, Ana e Bruno)",
       data: amb.visitante, color: "#2e7d32", metaSortKey: 1,
     },
-    {
+  ];
+  if (!publica) {
+    recursos.push({
       _id: "env_rkfbank_equipe", _type: "environment", parentId: "env_rkfbank_base", name: "Equipe (MySQL ou H2, Fellipe e Renan)",
       data: amb.equipe, color: "#1565c0", metaSortKey: 2,
-    },
-  ];
-  PASTAS.forEach((pasta, p) => {
+    });
+  }
+  pastasDa(publica).forEach((pasta) => {
+    const { p } = pasta;
     const idPasta = `fld_rkfbank_${String(p).padStart(2, "0")}`;
     recursos.push({ _id: idPasta, _type: "request_group", parentId: "wrk_rkfbank", name: pasta.nome, description: pasta.descricao, metaSortKey: p });
-    pasta.itens.forEach((r, i) => {
+    pasta.itens.forEach((r) => {
+      const { i } = r;
       recursos.push({
         _id: `req_rkfbank_${String(p).padStart(2, "0")}_${String(i).padStart(2, "0")}`,
         _type: "request", parentId: idPasta, name: r.nome, description: r.descricao, method: r.metodo,
@@ -798,14 +826,14 @@ function yaml(valor, nivel = 0) {
   return " " + JSON.stringify(valor ?? "");
 }
 
-function montarV5(valores) {
+function montarV5(valores, publica) {
   const amb = ambientes(valores);
   const agora = Date.now();
   const meta = (id, extra = {}) => ({ id, created: agora, modified: agora, ...extra });
-  const pastas = PASTAS.map((pasta, p) => ({
+  const pastas = pastasDa(publica).map(({ p, ...pasta }) => ({
     name: pasta.nome,
     meta: meta(`fld_rkfbank_${String(p).padStart(2, "0")}`, { sortKey: p, description: pasta.descricao }),
-    children: pasta.itens.map((r, i) => ({
+    children: pasta.itens.map(({ i, ...r }) => ({
       url: `{{ _.base_url }}${r.caminho}`,
       name: r.nome,
       meta: meta(`req_rkfbank_${String(p).padStart(2, "0")}_${String(i).padStart(2, "0")}`, {
@@ -834,34 +862,32 @@ function montarV5(valores) {
       data: amb.base,
       subEnvironments: [
         { name: "Visitante (H2, Ana e Bruno)", meta: meta("env_rkfbank_visitante", { isPrivate: false, sortKey: 1 }), data: amb.visitante, color: "#2e7d32" },
-        { name: "Equipe (MySQL ou H2, Fellipe e Renan)", meta: meta("env_rkfbank_equipe", { isPrivate: false, sortKey: 2 }), data: amb.equipe, color: "#1565c0" },
+        ...(publica ? [] : [
+          { name: "Equipe (MySQL ou H2, Fellipe e Renan)", meta: meta("env_rkfbank_equipe", { isPrivate: false, sortKey: 2 }), data: amb.equipe, color: "#1565c0" },
+        ]),
       ],
     },
   };
   return yaml(colecao).replace(/^\n/, "") + "\n";
 }
 
-function salvar(caminho, colecao, valores) {
+function salvar(caminho, valores, publica) {
+  const colecao = montar(valores, publica);
   mkdirSync(dirname(caminho), { recursive: true });
   writeFileSync(caminho, JSON.stringify(colecao, null, 2) + "\n");
   const total = colecao.resources.filter((r) => r._type === "request").length;
   console.log(`✅ ${total} requisições → ${caminho}`);
   // A mesma coleção no formato v5 (YAML), ao lado: Import → File aceita os dois.
   const caminhoYaml = caminho.replace(/\.json$/, ".yaml");
-  writeFileSync(caminhoYaml, montarV5(valores));
+  writeFileSync(caminhoYaml, montarV5(valores, publica));
   console.log(`✅ ${total} requisições → ${caminhoYaml}`);
 }
 
-// Pública: senhas da equipe como instrução, nunca o valor (o repositório é público).
-const PUBLICOS = {
-  equipeSenha: "COLE_AQUI_A_EQUIPE_SENHA_DO_SEU_.env",
-  adminCpf: "COLE_AQUI_O_ADMIN_CPF_DO_SEU_.env",
-  adminSenha: "COLE_AQUI_A_ADMIN_SENHA_DO_SEU_.env",
-};
-salvar(SAIDA_PUBLICA, montar(PUBLICOS), PUBLICOS);
+// Pública: só o ambiente Visitante, sem ADMIN; o ambiente Equipe (e as senhas dele) fica só na privada.
+salvar(SAIDA_PUBLICA, { equipeSenha: "", adminCpf: "", adminSenha: "" }, true);
 
 if (process.argv.includes("--equipe")) {
   const env = lerEnv();
   const daEquipe = { equipeSenha: env.EQUIPE_SENHA ?? "", adminCpf: env.ADMIN_CPF ?? "", adminSenha: env.ADMIN_SENHA ?? "" };
-  salvar(SAIDA_EQUIPE, montar(daEquipe), daEquipe);
+  salvar(SAIDA_EQUIPE, daEquipe, false);
 }

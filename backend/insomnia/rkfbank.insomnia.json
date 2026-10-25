@@ -67,29 +67,11 @@
       "metaSortKey": 1
     },
     {
-      "_id": "env_rkfbank_equipe",
-      "_type": "environment",
-      "parentId": "env_rkfbank_base",
-      "name": "Equipe (MySQL ou H2, Fellipe e Renan)",
-      "data": {
-        "cpf_origem": "12345678909",
-        "cpf_destino": "98765432100",
-        "senha_clientes": "COLE_AQUI_A_EQUIPE_SENHA_DO_SEU_.env",
-        "email_destino": "renan.barros@rkfbank.test",
-        "conta_origem_id": "5eed0000-0000-4000-8000-000000000014",
-        "conta_destino_id": "5eed0000-0000-4000-8000-000000000024",
-        "admin_cpf": "COLE_AQUI_O_ADMIN_CPF_DO_SEU_.env",
-        "admin_senha": "COLE_AQUI_A_ADMIN_SENHA_DO_SEU_.env"
-      },
-      "color": "#1565c0",
-      "metaSortKey": 2
-    },
-    {
       "_id": "fld_rkfbank_00",
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "00 · Comece aqui",
-      "description": "Escolha o **ambiente** no canto superior esquerdo (Visitante ou Equipe) e mande a primeira requisição. `{\"status\":\"UP\"}` = a API está no ar. Sem resposta? Ela não subiu: veja o guia `backend/README_TESTES_E2E.md`.",
+      "description": "💡 Antes de testar qualquer coisa, confira se a API está ligada. É como ver se a luz da maquininha acendeu.\n\nEscolha o **ambiente** no canto superior esquerdo (Visitante ou Equipe) e mande a primeira requisição. `{\"status\":\"UP\"}` = a API está no ar. Sem resposta? Ela não subiu: veja o guia `backend/README_TESTES_E2E.md`.",
       "metaSortKey": 0
     },
     {
@@ -97,7 +79,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_00",
       "name": "Saúde da API",
-      "description": "Pública. Usada pelo Docker e pelo deploy para saber se a API respondeu.",
+      "description": "💡 **Em palavras simples:** A primeira pergunta: \"você está aí?\". Resposta `UP` = a API está ligada e pronta. Sem resposta, nada mais vai funcionar: suba a API antes.\n\nPública. Usada pelo Docker e pelo deploy para saber se a API respondeu.",
       "method": "GET",
       "url": "{{ _.base_url }}/actuator/health",
       "body": {},
@@ -118,7 +100,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_00",
       "name": "Versão dos termos (pública)",
-      "description": "Versão vigente dos Termos de Uso e da Política de Privacidade (contrato 3.1). A tela de cadastro mostra estes textos e manda a versão aceita em `termosVersao`.",
+      "description": "💡 **Em palavras simples:** Mostra qual versão dos Termos de Uso está valendo. O cadastro precisa dizer que a pessoa aceitou esses termos, igual ao \"li e aceito\" de qualquer app.\n\nVersão vigente dos Termos de Uso e da Política de Privacidade (contrato 3.1). A tela de cadastro mostra estes textos e manda a versão aceita em `termosVersao`.",
       "method": "GET",
       "url": "{{ _.base_url }}/termos",
       "body": {},
@@ -139,7 +121,7 @@
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "01 · Login (guarda o token sozinho)",
-      "description": "Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`, `token_admin`) e o de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de acesso vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou renove pela pasta **09 · Sessão**.",
+      "description": "💡 Entrar no banco, como no app: CPF e senha. A API devolve um \"crachá\" (o token) que as próximas requisições mostram para provar quem você é. O Insomnia guarda esse crachá sozinho.\n\nCada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`...) e o de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de acesso vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou renove pela pasta **09 · Sessão**.",
       "metaSortKey": 1
     },
     {
@@ -147,7 +129,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_01",
       "name": "Login · cliente ORIGEM (Ana / Fellipe)",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Entra como o cliente que vai MANDAR dinheiro. Na resposta, o `token` é o crachá de acesso; o Insomnia guarda ele em `token_origem` e as próximas requisições usam sozinhas.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",
       "body": {
@@ -176,7 +158,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_01",
       "name": "Login · cliente DESTINO (Bruno / Renan)",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Entra como o cliente que vai RECEBER dinheiro. Ter dois clientes logados permite provar que um não enxerga a conta do outro.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",
       "body": {
@@ -201,40 +183,11 @@
       "settingStoreCookies": false
     },
     {
-      "_id": "req_rkfbank_01_02",
-      "_type": "request",
-      "parentId": "fld_rkfbank_01",
-      "name": "Login · ADMIN (só perfil equipe ou MySQL)",
-      "description": "O ADMIN não nasce por rota: a API cria na subida se `ADMIN_CPF` e `ADMIN_SENHA` estiverem no ambiente. No perfil **visitante** não existe ADMIN (de propósito): este login dá `401`.",
-      "method": "POST",
-      "url": "{{ _.base_url }}/auth/login",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"{{ _.admin_cpf }}\",\n  \"senha\": \"{{ _.admin_senha }}\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "none"
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\nif (insomnia.response.code === 200) {\n  const login = insomnia.response.json();\n  insomnia.environment.set(\"token_admin\", login.token);\n  insomnia.environment.set(\"refresh_admin\", login.refreshToken);\n  console.log(\"perfil:\", login.perfil, \"· token vale\", login.expiraEmSegundos, \"s · renovação vale\", login.refreshExpiraEmSegundos, \"s\");\n}\nif (insomnia.response.code === 200) {\n  const payload = insomnia.response.json().token.split(\".\")[1].replace(/-/g, \"+\").replace(/_/g, \"/\");\n  insomnia.environment.set(\"usuario_admin_id\", JSON.parse(atob(payload)).sub);\n}",
-      "metaSortKey": 2,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
       "_id": "fld_rkfbank_02",
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "02 · Fluxo E2E: cliente novo, do cadastro ao extrato",
-      "description": "O roteiro E2E principal, na ordem: cadastro (CPF, CEP e telefone com máscara, endereço pelo ViaCEP) → login → contas ORIGEM e DESTINO → depósito, saque e transferência → extratos. O cadastro sorteia CPF e e-mail novos a cada envio, então pode repetir à vontade. Precisa de internet: o endereço vem do ViaCEP.",
+      "description": "💡 A vida inteira de um cliente novo, na ordem em que acontece de verdade: criar o cadastro, entrar, abrir duas contas, colocar dinheiro, tirar, transferir e conferir o extrato centavo a centavo.\n\nO roteiro E2E principal, na ordem: cadastro (CPF, CEP e telefone com máscara, endereço pelo ViaCEP) → login → contas ORIGEM e DESTINO → depósito, saque e transferência → extratos. O cadastro sorteia CPF e e-mail novos a cada envio, então pode repetir à vontade. Precisa de internet: o endereço vem do ViaCEP.",
       "metaSortKey": 2
     },
     {
@@ -242,7 +195,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Cadastrar cliente (público)",
-      "description": "`aceiteTermos: true` é obrigatório (LGPD, contrato 3.1). Manda CPF, CEP e telefone **com máscara**, como a pessoa digita: a API higieniza (fica só com os dígitos), valida o CPF pelos dígitos verificadores e busca o endereço no **ViaCEP** (Osasco/SP). `201` com o cliente. A resposta traz o CPF **mascarado** e a versão dos termos aceita. O cadastro **não** devolve token: faça o login.",
+      "description": "💡 **Em palavras simples:** Cria um cliente do zero, sem precisar estar logado (como abrir conta pelo app). O CPF é sorteado a cada envio, então dá para repetir. Repare: a resposta devolve o CPF escondido (`***.982.247-**`) e o endereço que a API buscou sozinha pelo CEP.\n\n`aceiteTermos: true` é obrigatório (LGPD, contrato 3.1). Manda CPF, CEP e telefone **com máscara**, como a pessoa digita: a API higieniza (fica só com os dígitos), valida o CPF pelos dígitos verificadores e busca o endereço no **ViaCEP** (Osasco/SP). `201` com o cliente. A resposta traz o CPF **mascarado** e a versão dos termos aceita. O cadastro **não** devolve token: faça o login.",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes",
       "body": {
@@ -271,7 +224,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Login · cliente novo",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O cadastro não faz login automático: agora o cliente novo entra com o CPF e a senha que acabou de criar.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",
       "body": {
@@ -300,7 +253,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Abrir conta ORIGEM: corrente",
-      "description": "Corpo só com `tipoConta`: o dono vem do **token**, a agência é `0001` e o número (com dígito verificador) é gerado pelo banco.",
+      "description": "💡 **Em palavras simples:** Abre uma conta corrente. Você só diz o tipo: o banco sabe de quem é pelo token e gera o número da conta sozinho. Status `201` = criado.\n\nCorpo só com `tipoConta`: o dono vem do **token**, a agência é `0001` e o número (com dígito verificador) é gerado pelo banco.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas",
       "body": {
@@ -331,7 +284,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Abrir conta DESTINO: poupança",
-      "description": "Um cliente pode ter mais de uma conta. Esta recebe a transferência logo abaixo.",
+      "description": "💡 **Em palavras simples:** Abre uma segunda conta, poupança, para o mesmo cliente. Ela vai receber a transferência mais adiante.\n\nUm cliente pode ter mais de uma conta. Esta recebe a transferência logo abaixo.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas",
       "body": {
@@ -362,7 +315,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Minhas contas (as duas com saldo 0,00)",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Lista as contas do cliente logado. As duas acabaram de nascer, então os saldos são zero.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas",
       "body": {},
@@ -385,7 +338,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Depositar R$ 150,00 na ORIGEM",
-      "description": "`204` sem corpo. O header `Idempotency-Key` (aba Headers) gera um UUID novo a cada envio.",
+      "description": "💡 **Em palavras simples:** Coloca dinheiro na conta. A resposta `204` vem vazia de propósito: quer dizer \"deu certo, não tenho nada para mostrar\". O saldo novo aparece em \"Minhas contas\".\n\n`204` sem corpo. O header `Idempotency-Key` (aba Headers) gera um UUID novo a cada envio.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/depositos",
       "body": {
@@ -420,7 +373,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Sacar R$ 50,00 da ORIGEM",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Tira dinheiro da conta. Também responde `204`, vazio. Sobram R$ 100,00.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/saques",
       "body": {
@@ -455,7 +408,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Transferir R$ 25,00 ORIGEM → DESTINO",
-      "description": "Débito e crédito na mesma transação: ou os dois acontecem, ou nenhum.",
+      "description": "💡 **Em palavras simples:** Move dinheiro de uma conta para a outra. O banco garante que o débito e o crédito acontecem juntos: nunca sai de um lado sem chegar no outro.\n\nDébito e crédito na mesma transação: ou os dois acontecem, ou nenhum.",
       "method": "POST",
       "url": "{{ _.base_url }}/transferencias",
       "body": {
@@ -490,7 +443,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Saldos: ORIGEM 75,00 · DESTINO 25,00",
-      "description": "",
+      "description": "💡 **Em palavras simples:** A conferência: 150 − 50 − 25 = 75 na ORIGEM e 25 na DESTINO. Se os números baterem, o dinheiro andou certinho.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas",
       "body": {},
@@ -513,7 +466,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Ver só a conta ORIGEM",
-      "description": "`GET /contas/{contaId}` (contrato 3.1): uma conta só, para atualizar o saldo sem buscar a lista inteira.",
+      "description": "💡 **Em palavras simples:** Busca uma conta só, pelo id. É o que a tela usa para atualizar o saldo sem pedir a lista inteira.\n\n`GET /contas/{contaId}` (contrato 3.1): uma conta só, para atualizar o saldo sem buscar a lista inteira.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/{{ _.conta_nova_id }}",
       "body": {},
@@ -536,7 +489,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Extrato da ORIGEM (3 lançamentos)",
-      "description": "Do mais recente para o mais antigo. `valor` sempre positivo: se `contaDestinoId` é esta conta, é entrada.",
+      "description": "💡 **Em palavras simples:** O extrato: cada movimento da conta, do mais novo para o mais antigo. Aqui são três (depósito, saque e transferência).\n\nDo mais recente para o mais antigo. `valor` sempre positivo: se `contaDestinoId` é esta conta, é entrada.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/lancamentos",
       "body": {},
@@ -559,7 +512,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_02",
       "name": "Extrato do DESTINO (1 lançamento)",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O extrato do outro lado mostra a transferência chegando. É a prova de que a transferência é um lançamento só, visto pelas duas contas.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/{{ _.conta_nova_destino_id }}/lancamentos",
       "body": {},
@@ -582,7 +535,7 @@
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "03 · Dinheiro entre clientes (contas prontas do seed)",
-      "description": "Tudo com o token da ORIGEM. Depósito, saque e transferência levam `Idempotency-Key` (aba Headers): o `{% uuid 'v4' %}` gera uma chave nova a cada envio. Resposta `204` não tem corpo: veja o saldo em **Minhas contas**.",
+      "description": "💡 O mesmo dinheiro, agora entre duas pessoas diferentes (Ana manda para o Bruno), com as contas que já vêm prontas no banco de teste.\n\nTudo com o token da ORIGEM. Depósito, saque e transferência levam `Idempotency-Key` (aba Headers): o `{% uuid 'v4' %}` gera uma chave nova a cada envio. Resposta `204` não tem corpo: veja o saldo em **Minhas contas**.",
       "metaSortKey": 3
     },
     {
@@ -590,7 +543,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_03",
       "name": "Minhas contas (ORIGEM)",
-      "description": "`CLIENTE` vê só as dele; `ADMIN` vê todas. O script guarda a primeira conta em `conta_origem_id`.",
+      "description": "💡 **Em palavras simples:** Lista as contas da Ana (ou do Fellipe, na equipe), que já vêm com dinheiro do banco de teste. O Insomnia guarda o id da primeira conta para os próximos passos.\n\n`CLIENTE` vê só as dele; `ADMIN` vê todas. O script guarda a primeira conta em `conta_origem_id`.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas",
       "body": {},
@@ -613,7 +566,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_03",
       "name": "Minhas contas paginadas",
-      "description": "Basta `page` **ou** `size` para vir a página: `content`, `totalElements`, `totalPages`, `number`, `size`, `first`, `last`.",
+      "description": "💡 **Em palavras simples:** A mesma lista, em páginas (`page=0&size=10`). Com muitas contas, a tela pede de 10 em 10 em vez de tudo de uma vez.\n\nBasta `page` **ou** `size` para vir a página: `content`, `totalElements`, `totalPages`, `number`, `size`, `first`, `last`.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas?page=0&size=10",
       "body": {},
@@ -636,7 +589,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_03",
       "name": "Depositar R$ 150,00",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Depósito na conta da ORIGEM. `204`, sem corpo, é sucesso.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos",
       "body": {
@@ -671,7 +624,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_03",
       "name": "Sacar R$ 50,00",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Saque da conta da ORIGEM. `204` de novo.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/saques",
       "body": {
@@ -706,7 +659,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_03",
       "name": "Transferir R$ 25,00 ORIGEM → DESTINO",
-      "description": "Débito e crédito na mesma transação: ou os dois acontecem, ou nenhum.",
+      "description": "💡 **Em palavras simples:** Agora de uma PESSOA para OUTRA: Ana manda para o Bruno. Só o dono da conta de origem pode mandar.\n\nDébito e crédito na mesma transação: ou os dois acontecem, ou nenhum.",
       "method": "POST",
       "url": "{{ _.base_url }}/transferencias",
       "body": {
@@ -741,7 +694,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_03",
       "name": "Extrato da ORIGEM",
-      "description": "Do mais recente para o mais antigo. `valor` sempre positivo.",
+      "description": "💡 **Em palavras simples:** O extrato da Ana mostra o depósito, o saque e a transferência que saiu.\n\nDo mais recente para o mais antigo. `valor` sempre positivo.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/lancamentos",
       "body": {},
@@ -764,7 +717,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_03",
       "name": "Extrato do DESTINO (token do destino)",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O Bruno entra com o crachá DELE e vê a transferência que chegou. Com o crachá da Ana, este mesmo pedido daria `403` (proibido).",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/{{ _.conta_destino_id }}/lancamentos",
       "body": {},
@@ -787,7 +740,7 @@
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "04 · Idempotência (o mesmo pedido não movimenta duas vezes)",
-      "description": "Mande na ordem. A 1ª sorteia uma chave e guarda em `chave_fixa`; a 2ª repete a MESMA chave com o MESMO corpo (como se a rede tivesse caído): `204` com o header `Idempotency-Replayed: true` e o saldo **não** muda.",
+      "description": "💡 Proteção contra o \"cliquei duas vezes\": se a internet cair e o app mandar o mesmo depósito de novo, o dinheiro não pode entrar duas vezes.\n\nMande na ordem. A 1ª sorteia uma chave e guarda em `chave_fixa`; a 2ª repete a MESMA chave com o MESMO corpo (como se a rede tivesse caído): `204` com o header `Idempotency-Replayed: true` e o saldo **não** muda.",
       "metaSortKey": 4
     },
     {
@@ -795,7 +748,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_04",
       "name": "1ª vez: depósito com chave fixa",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Um depósito com uma \"senha de pedido\" (`Idempotency-Key`) que fica guardada. É como o número do pedido de uma compra.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos",
       "body": {
@@ -830,7 +783,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_04",
       "name": "2ª vez: mesma chave, mesmo corpo → repetição",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Manda o MESMO pedido de novo, como se a internet tivesse caído e o app tentasse outra vez. O banco reconhece o número, responde igual e NÃO deposita de novo. Repare no header `Idempotency-Replayed: true`.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos",
       "body": {
@@ -865,7 +818,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_04",
       "name": "Mesma chave, outro valor → 422",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Mesmo número de pedido, mas outro valor: isso não é repetição, é engano. O banco recusa (`422`) em vez de adivinhar.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos",
       "body": {
@@ -900,7 +853,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_04",
       "name": "Sem a chave → 400",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Movimentar dinheiro sem o número do pedido é recusado (`400`). Assim nenhum app esquece essa proteção.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos",
       "body": {
@@ -927,857 +880,11 @@
       "settingStoreCookies": false
     },
     {
-      "_id": "fld_rkfbank_05",
-      "_type": "request_group",
-      "parentId": "wrk_rkfbank",
-      "name": "05 · ADMIN: gestão de clientes, contas e usuários",
-      "description": "Tudo o que o ADMIN faz e tudo o que ele **não** pode fazer. Precisa do **Login · ADMIN** (pasta 01) e do **cliente novo** (pasta 02): é nele que o ADMIN mexe, para não estragar as contas fixas. No perfil visitante não há ADMIN: tudo aqui dá `401` (use o ambiente Equipe com a API no perfil `equipe` ou MySQL).",
-      "metaSortKey": 5
-    },
-    {
-      "_id": "req_rkfbank_05_00",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Listar clientes (array)",
-      "description": "Só ADMIN. Sem `page`/`size` vem um array com todos; com eles, uma página.",
-      "method": "GET",
-      "url": "{{ _.base_url }}/clientes",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));",
-      "metaSortKey": 0,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_01",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Listar clientes (paginado)",
-      "description": "",
-      "method": "GET",
-      "url": "{{ _.base_url }}/clientes?page=0&size=10",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\ninsomnia.test(\"é página\", () => insomnia.expect(insomnia.response.json().content).to.be.an(\"array\"));",
-      "metaSortKey": 1,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_02",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Listar TODAS as contas (paginado)",
-      "description": "A mesma rota do cliente, mas o ADMIN recebe as contas de todo mundo.",
-      "method": "GET",
-      "url": "{{ _.base_url }}/contas?page=0&size=20",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));",
-      "metaSortKey": 2,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_03",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Listar usuários (guarda o id do cliente novo)",
-      "description": "CPF vem mascarado. O `id` daqui (tb_usuario) é o que vai nas rotas abaixo, **não** o `clienteId`.",
-      "method": "GET",
-      "url": "{{ _.base_url }}/admin/usuarios",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\nconst usuarios = insomnia.response.code === 200 ? insomnia.response.json() : [];\nconst alvo = usuarios.find((u) => u.clienteId === insomnia.environment.get(\"novo_cliente_id\"));\nif (alvo) insomnia.environment.set(\"usuario_novo_id\", alvo.id);\ninsomnia.test(\"achou o cliente novo\", () => insomnia.expect(alvo).to.be.ok);\ninsomnia.test(\"CPF mascarado\", () => insomnia.expect(usuarios[0].cpf).to.include(\"***\"));",
-      "metaSortKey": 3,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_04",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Promover o cliente novo a ADMIN",
-      "description": "Vale na próxima requisição: o token antigo do promovido passa a dar `401`.",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/perfil",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"perfil\": \"ADMIN\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\ninsomnia.test(\"virou ADMIN\", () => insomnia.expect(insomnia.response.json().perfil).to.equal(\"ADMIN\"));",
-      "metaSortKey": 4,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_05",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Token antigo do promovido → 401",
-      "description": "",
-      "method": "GET",
-      "url": "{{ _.base_url }}/contas",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_novo }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"codigo ACESSO_ALTERADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"ACESSO_ALTERADO\"));",
-      "metaSortKey": 5,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_06",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Login do promovido (já vem ADMIN)",
-      "description": "",
-      "method": "POST",
-      "url": "{{ _.base_url }}/auth/login",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"{{ _.novo_cpf }}\",\n  \"senha\": \"{{ _.novo_senha }}\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "none"
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\nif (insomnia.response.code === 200) {\n  const login = insomnia.response.json();\n  insomnia.environment.set(\"token_novo\", login.token);\n  insomnia.environment.set(\"refresh_novo\", login.refreshToken);\n  console.log(\"perfil:\", login.perfil, \"· token vale\", login.expiraEmSegundos, \"s · renovação vale\", login.refreshExpiraEmSegundos, \"s\");\n}\ninsomnia.test(\"perfil ADMIN\", () => insomnia.expect(insomnia.response.json().perfil).to.equal(\"ADMIN\"));",
-      "metaSortKey": 6,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_07",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Promovido lista clientes → 200",
-      "description": "Agora ele é ADMIN e continua dono das próprias contas (o cadastro de cliente não some).",
-      "method": "GET",
-      "url": "{{ _.base_url }}/clientes?page=0&size=5",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_novo }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));",
-      "metaSortKey": 7,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_08",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Promovido tenta rebaixar o ADMIN do .env → 422",
-      "description": "O ADMIN do `.env` não é cliente: virar CLIENTE não faz sentido. Para tirá-lo, desative o acesso.",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_admin_id }}/perfil",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"perfil\": \"CLIENTE\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_novo }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo PERFIL_CLIENTE_SEM_CADASTRO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"PERFIL_CLIENTE_SEM_CADASTRO\"));",
-      "metaSortKey": 8,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_09",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Rebaixar de volta a CLIENTE",
-      "description": "",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/perfil",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"perfil\": \"CLIENTE\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));",
-      "metaSortKey": 9,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_10",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Desativar o acesso",
-      "description": "\"Remover\" = desativar: o usuário nunca é apagado (o histórico de movimentações aponta para ele).",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/acesso",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"ativo\": false\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\ninsomnia.test(\"ativo false\", () => insomnia.expect(insomnia.response.json().ativo).to.equal(false));",
-      "metaSortKey": 10,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_11",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Login do desativado → 401",
-      "description": "",
-      "method": "POST",
-      "url": "{{ _.base_url }}/auth/login",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"{{ _.novo_cpf }}\",\n  \"senha\": \"{{ _.novo_senha }}\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "none"
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 401\", () => insomnia.expect(insomnia.response.code).to.equal(401));\ninsomnia.test(\"codigo CREDENCIAIS_INVALIDAS\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CREDENCIAIS_INVALIDAS\"));",
-      "metaSortKey": 11,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_12",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Reativar o acesso",
-      "description": "",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/acesso",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"ativo\": true\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));",
-      "metaSortKey": 12,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_13",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Redefinir a senha (quem esqueceu)",
-      "description": "O script passa a senha nova para `novo_senha`. Ela é **temporária** (contrato 3.1): no próximo login a pessoa precisa trocá-la.",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/senha",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"novaSenha\": \"{{ _.senha_redefinida }}\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "insomnia.environment.set(\"senha_redefinida\", \"redefinida-\" + Date.now().toString(36));",
-      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));\nif (insomnia.response.code === 204) insomnia.environment.set(\"novo_senha\", insomnia.environment.get(\"senha_redefinida\"));",
-      "metaSortKey": 13,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_14",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Login com a senha temporária (deveTrocarSenha)",
-      "description": "",
-      "method": "POST",
-      "url": "{{ _.base_url }}/auth/login",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"{{ _.novo_cpf }}\",\n  \"senha\": \"{{ _.novo_senha }}\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "none"
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\nif (insomnia.response.code === 200) {\n  const login = insomnia.response.json();\n  insomnia.environment.set(\"token_novo\", login.token);\n  insomnia.environment.set(\"refresh_novo\", login.refreshToken);\n  console.log(\"perfil:\", login.perfil, \"· token vale\", login.expiraEmSegundos, \"s · renovação vale\", login.refreshExpiraEmSegundos, \"s\");\n}\ninsomnia.test(\"deveTrocarSenha\", () => insomnia.expect(insomnia.response.json().deveTrocarSenha).to.equal(true));",
-      "metaSortKey": 14,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_15",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Senha temporária em outra rota → 403",
-      "description": "Com a senha temporária, o token só abre `PATCH /usuarios/me/senha`.",
-      "method": "GET",
-      "url": "{{ _.base_url }}/contas",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_novo }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));\ninsomnia.test(\"codigo TROCA_DE_SENHA_OBRIGATORIA\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"TROCA_DE_SENHA_OBRIGATORIA\"));",
-      "metaSortKey": 15,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_16",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Trocar a senha temporária",
-      "description": "",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/usuarios/me/senha",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"senhaAtual\": \"{{ _.novo_senha }}\",\n  \"novaSenha\": \"{{ _.senha_escolhida }}\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_novo }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "insomnia.environment.set(\"senha_escolhida\", \"escolhida-\" + Date.now().toString(36));",
-      "afterResponseScript": "insomnia.test(\"status 204\", () => insomnia.expect(insomnia.response.code).to.equal(204));\nif (insomnia.response.code === 204) insomnia.environment.set(\"novo_senha\", insomnia.environment.get(\"senha_escolhida\"));",
-      "metaSortKey": 16,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_17",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Login · cliente novo (de novo, senha escolhida)",
-      "description": "",
-      "method": "POST",
-      "url": "{{ _.base_url }}/auth/login",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"cpf\": \"{{ _.novo_cpf }}\",\n  \"senha\": \"{{ _.novo_senha }}\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "none"
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\nif (insomnia.response.code === 200) {\n  const login = insomnia.response.json();\n  insomnia.environment.set(\"token_novo\", login.token);\n  insomnia.environment.set(\"refresh_novo\", login.refreshToken);\n  console.log(\"perfil:\", login.perfil, \"· token vale\", login.expiraEmSegundos, \"s · renovação vale\", login.refreshExpiraEmSegundos, \"s\");\n}\ninsomnia.test(\"sem troca pendente\", () => insomnia.expect(insomnia.response.json().deveTrocarSenha).to.equal(false));",
-      "metaSortKey": 17,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_18",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Trava: ADMIN mexe no próprio perfil → 422",
-      "description": "Ninguém mexe em si mesmo: o ADMIN não se tranca para fora e sempre sobra um ADMIN ativo.",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_admin_id }}/perfil",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"perfil\": \"ADMIN\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo PROPRIO_ACESSO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"PROPRIO_ACESSO\"));",
-      "metaSortKey": 18,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_19",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Trava: ADMIN redefine a própria senha pela gestão → 422",
-      "description": "A própria senha se troca em `PATCH /usuarios/me/senha`, que exige a atual (um token roubado não basta).",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_admin_id }}/senha",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"novaSenha\": \"nao-vai-mudar-123\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo PROPRIA_SENHA_PELA_GESTAO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"PROPRIA_SENHA_PELA_GESTAO\"));",
-      "metaSortKey": 19,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_20",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Perfil que não existe → 400",
-      "description": "",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/perfil",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"perfil\": \"GERENTE\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));",
-      "metaSortKey": 20,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_21",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Usuário que não existe → 404",
-      "description": "",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/00000000-0000-4000-8000-000000000000/perfil",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"perfil\": \"ADMIN\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 404\", () => insomnia.expect(insomnia.response.code).to.equal(404));\ninsomnia.test(\"codigo USUARIO_NAO_ENCONTRADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"USUARIO_NAO_ENCONTRADO\"));",
-      "metaSortKey": 21,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_22",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Acesso sem o campo → 400",
-      "description": "",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/acesso",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));",
-      "metaSortKey": 22,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_23",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Senha curta na redefinição → 400",
-      "description": "",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/senha",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"novaSenha\": \"curta\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 400\", () => insomnia.expect(insomnia.response.code).to.equal(400));",
-      "metaSortKey": 23,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_24",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "ADMIN do .env abre conta → 422",
-      "description": "",
-      "method": "POST",
-      "url": "{{ _.base_url }}/contas",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"tipoConta\": \"CORRENTE\"\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SEM_CADASTRO_CLIENTE\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SEM_CADASTRO_CLIENTE\"));",
-      "metaSortKey": 24,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_25",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "ADMIN do .env em /clientes/me → 422",
-      "description": "",
-      "method": "GET",
-      "url": "{{ _.base_url }}/clientes/me",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo SEM_CADASTRO_CLIENTE\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"SEM_CADASTRO_CLIENTE\"));",
-      "metaSortKey": 25,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_26",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "ADMIN deposita na conta de um cliente → 403",
-      "description": "O ADMIN **vê** todas as contas, mas não **mexe** no dinheiro dos outros: a regra de dono vale para todos.",
-      "method": "POST",
-      "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"valor\": 1\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        },
-        {
-          "name": "Idempotency-Key",
-          "value": "{% uuid 'v4' %}"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));\ninsomnia.test(\"codigo CONTA_DE_OUTRO_CLIENTE\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CONTA_DE_OUTRO_CLIENTE\"));",
-      "metaSortKey": 26,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_27",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "ADMIN vê o extrato de um cliente → 403",
-      "description": "",
-      "method": "GET",
-      "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/lancamentos",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 403\", () => insomnia.expect(insomnia.response.code).to.equal(403));",
-      "metaSortKey": 27,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_28",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "ADMIN vê uma conta de cliente → 200",
-      "description": "Ver pode (como em `GET /contas`); movimentar e ver o extrato, não.",
-      "method": "GET",
-      "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));",
-      "metaSortKey": 28,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
-      "_id": "req_rkfbank_05_29",
-      "_type": "request",
-      "parentId": "fld_rkfbank_05",
-      "name": "Conciliação: saldo × extrato",
-      "description": "Contas cujo saldo não bate com a soma do extrato. Lista vazia é o normal; qualquer linha é bug ou alteração manual no banco.",
-      "method": "GET",
-      "url": "{{ _.base_url }}/admin/conciliacao",
-      "body": {},
-      "headers": [],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 200\", () => insomnia.expect(insomnia.response.code).to.equal(200));\ninsomnia.test(\"nenhuma conta divergente\", () => insomnia.expect(insomnia.response.json()).to.have.length(0));",
-      "metaSortKey": 29,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
       "_id": "fld_rkfbank_06",
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "06 · Meus dados (LGPD) e senha",
-      "description": "O titular vê, corrige e encerra o próprio cadastro (`/clientes/me`: o `me` é sempre o dono do token). Troca de senha e encerramento são feitos no **cliente novo**, para as contas fixas continuarem entrando.",
+      "description": "💡 Os direitos da pessoa sobre os próprios dados (LGPD): ver o que o banco guarda, corrigir, trocar a senha e encerrar o cadastro.\n\nO titular vê, corrige e encerra o próprio cadastro (`/clientes/me`: o `me` é sempre o dono do token). Troca de senha e encerramento são feitos no **cliente novo**, para as contas fixas continuarem entrando.",
       "metaSortKey": 6
     },
     {
@@ -1785,7 +892,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Ver meus dados (ORIGEM)",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O cliente vê tudo o que o banco guarda sobre ele. É um direito da LGPD.",
       "method": "GET",
       "url": "{{ _.base_url }}/clientes/me",
       "body": {},
@@ -1808,7 +915,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Corrigir meu telefone (ORIGEM)",
-      "description": "Só muda o que vier no corpo. CPF não muda.",
+      "description": "💡 **Em palavras simples:** Corrige um dado. Só o campo enviado muda; os outros ficam como estavam.\n\nSó muda o que vier no corpo. CPF não muda.",
       "method": "PATCH",
       "url": "{{ _.base_url }}/clientes/me",
       "body": {
@@ -1839,7 +946,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Mudar de endereço: CEP + número (ORIGEM)",
-      "description": "O endereço vem do ViaCEP de novo (precisa de internet). CEP novo exige `numero`.",
+      "description": "💡 **Em palavras simples:** Muda o endereço: com o CEP novo, a API busca a rua e a cidade sozinha. O número da casa é obrigatório junto.\n\nO endereço vem do ViaCEP de novo (precisa de internet). CEP novo exige `numero`.",
       "method": "PATCH",
       "url": "{{ _.base_url }}/clientes/me",
       "body": {
@@ -1870,7 +977,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "CEP sem número → 400",
-      "description": "",
+      "description": "💡 **Em palavras simples:** CEP novo sem o número da casa não dá para montar o endereço: `400`.",
       "method": "PATCH",
       "url": "{{ _.base_url }}/clientes/me",
       "body": {
@@ -1901,7 +1008,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Corpo vazio → 400",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Pedir para corrigir sem mandar nada é recusado: não há o que mudar.",
       "method": "PATCH",
       "url": "{{ _.base_url }}/clientes/me",
       "body": {
@@ -1932,7 +1039,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "E-mail de outra pessoa → 409",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Um e-mail que já é de outro cliente dá `409` (conflito): cada e-mail é de uma pessoa só.",
       "method": "PATCH",
       "url": "{{ _.base_url }}/clientes/me",
       "body": {
@@ -1963,7 +1070,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Trocar senha com a atual errada → 422",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Para trocar a senha, é preciso saber a atual. Se alguém pegar o celular desbloqueado, não troca a senha sem saber a antiga.",
       "method": "PATCH",
       "url": "{{ _.base_url }}/usuarios/me/senha",
       "body": {
@@ -1994,7 +1101,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Nova senha igual à atual → 422",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Trocar a senha pela mesma não é troca: recusado.",
       "method": "PATCH",
       "url": "{{ _.base_url }}/usuarios/me/senha",
       "body": {
@@ -2025,7 +1132,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Trocar a própria senha (cliente novo)",
-      "description": "Depois do `204`, todo token antigo (inclusive este) dá `401`. O script já guarda a senha nova.",
+      "description": "💡 **Em palavras simples:** A troca certa: senha atual + senha nova. `204` = trocou.\n\nDepois do `204`, todo token antigo (inclusive este) dá `401`. O script já guarda a senha nova.",
       "method": "PATCH",
       "url": "{{ _.base_url }}/usuarios/me/senha",
       "body": {
@@ -2056,7 +1163,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Token antigo depois da troca → 401",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Trocou a senha, todos os crachás antigos caem. Se alguém estava logado com a senha velha, foi desconectado.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas",
       "body": {},
@@ -2079,7 +1186,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Login · cliente novo com a senha nova",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Entra de novo, agora com a senha nova.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",
       "body": {
@@ -2108,7 +1215,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Encerrar com a senha errada → 422",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Encerrar o cadastro pede a senha, para ninguém encerrar a conta de outra pessoa por engano.",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes/me/encerramento",
       "body": {
@@ -2139,7 +1246,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Encerrar com saldo (ORIGEM) → 422",
-      "description": "Dinheiro não some: com saldo, o encerramento é recusado (e nada muda na conta de origem).",
+      "description": "💡 **Em palavras simples:** Não dá para encerrar com dinheiro na conta: primeiro a pessoa saca ou transfere tudo.\n\nDinheiro não some: com saldo, o encerramento é recusado (e nada muda na conta de origem).",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes/me/encerramento",
       "body": {
@@ -2170,7 +1277,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Zerar a ORIGEM (saque de R$ 75,00)",
-      "description": "Dinheiro não some: antes de encerrar, o titular tira o saldo das contas (as da pasta 02).",
+      "description": "💡 **Em palavras simples:** Saca o que sobrou na conta ORIGEM do cliente novo, para poder encerrar.\n\nDinheiro não some: antes de encerrar, o titular tira o saldo das contas (as da pasta 02).",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_nova_id }}/saques",
       "body": {
@@ -2205,7 +1312,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Zerar o DESTINO (saque de R$ 25,00)",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Saca o que sobrou na conta DESTINO. As duas ficam com zero.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_nova_destino_id }}/saques",
       "body": {
@@ -2240,7 +1347,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "⚠️ Encerrar o cadastro (cliente novo)",
-      "description": "Exige saldo zero em todas as contas (as do cliente novo estão zeradas). Contas ficam inativas, o login é desativado e os dados são anonimizados depois de 5 anos. Para repetir, cadastre outro cliente novo (pasta 02).",
+      "description": "💡 **Em palavras simples:** Encerra o cadastro: o login para de funcionar na hora. Os dados ficam guardados só pelo prazo que a lei exige de um banco (repare em `anonimizacaoPrevistaPara`, 5 anos depois) e então são anonimizados, sem que ninguém precise lembrar.\n\nExige saldo zero em todas as contas (as do cliente novo estão zeradas). Contas ficam inativas, o login é desativado e os dados são anonimizados depois de 5 anos. Para repetir, cadastre outro cliente novo (pasta 02).",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes/me/encerramento",
       "body": {
@@ -2271,7 +1378,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Token do encerrado → 401",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Depois de encerrar, o crachá para de funcionar na hora.",
       "method": "GET",
       "url": "{{ _.base_url }}/clientes/me",
       "body": {},
@@ -2294,7 +1401,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_06",
       "name": "Login do encerrado → 401",
-      "description": "",
+      "description": "💡 **Em palavras simples:** E não dá mais para entrar, nem com a senha certa.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",
       "body": {
@@ -2319,42 +1426,11 @@
       "settingStoreCookies": false
     },
     {
-      "_id": "req_rkfbank_06_18",
-      "_type": "request",
-      "parentId": "fld_rkfbank_06",
-      "name": "ADMIN tenta reativar o encerrado → 422",
-      "description": "Só com ADMIN (ambiente Equipe). Quem encerrou não volta pelas mãos do ADMIN: a decisão é do titular.",
-      "method": "PATCH",
-      "url": "{{ _.base_url }}/admin/usuarios/{{ _.usuario_novo_id }}/acesso",
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"ativo\": true\n}"
-      },
-      "headers": [
-        {
-          "name": "Content-Type",
-          "value": "application/json"
-        }
-      ],
-      "authentication": {
-        "type": "bearer",
-        "token": "{{ _.token_admin }}",
-        "prefix": ""
-      },
-      "parameters": [],
-      "preRequestScript": "",
-      "afterResponseScript": "insomnia.test(\"status 422\", () => insomnia.expect(insomnia.response.code).to.equal(422));\ninsomnia.test(\"codigo CADASTRO_ENCERRADO\", () => insomnia.expect(insomnia.response.json().codigo).to.equal(\"CADASTRO_ENCERRADO\"));",
-      "metaSortKey": 18,
-      "settingEncodeUrl": true,
-      "settingSendCookies": false,
-      "settingStoreCookies": false
-    },
-    {
       "_id": "fld_rkfbank_07",
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "07 · Erros que DEVEM acontecer",
-      "description": "Cada uma testa uma proteção. Se alguma passar com 2xx, achamos um bug.",
+      "description": "💡 Os erros que o banco TEM que dar. Um teste que espera um erro e recebe o erro certo está passando: é a prova de que a proteção funciona.\n\nCada uma testa uma proteção. Se alguma passar com 2xx, achamos um bug.",
       "metaSortKey": 7
     },
     {
@@ -2362,7 +1438,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Sem token → 401",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Pedir as contas sem o crachá: `401` (\"quem é você?\").",
       "method": "GET",
       "url": "{{ _.base_url }}/contas",
       "body": {},
@@ -2383,7 +1459,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Token adulterado → 401",
-      "description": "Um JWT com payload trocado e assinatura que não bate: o Resource Server recusa.",
+      "description": "💡 **Em palavras simples:** Um crachá falsificado, que diz ser ADMIN. A assinatura não bate e o banco recusa: não dá para inventar o próprio crachá.\n\nUm JWT com payload trocado e assinatura que não bate: o Resource Server recusa.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas",
       "body": {},
@@ -2406,7 +1482,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Senha errada no login → 401",
-      "description": "CPF sem cadastro e senha errada dão a MESMA resposta: não dá para descobrir quem é cliente. 5 erros seguidos no mesmo CPF → `429` (mande esta 6 vezes para ver; o CPF fica 15 min bloqueado).",
+      "description": "💡 **Em palavras simples:** Senha errada não entra. A mensagem não diz se o erro foi o CPF ou a senha, para não ajudar quem tenta adivinhar.\n\nCPF sem cadastro e senha errada dão a MESMA resposta: não dá para descobrir quem é cliente. 5 erros seguidos no mesmo CPF → `429` (mande esta 6 vezes para ver; o CPF fica 15 min bloqueado).",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",
       "body": {
@@ -2435,7 +1511,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "CLIENTE em rota de ADMIN → 403",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Um cliente comum tentando ver a lista de todos os clientes: `403` (\"sei quem você é, mas você não pode\").",
       "method": "GET",
       "url": "{{ _.base_url }}/clientes",
       "body": {},
@@ -2458,7 +1534,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "CLIENTE na gestão de usuários → 403",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Um cliente tentando entrar na gestão de usuários do ADMIN: `403`.",
       "method": "GET",
       "url": "{{ _.base_url }}/admin/usuarios",
       "body": {},
@@ -2481,7 +1557,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Depositar na conta de outro cliente → 403",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O Bruno tentando mexer na conta da Ana: `403`. Só o dono movimenta a própria conta.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos",
       "body": {
@@ -2516,7 +1592,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Ver o extrato de outro cliente → 403",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O Bruno tentando ver o extrato da Ana: `403`.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/lancamentos",
       "body": {},
@@ -2539,7 +1615,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Ver a conta de outro cliente → 403",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O Bruno tentando ver o saldo da Ana: `403`.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}",
       "body": {},
@@ -2562,7 +1638,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "CLIENTE na conciliação → 403",
-      "description": "",
+      "description": "💡 **Em palavras simples:** A auditoria do banco é só do ADMIN: `403` para cliente.",
       "method": "GET",
       "url": "{{ _.base_url }}/admin/conciliacao",
       "body": {},
@@ -2585,7 +1661,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Sacar mais que o saldo → 422",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Sacar mais do que tem: recusado com o `codigo` `SALDO_INSUFICIENTE`. Nenhum centavo sai.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/saques",
       "body": {
@@ -2620,7 +1696,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Transferir mais que o saldo → 422",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Transferir mais do que tem: recusado, e nada muda em nenhuma das duas contas.",
       "method": "POST",
       "url": "{{ _.base_url }}/transferencias",
       "body": {
@@ -2655,7 +1731,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Transferir para a mesma conta → 422",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Transferir de uma conta para ela mesma não faz sentido: recusado.",
       "method": "POST",
       "url": "{{ _.base_url }}/transferencias",
       "body": {
@@ -2690,7 +1766,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Conta que não existe → 404",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O extrato de uma conta que não existe: `404` (não encontrado).",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/00000000-0000-4000-8000-000000000000/lancamentos",
       "body": {},
@@ -2713,7 +1789,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Ver conta que não existe → 404",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Uma conta que não existe: `404`.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/00000000-0000-4000-8000-000000000000",
       "body": {},
@@ -2736,7 +1812,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Id que não é UUID → 400",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O id das contas tem um formato fixo (UUID). `abc` nem chega a ser procurado: `400`.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas/abc/lancamentos",
       "body": {},
@@ -2759,7 +1835,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Paginação inválida → 400",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Pedir páginas de tamanho zero: `400`.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas?size=0",
       "body": {},
@@ -2782,7 +1858,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Tipo de conta inválido → 400",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Só existem conta CORRENTE e POUPANCA. Outro tipo: `400`.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas",
       "body": {
@@ -2813,7 +1889,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "JSON quebrado → 400",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O corpo do pedido com erro de digitação (JSON inválido): `400`, sem quebrar a API.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos",
       "body": {
@@ -2848,7 +1924,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Valor com 3 casas → 400",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Dinheiro tem duas casas depois da vírgula. R$ 10,999 não existe: `400`.",
       "method": "POST",
       "url": "{{ _.base_url }}/contas/{{ _.conta_origem_id }}/depositos",
       "body": {
@@ -2883,7 +1959,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Cadastro inválido → 400 com os campos",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Um cadastro todo errado. Repare em `campos`: a resposta diz o que está errado em CADA campo, para a tela mostrar embaixo de cada um.",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes",
       "body": {
@@ -2912,7 +1988,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "CPF já cadastrado → 409",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Um CPF que já tem cadastro: `409` (conflito). Cada CPF é um cliente só.",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes",
       "body": {
@@ -2941,7 +2017,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Cadastro sem aceitar os termos → 400",
-      "description": "LGPD (contrato 3.1): sem o aceite dos Termos de Uso e da Política de Privacidade, o cadastro nem chega ao banco.",
+      "description": "💡 **Em palavras simples:** Sem aceitar os termos, não tem cadastro (LGPD).\n\nLGPD (contrato 3.1): sem o aceite dos Termos de Uso e da Política de Privacidade, o cadastro nem chega ao banco.",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes",
       "body": {
@@ -2970,7 +2046,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "Cadastro com termos antigos → 422",
-      "description": "A pessoa aceitou uma versão dos termos que não vale mais (página aberta antes de eles mudarem): recarregar e aceitar de novo.",
+      "description": "💡 **Em palavras simples:** Aceitar uma versão velha dos termos não vale: a pessoa precisa aceitar a versão atual.\n\nA pessoa aceitou uma versão dos termos que não vale mais (página aberta antes de eles mudarem): recarregar e aceitar de novo.",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes",
       "body": {
@@ -2999,7 +2075,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_07",
       "name": "CEP que não existe → 422",
-      "description": "O endereço vem do ViaCEP: CEP inexistente → `422`; ViaCEP fora do ar → `503`.",
+      "description": "💡 **Em palavras simples:** Um CEP que o ViaCEP não conhece: o cadastro é recusado em vez de salvar um endereço vazio.\n\nO endereço vem do ViaCEP: CEP inexistente → `422`; ViaCEP fora do ar → `503`.",
       "method": "POST",
       "url": "{{ _.base_url }}/clientes",
       "body": {
@@ -3028,7 +2104,7 @@
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "08 · CORS (navegador chamando a API direto)",
-      "description": "O site de hoje passa pelo proxy do Next e não usa CORS. Isto vale para um navegador chamando a API direto. As origens permitidas vêm de `CORS_ORIGENS` (padrão `http://localhost:3000`).",
+      "description": "💡 Uma regra do navegador (CORS): só o site do RKF Bank pode chamar a API de dentro de uma página. Um site estranho é barrado.\n\nO site de hoje passa pelo proxy do Next e não usa CORS. Isto vale para um navegador chamando a API direto. As origens permitidas vêm de `CORS_ORIGENS` (padrão `http://localhost:3000`).",
       "metaSortKey": 8
     },
     {
@@ -3036,7 +2112,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_08",
       "name": "Preflight de origem permitida → 200",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Antes de chamar a API, o navegador pergunta \"posso?\" (o preflight). Vindo do site do RKF Bank (`localhost:3000`), a resposta é sim.",
       "method": "OPTIONS",
       "url": "{{ _.base_url }}/transferencias",
       "body": {},
@@ -3070,7 +2146,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_08",
       "name": "Preflight de origem estranha → 403",
-      "description": "",
+      "description": "💡 **Em palavras simples:** A mesma pergunta vinda de um site desconhecido: não (`403`). Assim um site malicioso não usa a sua sessão para mexer na sua conta.",
       "method": "OPTIONS",
       "url": "{{ _.base_url }}/transferencias",
       "body": {},
@@ -3100,7 +2176,7 @@
       "_type": "request_group",
       "parentId": "wrk_rkfbank",
       "name": "09 · Sessão: renovar e sair (refresh token)",
-      "description": "Contrato 3.1. O login devolve, além do token de acesso (15 min), um **token de renovação** (7 dias) que troca o par sem pedir a senha. Ele é de **uso único**: usar de novo um já trocado é sinal de roubo e derruba todas as sessões da pessoa. Mande na ordem; usa o cliente DESTINO, e no fim ele entra de novo para as outras pastas continuarem.",
+      "description": "💡 Ficar logado sem digitar a senha de novo, e sair de verdade. O crachá curto (token) é renovado com um segundo crachá, mais longo (refresh token).\n\nContrato 3.1. O login devolve, além do token de acesso (15 min), um **token de renovação** (7 dias) que troca o par sem pedir a senha. Ele é de **uso único**: usar de novo um já trocado é sinal de roubo e derruba todas as sessões da pessoa. Mande na ordem; usa o cliente DESTINO, e no fim ele entra de novo para as outras pastas continuarem.",
       "metaSortKey": 9
     },
     {
@@ -3108,7 +2184,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Login · cliente DESTINO",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Entra de novo para ter um par novinho de crachás: o de acesso (curto) e o de renovação (7 dias).",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",
       "body": {
@@ -3137,7 +2213,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Renovar: troca o par",
-      "description": "Público: o token de renovação vai no corpo (o de acesso pode já ter vencido). Mesmo formato do login.",
+      "description": "💡 **Em palavras simples:** Troca o crachá de renovação por um par novo, sem digitar a senha. É assim que o app te mantém logado. O de renovação antigo deixa de valer.\n\nPúblico: o token de renovação vai no corpo (o de acesso pode já ter vencido). Mesmo formato do login.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/refresh",
       "body": {
@@ -3166,7 +2242,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "O token novo funciona",
-      "description": "",
+      "description": "💡 **Em palavras simples:** O crachá novo abre as contas normalmente.",
       "method": "GET",
       "url": "{{ _.base_url }}/contas",
       "body": {},
@@ -3189,7 +2265,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Reusar o token já trocado → 401",
-      "description": "Reuso = alguém copiou o token. A API derruba **todas** as renovações da pessoa, inclusive a legítima.",
+      "description": "💡 **Em palavras simples:** Usar de novo um crachá de renovação que já foi trocado é sinal de roubo: o banco recusa E derruba todas as sessões da pessoa.\n\nReuso = alguém copiou o token. A API derruba **todas** as renovações da pessoa, inclusive a legítima.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/refresh",
       "body": {
@@ -3218,7 +2294,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Depois do reuso, a renovação legítima também caiu → 401",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Prova do passo anterior: até o crachá novo, que era legítimo, foi derrubado. Quem roubou fica sem acesso; o dono só precisa entrar de novo.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/refresh",
       "body": {
@@ -3247,7 +2323,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Login · cliente DESTINO (de novo)",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Entra de novo depois da derrubada.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",
       "body": {
@@ -3276,7 +2352,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Sair (logout)",
-      "description": "Revoga o token de renovação. O de acesso continua valendo até vencer (no máximo 15 min): o front o apaga.",
+      "description": "💡 **Em palavras simples:** Sair de verdade: o crachá de renovação é cancelado no banco, não só apagado do aparelho.\n\nRevoga o token de renovação. O de acesso continua valendo até vencer (no máximo 15 min): o front o apaga.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/logout",
       "body": {
@@ -3305,7 +2381,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Renovar depois de sair → 401",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Depois de sair, o crachá de renovação não serve mais para nada.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/refresh",
       "body": {
@@ -3334,7 +2410,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Sair com token desconhecido → 204",
-      "description": "Sair nunca falha (nem revela se o token existia).",
+      "description": "💡 **Em palavras simples:** Sair com um crachá que o banco não conhece também responde `204`: a API não revela se o crachá existia.\n\nSair nunca falha (nem revela se o token existia).",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/logout",
       "body": {
@@ -3363,7 +2439,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Renovar sem o token → 400",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Pedir renovação sem mandar o crachá: `400`.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/refresh",
       "body": {
@@ -3392,7 +2468,7 @@
       "_type": "request",
       "parentId": "fld_rkfbank_09",
       "name": "Login · cliente DESTINO (para as outras pastas)",
-      "description": "",
+      "description": "💡 **Em palavras simples:** Deixa o Bruno logado no fim, para você poder mandar as outras pastas de novo sem refazer o login.",
       "method": "POST",
       "url": "{{ _.base_url }}/auth/login",
       "body": {
