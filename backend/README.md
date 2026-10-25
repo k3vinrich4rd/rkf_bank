@@ -17,7 +17,7 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 | [README_CONTRATO_API.md](README_CONTRATO_API.md) | **fonte da verdade** de rotas, payloads, regras e erros |
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
 | [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou MySQL), ver o banco (console do H2, MySQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
-| [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia pública (82 requisições do cliente, sem o ADMIN; também em `.yaml` para o Insomnia 10+; a pasta 02 é o roteiro E2E completo e o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
+| [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia pública (83 requisições do cliente, sem o ADMIN; também em `.yaml` para o Insomnia 10+; a pasta 02 é o roteiro E2E completo e o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
 | `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Fellipe, do Renan e do admin, roteiro ponta a ponta completo |
 
 ---
@@ -334,7 +334,13 @@ src/main/resources/db/
 │   ├── V6__criar_tabela_idempotencia.sql (Idempotency-Key das movimentações)
 │   ├── V7__adicionar_ativo_usuario.sql   (acesso revogável pelo ADMIN)
 │   ├── V8__adicionar_versao_credencial_usuario.sql (troca de senha derruba tokens antigos)
-│   └── V9__adicionar_encerramento_cliente.sql (LGPD: encerramento pelo titular e anonimização)
+│   ├── V9__adicionar_encerramento_cliente.sql (LGPD: encerramento pelo titular e anonimização)
+│   ├── V10__adicionar_aceite_termos_cliente.sql (LGPD: versão e data do aceite dos termos)
+│   ├── V11__criar_tabela_shedlock.sql   (rotinas agendadas rodam em uma instância só)
+│   ├── V12__criar_tabela_tentativa_login.sql (limitador de login contra força bruta)
+│   ├── V13__restringir_tipo_lancamento.sql (DEPOSITO, SAQUE e TRANSFERENCIA)
+│   ├── V14__adicionar_deve_trocar_senha_usuario.sql (senha temporária redefinida pelo ADMIN)
+│   └── V15__criar_tabela_refresh_token.sql (token de renovação de uso único)
 └── seed/                              ← dados prontos: só onde spring.flyway.locations incluir a pasta
     ├── equipe/afterMigrate__dados_equipe.sql         (Fellipe = origem, Renan = destino; sem senha)
     └── visitante/afterMigrate__dados_visitantes.sql  (Ana e Bruno Visitante; senha pública)

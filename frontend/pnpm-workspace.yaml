@@ -7,3 +7,8 @@ ignoredBuiltDependencies:
 overrides:
   hono: "^4.13.11"
   ip-address: "^10.7.4"
+  # 25/10/2026: CVEs que vem da CLI do shadcn (MCP SDK, dotenvx) e do eslint; nada disso roda no site em producao
+  body-parser: "^2.4.0"
+  fast-uri: "^3.1.9"
+  undici: "^7.30.1"
+  zod: "^4.6.6"

@@ -69,7 +69,10 @@ export const EXPLICACOES = {
   "05|Promovido lista clientes → 200": "Agora ele consegue o que antes dava `403`: a promoção funcionou.",
   "05|Promovido tenta rebaixar o ADMIN do .env → 422": "O ADMIN criado pelo `.env` não é cliente, então não pode virar CLIENTE. O banco recusa (`422`) e explica no `codigo`.",
   "05|Rebaixar de volta a CLIENTE": "Desfaz a promoção: o cliente novo volta a ser cliente comum.",
+  "05|Login · cliente novo (rebaixado, sessão aberta)": "O cliente novo entra de novo, agora como CLIENTE, e fica com a sessão aberta (os dois crachás guardados). É ela que o próximo passo vai derrubar.",
   "05|Desativar o acesso": "Bloqueia o login da pessoa, sem apagar nada. No banco, usuário nunca é apagado: só desativado (o histórico fica).",
+  "05|Sessão aberta do desativado → 401": "O crachá que a pessoa já tinha antes de ser desativada para de funcionar na hora, mesmo sem ter vencido. Desativar não espera a sessão acabar sozinha.",
+  "05|Renovação do desativado → 401": "Nem o crachá de renovação salva: quem foi desativado não consegue um par novo e fica fora de verdade.",
   "05|Login do desativado → 401": "Com o acesso desativado, nem a senha certa entra.",
   "05|Reativar o acesso": "Desbloqueia: a pessoa volta a conseguir entrar.",
   "05|Redefinir a senha (quem esqueceu)": "O ADMIN cria uma senha temporária para quem esqueceu a dele. A pessoa vai ser obrigada a trocar no primeiro acesso.",
@@ -86,6 +89,7 @@ export const EXPLICACOES = {
   "05|ADMIN do .env abre conta → 422": "O ADMIN do `.env` não é cliente (não tem cadastro), então não pode abrir conta.",
   "05|ADMIN do .env em /clientes/me → 422": "\"Meus dados\" é para quem tem cadastro de cliente; o ADMIN do `.env` não tem.",
   "05|ADMIN deposita na conta de um cliente → 403": "O ADMIN vê as contas, mas NÃO mexe no dinheiro dos outros. Ser administrador não dá direito de movimentar conta alheia.",
+  "05|ADMIN transfere da conta de um cliente → 403": "O ADMIN tentando tirar dinheiro da conta de um cliente por transferência: `403`. Nem depósito nem transferência, a regra de dono vale para ele também.",
   "05|ADMIN vê o extrato de um cliente → 403": "O extrato é privado: nem o ADMIN vê o detalhe das movimentações de outra pessoa.",
   "05|ADMIN vê uma conta de cliente → 200": "Ver a conta (número e saldo) o ADMIN pode: é o que ele precisa para atender um cliente.",
   "05|Conciliação: saldo × extrato": "A auditoria: para cada conta, o banco soma o extrato e compara com o saldo. A resposta é a lista das contas que NÃO batem: vazia (`[]`) quer dizer que o dinheiro de todo mundo está certo.",
@@ -136,6 +140,7 @@ export const EXPLICACOES = {
   "07|Cadastro sem aceitar os termos → 400": "Sem aceitar os termos, não tem cadastro (LGPD).",
   "07|Cadastro com termos antigos → 422": "Aceitar uma versão velha dos termos não vale: a pessoa precisa aceitar a versão atual.",
   "07|CEP que não existe → 422": "Um CEP que o ViaCEP não conhece: o cadastro é recusado em vez de salvar um endereço vazio.",
+  "07|CLIENTE tenta se promover a ADMIN → 403": "O ataque mais óbvio: a Ana usa o próprio id na rota que promove a ADMIN. `403`: só um ADMIN muda perfis, e ninguém se promove sozinho.",
 
   // 08 · CORS
   "08|Preflight de origem permitida → 200": "Antes de chamar a API, o navegador pergunta \"posso?\" (o preflight). Vindo do site do RKF Bank (`localhost:3000`), a resposta é sim.",
