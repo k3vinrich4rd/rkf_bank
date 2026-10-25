@@ -6,6 +6,13 @@ Escreva seu recado no topo. Quando resolver, marque `[x]` e escreva a resposta e
 
 ---
 
+- [ ] Kevin → Renan (25/10): **os 4 PRs do Dependabot do front entraram de uma vez, aplicados em cima da develop.** Branch `chore/dependencias-frontend-2026-10-25`. Não mergeei os PRs do Dependabot como vieram: eles foram gerados antes da correção das CVEs (#67) e os lockfiles deles desfariam os overrides. Refiz cada atualização com o `pnpm` em cima da develop e testei uma por vez (lint, tipos, testes, build e varredura de CVEs, tudo verde a cada passo).
+  1. **TypeScript 5.9.3 → 6.0.3** (`devDependencies`, era o #64 em conflito): o `tsconfig.json` já usava `moduleResolution: "bundler"` e nenhuma opção que o TS 6 descontinuou, e o `typescript-eslint` aceita até a 6.0. O `typecheck` passa sem erro nem aviso. O `package.json` agora pede `^6.0.3`: se a sua IDE usar o TypeScript dela, troque para o do projeto (VS Code: **TypeScript: Select TypeScript Version → Use Workspace Version**). Já existe o TS 7 (o compilador reescrito em Go); não subi, porque é outra versão maior e merece teste próprio.
+  2. **`cn` 0.4.0 → 0.5.0** (era o #65): comparei a saída da 0.4 com a da 0.5 nas **282 strings de classes** do front, combinadas em pares como o `cn` é usado (variante + `className`): **nenhuma diferença**, então nada muda no visual.
+  3. **`radix-ui` 1.6.7 → 1.8.1** (era o #66): só o `Slot` do `button.tsx` (`asChild`) usa o pacote. Ele continua exportado, e renderizado ainda vira o próprio link com as classes do botão (os 9 `asChild` do front).
+  4. **CI do front** (era o #62): `pnpm/action-setup` v4 → v6 e `actions/setup-node` v4 → v7 no `frontend-ci.yml`.
+  - Os 4 PRs do Dependabot (#62, #64, #65, #66) foram fechados apontando para esta branch. Se notar algo diferente no `pnpm dev` ou numa tela, me avise.
+
 - [ ] Kevin → Renan (25/10): **corrigi as vulnerabilidades que o GitHub apontou no front quando a develop chegou na main.** Branch `fix/vulnerabilidades-frontend-2026-10-25`. Nenhuma estava no nosso código nem roda no site: todas vinham da CLI do `shadcn` (MCP SDK, dotenvx) e do `eslint`.
   1. **`shadcn` 4.21.0 → 4.22.1** no `package.json`: a versão nova já usa o `zod` 4, e o `zod` 3.x não tem correção publicada (CVE-2023-54404, memória esgotada ao validar coleções enormes).
   2. **4 overrides novos no `pnpm-workspace.yaml`** (mesmo bloco do `hono` e do `ip-address`): `body-parser` ^2.4.0 (DoS com bytes depois do corpo comprimido), `fast-uri` ^3.1.9 (4 CVEs de confusão de URI), `undici` ^7.30.1 (DoS e bypass de SRI) e `zod` ^4.6.6. Quando o `shadcn` trouxer essas versões sozinho, apague a linha (confira com `corepack pnpm why <pacote>`).

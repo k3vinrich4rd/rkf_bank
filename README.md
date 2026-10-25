@@ -1038,7 +1038,7 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 | Backend | Java 25 · Spring Boot 4.1 · Spring Web MVC · Spring Data JPA (Hibernate 7) · Spring Security + OAuth2 Resource Server · Bean Validation · `RestClient` · Flyway · Log4j2 |
 | Banco | MySQL 8.4 (Docker Compose) · H2 2.5.252 (modo MySQL) nos testes · MySQL real com Testcontainers |
 | Testes | JUnit 5 · Mockito · `@DataJpaTest` · `@SpringBootTest` · JaCoCo |
-| Frontend | Next.js 16 (App Router) · React 19 · TypeScript 5 · Tailwind CSS 4 · shadcn/ui · Lucide · pnpm 10 |
+| Frontend | Next.js 16 (App Router) · React 19 · TypeScript 6 · Tailwind CSS 4 · shadcn/ui · Lucide · pnpm 10 |
 | Esteira | GitHub Actions · CodeQL · Dependency Review · Dependabot · Conventional Commits |
 
 </details>

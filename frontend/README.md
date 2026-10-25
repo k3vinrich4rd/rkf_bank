@@ -5,7 +5,7 @@ Site do RKF Bank: landing page institucional e as telas do banco digital (cadast
 | | |
 |---|---|
 | **Responsável** | Renan ([@renanbarrostech-cmd](https://github.com/renanbarrostech-cmd)) |
-| **Stack** | Next.js 16 (App Router) · React 19 · TypeScript 5 (strict) · Tailwind CSS 4 · shadcn/ui (Radix) · lucide-react |
+| **Stack** | Next.js 16 (App Router) · React 19 · TypeScript 6 (strict) · Tailwind CSS 4 · shadcn/ui (Radix) · lucide-react |
 | **Gerenciador** | pnpm 10 |
 | **Porta** | `3000` |
 
