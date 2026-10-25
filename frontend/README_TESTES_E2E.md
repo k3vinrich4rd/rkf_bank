@@ -23,7 +23,28 @@ banco), datas e horários.
 | 3 | navegador | abra `http://localhost:3000` | a landing com o cartão RKF em 3D |
 
 Pré-requisitos: **JDK 25** e **Node 20+**. Sem Docker e sem `.env`: o perfil `visitante` usa um banco H2 em memória
-que some quando a API para. Primeira vez no IntelliJ? [Guia do backend, Parte 1](../backend/README_TESTES_E2E.md#parte-1--prepare-o-ambiente-pelo-intellij).
+que some quando a API para. Primeira vez no IntelliJ? [Guia do backend, Parte 1](../backend/README_TESTES_E2E.md#parte-1--prepare-o-ambiente-pelo-intellij)
+(inclui como criar a configuração com as **VM options** na mão).
+
+**Pela IDE, em vez do terminal (passo 2):**
+
+- **IntelliJ / WebStorm:** abra `frontend/package.json` e clique no ▶️ ao lado do script `dev` (ou **Run → Edit
+  Configurations… → + → npm**, *Command* `run`, *Scripts* `dev`, *package.json* `frontend/package.json`). Rodando a API
+  e o site juntos, cada um aparece numa aba da janela **Run**.
+- **VS Code:** abra a pasta `frontend`, painel **NPM Scripts** (no Explorer) → ▶️ em `dev`.
+- A API está em outra porta? Crie `frontend/.env.local` a partir do exemplo (`cp .env.example .env.local`) e troque o
+  `API_URL`. Sem esse arquivo, o site usa `http://localhost:8080`.
+
+**Testes automáticos do front** (não precisam da API no ar), na pasta `frontend`:
+
+| Comando | O que confere |
+|---|---|
+| `pnpm test` | testes do Vitest: sessão, renovação do token no `proxy.ts`, força da senha, seletor de conta |
+| `pnpm lint` e `pnpm typecheck` | padrão de código e tipos do TypeScript (o contrato da API em `lib/api/types.ts`) |
+| `pnpm build` | o build de produção do Next |
+
+Ou tudo de uma vez, da raiz: `scripts/validar.sh frontend`. Na IDE, os testes do Vitest também rodam pelo ▶️ ao lado de
+cada `describe`/`it` (IntelliJ/WebStorm já reconhecem; no VS Code, com a extensão oficial do Vitest).
 
 | Conta pronta | CPF (login) | Senha | Saldo inicial | ID da conta (para receber transferências) |
 |---|---|---|---|---|

@@ -123,6 +123,31 @@ Started RkfbankApplication in 9.5 seconds
 
 Pelo terminal (sem IntelliJ), o mesmo: `./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante`.
 
+#### A configuração não apareceu? Crie na mão (VM options)
+
+O IntelliJ só lê a pasta `.run/` quando o projeto é aberto pela **raiz**. Se a lista ao lado do ▶️ estiver vazia (ou
+você quer entender o que ela faz), crie a sua:
+
+1. **Run → Edit Configurations… → + → Application**.
+2. **Name:** `API · Visitante (H2)` · **JDK:** 25 · **Main class:** `com.br.rkfbank.RkfbankApplication`
+   (o módulo é `rkfbank`).
+3. **Modify options → Add VM options** (o campo fica escondido por padrão) e escreva o perfil:
+
+| Para testar | VM options | Precisa de |
+|---|---|---|
+| como cliente, sem nada instalado | `-Dspring.profiles.active=visitante` | nada |
+| como ADMIN, no MySQL | *(vazio: é o perfil padrão)* | `.env` + `docker compose up -d` |
+| como ADMIN, sem Docker | `-Dspring.profiles.active=equipe` | `.env` |
+| com outra porta (a 8080 está ocupada) | some ` -Dserver.port=8081` ao perfil | mude a URL do ambiente do Insomnia também |
+
+4. **Working directory:** a pasta **raiz** do repositório (`$PROJECT_DIR$`). É dela que a API lê o `.env`: com a
+   pasta `backend/` ali, o ADMIN não nasce e o login dele dá `401`.
+5. **OK** → ▶️. No log, a primeira linha útil diz qual perfil subiu: `The following 1 profile is active: "visitante"`.
+
+> **VM option × variável de ambiente × argumento:** `-Dspring.profiles.active=visitante` (VM options),
+> `SPRING_PROFILES_ACTIVE=visitante` (**Environment variables**) e `--spring.profiles.active=visitante`
+> (**Program arguments**) fazem a mesma coisa; use **um** deles. Se dois existirem, o argumento vence a VM option.
+
 ### 1.4 Rodar a API com o seu ADMIN (Parte 2)
 
 O ADMIN não nasce por rota (senão qualquer um viraria admin): a API o cria **na subida**, a partir do `.env` da raiz.
