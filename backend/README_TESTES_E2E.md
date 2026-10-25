@@ -1,78 +1,118 @@
 # 🧪 Como testar o RKF Bank (API) — do zero, com pedido e resposta de cada passo
 
-> Para **qualquer pessoa** que clonou o repositório (recrutador, colega, curioso) testar a API inteira na própria
-> máquina. Contrato **3.1** (23/10/2026). A ordem é a de quem testa de verdade: **entender** o que vai ser testado →
-> **preparar** o ambiente pelo IntelliJ → testar tudo o que um **ADMIN** pode (e não pode) → testar tudo como
-> **cliente**. Cada passo tem o pedido completo (rota, headers e corpo) e a resposta que a API devolveu de verdade.
-> Tudo aqui usa só **contas públicas** (Ana e Bruno) ou contas que **você** cria na sua máquina: nenhuma senha da equipe.
-> Tela? [Roteiro do frontend](../frontend/README_TESTES_E2E.md). Só quer clicar? [Visitantes, em 5 minutos](../VISITANTES.md).
+> Para **qualquer pessoa** que clonou o repositório (recrutador, colega, curioso) testar a API na própria máquina,
+> **como cliente do banco**: cadastro, contas, depósito, saque, transferência, extrato, dados pessoais, sessão e os
+> erros que o banco tem que dar. Contrato **3.1**. Nunca testou uma API? Comece pela Parte 0: cada palavra nova é
+> explicada antes de aparecer, e cada passo tem um **💡 Em palavras simples**, o pedido completo e a resposta que a
+> API devolveu de verdade. Tudo usa só **contas públicas** (Ana e Bruno) ou contas que **você** cria na sua máquina.
+> Prefere clicar no site? [Roteiro do frontend](../frontend/README_TESTES_E2E.md). Só 5 minutos? [Visitantes](../VISITANTES.md).
 
 | Parte | O que tem | Tempo |
 |---|---|:-:|
-| [0 · Entenda antes de testar](#parte-0--entenda-antes-de-testar) | os perfis, quem é quem, os cenários e as palavras que aparecem nas respostas | 5 min |
-| [1 · Prepare o ambiente pelo IntelliJ](#parte-1--prepare-o-ambiente-pelo-intellij) | JDK 25, rodar a API, `.env`, ver o banco, importar a coleção | 15 min (1ª vez) |
-| [2 · Teste como ADMIN](#parte-2--teste-como-admin) | o seu ADMIN no MySQL: usuários, perfis, senha temporária, conciliação e as travas | 10 min |
-| [3 · Teste como cliente](#parte-3--teste-como-cliente) | Ana e Bruno, cliente novo do cadastro ao extrato, idempotência, LGPD, erros e sessão | 15 min |
-| [4 · Por dentro e problemas comuns](#parte-4--por-dentro-e-problemas-comuns) | logs, como a segurança funciona, cada camada, problemas comuns | consulta |
+| [0 · Entenda antes de testar](#parte-0--entenda-antes-de-testar) | o que é uma API, como ler um pedido e uma resposta, quem é quem | 10 min |
+| [1 · Prepare o ambiente pelo IntelliJ](#parte-1--prepare-o-ambiente-pelo-intellij) | JDK 25, rodar a API (VM options), ver o banco, importar a coleção | 15 min (1ª vez) |
+| [2 · Teste como cliente](#parte-2--teste-como-cliente) | Ana e Bruno, cliente novo do cadastro ao extrato, idempotência, LGPD, erros e sessão | 20 min |
+| [3 · Por dentro e problemas comuns](#parte-3--por-dentro-e-problemas-comuns) | logs, como a segurança funciona, cada camada, problemas comuns | consulta |
 
-> ⚡ **Pressa?** Parte 1.3 (▶️ **API · Visitante (H2)**) → importe a coleção (1.6) → mande as pastas `00` a `09` com o
-> ambiente **Visitante**. Ou, pelo terminal, com a API no ar: `node scripts/rodar-colecao-insomnia.mjs` → `82/82`.
+> ⚡ **Pressa?** Parte 1.3 (▶️ **API · Visitante (H2)**) → importe a coleção (1.6) → mande as pastas de cima para
+> baixo. Ou, pelo terminal, com a API no ar: `node scripts/rodar-colecao-insomnia.mjs` → `82/82`.
+
+> 🛡️ **E o administrador?** O banco tem um perfil `ADMIN` (gestão de usuários e auditoria), mas ele **não existe** no
+> perfil `visitante`, de propósito: a senha dos visitantes é pública, e um ADMIN com senha pública seria um ADMIN de
+> qualquer um. Os testes de ADMIN ficam no roteiro privado da equipe. Daqui, você vê o outro lado: o cliente tentando
+> entrar onde só o ADMIN pode, e recebendo `403` (pasta `07`). Por isso a coleção pula da pasta `04` para a `06`.
 
 ---
 
 ## Parte 0 — Entenda antes de testar
 
-### Os perfis da API
+### O que é uma API, em uma frase
 
-A mesma API sobe de três jeitos. Para testar como **cliente**, o perfil `visitante` não pede configuração nenhuma.
-Para testar como **ADMIN**, use o perfil padrão (MySQL) com um `.env` seu: o `visitante` **não tem ADMIN de propósito**,
-porque a senha dele é pública.
+O app e o site do banco não guardam dinheiro nem dados: eles **pedem** tudo para a API ("me mostra as contas da
+Ana", "transfere R$ 25 para o Bruno"), e a API responde. Testar a API é fazer esses pedidos na mão, sem tela, e
+conferir se cada resposta está certa. O **Insomnia** é o programa que manda os pedidos por você.
 
-| Perfil | Configuração no IntelliJ | Banco | Quem existe | Precisa de |
-|---|---|---|---|---|
-| `visitante` | **API · Visitante (H2)** | H2 em memória (zera a cada subida) | Ana e Bruno, senha pública `Visitante@2026`; **sem ADMIN** | nada (nem `.env`, nem Docker) |
-| padrão | **API · MySQL (Docker)** | MySQL 8.4 do `docker compose` (guarda tudo) | o **seu** ADMIN e duas contas de teste (Fellipe e Renan) com a **sua** senha | `.env` + Docker Desktop |
-| `equipe` | **API · Equipe (H2)** | H2 em memória | o mesmo do padrão | `.env` (é o perfil do dia a dia do time) |
+### Como ler um pedido (requisição)
 
-### Quem é quem
+```http
+POST /transferencias                          ← o MÉTODO (o que fazer) e o CAMINHO (com o quê)
+Authorization: Bearer eyJhbGci...             ← HEADERS: informações extras. Este é o "crachá" de quem pede
+Idempotency-Key: 3f1c...                      ← o "número do pedido", para não repetir a operação
+Content-Type: application/json                ← avisa que o corpo está em JSON
 
-| Pessoa | Perfil da API | Papel | CPF (login) | Senha | Conta |
-|---|---|---|---|---|---|
-| **Ana Visitante** | `visitante` | cliente ORIGEM | `246.813.579-28` | `Visitante@2026` | corrente `900001` · id `a0000000-0000-4000-8000-000000000114` · R$ 1.000,00 |
-| **Bruno Visitante** | `visitante` | cliente DESTINO | `975.318.642-82` | `Visitante@2026` | corrente `900002` · id `a0000000-0000-4000-8000-000000000124` · R$ 500,00 |
-| **Cliente Novo** | qualquer | cliente que você cadastra no teste | `529.982.247-25` (CPF válido de exemplo) | `minha-senha-forte` | as que abrir |
-| **o seu ADMIN** | padrão (MySQL) | administra usuários e confere o banco | o `ADMIN_CPF` do **seu** `.env` (sugestão: `111.444.777-35`) | o `ADMIN_SENHA` do **seu** `.env` | nenhuma (não é cliente) |
-| **Fellipe e Renan (Teste)** | padrão (MySQL) | contas de teste que o seed cria: ORIGEM `5eed…0014` e DESTINO `5eed…0024` | `123.456.789-09` e `987.654.321-00` | a `EQUIPE_SENHA` do **seu** `.env` | correntes `100001` e `100002` |
+{ "contaOrigemId": "...", "contaDestinoId": "...", "valor": 25.00 }      ← o CORPO: os dados do pedido
+```
 
-Todos os CPFs, nomes e endereços são fictícios (CPFs válidos só pelos dígitos verificadores).
-
-### Os cenários que este roteiro cobre
-
-| Cenário | Onde | O que prova |
+| Método | Quer dizer | Exemplo no banco |
 |---|---|---|
-| ADMIN entra, lista usuários, clientes e todas as contas | Parte 2 | o perfil `ADMIN` vê tudo, com CPF mascarado |
-| ADMIN promove, rebaixa, desativa, reativa e redefine senha | Parte 2 | a mudança vale **na próxima requisição** (o token antigo cai) |
-| ADMIN não mexe em si mesmo nem no dinheiro dos outros | Parte 2 | travas `PROPRIO_ACESSO` e `PROPRIA_SENHA_PELA_GESTAO` e regra de dono (`403`) |
-| Senha temporária | Parte 2 | depois da redefinição, só a troca de senha funciona |
-| Conciliação | Parte 2 | o saldo de cada conta bate com a soma do extrato |
-| Cadastro com aceite dos termos, CPF/CEP com máscara e ViaCEP | Parte 3 | LGPD e higienização dos dados |
-| Contas ORIGEM e DESTINO, depósito, saque, transferência, saldo e extrato | Parte 3 | o fluxo do MVP, conferido centavo a centavo |
-| Idempotência | Parte 3 | a mesma movimentação repetida não sai duas vezes |
-| Regra de dono | Parte 3 | ninguém vê nem movimenta a conta de outro cliente |
-| Meus dados (LGPD) e troca de senha | Parte 3 | ver, corrigir e encerrar o próprio cadastro |
-| Erros que devem acontecer | Parte 3 | `400`, `401`, `403`, `404`, `409`, `422`, cada um com o `codigo` do contrato |
-| Sessão | Parte 3 | renovar sem senha, reuso derrubando tudo, logout |
+| `GET` | **ler**, sem mudar nada | ver as contas, ver o extrato |
+| `POST` | **criar** ou **fazer** algo | cadastrar, abrir conta, depositar, transferir, entrar (login) |
+| `PATCH` | **corrigir** uma parte | mudar o telefone, trocar a senha |
+| `OPTIONS` | o navegador **pergunta se pode** antes de chamar | só na pasta `08` (CORS) |
+
+**JSON** é o formato dos dados: pares `"campo": valor` entre chaves, como `{ "valor": 25.00 }`. Lista vem entre
+colchetes: `[ {...}, {...} ]`.
+
+### Como ler uma resposta: o número (status) diz quase tudo
+
+| Status | Em palavras simples | Quando aparece aqui |
+|:-:|---|---|
+| ✅ `200` | "aqui está" | leituras e logins |
+| ✅ `201` | "criei" | cadastro e conta nova |
+| ✅ `204` | "feito, e não tenho nada para mostrar" | depósito, saque, transferência, troca de senha. A resposta vem **vazia de propósito** |
+| ⛔ `400` | "o pedido está mal escrito" | campo faltando, formato errado, valor com 3 casas |
+| ⛔ `401` | "não sei quem você é" | sem crachá, crachá vencido ou falso, senha errada |
+| ⛔ `403` | "sei quem você é, mas você não pode" | mexer na conta de outra pessoa, cliente em rota de ADMIN |
+| ⛔ `404` | "não achei" | conta que não existe |
+| ⛔ `409` | "isso já existe" | CPF ou e-mail já cadastrado |
+| ⛔ `422` | "entendi, mas a regra do banco não deixa" | saldo insuficiente, encerrar com dinheiro na conta |
+
+> ⭐ **Um erro esperado é um teste que PASSOU.** A pasta `07` inteira manda pedidos errados de propósito: receber o
+> `403` certo é a prova de que a proteção funciona. Errado seria um `200` ali.
+
+Todo erro vem no mesmo formato, e o campo que importa é o `codigo` (o `message` é só para ler e pode mudar):
+
+```json
+{ "status": 422, "error": "Unprocessable Entity", "codigo": "SALDO_INSUFICIENTE",
+  "message": "Saldo insuficiente", "path": "/contas/.../saques", "campos": [] }
+```
 
 ### Palavras que aparecem nas respostas
 
-| Palavra | O que é |
+| Palavra | Em palavras simples |
 |---|---|
-| `token` | o **token de acesso** (JWT): vai em `Authorization: Bearer <token>` em toda rota protegida. Vale 15 min no MySQL e 60 min no perfil `visitante` (`expiraEmSegundos`) |
-| `refreshToken` | o **token de renovação**: troca o par em `POST /auth/refresh` sem pedir a senha. Vale 7 dias e é de **uso único** |
-| `Idempotency-Key` | header obrigatório em depósito, saque e transferência: um UUID novo por operação. Repetir a mesma chave com o mesmo corpo não movimenta de novo |
-| `codigo` | o identificador estável do erro (ex.: `SALDO_INSUFICIENTE`). O `message` é só para ler e pode mudar |
-| `deveTrocarSenha` | `true` quando a senha foi redefinida pelo ADMIN: só a troca de senha funciona até a pessoa escolher outra |
-| `***.982.247-**` | CPF mascarado: as respostas nunca devolvem o CPF inteiro |
+| `token` | o **crachá de acesso**, que o login devolve. Vai no header `Authorization: Bearer <token>` de todo pedido protegido. Vence em 60 min no perfil `visitante` (`expiraEmSegundos`) |
+| `refreshToken` | um **segundo crachá**, de 7 dias, que troca o primeiro por um novo sem pedir a senha (é assim que o app te mantém logado). Só pode ser usado **uma vez** |
+| `Idempotency-Key` | o **número do pedido** em depósito, saque e transferência. Se o mesmo número chegar duas vezes (a internet caiu e o app tentou de novo), o dinheiro **não** se move duas vezes |
+| `codigo` | o nome fixo do erro (ex.: `SALDO_INSUFICIENTE`). É o que a tela usa para decidir o que mostrar |
+| `***.982.247-**` | CPF **mascarado**: as respostas nunca devolvem o CPF inteiro (LGPD) |
+| ORIGEM e DESTINO | quem **manda** e quem **recebe** o dinheiro nos testes |
+| LGPD | a lei de proteção de dados: o banco só pede o que precisa e a pessoa pode ver, corrigir e apagar os próprios dados |
+
+### Quem é quem
+
+| Pessoa | Papel no teste | CPF (login) | Senha | Conta |
+|---|---|---|---|---|
+| **Ana Visitante** | cliente ORIGEM (manda dinheiro) | `246.813.579-28` | `Visitante@2026` | corrente `900001` · id `a0000000-0000-4000-8000-000000000114` · R$ 1.000,00 |
+| **Bruno Visitante** | cliente DESTINO (recebe) | `975.318.642-82` | `Visitante@2026` | corrente `900002` · id `a0000000-0000-4000-8000-000000000124` · R$ 500,00 |
+| **Cliente Novo** | o cliente que **você** cadastra (pasta `02`) | sorteado pela coleção a cada envio | sorteada | as que ele abrir |
+
+Todos os CPFs, nomes e endereços são fictícios (os CPFs são válidos só pelos dígitos verificadores). Cada vez que a
+API sobe no perfil `visitante`, o banco **recomeça do zero**: Ana com R$ 1.000,00 e Bruno com R$ 500,00.
+
+### Os cenários que este roteiro cobre
+
+| Cenário | Pasta da coleção | O que prova |
+|---|:-:|---|
+| A API está no ar | `00` | o primeiro "você está aí?" |
+| Login | `01` | CPF e senha viram um crachá (token) |
+| Cliente novo do cadastro ao extrato | `02` | aceite dos termos, endereço pelo ViaCEP, contas, depósito, saque, transferência e extrato, centavo a centavo |
+| Dinheiro entre duas pessoas | `03` | Ana manda, Bruno recebe; cada um vê só o que é seu |
+| Pedido repetido | `04` | a mesma operação mandada duas vezes não se repete |
+| Meus dados (LGPD) e senha | `06` | ver, corrigir, trocar a senha e encerrar o cadastro |
+| Erros que devem acontecer | `07` | `400`, `401`, `403`, `404`, `409` e `422`, cada um com o `codigo` certo |
+| CORS | `08` | só o site do banco chama a API de dentro do navegador |
+| Sessão | `09` | ficar logado sem a senha, crachá roubado derrubando tudo, sair de verdade |
 
 Contrato completo (todas as rotas, campos e códigos de erro): [README_CONTRATO_API.md](README_CONTRATO_API.md).
 
@@ -84,12 +124,13 @@ Contrato completo (todas as rotas, campos e códigos de erro): [README_CONTRATO_
 
 | Ferramenta | Para quê | Como conferir |
 |---|---|---|
-| **Git** (no Windows, já traz o Git Bash) | clonar o repositório e rodar os comandos | `git --version` |
+| **Git** (no Windows, já traz o Git Bash) | baixar o projeto e rodar os comandos | `git --version` |
 | **IntelliJ IDEA** (Community serve) | abrir o projeto, rodar a API e ver o banco | — |
 | **JDK 25** | a API é Java 25 (o IntelliJ baixa para você no 1.2) | `java -version` → `25.x` |
-| **Insomnia** (10 ou mais novo) | mandar as requisições da coleção | — |
+| **Insomnia** (10 ou mais novo) | mandar os pedidos da coleção | — |
 | **Node 20+** | só para os scripts de teste pelo terminal | `node -v` |
-| **Docker Desktop** | só para o perfil MySQL (Parte 2) | `docker version` mostra "Server" |
+
+Não precisa de Docker nem de banco instalado: o perfil `visitante` traz um banco em memória (H2) dentro da própria API.
 
 ```bash
 git clone https://github.com/k3vinrich4rd/rkf_bank.git
@@ -104,11 +145,10 @@ git clone https://github.com/k3vinrich4rd/rkf_bank.git
    vendor; o time usa Microsoft OpenJDK) → **OK**. Na mesma tela, **Language level: 25**. Sem isso, o ▶️ falha com
    `invalid source release: 25` ou `RequireJavaVersion failed`.
 
-### 1.3 Rodar a API como visitante (Parte 3)
+### 1.3 Rodar a API como visitante
 
 No alto da janela, ao lado do ▶️, abra a lista de configurações (vêm prontas na pasta `.run/` do repositório) e
-escolha **API · Visitante (H2)** → ▶️. Por baixo, ela roda `RkfbankApplication` com
-`-Dspring.profiles.active=visitante`, com a pasta de trabalho na raiz do projeto. Na aba **Run** (embaixo):
+escolha **API · Visitante (H2)** → ▶️. Na aba **Run** (embaixo):
 
 ```text
 The following 1 profile is active: "visitante"
@@ -117,97 +157,89 @@ Started RkfbankApplication in 9.5 seconds
 ```
 
 ✅ Abra http://localhost:8080/actuator/health → `{"groups":["liveness","readiness"],"status":"UP"}`.
-📖 **Swagger:** http://localhost:8080/swagger-ui.html lista todas as rotas; faça o login em `POST /auth/login`
-(**Try it out**), copie o `token`, clique em **Authorize** e cole: as rotas protegidas funcionam por ali também.
-🐞 Quer ver o código rodando? Use **Debug** no lugar do ▶️ e ponha um breakpoint em `ContaService.transferir`.
+🐞 Quer ver o código rodando por dentro? Use **Debug** no lugar do ▶️ e ponha um breakpoint (um ponto de parada,
+clicando ao lado do número da linha) em `ContaService.transferir`: a próxima transferência para ali.
 
 Pelo terminal (sem IntelliJ), o mesmo: `./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante`.
 
 #### A configuração não apareceu? Crie na mão (VM options)
 
-O IntelliJ só lê a pasta `.run/` quando o projeto é aberto pela **raiz**. Se a lista ao lado do ▶️ estiver vazia (ou
-você quer entender o que ela faz), crie a sua:
+O que a configuração pronta faz é só isto: rodar a classe principal da API dizendo **qual perfil** usar. O perfil vai
+numa **VM option** (uma opção passada para o Java na hora de ligar). Para criar a sua:
 
 1. **Run → Edit Configurations… → + → Application**.
 2. **Name:** `API · Visitante (H2)` · **JDK:** 25 · **Main class:** `com.br.rkfbank.RkfbankApplication`
    (o módulo é `rkfbank`).
-3. **Modify options → Add VM options** (o campo fica escondido por padrão) e escreva o perfil:
+3. **Modify options → Add VM options** (o campo fica escondido por padrão) e escreva:
 
-| Para testar | VM options | Precisa de |
-|---|---|---|
-| como cliente, sem nada instalado | `-Dspring.profiles.active=visitante` | nada |
-| como ADMIN, no MySQL | *(vazio: é o perfil padrão)* | `.env` + `docker compose up -d` |
-| como ADMIN, sem Docker | `-Dspring.profiles.active=equipe` | `.env` |
-| com outra porta (a 8080 está ocupada) | some ` -Dserver.port=8081` ao perfil | mude a URL do ambiente do Insomnia também |
+```text
+-Dspring.profiles.active=visitante
+```
 
-4. **Working directory:** a pasta **raiz** do repositório (`$PROJECT_DIR$`). É dela que a API lê o `.env`: com a
-   pasta `backend/` ali, o ADMIN não nasce e o login dele dá `401`.
-5. **OK** → ▶️. No log, a primeira linha útil diz qual perfil subiu: `The following 1 profile is active: "visitante"`.
+   Porta 8080 ocupada por outro programa? Use `-Dspring.profiles.active=visitante -Dserver.port=8081` e troque o
+   `base_url` do ambiente no Insomnia para `http://localhost:8081`.
+4. **Working directory:** a pasta **raiz** do repositório (`$PROJECT_DIR$`).
+5. **OK** → ▶️. A primeira linha útil do log diz qual perfil subiu: `The following 1 profile is active: "visitante"`.
+   Se aparecer `No active profile set`, a VM option não pegou (confira se ela está no campo **VM options**, e não em
+   **Program arguments**).
 
 > **VM option × variável de ambiente × argumento:** `-Dspring.profiles.active=visitante` (VM options),
 > `SPRING_PROFILES_ACTIVE=visitante` (**Environment variables**) e `--spring.profiles.active=visitante`
 > (**Program arguments**) fazem a mesma coisa; use **um** deles. Se dois existirem, o argumento vence a VM option.
 
-### 1.4 Rodar a API com o seu ADMIN (Parte 2)
+### 1.4 Ver o banco por dentro (opcional)
 
-O ADMIN não nasce por rota (senão qualquer um viraria admin): a API o cria **na subida**, a partir do `.env` da raiz.
-Como o `visitante` não tem ADMIN, a Parte 2 usa o perfil padrão, com MySQL e um `.env` **seu**:
+O banco do perfil `visitante` vive **dentro** da API, então ele se abre pelo navegador:
+http://localhost:8080/h2-console → JDBC URL `jdbc:h2:mem:rkfbank-visitante` (⚠️ ele sugere `testdb`, que é vazio),
+usuário `sa`, senha vazia → **Connect**. Experimente, antes e depois de uma transferência:
 
-1. Na raiz, copie o exemplo: `cp .env.example .env` (o `.env` é ignorado pelo Git: nada dele vai para o GitHub).
-2. Preencha os valores (os de MySQL podem ficar como no exemplo; os outros são **seus**, escolha à vontade):
-
-```dotenv
-JWT_SEGREDO=um-segredo-local-qualquer-com-mais-de-32-bytes-123     # ou: openssl rand -base64 48
-ADMIN_CPF=11144477735                                               # um CPF válido; este é de exemplo
-ADMIN_SENHA=minha-senha-de-admin-1
-EQUIPE_SENHA=minha-senha-das-contas-de-teste                        # login das contas de teste Fellipe e Renan
+```sql
+SELECT numero_conta, saldo FROM tb_conta;
+SELECT tipo_lancamento, valor, descricao FROM tb_lancamento ORDER BY data_hora DESC;
 ```
 
-3. Suba o MySQL: no terminal do IntelliJ (**View → Tool Windows → Terminal**), `docker compose up -d` e espere
-   `(healthy)` em `docker ps`.
-4. Escolha **API · MySQL (Docker)** → ▶️. A própria API lê o `.env` da raiz (`spring.config.import` no
-   `application.properties`), por isso a configuração roda da raiz. No log:
+Repare que a tabela `tb_usuario` guarda só o **hash** da senha (um embaralhamento que não dá para desfazer), nunca a
+senha em si.
 
-```text
-Successfully applied 15 migrations to schema `rkfbank`, now at version v15
-Acesso da equipe conferido: 2 de 2 contas com login
-Usuario admin 822092d9-... criado a partir do .env
-```
+### 1.5 📖 Swagger: a lista de todas as rotas, no navegador
 
-> O MySQL guarda tudo entre uma subida e outra. Para começar do zero: `docker compose down -v && docker compose up -d`.
+Com a API no ar, abra http://localhost:8080/swagger-ui.html. É o "cardápio" da API: cada rota com os campos que ela
+recebe e devolve, gerado a partir do próprio código (então nunca fica desatualizado). Para testar por ali:
 
-### 1.5 Ver o banco
+1. Abra **Autenticação → `POST /auth/login`** → **Try it out** → troque o corpo por
+   `{ "cpf": "24681357928", "senha": "Visitante@2026" }` → **Execute**.
+2. Copie o valor de `token` da resposta (sem as aspas).
+3. Clique em **Authorize** 🔓 (no alto, à direita), cole o token e **Authorize** → **Close**.
+4. Agora qualquer rota protegida funciona: **`GET /contas`** → **Try it out** → **Execute** → as contas da Ana.
 
-- **H2 (perfil `visitante`):** o banco vive **dentro** da API, então use o console no navegador:
-  http://localhost:8080/h2-console → JDBC URL `jdbc:h2:mem:rkfbank-visitante` (⚠️ ele sugere `testdb`, que é vazio),
-  usuário `sa`, senha vazia → **Connect**. Experimente:
-  `SELECT numero_conta, saldo FROM tb_conta;` e `SELECT login, perfil FROM tb_usuario;`.
-- **MySQL:** no IntelliJ, **View → Tool Windows → Database → + → Data Source → MySQL**. Host `localhost`, Port `5441`,
-  User/Password e Database = `MYSQL_USER`, `MYSQL_PASSWORD` e `MYSQL_DATABASE` do `.env` → **Test Connection** → **OK**.
+O mesmo cardápio em formato de máquina (o **OpenAPI**, em JSON) está em http://localhost:8080/v3/api-docs: é o
+arquivo que ferramentas como o Insomnia e o Postman importam para montar requisições sozinhas.
 
 ### 1.6 Importar a coleção no Insomnia
 
-A coleção tem **114 requisições** em pastas numeradas, e cada login guarda o token sozinho (nada de copiar e colar):
+A coleção tem **82 requisições** em pastas numeradas, na ordem em que um cliente usaria o banco. Cada login guarda o
+crachá sozinho (nada de copiar e colar), e cada requisição tem, na aba **Docs**, o **💡 Em palavras simples** do passo:
 [`insomnia/rkfbank.insomnia.yaml`](insomnia/rkfbank.insomnia.yaml) (Insomnia 10+) ou
 [`insomnia/rkfbank.insomnia.json`](insomnia/rkfbank.insomnia.json) (Insomnia 9).
 
-1. Insomnia → **Import** → **File** → `backend/insomnia/rkfbank.insomnia.yaml`.
-2. Escolha o ambiente no canto superior esquerdo:
-   - **Visitante (H2, Ana e Bruno)** para a Parte 3 (API · Visitante);
-   - **Equipe (MySQL ou H2, Fellipe e Renan)** para a Parte 2: clique no ⚙️ e troque os três `COLE_AQUI_...` pelos
-     valores do **seu** `.env` (`EQUIPE_SENHA`, `ADMIN_CPF` e `ADMIN_SENHA`).
-3. Mande de cima para baixo, pasta por pasta. Cada resposta mostra ✅/❌ na aba **Tests**. As Partes 2 e 3 trazem o
-   pedido e a resposta esperada de cada requisição com o mesmo número (`05.07` = pasta 05, 7ª requisição).
+1. Insomnia → **Import** → **File** → `backend/insomnia/rkfbank.insomnia.yaml` → **Import**.
+2. Abra a coleção **RKF Bank API** e, no canto superior, escolha o ambiente **Visitante (H2, Ana e Bruno)**. O
+   ambiente guarda os dados de teste (CPFs, ids das contas) e os crachás que os logins vão salvando.
+3. Mande de cima para baixo, pasta por pasta (**Send** ou `Ctrl+Enter`). Em cada resposta, a aba **Tests** mostra ✅
+   ou ❌ para cada conferência automática (status, saldo, campos). A Parte 2 traz o pedido e a resposta esperada de
+   cada requisição com o mesmo número (`02.07` = pasta 02, 7ª requisição).
+
+> 💡 Deu `401` do nada? O crachá venceu (60 min): mande de novo o login da pasta `01`, ou renove pela pasta `09`.
 
 A coleção inteira também roda pelo terminal, com a API no ar:
 
 ```bash
-node scripts/rodar-colecao-insomnia.mjs                       # ambiente Visitante → 82/82 (a pasta do ADMIN é pulada)
+node scripts/rodar-colecao-insomnia.mjs                       # ambiente Visitante → 82/82
 ```
 
-### 1.7 Terminal com `curl` (para os passos A e V)
+### 1.7 Terminal com `curl` (para os passos V)
 
-Os passos manuais das Partes 2 e 3 também saem pelo terminal (Git Bash no Windows). Cole **uma vez** por terminal:
+Os passos V01 a V11 da Parte 2 também saem pelo terminal (Git Bash no Windows). Cole **uma vez** por terminal:
 
 ```bash
 API=http://localhost:8080
@@ -221,1447 +253,16 @@ chave() { echo "Idempotency-Key: $(node -e 'console.log(crypto.randomUUID())')";
 
 ### 1.8 Rodar os testes automáticos
 
-Botão direito em `backend/src/test/java` → **Run 'All Tests'** (307 testes; os 7 de `mysql/` sobem um MySQL de verdade
-com Testcontainers e são pulados sem Docker). Pelo terminal: `scripts/validar.sh backend`.
+Além dos testes "de fora" (a coleção), a API tem **307 testes automáticos** "de dentro", que conferem cada regra sem
+precisar da API no ar. Botão direito em `backend/src/test/java` → **Run 'All Tests'** (os 7 de `mysql/` sobem um
+MySQL de verdade com Testcontainers e são pulados sem Docker). Pelo terminal: `scripts/validar.sh backend`.
 
 ---
 
-## Parte 2 — Teste como ADMIN
+## Parte 2 — Teste como cliente
 
-> Pré-requisito: API no perfil **padrão** com o **seu** `.env` (1.4). No perfil `visitante` não existe ADMIN: tudo
-> aqui daria `401` no login.
-
-O ADMIN **vê** tudo e **administra usuários**, mas segue a regra de dono: não deposita, não saca, não transfere e não
-vê o extrato de ninguém. Primeiro pelo terminal (A00 a A16, com o **Cliente Novo** como alvo), depois a pasta `05`
-da coleção inteira.
-
-### Quem pode o quê
-
-**Como entrar:** `POST /auth/login` com CPF e senha devolve um **token** (JWT). Em toda outra chamada, mande
-`Authorization: Bearer <token>`. No Insomnia isso já está feito (aba Auth); no curl, veja o 1.7.
-
-```json
-{ "token": "eyJhbGciOiJIUzI1NiJ9...", "tipo": "Bearer", "expiraEmSegundos": 3600,
-  "clienteId": "a0000000-0000-4000-8000-000000000112", "perfil": "CLIENTE",
-  "deveTrocarSenha": false, "refreshToken": "q3Jd0kX4...", "refreshExpiraEmSegundos": 604800 }
-```
-
-**Quem eu sou?** O `perfil` da resposta do login: `CLIENTE` (todo cadastro) ou `ADMIN`. O ADMIN criado pelo `.env`
-vem com `clienteId: null` (não é cliente, não tem conta).
-
-| Rota | 🌐 Sem token | 👤 `CLIENTE` | 🛡️ `ADMIN` |
-|---|:-:|:-:|:-:|
-| `GET /actuator/health` | ✅ | ✅ | ✅ |
-| `POST /clientes` (cadastro) | ✅ | ✅ | ✅ |
-| `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `GET /termos` | ✅ | ✅ | ✅ |
-| `POST /contas` (abrir conta) | 401 | ✅ no próprio cadastro | 422 se não tiver cadastro de cliente¹ |
-| `GET /contas` | 401 | ✅ só as dele | ✅ **todas** |
-| `GET /contas/{id}` | 401 | ✅ só as dele (outra → 403) | ✅ qualquer uma |
-| `POST /contas/{id}/depositos` · `/saques` | 401 | ✅ só nas dele (outra → 403) | só nas dele (outra → 403)² |
-| `POST /transferencias` | 401 | ✅ origem tem que ser dele; destino qualquer | idem² |
-| `GET /contas/{id}/lancamentos` | 401 | ✅ só das dele | só das dele² |
-| `GET` · `PATCH /clientes/me`, `POST /clientes/me/encerramento` | 401 | ✅ | 422 se não tiver cadastro de cliente¹ |
-| `PATCH /usuarios/me/senha` | 401 | ✅ | ✅ |
-| `GET /clientes` | 401 | 403 | ✅ |
-| `GET /admin/usuarios`, `PATCH /admin/usuarios/{id}/...` | 401 | 403 | ✅ (menos em si mesmo → 422) |
-| `GET /admin/conciliacao` | 401 | 403 | ✅ |
-
-¹ O ADMIN do `.env` não é cliente. Um cliente **promovido** a ADMIN continua dono do próprio cadastro e das contas.
-² O ADMIN **vê** tudo, mas não **mexe** no dinheiro dos outros: a regra de dono vale para todo mundo.
-
-Como ler o erro: `401` = "não sei quem você é" (sem token, token vencido, senha errada) · `403` = "sei quem você é,
-mas não pode" (inclusive `TROCA_DE_SENHA_OBRIGATORIA`, com senha temporária) · `422` = "pode, mas a regra não deixa" ·
-`429` = "tentou demais".
-
-**Como descobrir as minhas permissões na prática:** faça login e veja o `perfil`; depois chame `GET /clientes`.
-`200` = você é ADMIN; `403` = CLIENTE. A pasta `07` da coleção mostra cada recusa.
-
-
-### Como tornar alguém ADMIN (três jeitos)
-
-O ADMIN **não** nasce por rota pública (senão qualquer um viraria admin). São três caminhos, do mais comum ao mais
-"de bastidor":
-
-```mermaid
-flowchart LR
-    ENV["1 · .env<br/>ADMIN_CPF + ADMIN_SENHA"] -->|"na subida da API"| A1(["primeiro ADMIN"])
-    A1 -->|"2 · PATCH /admin/usuarios/{id}/perfil<br/>{perfil: ADMIN}"| A2(["cliente promovido"])
-    SQL["3 · UPDATE tb_usuario<br/>SET perfil = 'ADMIN'"] -.->|"só em banco local"| A2
-    A2 -->|"faz login de novo"| T(["token novo com perfil ADMIN"])
-```
-
-#### 1 · Pelo `.env`: o primeiro ADMIN
-
-Preencha `ADMIN_CPF` e `ADMIN_SENHA` no `.env` (1.4) e suba no perfil MySQL (ou `equipe`). Na subida, o log mostra
-`Usuario admin <id> criado a partir do .env`. Se esse CPF já existir, nada muda. Login normal:
-`POST /auth/login {"cpf":"<ADMIN_CPF>","senha":"<ADMIN_SENHA>"}` → `"perfil":"ADMIN"`.
-
-#### 2 · Pela API: um ADMIN promove um cliente (o jeito certo)
-
-1. Login do ADMIN → `token_admin`.
-2. `GET /admin/usuarios` → ache a pessoa pelo `nome` e copie o **`id`** (é o id do usuário, não o `clienteId`).
-3. `PATCH /admin/usuarios/{id}/perfil` com `{"perfil":"ADMIN"}` → `200`.
-4. O token antigo da pessoa passa a dar `401` `ACESSO_ALTERADO`. Ela faz login de novo e o token novo já
-   vem com `"perfil":"ADMIN"`.
-
-No Insomnia, a pasta `05` faz isso com o cliente novo, sem copiar id nenhum. Para voltar: `{"perfil":"CLIENTE"}`.
-
-#### 3 · Pelo banco: SQL direto (só em banco local de teste)
-
-Útil para entender o que a API grava, ou quando ainda não existe ADMIN nenhum:
-
-```sql
-UPDATE tb_usuario SET perfil = 'ADMIN' WHERE login = '98765432100';   -- login = CPF só com números
-SELECT login, perfil, ativo FROM tb_usuario WHERE login = '98765432100';
-```
-
-Rode no console do H2 ou no MySQL (1.5) e faça **login de novo**: `"perfil":"ADMIN"` e `GET /clientes` → `200`
-(testado em 22/10/2026 no H2 e no MySQL). O token de antes da mudança cai com `401`, porque a cada requisição a API
-confere no banco se o perfil do token ainda é o mesmo.
-
-> ⚠️ Em ambiente de verdade, ninguém mexe no banco na mão: a mudança pela API (8.2) fica no log com quem fez,
-> confere as regras (ninguém se promove nem se rebaixa) e derruba os tokens antigos da forma certa.
-
-
-### Pelo terminal: o ADMIN gerenciando o Cliente Novo
-
-Variáveis: as do 1.7 e, no mesmo terminal, os valores do **seu** `.env`:
-
-```bash
-set -a && source <(tr -d '\r' < .env) && set +a
-AA="Authorization: Bearer $(login "$ADMIN_CPF" "$ADMIN_SENHA" | token)"; echo "${AA:22:3}"     # imprime eyJ
-```
-
-**A00 · Cadastre o Cliente Novo (público, é ele que o ADMIN vai gerenciar)**
-
-```bash
-curl -s -X POST $API/clientes -H "$H" -d '{"nomeCompleto":"Cliente Novo","cpf":"529.982.247-25","email":"cliente.novo@exemplo.test","telefone":"(11) 99999-8888","cep":"06020-010","numero":"123","complemento":"Apto 45","senha":"minha-senha-forte","aceiteTermos":true}'; echo
-```
-
-```http
-POST /clientes
-Content-Type: application/json
-
-{
-  "nomeCompleto": "Cliente Novo",
-  "cpf": "529.982.247-25",
-  "email": "cliente.novo@exemplo.test",
-  "telefone": "(11) 99999-8888",
-  "cep": "06020-010",
-  "numero": "123",
-  "complemento": "Apto 45",
-  "senha": "minha-senha-forte",
-  "aceiteTermos": true
-}
-```
-
-✅ **201** — CPF mascarado, endereço do ViaCEP (Osasco/SP) e o aceite dos termos gravado:
-
-```json
-{
-  "id": "1a3de7a4-602b-4eb2-ab92-91bc0e5209f6",
-  "nomeCompleto": "Cliente Novo",
-  "cpf": "***.982.247-**",
-  "email": "cliente.novo@exemplo.test",
-  "telefone": "(11) 99999-8888",
-  "endereco": {
-    "cep": "06020-010",
-    "logradouro": "Avenida dos Autonomistas",
-    "bairro": "Vila Yara",
-    "cidade": "Osasco",
-    "uf": "SP",
-    "ibge": "3534401",
-    "numero": "123",
-    "complemento": "Apto 45"
-  },
-  "termosVersao": "2026-10-23",
-  "termosAceitosEm": "2026-10-23T17:46:07.012629500Z"
-}
-```
-
-Já existe esse CPF no seu banco? `409` `CPF_JA_CADASTRADO`: siga, ele já está lá.
-
-**A01 · Login do ADMIN**
-
-```http
-POST /auth/login
-Content-Type: application/json
-
-{ "cpf": "<ADMIN_CPF do seu .env>", "senha": "<ADMIN_SENHA do seu .env>" }
-```
-
-✅ **200**
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "tipo": "Bearer",
-  "expiraEmSegundos": 900,
-  "clienteId": null,
-  "perfil": "ADMIN",
-  "deveTrocarSenha": false,
-  "refreshToken": "q3Jd0kX4...",
-  "refreshExpiraEmSegundos": 604800
-}
-```
-
-`clienteId: null`: o ADMIN do `.env` não é cliente e não tem conta.
-
-**A02 · Usuários** — e guarde o `id` do Cliente Novo.
-
-```bash
-curl -s $API/admin/usuarios -H "$AA"; echo
-UC=$(curl -s $API/admin/usuarios -H "$AA" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s).find(u=>u.nome==='Cliente Novo').id))")
-```
-
-✅ **200**, admins primeiro, CPF sempre mascarado:
-
-```json
-[
-  { "id": "822092d9-f335-47a5-9715-791464292887", "cpf": "***.444.777-**", "nome": null, "perfil": "ADMIN", "ativo": true, "clienteId": null },
-  { "id": "d066371d-5143-4f9e-88bf-0ad64bc8d7b3", "cpf": "***.456.789-**", "nome": "Fellipe Santana (Teste Origem)", "perfil": "CLIENTE", "ativo": true, "clienteId": "5eed0000-0000-4000-8000-000000000012" },
-  { "id": "4cd41f10-9bce-44fa-9cd5-fbba77b1db4d", "cpf": "***.982.247-**", "nome": "Cliente Novo", "perfil": "CLIENTE", "ativo": true, "clienteId": "1a3de7a4-602b-4eb2-ab92-91bc0e5209f6" },
-  { "id": "7c18a8ce-bafb-440c-b9b0-7c8f14de691e", "cpf": "***.654.321-**", "nome": "Renan Barros (Teste Destino)", "perfil": "CLIENTE", "ativo": true, "clienteId": "5eed0000-0000-4000-8000-000000000022" }
-]
-```
-
-O `id` daqui (`tb_usuario`) é o que vai nas rotas `/admin/usuarios/{usuarioId}/...`, **não** o `clienteId`.
-
-**A03 · Clientes, paginado** — `GET /clientes?page=0&size=1`
-
-```bash
-curl -s "$API/clientes?page=0&size=1" -H "$AA"; echo
-```
-
-✅ **200** — uma página no formato do contrato (só estes 7 campos em volta do `content`):
-
-```json
-{
-  "content": [ { "id": "1a3de7a4-...", "nomeCompleto": "Cliente Novo", "cpf": "***.982.247-**", "email": "cliente.novo@exemplo.test", "...": "o mesmo formato do A00" } ],
-  "totalElements": 4,
-  "totalPages": 4,
-  "number": 0,
-  "size": 1,
-  "first": true,
-  "last": false
-}
-```
-
-**A04 a A08 · Perfil e acesso**
-
-```bash
-curl -s -X PATCH $API/admin/usuarios/$UC/perfil -H "$H" -H "$AA" -d '{"perfil":"ADMIN"}'; echo
-curl -s -X PATCH $API/admin/usuarios/$UC/perfil -H "$H" -H "$AA" -d '{"perfil":"CLIENTE"}'; echo
-curl -s -X PATCH $API/admin/usuarios/$UC/acesso -H "$H" -H "$AA" -d '{"ativo":false}'; echo
-login 52998224725 minha-senha-forte; echo
-curl -s -o /dev/null -w "%{http_code}\n" -X PATCH $API/admin/usuarios/$UC/acesso -H "$H" -H "$AA" -d '{"ativo":true}'
-```
-
-| # | Pedido | Corpo | ✅ Resposta |
-|---|---|---|---|
-| A04 | `PATCH /admin/usuarios/{usuarioId}/perfil` | `{"perfil":"ADMIN"}` | **200** `{"id":"4cd41f10-...","cpf":"***.982.247-**","nome":"Cliente Novo","perfil":"ADMIN","ativo":true,"clienteId":"1a3de7a4-..."}` |
-| A05 | `PATCH /admin/usuarios/{usuarioId}/perfil` | `{"perfil":"CLIENTE"}` | **200**, o mesmo com `"perfil":"CLIENTE"` |
-| A06 | `PATCH /admin/usuarios/{usuarioId}/acesso` | `{"ativo":false}` | **200**, o mesmo com `"ativo":false` |
-| A07 | `POST /auth/login` do desativado | `{"cpf":"52998224725","senha":"minha-senha-forte"}` | **401** `{"codigo":"CREDENCIAIS_INVALIDAS","message":"CPF ou senha inválidos",...}` (a mesma resposta de senha errada, de propósito) |
-| A08 | `PATCH /admin/usuarios/{usuarioId}/acesso` | `{"ativo":true}` | **200**, entra de novo |
-
-Cada mudança vale **na próxima requisição**: o token que a pessoa tinha antes passa a dar `401` `ACESSO_ALTERADO`.
-"Remover" = desativar: o usuário nunca é apagado (o histórico de movimentações aponta para ele).
-
-**A09 · Trava: o ADMIN mexendo em si mesmo**
-
-```bash
-EU=$(login "$ADMIN_CPF" "$ADMIN_SENHA" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(Buffer.from(JSON.parse(s).token.split('.')[1],'base64url')).sub))")
-curl -s -X PATCH $API/admin/usuarios/$EU/perfil -H "$H" -H "$AA" -d '{"perfil":"CLIENTE"}'; echo
-```
-
-✅ **422**
-
-```json
-{ "status": 422, "error": "Unprocessable Entity", "codigo": "PROPRIO_ACESSO", "message": "Você não pode alterar o seu próprio perfil ou acesso; peça a outro ADMIN", "path": "/admin/usuarios/822092d9-.../perfil", "campos": [] }
-```
-
-O `sub` do token (o payload é só Base64, dá para ler) é o id do próprio usuário. Ninguém se tranca para fora.
-
-**A10 · Conciliação: saldo × extrato**
-
-```bash
-curl -s $API/admin/conciliacao -H "$AA"; echo
-```
-
-✅ **200** `[]`. Cada linha que aparecesse (`contaId`, `numeroConta`, `saldo`, `saldoPeloExtrato`) seria uma conta
-cujo saldo não bate com a soma do extrato: bug ou alteração manual no banco.
-
-**A11 · O ADMIN não mexe no dinheiro dos outros**
-
-```bash
-CF=$(curl -s $API/contas -H "$AA" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>console.log(JSON.parse(s)[0].id))")
-curl -s -X POST $API/contas/$CF/depositos -H "$H" -H "$AA" -H "$(chave)" -d '{"valor":1.00}'; echo
-```
-
-✅ **403** `{"codigo":"CONTA_DE_OUTRO_CLIENTE","message":"Conta não pertence ao usuário logado",...}`. Ele **vê** todas as
-contas em `GET /contas`, mas a regra de dono vale para todo mundo.
-
-**A12 a A15 · Senha temporária** — o Cliente Novo esqueceu a senha; o ADMIN redefine.
-
-```bash
-curl -s -o /dev/null -w "%{http_code}\n" -X PATCH $API/admin/usuarios/$UC/senha -H "$H" -H "$AA" -d '{"novaSenha":"senha-temporaria-1"}'
-LT=$(login 52998224725 senha-temporaria-1); echo "$LT" | grep -o '"deveTrocarSenha":[a-z]*'; AT="Authorization: Bearer $(echo "$LT" | token)"
-curl -s $API/contas -H "$AT"; echo
-curl -s -o /dev/null -w "%{http_code}\n" -X PATCH $API/usuarios/me/senha -H "$H" -H "$AT" -d '{"senhaAtual":"senha-temporaria-1","novaSenha":"minha-senha-forte"}'
-```
-
-| # | Pedido | ✅ Resposta |
-|---|---|---|
-| A12 | `PATCH /admin/usuarios/{usuarioId}/senha` `{"novaSenha":"senha-temporaria-1"}` | **204**; os tokens da pessoa caem na hora |
-| A13 | login com a temporária | **200** com `"deveTrocarSenha":true` |
-| A14 | `GET /contas` com esse token | **403** `{"codigo":"TROCA_DE_SENHA_OBRIGATORIA","message":"Sua senha foi redefinida: troque-a antes de continuar",...}` |
-| A15 | `PATCH /usuarios/me/senha` `{"senhaAtual":"senha-temporaria-1","novaSenha":"minha-senha-forte"}` | **204**; o próximo login vem com `"deveTrocarSenha":false` |
-
-**A16 · E o cliente na rota do ADMIN?**
-
-```bash
-curl -s $API/admin/usuarios -H "Authorization: Bearer $(login 52998224725 minha-senha-forte | token)"; echo
-```
-
-✅ **403** `{"codigo":"PERFIL_SEM_PERMISSAO","message":"Acesso negado para o seu perfil",...}`.
-
-### Pela coleção: pasta 05 inteira (o que o ADMIN pode e não pode)
-
-> Ambiente **Equipe** com os valores do seu `.env` (1.6). Ordem: `00` → `01` (logins, inclusive o do ADMIN) → `02`
-> (cadastra o cliente novo, com CPF sorteado, que o ADMIN vai gerenciar) → `05`.
-
-<!-- roteiro-gerado:admin:inicio -->
-> 🤖 Gerado por `scripts/gerar-roteiro-e2e.mjs` a partir da coleção do Insomnia e de uma execução real dela (ambiente **MySQL com o .env de um visitante**, 30 requisições, todas com o resultado esperado). Ids, números de conta, datas e CPFs sorteados mudam a cada execução; status, campos e `codigo` não. Tokens aparecem cortados.
-
-| Pasta da coleção | Passos | O que prova |
-|---|:-:|---|
-| [05 · ADMIN: gestão de clientes, contas e usuários](#05--admin-gestão-de-clientes-contas-e-usuários) | 05.01–05.30 | ADMIN: listar, promover, rebaixar, desativar, redefinir senha (temporária), conciliação e as travas |
-
-### 05 · ADMIN: gestão de clientes, contas e usuários
-
-Tudo o que o ADMIN faz e tudo o que ele **não** pode fazer. Precisa do **Login · ADMIN** (pasta 01) e do **cliente novo** (pasta 02): é nele que o ADMIN mexe, para não estragar as contas fixas. No perfil visitante não há ADMIN: tudo aqui dá `401` (use o ambiente Equipe com a API no perfil `equipe` ou MySQL).
-
-#### 05.01 · Listar clientes (array)
-
-Só ADMIN. Sem `page`/`size` vem um array com todos; com eles, uma página.
-
-📥 usa: `token_admin`
-
-**Pedido**
-
-```http
-GET /clientes
-Authorization: Bearer {{ token_admin }}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-[
-  {
-    "id": "430e0b2a-3aa3-48fc-90ee-05e103131565",
-    "nomeCompleto": "Cliente Novo do Insomnia",
-    "cpf": "***.309.952-**",
-    "email": "cliente.novo.mvl9gjfi@exemplo.test",
-    "telefone": "(11) 99999-8888",
-    "endereco": {
-      "cep": "06020-010",
-      "logradouro": "Avenida dos Autonomistas",
-      "bairro": "Vila Yara",
-      "cidade": "Osasco",
-      "uf": "SP",
-      "ibge": "3534401",
-      "numero": "123",
-      "complemento": "Apto 45"
-    },
-    "termosVersao": "2026-10-23",
-    "termosAceitosEm": "2026-10-23T17:45:41.155228Z"
-  },
-  {
-    "id": "5eed0000-0000-4000-8000-000000000012",
-    "nomeCompleto": "Fellipe Santana (Teste Origem)",
-    "cpf": "***.456.789-**",
-    "email": "fellipe.santana@rkfbank.test",
-    "telefone": "(11) 98765-0001",
-    "endereco": {
-      "cep": "06013-000",
-      "logradouro": "Rua Antônio Agu",
-      "bairro": "Centro",
-      "cidade": "Osasco",
-      "uf": "SP",
-      "ibge": "3534401",
-      "numero": "1001",
-      "complemento": null
-    },
-    "termosVersao": null,
-    "termosAceitosEm": null
-  },
-  "… mais 1 item no mesmo formato"
-]
-```
-
-🔎 A coleção confere: *status 200*
-
-#### 05.02 · Listar clientes (paginado)
-
-📥 usa: `token_admin`
-
-**Pedido**
-
-```http
-GET /clientes?page=0&size=10
-Authorization: Bearer {{ token_admin }}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "content": [
-    {
-      "id": "430e0b2a-3aa3-48fc-90ee-05e103131565",
-      "nomeCompleto": "Cliente Novo do Insomnia",
-      "cpf": "***.309.952-**",
-      "email": "cliente.novo.mvl9gjfi@exemplo.test",
-      "telefone": "(11) 99999-8888",
-      "endereco": {
-        "cep": "06020-010",
-        "logradouro": "Avenida dos Autonomistas",
-        "bairro": "Vila Yara",
-        "cidade": "Osasco",
-        "uf": "SP",
-        "ibge": "3534401",
-        "numero": "123",
-        "complemento": "Apto 45"
-      },
-      "termosVersao": "2026-10-23",
-      "termosAceitosEm": "2026-10-23T17:45:41.155228Z"
-    },
-    {
-      "id": "5eed0000-0000-4000-8000-000000000012",
-      "nomeCompleto": "Fellipe Santana (Teste Origem)",
-      "cpf": "***.456.789-**",
-      "email": "fellipe.santana@rkfbank.test",
-      "telefone": "(11) 98765-0001",
-      "endereco": {
-        "cep": "06013-000",
-        "logradouro": "Rua Antônio Agu",
-        "bairro": "Centro",
-        "cidade": "Osasco",
-        "uf": "SP",
-        "ibge": "3534401",
-        "numero": "1001",
-        "complemento": null
-      },
-      "termosVersao": null,
-      "termosAceitosEm": null
-    },
-    "… mais 1 item no mesmo formato"
-  ],
-  "totalElements": 3,
-  "totalPages": 1,
-  "number": 0,
-  "size": 10,
-  "first": true,
-  "last": true
-}
-```
-
-🔎 A coleção confere: *status 200* · *é página*
-
-#### 05.03 · Listar TODAS as contas (paginado)
-
-A mesma rota do cliente, mas o ADMIN recebe as contas de todo mundo.
-
-📥 usa: `token_admin`
-
-**Pedido**
-
-```http
-GET /contas?page=0&size=20
-Authorization: Bearer {{ token_admin }}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "content": [
-    {
-      "id": "5eed0000-0000-4000-8000-000000000014",
-      "clienteId": "5eed0000-0000-4000-8000-000000000012",
-      "agencia": "0001",
-      "numeroConta": "100001",
-      "tipoConta": "CORRENTE",
-      "saldo": 1085,
-      "ativa": true
-    },
-    {
-      "id": "5eed0000-0000-4000-8000-000000000024",
-      "clienteId": "5eed0000-0000-4000-8000-000000000022",
-      "agencia": "0001",
-      "numeroConta": "100002",
-      "tipoConta": "CORRENTE",
-      "saldo": 525,
-      "ativa": true
-    },
-    "… mais 2 itens no mesmo formato"
-  ],
-  "totalElements": 4,
-  "totalPages": 1,
-  "number": 0,
-  "size": 20,
-  "first": true,
-  "last": true
-}
-```
-
-🔎 A coleção confere: *status 200*
-
-#### 05.04 · Listar usuários (guarda o id do cliente novo)
-
-CPF vem mascarado. O `id` daqui (tb_usuario) é o que vai nas rotas abaixo, **não** o `clienteId`.
-
-📥 usa: `token_admin` · 📤 guarda: `usuario_novo_id`
-
-**Pedido**
-
-```http
-GET /admin/usuarios
-Authorization: Bearer {{ token_admin }}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-[
-  {
-    "id": "822092d9-f335-47a5-9715-791464292887",
-    "cpf": "***.xxx.xxx-**",
-    "nome": null,
-    "perfil": "ADMIN",
-    "ativo": true,
-    "clienteId": null
-  },
-  {
-    "id": "d066371d-5143-4f9e-88bf-0ad64bc8d7b3",
-    "cpf": "***.456.789-**",
-    "nome": "Fellipe Santana (Teste Origem)",
-    "perfil": "CLIENTE",
-    "ativo": true,
-    "clienteId": "5eed0000-0000-4000-8000-000000000012"
-  },
-  "… mais 2 itens no mesmo formato"
-]
-```
-
-🔎 A coleção confere: *status 200* · *achou o cliente novo* · *CPF mascarado*
-
-#### 05.05 · Promover o cliente novo a ADMIN
-
-Vale na próxima requisição: o token antigo do promovido passa a dar `401`.
-
-📥 usa: `usuario_novo_id`, `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/perfil
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "perfil": "ADMIN"
-}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "id": "51e0aa80-d0ab-432d-9685-f0a6662eb47e",
-  "cpf": "***.309.952-**",
-  "nome": "Cliente Novo do Insomnia",
-  "perfil": "ADMIN",
-  "ativo": true,
-  "clienteId": "430e0b2a-3aa3-48fc-90ee-05e103131565"
-}
-```
-
-🔎 A coleção confere: *status 200* · *virou ADMIN*
-
-#### 05.06 · Token antigo do promovido → 401
-
-📥 usa: `token_novo`
-
-**Pedido**
-
-```http
-GET /contas
-Authorization: Bearer {{ token_novo }}
-```
-
-**Resposta esperada**
-
-✅ **401**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:42.254682100Z",
-  "status": 401,
-  "error": "Unauthorized",
-  "codigo": "ACESSO_ALTERADO",
-  "message": "Seu acesso foi alterado ou desativado; faça login novamente",
-  "path": "/contas",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 401* · *codigo ACESSO_ALTERADO*
-
-#### 05.07 · Login do promovido (já vem ADMIN)
-
-📥 usa: `novo_cpf`, `novo_senha` · 📤 guarda: `token_novo`, `refresh_novo`
-
-**Pedido**
-
-```http
-POST /auth/login
-Content-Type: application/json
-
-{
-  "cpf": "31030995257",
-  "senha": "senha-do-novo-mvl9gjfi"
-}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "tipo": "Bearer",
-  "expiraEmSegundos": 900,
-  "clienteId": "430e0b2a-3aa3-48fc-90ee-05e103131565",
-  "perfil": "ADMIN",
-  "deveTrocarSenha": false,
-  "refreshToken": "q3Jd0kX4...",
-  "refreshExpiraEmSegundos": 604800
-}
-```
-
-🔎 A coleção confere: *status 200* · *perfil ADMIN*
-
-#### 05.08 · Promovido lista clientes → 200
-
-Agora ele é ADMIN e continua dono das próprias contas (o cadastro de cliente não some).
-
-📥 usa: `token_novo`
-
-**Pedido**
-
-```http
-GET /clientes?page=0&size=5
-Authorization: Bearer {{ token_novo }}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "content": [
-    {
-      "id": "430e0b2a-3aa3-48fc-90ee-05e103131565",
-      "nomeCompleto": "Cliente Novo do Insomnia",
-      "cpf": "***.309.952-**",
-      "email": "cliente.novo.mvl9gjfi@exemplo.test",
-      "telefone": "(11) 99999-8888",
-      "endereco": {
-        "cep": "06020-010",
-        "logradouro": "Avenida dos Autonomistas",
-        "bairro": "Vila Yara",
-        "cidade": "Osasco",
-        "uf": "SP",
-        "ibge": "3534401",
-        "numero": "123",
-        "complemento": "Apto 45"
-      },
-      "termosVersao": "2026-10-23",
-      "termosAceitosEm": "2026-10-23T17:45:41.155228Z"
-    },
-    {
-      "id": "5eed0000-0000-4000-8000-000000000012",
-      "nomeCompleto": "Fellipe Santana (Teste Origem)",
-      "cpf": "***.456.789-**",
-      "email": "fellipe.santana@rkfbank.test",
-      "telefone": "(11) 98765-0001",
-      "endereco": {
-        "cep": "06013-000",
-        "logradouro": "Rua Antônio Agu",
-        "bairro": "Centro",
-        "cidade": "Osasco",
-        "uf": "SP",
-        "ibge": "3534401",
-        "numero": "1001",
-        "complemento": null
-      },
-      "termosVersao": null,
-      "termosAceitosEm": null
-    },
-    "… mais 1 item no mesmo formato"
-  ],
-  "totalElements": 3,
-  "totalPages": 1,
-  "number": 0,
-  "size": 5,
-  "first": true,
-  "last": true
-}
-```
-
-🔎 A coleção confere: *status 200*
-
-#### 05.09 · Promovido tenta rebaixar o ADMIN do .env → 422
-
-O ADMIN do `.env` não é cliente: virar CLIENTE não faz sentido. Para tirá-lo, desative o acesso.
-
-📥 usa: `usuario_admin_id`, `token_novo`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/822092d9-f335-47a5-9715-791464292887/perfil
-Authorization: Bearer {{ token_novo }}
-Content-Type: application/json
-
-{
-  "perfil": "CLIENTE"
-}
-```
-
-**Resposta esperada**
-
-✅ **422**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:42.380219Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "codigo": "PERFIL_CLIENTE_SEM_CADASTRO",
-  "message": "Usuário sem cadastro de cliente não pode virar CLIENTE; desative o acesso",
-  "path": "/admin/usuarios/822092d9-f335-47a5-9715-791464292887/perfil",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 422* · *codigo PERFIL_CLIENTE_SEM_CADASTRO*
-
-#### 05.10 · Rebaixar de volta a CLIENTE
-
-📥 usa: `usuario_novo_id`, `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/perfil
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "perfil": "CLIENTE"
-}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "id": "51e0aa80-d0ab-432d-9685-f0a6662eb47e",
-  "cpf": "***.309.952-**",
-  "nome": "Cliente Novo do Insomnia",
-  "perfil": "CLIENTE",
-  "ativo": true,
-  "clienteId": "430e0b2a-3aa3-48fc-90ee-05e103131565"
-}
-```
-
-🔎 A coleção confere: *status 200*
-
-#### 05.11 · Desativar o acesso
-
-"Remover" = desativar: o usuário nunca é apagado (o histórico de movimentações aponta para ele).
-
-📥 usa: `usuario_novo_id`, `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/acesso
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "ativo": false
-}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "id": "51e0aa80-d0ab-432d-9685-f0a6662eb47e",
-  "cpf": "***.309.952-**",
-  "nome": "Cliente Novo do Insomnia",
-  "perfil": "CLIENTE",
-  "ativo": false,
-  "clienteId": "430e0b2a-3aa3-48fc-90ee-05e103131565"
-}
-```
-
-🔎 A coleção confere: *status 200* · *ativo false*
-
-#### 05.12 · Login do desativado → 401
-
-📥 usa: `novo_cpf`, `novo_senha`
-
-**Pedido**
-
-```http
-POST /auth/login
-Content-Type: application/json
-
-{
-  "cpf": "31030995257",
-  "senha": "senha-do-novo-mvl9gjfi"
-}
-```
-
-**Resposta esperada**
-
-✅ **401**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:42.522945600Z",
-  "status": 401,
-  "error": "Unauthorized",
-  "codigo": "CREDENCIAIS_INVALIDAS",
-  "message": "CPF ou senha inválidos",
-  "path": "/auth/login",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 401* · *codigo CREDENCIAIS_INVALIDAS*
-
-#### 05.13 · Reativar o acesso
-
-📥 usa: `usuario_novo_id`, `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/acesso
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "ativo": true
-}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "id": "51e0aa80-d0ab-432d-9685-f0a6662eb47e",
-  "cpf": "***.309.952-**",
-  "nome": "Cliente Novo do Insomnia",
-  "perfil": "CLIENTE",
-  "ativo": true,
-  "clienteId": "430e0b2a-3aa3-48fc-90ee-05e103131565"
-}
-```
-
-🔎 A coleção confere: *status 200*
-
-#### 05.14 · Redefinir a senha (quem esqueceu)
-
-O script passa a senha nova para `novo_senha`. Ela é **temporária** (contrato 3.1): no próximo login a pessoa precisa trocá-la.
-
-🎲 sorteia antes: `senha_redefinida` · 📥 usa: `usuario_novo_id`, `senha_redefinida`, `token_admin` · 📤 guarda: `novo_senha`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/senha
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "novaSenha": "redefinida-mvl9gl1s"
-}
-```
-
-**Resposta esperada**
-
-✅ **204** · sem corpo
-
-🔎 A coleção confere: *status 204*
-
-#### 05.15 · Login com a senha temporária (deveTrocarSenha)
-
-📥 usa: `novo_cpf`, `novo_senha` · 📤 guarda: `token_novo`, `refresh_novo`
-
-**Pedido**
-
-```http
-POST /auth/login
-Content-Type: application/json
-
-{
-  "cpf": "31030995257",
-  "senha": "redefinida-mvl9gl1s"
-}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "tipo": "Bearer",
-  "expiraEmSegundos": 900,
-  "clienteId": "430e0b2a-3aa3-48fc-90ee-05e103131565",
-  "perfil": "CLIENTE",
-  "deveTrocarSenha": true,
-  "refreshToken": "q3Jd0kX4...",
-  "refreshExpiraEmSegundos": 604800
-}
-```
-
-🔎 A coleção confere: *status 200* · *deveTrocarSenha*
-
-#### 05.16 · Senha temporária em outra rota → 403
-
-Com a senha temporária, o token só abre `PATCH /usuarios/me/senha`.
-
-📥 usa: `token_novo`
-
-**Pedido**
-
-```http
-GET /contas
-Authorization: Bearer {{ token_novo }}
-```
-
-**Resposta esperada**
-
-✅ **403**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:42.742650900Z",
-  "status": 403,
-  "error": "Forbidden",
-  "codigo": "TROCA_DE_SENHA_OBRIGATORIA",
-  "message": "Sua senha foi redefinida: troque-a antes de continuar",
-  "path": "/contas",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 403* · *codigo TROCA_DE_SENHA_OBRIGATORIA*
-
-#### 05.17 · Trocar a senha temporária
-
-🎲 sorteia antes: `senha_escolhida` · 📥 usa: `novo_senha`, `senha_escolhida`, `token_novo` · 📤 guarda: `novo_senha`
-
-**Pedido**
-
-```http
-PATCH /usuarios/me/senha
-Authorization: Bearer {{ token_novo }}
-Content-Type: application/json
-
-{
-  "senhaAtual": "escolhida-mvl9gl7b",
-  "novaSenha": "escolhida-mvl9gl7b"
-}
-```
-
-**Resposta esperada**
-
-✅ **204** · sem corpo
-
-🔎 A coleção confere: *status 204*
-
-#### 05.18 · Login · cliente novo (de novo, senha escolhida)
-
-📥 usa: `novo_cpf`, `novo_senha` · 📤 guarda: `token_novo`, `refresh_novo`
-
-**Pedido**
-
-```http
-POST /auth/login
-Content-Type: application/json
-
-{
-  "cpf": "31030995257",
-  "senha": "escolhida-mvl9gl7b"
-}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "tipo": "Bearer",
-  "expiraEmSegundos": 900,
-  "clienteId": "430e0b2a-3aa3-48fc-90ee-05e103131565",
-  "perfil": "CLIENTE",
-  "deveTrocarSenha": false,
-  "refreshToken": "q3Jd0kX4...",
-  "refreshExpiraEmSegundos": 604800
-}
-```
-
-🔎 A coleção confere: *status 200* · *sem troca pendente*
-
-#### 05.19 · Trava: ADMIN mexe no próprio perfil → 422
-
-Ninguém mexe em si mesmo: o ADMIN não se tranca para fora e sempre sobra um ADMIN ativo.
-
-📥 usa: `usuario_admin_id`, `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/822092d9-f335-47a5-9715-791464292887/perfil
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "perfil": "ADMIN"
-}
-```
-
-**Resposta esperada**
-
-✅ **422**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.078746700Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "codigo": "PROPRIO_ACESSO",
-  "message": "Você não pode alterar o seu próprio perfil ou acesso; peça a outro ADMIN",
-  "path": "/admin/usuarios/822092d9-f335-47a5-9715-791464292887/perfil",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 422* · *codigo PROPRIO_ACESSO*
-
-#### 05.20 · Trava: ADMIN redefine a própria senha pela gestão → 422
-
-A própria senha se troca em `PATCH /usuarios/me/senha`, que exige a atual (um token roubado não basta).
-
-📥 usa: `usuario_admin_id`, `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/822092d9-f335-47a5-9715-791464292887/senha
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "novaSenha": "nao-vai-mudar-123"
-}
-```
-
-**Resposta esperada**
-
-✅ **422**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.090257100Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "codigo": "PROPRIA_SENHA_PELA_GESTAO",
-  "message": "Para trocar a sua própria senha use PATCH /usuarios/me/senha",
-  "path": "/admin/usuarios/822092d9-f335-47a5-9715-791464292887/senha",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 422* · *codigo PROPRIA_SENHA_PELA_GESTAO*
-
-#### 05.21 · Perfil que não existe → 400
-
-📥 usa: `usuario_novo_id`, `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/perfil
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "perfil": "GERENTE"
-}
-```
-
-**Resposta esperada**
-
-✅ **400**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.114584900Z",
-  "status": 400,
-  "error": "Bad Request",
-  "codigo": "JSON_INVALIDO",
-  "message": "JSON inválido ou tipo de campo incompatível",
-  "path": "/admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/perfil",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 400*
-
-#### 05.22 · Usuário que não existe → 404
-
-📥 usa: `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/00000000-0000-4000-8000-000000000000/perfil
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "perfil": "ADMIN"
-}
-```
-
-**Resposta esperada**
-
-✅ **404**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.129541500Z",
-  "status": 404,
-  "error": "Not Found",
-  "codigo": "USUARIO_NAO_ENCONTRADO",
-  "message": "Usuário não encontrado",
-  "path": "/admin/usuarios/00000000-0000-4000-8000-000000000000/perfil",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 404* · *codigo USUARIO_NAO_ENCONTRADO*
-
-#### 05.23 · Acesso sem o campo → 400
-
-📥 usa: `usuario_novo_id`, `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/acesso
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{}
-```
-
-**Resposta esperada**
-
-✅ **400**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.154956800Z",
-  "status": 400,
-  "error": "Bad Request",
-  "codigo": "CAMPOS_INVALIDOS",
-  "message": "Requisição inválida",
-  "path": "/admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/acesso",
-  "campos": [
-    {
-      "campo": "ativo",
-      "mensagem": "ativo é obrigatório (true ou false)"
-    }
-  ]
-}
-```
-
-🔎 A coleção confere: *status 400*
-
-#### 05.24 · Senha curta na redefinição → 400
-
-📥 usa: `usuario_novo_id`, `token_admin`
-
-**Pedido**
-
-```http
-PATCH /admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/senha
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "novaSenha": "curta"
-}
-```
-
-**Resposta esperada**
-
-✅ **400**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.165619800Z",
-  "status": 400,
-  "error": "Bad Request",
-  "codigo": "CAMPOS_INVALIDOS",
-  "message": "Requisição inválida",
-  "path": "/admin/usuarios/51e0aa80-d0ab-432d-9685-f0a6662eb47e/senha",
-  "campos": [
-    {
-      "campo": "novaSenha",
-      "mensagem": "novaSenha deve ter entre 8 e 72 caracteres"
-    }
-  ]
-}
-```
-
-🔎 A coleção confere: *status 400*
-
-#### 05.25 · ADMIN do .env abre conta → 422
-
-📥 usa: `token_admin`
-
-**Pedido**
-
-```http
-POST /contas
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-
-{
-  "tipoConta": "CORRENTE"
-}
-```
-
-**Resposta esperada**
-
-✅ **422**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.178924700Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "codigo": "SEM_CADASTRO_CLIENTE",
-  "message": "Seu usuário não tem cadastro de cliente",
-  "path": "/contas",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 422* · *codigo SEM_CADASTRO_CLIENTE*
-
-#### 05.26 · ADMIN do .env em /clientes/me → 422
-
-📥 usa: `token_admin`
-
-**Pedido**
-
-```http
-GET /clientes/me
-Authorization: Bearer {{ token_admin }}
-```
-
-**Resposta esperada**
-
-✅ **422**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.193104100Z",
-  "status": 422,
-  "error": "Unprocessable Entity",
-  "codigo": "SEM_CADASTRO_CLIENTE",
-  "message": "Seu usuário não tem cadastro de cliente",
-  "path": "/clientes/me",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 422* · *codigo SEM_CADASTRO_CLIENTE*
-
-#### 05.27 · ADMIN deposita na conta de um cliente → 403
-
-O ADMIN **vê** todas as contas, mas não **mexe** no dinheiro dos outros: a regra de dono vale para todos.
-
-📥 usa: `conta_origem_id`, `token_admin`
-
-**Pedido**
-
-```http
-POST /contas/5eed0000-0000-4000-8000-000000000014/depositos
-Authorization: Bearer {{ token_admin }}
-Content-Type: application/json
-Idempotency-Key: <UUID novo a cada envio>
-
-{
-  "valor": 1
-}
-```
-
-**Resposta esperada**
-
-✅ **403**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.208422400Z",
-  "status": 403,
-  "error": "Forbidden",
-  "codigo": "CONTA_DE_OUTRO_CLIENTE",
-  "message": "Conta não pertence ao usuário logado",
-  "path": "/contas/5eed0000-0000-4000-8000-000000000014/depositos",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 403* · *codigo CONTA_DE_OUTRO_CLIENTE*
-
-#### 05.28 · ADMIN vê o extrato de um cliente → 403
-
-📥 usa: `conta_origem_id`, `token_admin`
-
-**Pedido**
-
-```http
-GET /contas/5eed0000-0000-4000-8000-000000000014/lancamentos
-Authorization: Bearer {{ token_admin }}
-```
-
-**Resposta esperada**
-
-✅ **403**
-
-```json
-{
-  "timestamp": "2026-10-23T17:45:43.229623500Z",
-  "status": 403,
-  "error": "Forbidden",
-  "codigo": "CONTA_DE_OUTRO_CLIENTE",
-  "message": "Conta não pertence ao usuário logado",
-  "path": "/contas/5eed0000-0000-4000-8000-000000000014/lancamentos",
-  "campos": []
-}
-```
-
-🔎 A coleção confere: *status 403*
-
-#### 05.29 · ADMIN vê uma conta de cliente → 200
-
-Ver pode (como em `GET /contas`); movimentar e ver o extrato, não.
-
-📥 usa: `conta_origem_id`, `token_admin`
-
-**Pedido**
-
-```http
-GET /contas/5eed0000-0000-4000-8000-000000000014
-Authorization: Bearer {{ token_admin }}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-{
-  "id": "5eed0000-0000-4000-8000-000000000014",
-  "clienteId": "5eed0000-0000-4000-8000-000000000012",
-  "agencia": "0001",
-  "numeroConta": "100001",
-  "tipoConta": "CORRENTE",
-  "saldo": 1085,
-  "ativa": true
-}
-```
-
-🔎 A coleção confere: *status 200*
-
-#### 05.30 · Conciliação: saldo × extrato
-
-Contas cujo saldo não bate com a soma do extrato. Lista vazia é o normal; qualquer linha é bug ou alteração manual no banco.
-
-📥 usa: `token_admin`
-
-**Pedido**
-
-```http
-GET /admin/conciliacao
-Authorization: Bearer {{ token_admin }}
-```
-
-**Resposta esperada**
-
-✅ **200**
-
-```json
-[]
-```
-
-🔎 A coleção confere: *status 200* · *nenhuma conta divergente*
-
-<!-- roteiro-gerado:admin:fim -->
-
----
-
-## Parte 3 — Teste como cliente
-
-Agora os mesmos recursos do lado de quem usa o banco: primeiro **Ana e Bruno** pelo terminal (V01 a V11), depois a
-coleção inteira do cliente (pastas `00` a `04` e `06` a `09`, ambiente **Visitante**).
+Tudo do lado de quem usa o banco: primeiro **Ana e Bruno** pelo terminal (V01 a V11), para ver um pedido de cada tipo
+sem ferramenta nenhuma, depois a coleção inteira do cliente (pastas `00` a `04` e `06` a `09`, ambiente **Visitante**).
 
 ### Pelo terminal: Ana e Bruno (perfil `visitante`)
 
@@ -1794,8 +395,7 @@ curl -s $API/admin/usuarios -H "$AA"; echo
 
 ✅ **403** `{"codigo":"PERFIL_SEM_PERMISSAO","message":"Acesso negado para o seu perfil",...}`.
 
-O cadastro do **Cliente Novo** (pedido e resposta) está no A00 da Parte 2 e funciona igual no perfil `visitante`;
-abrir conta, renovar a sessão, "meus dados" e todos os erros estão logo abaixo, na coleção.
+O cadastro do **Cliente Novo**, abrir conta, renovar a sessão, "meus dados" e todos os erros estão logo abaixo, na coleção.
 
 ### Pela coleção: tudo o que o cliente faz (e o que não pode)
 
@@ -1805,7 +405,7 @@ abrir conta, renovar a sessão, "meus dados" e todos os erros estão logo abaixo
 | Pasta da coleção | Passos | O que prova |
 |---|:-:|---|
 | [00 · Comece aqui](#00--comece-aqui) | 00.01–00.02 | a API está no ar e qual versão dos termos o cadastro aceita |
-| [01 · Login (guarda o token sozinho)](#01--login-guarda-o-token-sozinho) | 01.01–01.02 | login dos clientes ORIGEM e DESTINO e do ADMIN; tokens de acesso e de renovação guardados |
+| [01 · Login (guarda o token sozinho)](#01--login-guarda-o-token-sozinho) | 01.01–01.02 | login dos clientes ORIGEM e DESTINO (e, na coleção da equipe, do ADMIN); tokens de acesso e de renovação guardados |
 | [02 · Fluxo E2E: cliente novo, do cadastro ao extrato](#02--fluxo-e2e-cliente-novo-do-cadastro-ao-extrato) | 02.01–02.12 | cliente novo do zero: cadastro com aceite e ViaCEP, contas ORIGEM e DESTINO, depósito, saque, transferência, saldo e extrato |
 | [03 · Dinheiro entre clientes (contas prontas do seed)](#03--dinheiro-entre-clientes-contas-prontas-do-seed) | 03.01–03.07 | dinheiro entre dois clientes diferentes, com as contas prontas do seed |
 | [04 · Idempotência (o mesmo pedido não movimenta duas vezes)](#04--idempotência-o-mesmo-pedido-não-movimenta-duas-vezes) | 04.01–04.04 | a mesma movimentação repetida não sai duas vezes (`Idempotency-Key`) |
@@ -1816,9 +416,13 @@ abrir conta, renovar a sessão, "meus dados" e todos os erros estão logo abaixo
 
 ### 00 · Comece aqui
 
+💡 Antes de testar qualquer coisa, confira se a API está ligada. É como ver se a luz da maquininha acendeu.
+
 Escolha o **ambiente** no canto superior esquerdo (Visitante ou Equipe) e mande a primeira requisição. `{"status":"UP"}` = a API está no ar. Sem resposta? Ela não subiu: veja o guia `backend/README_TESTES_E2E.md`.
 
 #### 00.01 · Saúde da API
+
+💡 **Em palavras simples:** A primeira pergunta: "você está aí?". Resposta `UP` = a API está ligada e pronta. Sem resposta, nada mais vai funcionar: suba a API antes.
 
 Pública. Usada pelo Docker e pelo deploy para saber se a API respondeu.
 
@@ -1846,6 +450,8 @@ GET /actuator/health
 
 #### 00.02 · Versão dos termos (pública)
 
+💡 **Em palavras simples:** Mostra qual versão dos Termos de Uso está valendo. O cadastro precisa dizer que a pessoa aceitou esses termos, igual ao "li e aceito" de qualquer app.
+
 Versão vigente dos Termos de Uso e da Política de Privacidade (contrato 3.1). A tela de cadastro mostra estes textos e manda a versão aceita em `termosVersao`.
 
 📤 guarda: `termos_versao`
@@ -1870,9 +476,13 @@ GET /termos
 
 ### 01 · Login (guarda o token sozinho)
 
-Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`, `token_admin`) e o de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de acesso vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou renove pela pasta **09 · Sessão**.
+💡 Entrar no banco, como no app: CPF e senha. A API devolve um "crachá" (o token) que as próximas requisições mostram para provar quem você é. O Insomnia guarda esse crachá sozinho.
+
+Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`...) e o de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de acesso vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou renove pela pasta **09 · Sessão**.
 
 #### 01.01 · Login · cliente ORIGEM (Ana / Fellipe)
+
+💡 **Em palavras simples:** Entra como o cliente que vai MANDAR dinheiro. Na resposta, o `token` é o crachá de acesso; o Insomnia guarda ele em `token_origem` e as próximas requisições usam sozinhas.
 
 📥 usa: `cpf_origem`, `senha_clientes` · 📤 guarda: `token_origem`, `refresh_origem`, `cliente_origem_id`
 
@@ -1909,6 +519,8 @@ Content-Type: application/json
 
 #### 01.02 · Login · cliente DESTINO (Bruno / Renan)
 
+💡 **Em palavras simples:** Entra como o cliente que vai RECEBER dinheiro. Ter dois clientes logados permite provar que um não enxerga a conta do outro.
+
 📥 usa: `cpf_destino`, `senha_clientes` · 📤 guarda: `token_destino`, `refresh_destino`, `cliente_destino_id`
 
 **Pedido**
@@ -1944,9 +556,13 @@ Content-Type: application/json
 
 ### 02 · Fluxo E2E: cliente novo, do cadastro ao extrato
 
+💡 A vida inteira de um cliente novo, na ordem em que acontece de verdade: criar o cadastro, entrar, abrir duas contas, colocar dinheiro, tirar, transferir e conferir o extrato centavo a centavo.
+
 O roteiro E2E principal, na ordem: cadastro (CPF, CEP e telefone com máscara, endereço pelo ViaCEP) → login → contas ORIGEM e DESTINO → depósito, saque e transferência → extratos. O cadastro sorteia CPF e e-mail novos a cada envio, então pode repetir à vontade. Precisa de internet: o endereço vem do ViaCEP.
 
 #### 02.01 · Cadastrar cliente (público)
+
+💡 **Em palavras simples:** Cria um cliente do zero, sem precisar estar logado (como abrir conta pelo app). O CPF é sorteado a cada envio, então dá para repetir. Repare: a resposta devolve o CPF escondido (`***.982.247-**`) e o endereço que a API buscou sozinha pelo CEP.
 
 `aceiteTermos: true` é obrigatório (LGPD, contrato 3.1). Manda CPF, CEP e telefone **com máscara**, como a pessoa digita: a API higieniza (fica só com os dígitos), valida o CPF pelos dígitos verificadores e busca o endereço no **ViaCEP** (Osasco/SP). `201` com o cliente. A resposta traz o CPF **mascarado** e a versão dos termos aceita. O cadastro **não** devolve token: faça o login.
 
@@ -1960,13 +576,13 @@ Content-Type: application/json
 
 {
   "nomeCompleto": "Cliente Novo do Insomnia",
-  "cpf": "626.234.568-01",
-  "email": "cliente.novo.mvl9hscs@exemplo.test",
+  "cpf": "091.991.801-89",
+  "email": "cliente.novo.mvo5ft77@exemplo.test",
   "telefone": "(11) 99999-8888",
   "cep": "06020-010",
   "numero": "123",
   "complemento": "Apto 45",
-  "senha": "senha-do-novo-mvl9hscs",
+  "senha": "senha-do-novo-mvo5ft77",
   "aceiteTermos": true
 }
 ```
@@ -1977,10 +593,10 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+  "id": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
   "nomeCompleto": "Cliente Novo do Insomnia",
-  "cpf": "***.234.568-**",
-  "email": "cliente.novo.mvl9hscs@exemplo.test",
+  "cpf": "***.991.801-**",
+  "email": "cliente.novo.mvo5ft77@exemplo.test",
   "telefone": "(11) 99999-8888",
   "endereco": {
     "cep": "06020-010",
@@ -1993,13 +609,15 @@ Content-Type: application/json
     "complemento": "Apto 45"
   },
   "termosVersao": "2026-10-23",
-  "termosAceitosEm": "2026-10-23T17:46:39.322127700Z"
+  "termosAceitosEm": "2026-10-25T18:16:27.396394100Z"
 }
 ```
 
 🔎 A coleção confere: *status 201* · *ViaCEP preencheu a cidade* · *CEP higienizado* · *CPF mascarado na resposta* · *aceite gravado*
 
 #### 02.02 · Login · cliente novo
+
+💡 **Em palavras simples:** O cadastro não faz login automático: agora o cliente novo entra com o CPF e a senha que acabou de criar.
 
 📥 usa: `novo_cpf`, `novo_senha` · 📤 guarda: `token_novo`, `refresh_novo`
 
@@ -2010,8 +628,8 @@ POST /auth/login
 Content-Type: application/json
 
 {
-  "cpf": "62623456801",
-  "senha": "senha-do-novo-mvl9hscs"
+  "cpf": "09199180189",
+  "senha": "senha-do-novo-mvo5ft77"
 }
 ```
 
@@ -2024,7 +642,7 @@ Content-Type: application/json
   "token": "eyJhbGciOiJIUzI1NiJ9...",
   "tipo": "Bearer",
   "expiraEmSegundos": 3600,
-  "clienteId": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+  "clienteId": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
   "perfil": "CLIENTE",
   "deveTrocarSenha": false,
   "refreshToken": "q3Jd0kX4...",
@@ -2035,6 +653,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 200*
 
 #### 02.03 · Abrir conta ORIGEM: corrente
+
+💡 **Em palavras simples:** Abre uma conta corrente. Você só diz o tipo: o banco sabe de quem é pelo token e gera o número da conta sozinho. Status `201` = criado.
 
 Corpo só com `tipoConta`: o dono vem do **token**, a agência é `0001` e o número (com dígito verificador) é gerado pelo banco.
 
@@ -2058,10 +678,10 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "fbf5ab74-4a50-4125-9507-a5e7656009ce",
-  "clienteId": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+  "id": "d88e0c8d-11b3-428c-889d-2c02fac34997",
+  "clienteId": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
   "agencia": "0001",
-  "numeroConta": "36756288",
+  "numeroConta": "40984117",
   "tipoConta": "CORRENTE",
   "saldo": 0,
   "ativa": true
@@ -2071,6 +691,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 201*
 
 #### 02.04 · Abrir conta DESTINO: poupança
+
+💡 **Em palavras simples:** Abre uma segunda conta, poupança, para o mesmo cliente. Ela vai receber a transferência mais adiante.
 
 Um cliente pode ter mais de uma conta. Esta recebe a transferência logo abaixo.
 
@@ -2094,10 +716,10 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "8c354810-efd9-4181-a4fd-93b6feb26f8e",
-  "clienteId": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+  "id": "8d8da206-c2f5-4a47-b654-940c74454675",
+  "clienteId": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
   "agencia": "0001",
-  "numeroConta": "95954651",
+  "numeroConta": "37214926",
   "tipoConta": "POUPANCA",
   "saldo": 0,
   "ativa": true
@@ -2107,6 +729,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 201*
 
 #### 02.05 · Minhas contas (as duas com saldo 0,00)
+
+💡 **Em palavras simples:** Lista as contas do cliente logado. As duas acabaram de nascer, então os saldos são zero.
 
 📥 usa: `token_novo`
 
@@ -2124,19 +748,19 @@ Authorization: Bearer {{ token_novo }}
 ```json
 [
   {
-    "id": "fbf5ab74-4a50-4125-9507-a5e7656009ce",
-    "clienteId": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+    "id": "d88e0c8d-11b3-428c-889d-2c02fac34997",
+    "clienteId": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
     "agencia": "0001",
-    "numeroConta": "36756288",
+    "numeroConta": "40984117",
     "tipoConta": "CORRENTE",
     "saldo": 0,
     "ativa": true
   },
   {
-    "id": "8c354810-efd9-4181-a4fd-93b6feb26f8e",
-    "clienteId": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+    "id": "8d8da206-c2f5-4a47-b654-940c74454675",
+    "clienteId": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
     "agencia": "0001",
-    "numeroConta": "95954651",
+    "numeroConta": "37214926",
     "tipoConta": "POUPANCA",
     "saldo": 0,
     "ativa": true
@@ -2148,6 +772,8 @@ Authorization: Bearer {{ token_novo }}
 
 #### 02.06 · Depositar R$ 150,00 na ORIGEM
 
+💡 **Em palavras simples:** Coloca dinheiro na conta. A resposta `204` vem vazia de propósito: quer dizer "deu certo, não tenho nada para mostrar". O saldo novo aparece em "Minhas contas".
+
 `204` sem corpo. O header `Idempotency-Key` (aba Headers) gera um UUID novo a cada envio.
 
 📥 usa: `conta_nova_id`, `token_novo`
@@ -2155,7 +781,7 @@ Authorization: Bearer {{ token_novo }}
 **Pedido**
 
 ```http
-POST /contas/fbf5ab74-4a50-4125-9507-a5e7656009ce/depositos
+POST /contas/d88e0c8d-11b3-428c-889d-2c02fac34997/depositos
 Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
@@ -2174,12 +800,14 @@ Idempotency-Key: <UUID novo a cada envio>
 
 #### 02.07 · Sacar R$ 50,00 da ORIGEM
 
+💡 **Em palavras simples:** Tira dinheiro da conta. Também responde `204`, vazio. Sobram R$ 100,00.
+
 📥 usa: `conta_nova_id`, `token_novo`
 
 **Pedido**
 
 ```http
-POST /contas/fbf5ab74-4a50-4125-9507-a5e7656009ce/saques
+POST /contas/d88e0c8d-11b3-428c-889d-2c02fac34997/saques
 Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
@@ -2198,6 +826,8 @@ Idempotency-Key: <UUID novo a cada envio>
 
 #### 02.08 · Transferir R$ 25,00 ORIGEM → DESTINO
 
+💡 **Em palavras simples:** Move dinheiro de uma conta para a outra. O banco garante que o débito e o crédito acontecem juntos: nunca sai de um lado sem chegar no outro.
+
 Débito e crédito na mesma transação: ou os dois acontecem, ou nenhum.
 
 📥 usa: `conta_nova_id`, `conta_nova_destino_id`, `token_novo`
@@ -2211,8 +841,8 @@ Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
 
 {
-  "contaOrigemId": "fbf5ab74-4a50-4125-9507-a5e7656009ce",
-  "contaDestinoId": "8c354810-efd9-4181-a4fd-93b6feb26f8e",
+  "contaOrigemId": "d88e0c8d-11b3-428c-889d-2c02fac34997",
+  "contaDestinoId": "8d8da206-c2f5-4a47-b654-940c74454675",
   "valor": 25,
   "descricao": "Transferencia pelo Insomnia"
 }
@@ -2225,6 +855,8 @@ Idempotency-Key: <UUID novo a cada envio>
 🔎 A coleção confere: *status 204*
 
 #### 02.09 · Saldos: ORIGEM 75,00 · DESTINO 25,00
+
+💡 **Em palavras simples:** A conferência: 150 − 50 − 25 = 75 na ORIGEM e 25 na DESTINO. Se os números baterem, o dinheiro andou certinho.
 
 📥 usa: `token_novo`
 
@@ -2242,19 +874,19 @@ Authorization: Bearer {{ token_novo }}
 ```json
 [
   {
-    "id": "fbf5ab74-4a50-4125-9507-a5e7656009ce",
-    "clienteId": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+    "id": "d88e0c8d-11b3-428c-889d-2c02fac34997",
+    "clienteId": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
     "agencia": "0001",
-    "numeroConta": "36756288",
+    "numeroConta": "40984117",
     "tipoConta": "CORRENTE",
     "saldo": 75,
     "ativa": true
   },
   {
-    "id": "8c354810-efd9-4181-a4fd-93b6feb26f8e",
-    "clienteId": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+    "id": "8d8da206-c2f5-4a47-b654-940c74454675",
+    "clienteId": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
     "agencia": "0001",
-    "numeroConta": "95954651",
+    "numeroConta": "37214926",
     "tipoConta": "POUPANCA",
     "saldo": 25,
     "ativa": true
@@ -2266,6 +898,8 @@ Authorization: Bearer {{ token_novo }}
 
 #### 02.10 · Ver só a conta ORIGEM
 
+💡 **Em palavras simples:** Busca uma conta só, pelo id. É o que a tela usa para atualizar o saldo sem pedir a lista inteira.
+
 `GET /contas/{contaId}` (contrato 3.1): uma conta só, para atualizar o saldo sem buscar a lista inteira.
 
 📥 usa: `conta_nova_id`, `token_novo`
@@ -2273,7 +907,7 @@ Authorization: Bearer {{ token_novo }}
 **Pedido**
 
 ```http
-GET /contas/fbf5ab74-4a50-4125-9507-a5e7656009ce
+GET /contas/d88e0c8d-11b3-428c-889d-2c02fac34997
 Authorization: Bearer {{ token_novo }}
 ```
 
@@ -2283,10 +917,10 @@ Authorization: Bearer {{ token_novo }}
 
 ```json
 {
-  "id": "fbf5ab74-4a50-4125-9507-a5e7656009ce",
-  "clienteId": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+  "id": "d88e0c8d-11b3-428c-889d-2c02fac34997",
+  "clienteId": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
   "agencia": "0001",
-  "numeroConta": "36756288",
+  "numeroConta": "40984117",
   "tipoConta": "CORRENTE",
   "saldo": 75,
   "ativa": true
@@ -2297,6 +931,8 @@ Authorization: Bearer {{ token_novo }}
 
 #### 02.11 · Extrato da ORIGEM (3 lançamentos)
 
+💡 **Em palavras simples:** O extrato: cada movimento da conta, do mais novo para o mais antigo. Aqui são três (depósito, saque e transferência).
+
 Do mais recente para o mais antigo. `valor` sempre positivo: se `contaDestinoId` é esta conta, é entrada.
 
 📥 usa: `conta_nova_id`, `token_novo`
@@ -2304,7 +940,7 @@ Do mais recente para o mais antigo. `valor` sempre positivo: se `contaDestinoId`
 **Pedido**
 
 ```http
-GET /contas/fbf5ab74-4a50-4125-9507-a5e7656009ce/lancamentos
+GET /contas/d88e0c8d-11b3-428c-889d-2c02fac34997/lancamentos
 Authorization: Bearer {{ token_novo }}
 ```
 
@@ -2315,22 +951,22 @@ Authorization: Bearer {{ token_novo }}
 ```json
 [
   {
-    "id": "e42cbd35-2c7f-4cf6-a9d0-5d66fb295973",
+    "id": "3e13b191-879a-434d-9755-125340533ef6",
     "tipoLancamento": "TRANSFERENCIA",
     "valor": 25,
-    "contaOrigemId": "fbf5ab74-4a50-4125-9507-a5e7656009ce",
-    "contaDestinoId": "8c354810-efd9-4181-a4fd-93b6feb26f8e",
+    "contaOrigemId": "d88e0c8d-11b3-428c-889d-2c02fac34997",
+    "contaDestinoId": "8d8da206-c2f5-4a47-b654-940c74454675",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-23T17:46:39.563057Z"
+    "dataHora": "2026-10-25T18:16:27.792064Z"
   },
   {
-    "id": "9d8a978a-43c1-494a-971c-4e6014ac3fce",
+    "id": "9c5a0ca0-f30a-4f3a-9592-0d3029017f23",
     "tipoLancamento": "SAQUE",
     "valor": 50,
-    "contaOrigemId": "fbf5ab74-4a50-4125-9507-a5e7656009ce",
+    "contaOrigemId": "d88e0c8d-11b3-428c-889d-2c02fac34997",
     "contaDestinoId": null,
     "descricao": "Saque pelo Insomnia",
-    "dataHora": "2026-10-23T17:46:39.551057Z"
+    "dataHora": "2026-10-25T18:16:27.765064Z"
   },
   "… mais 1 item no mesmo formato"
 ]
@@ -2340,12 +976,14 @@ Authorization: Bearer {{ token_novo }}
 
 #### 02.12 · Extrato do DESTINO (1 lançamento)
 
+💡 **Em palavras simples:** O extrato do outro lado mostra a transferência chegando. É a prova de que a transferência é um lançamento só, visto pelas duas contas.
+
 📥 usa: `conta_nova_destino_id`, `token_novo`
 
 **Pedido**
 
 ```http
-GET /contas/8c354810-efd9-4181-a4fd-93b6feb26f8e/lancamentos
+GET /contas/8d8da206-c2f5-4a47-b654-940c74454675/lancamentos
 Authorization: Bearer {{ token_novo }}
 ```
 
@@ -2356,13 +994,13 @@ Authorization: Bearer {{ token_novo }}
 ```json
 [
   {
-    "id": "e42cbd35-2c7f-4cf6-a9d0-5d66fb295973",
+    "id": "3e13b191-879a-434d-9755-125340533ef6",
     "tipoLancamento": "TRANSFERENCIA",
     "valor": 25,
-    "contaOrigemId": "fbf5ab74-4a50-4125-9507-a5e7656009ce",
-    "contaDestinoId": "8c354810-efd9-4181-a4fd-93b6feb26f8e",
+    "contaOrigemId": "d88e0c8d-11b3-428c-889d-2c02fac34997",
+    "contaDestinoId": "8d8da206-c2f5-4a47-b654-940c74454675",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-23T17:46:39.563057Z"
+    "dataHora": "2026-10-25T18:16:27.792064Z"
   }
 ]
 ```
@@ -2371,9 +1009,13 @@ Authorization: Bearer {{ token_novo }}
 
 ### 03 · Dinheiro entre clientes (contas prontas do seed)
 
+💡 O mesmo dinheiro, agora entre duas pessoas diferentes (Ana manda para o Bruno), com as contas que já vêm prontas no banco de teste.
+
 Tudo com o token da ORIGEM. Depósito, saque e transferência levam `Idempotency-Key` (aba Headers): o `{% uuid 'v4' %}` gera uma chave nova a cada envio. Resposta `204` não tem corpo: veja o saldo em **Minhas contas**.
 
 #### 03.01 · Minhas contas (ORIGEM)
+
+💡 **Em palavras simples:** Lista as contas da Ana (ou do Fellipe, na equipe), que já vêm com dinheiro do banco de teste. O Insomnia guarda o id da primeira conta para os próximos passos.
 
 `CLIENTE` vê só as dele; `ADMIN` vê todas. O script guarda a primeira conta em `conta_origem_id`.
 
@@ -2398,7 +1040,7 @@ Authorization: Bearer {{ token_origem }}
     "agencia": "0001",
     "numeroConta": "900001",
     "tipoConta": "CORRENTE",
-    "saldo": 900,
+    "saldo": 1000,
     "ativa": true
   }
 ]
@@ -2407,6 +1049,8 @@ Authorization: Bearer {{ token_origem }}
 🔎 A coleção confere: *status 200*
 
 #### 03.02 · Minhas contas paginadas
+
+💡 **Em palavras simples:** A mesma lista, em páginas (`page=0&size=10`). Com muitas contas, a tela pede de 10 em 10 em vez de tudo de uma vez.
 
 Basta `page` **ou** `size` para vir a página: `content`, `totalElements`, `totalPages`, `number`, `size`, `first`, `last`.
 
@@ -2432,7 +1076,7 @@ Authorization: Bearer {{ token_origem }}
       "agencia": "0001",
       "numeroConta": "900001",
       "tipoConta": "CORRENTE",
-      "saldo": 900,
+      "saldo": 1000,
       "ativa": true
     }
   ],
@@ -2448,6 +1092,8 @@ Authorization: Bearer {{ token_origem }}
 🔎 A coleção confere: *status 200* · *é página*
 
 #### 03.03 · Depositar R$ 150,00
+
+💡 **Em palavras simples:** Depósito na conta da ORIGEM. `204`, sem corpo, é sucesso.
 
 📥 usa: `conta_origem_id`, `token_origem`
 
@@ -2473,6 +1119,8 @@ Idempotency-Key: <UUID novo a cada envio>
 
 #### 03.04 · Sacar R$ 50,00
 
+💡 **Em palavras simples:** Saque da conta da ORIGEM. `204` de novo.
+
 📥 usa: `conta_origem_id`, `token_origem`
 
 **Pedido**
@@ -2496,6 +1144,8 @@ Idempotency-Key: <UUID novo a cada envio>
 🔎 A coleção confere: *status 204*
 
 #### 03.05 · Transferir R$ 25,00 ORIGEM → DESTINO
+
+💡 **Em palavras simples:** Agora de uma PESSOA para OUTRA: Ana manda para o Bruno. Só o dono da conta de origem pode mandar.
 
 Débito e crédito na mesma transação: ou os dois acontecem, ou nenhum.
 
@@ -2525,6 +1175,8 @@ Idempotency-Key: <UUID novo a cada envio>
 
 #### 03.06 · Extrato da ORIGEM
 
+💡 **Em palavras simples:** O extrato da Ana mostra o depósito, o saque e a transferência que saiu.
+
 Do mais recente para o mais antigo. `valor` sempre positivo.
 
 📥 usa: `conta_origem_id`, `token_origem`
@@ -2543,30 +1195,32 @@ Authorization: Bearer {{ token_origem }}
 ```json
 [
   {
-    "id": "2c984fba-5b51-4c94-a271-24cea2d47afd",
+    "id": "3631509d-11fa-4482-a274-d61536a522c2",
     "tipoLancamento": "TRANSFERENCIA",
     "valor": 25,
     "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
     "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-23T17:46:39.686648Z"
+    "dataHora": "2026-10-25T18:16:27.951915Z"
   },
   {
-    "id": "21266f52-c41a-4998-b328-645de22e581f",
+    "id": "4ee810fc-5ac1-4ac5-8abd-869b58535ecc",
     "tipoLancamento": "SAQUE",
     "valor": 50,
     "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
     "contaDestinoId": null,
     "descricao": "Saque pelo Insomnia",
-    "dataHora": "2026-10-23T17:46:39.675646Z"
+    "dataHora": "2026-10-25T18:16:27.931393Z"
   },
-  "… mais 5 itens no mesmo formato"
+  "… mais 2 itens no mesmo formato"
 ]
 ```
 
 🔎 A coleção confere: *status 200*
 
 #### 03.07 · Extrato do DESTINO (token do destino)
+
+💡 **Em palavras simples:** O Bruno entra com o crachá DELE e vê a transferência que chegou. Com o crachá da Ana, este mesmo pedido daria `403` (proibido).
 
 📥 usa: `conta_destino_id`, `token_destino`
 
@@ -2584,24 +1238,23 @@ Authorization: Bearer {{ token_destino }}
 ```json
 [
   {
-    "id": "2c984fba-5b51-4c94-a271-24cea2d47afd",
+    "id": "3631509d-11fa-4482-a274-d61536a522c2",
     "tipoLancamento": "TRANSFERENCIA",
     "valor": 25,
     "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
     "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-23T17:46:39.686648Z"
+    "dataHora": "2026-10-25T18:16:27.951915Z"
   },
   {
-    "id": "65692dcf-3667-4688-ba34-02450555d95b",
-    "tipoLancamento": "TRANSFERENCIA",
-    "valor": 200,
-    "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
+    "id": "a0000000-0000-4000-8000-000000000125",
+    "tipoLancamento": "DEPOSITO",
+    "valor": 500,
+    "contaOrigemId": null,
     "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
-    "descricao": "Aluguel",
-    "dataHora": "2026-10-23T17:46:32.176819Z"
-  },
-  "… mais 1 item no mesmo formato"
+    "descricao": "Saldo de boas-vindas do visitante",
+    "dataHora": "2026-09-25T12:00:00Z"
+  }
 ]
 ```
 
@@ -2609,9 +1262,13 @@ Authorization: Bearer {{ token_destino }}
 
 ### 04 · Idempotência (o mesmo pedido não movimenta duas vezes)
 
+💡 Proteção contra o "cliquei duas vezes": se a internet cair e o app mandar o mesmo depósito de novo, o dinheiro não pode entrar duas vezes.
+
 Mande na ordem. A 1ª sorteia uma chave e guarda em `chave_fixa`; a 2ª repete a MESMA chave com o MESMO corpo (como se a rede tivesse caído): `204` com o header `Idempotency-Replayed: true` e o saldo **não** muda.
 
 #### 04.01 · 1ª vez: depósito com chave fixa
+
+💡 **Em palavras simples:** Um depósito com uma "senha de pedido" (`Idempotency-Key`) que fica guardada. É como o número do pedido de uma compra.
 
 🎲 sorteia antes: `chave_fixa` · 📥 usa: `conta_origem_id`, `chave_fixa`, `token_origem`
 
@@ -2637,6 +1294,8 @@ Idempotency-Key: {{ chave_fixa }}
 
 #### 04.02 · 2ª vez: mesma chave, mesmo corpo → repetição
 
+💡 **Em palavras simples:** Manda o MESMO pedido de novo, como se a internet tivesse caído e o app tentasse outra vez. O banco reconhece o número, responde igual e NÃO deposita de novo. Repare no header `Idempotency-Replayed: true`.
+
 📥 usa: `conta_origem_id`, `chave_fixa`, `token_origem`
 
 **Pedido**
@@ -2661,6 +1320,8 @@ Idempotency-Key: {{ chave_fixa }}
 
 #### 04.03 · Mesma chave, outro valor → 422
 
+💡 **Em palavras simples:** Mesmo número de pedido, mas outro valor: isso não é repetição, é engano. O banco recusa (`422`) em vez de adivinhar.
+
 📥 usa: `conta_origem_id`, `chave_fixa`, `token_origem`
 
 **Pedido**
@@ -2683,7 +1344,7 @@ Idempotency-Key: {{ chave_fixa }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:39.734645600Z",
+  "timestamp": "2026-10-25T18:16:28.037441200Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "IDEMPOTENCIA_CHAVE_REUSADA",
@@ -2696,6 +1357,8 @@ Idempotency-Key: {{ chave_fixa }}
 🔎 A coleção confere: *status 422* · *codigo IDEMPOTENCIA_CHAVE_REUSADA*
 
 #### 04.04 · Sem a chave → 400
+
+💡 **Em palavras simples:** Movimentar dinheiro sem o número do pedido é recusado (`400`). Assim nenhum app esquece essa proteção.
 
 📥 usa: `conta_origem_id`, `token_origem`
 
@@ -2717,7 +1380,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:39.744646200Z",
+  "timestamp": "2026-10-25T18:16:28.055966500Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -2736,9 +1399,13 @@ Content-Type: application/json
 
 ### 06 · Meus dados (LGPD) e senha
 
+💡 Os direitos da pessoa sobre os próprios dados (LGPD): ver o que o banco guarda, corrigir, trocar a senha e encerrar o cadastro.
+
 O titular vê, corrige e encerra o próprio cadastro (`/clientes/me`: o `me` é sempre o dono do token). Troca de senha e encerramento são feitos no **cliente novo**, para as contas fixas continuarem entrando.
 
 #### 06.01 · Ver meus dados (ORIGEM)
+
+💡 **Em palavras simples:** O cliente vê tudo o que o banco guarda sobre ele. É um direito da LGPD.
 
 📥 usa: `token_origem`
 
@@ -2778,6 +1445,8 @@ Authorization: Bearer {{ token_origem }}
 🔎 A coleção confere: *status 200*
 
 #### 06.02 · Corrigir meu telefone (ORIGEM)
+
+💡 **Em palavras simples:** Corrige um dado. Só o campo enviado muda; os outros ficam como estavam.
 
 Só muda o que vier no corpo. CPF não muda.
 
@@ -2824,6 +1493,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 200*
 
 #### 06.03 · Mudar de endereço: CEP + número (ORIGEM)
+
+💡 **Em palavras simples:** Muda o endereço: com o CEP novo, a API busca a rua e a cidade sozinha. O número da casa é obrigatório junto.
 
 O endereço vem do ViaCEP de novo (precisa de internet). CEP novo exige `numero`.
 
@@ -2872,6 +1543,8 @@ Content-Type: application/json
 
 #### 06.04 · CEP sem número → 400
 
+💡 **Em palavras simples:** CEP novo sem o número da casa não dá para montar o endereço: `400`.
+
 📥 usa: `token_origem`
 
 **Pedido**
@@ -2892,7 +1565,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:39.934481200Z",
+  "timestamp": "2026-10-25T18:16:28.287593900Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -2910,6 +1583,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 400*
 
 #### 06.05 · Corpo vazio → 400
+
+💡 **Em palavras simples:** Pedir para corrigir sem mandar nada é recusado: não há o que mudar.
 
 📥 usa: `token_origem`
 
@@ -2929,7 +1604,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:39.942482600Z",
+  "timestamp": "2026-10-25T18:16:28.299594700Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -2947,6 +1622,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 400*
 
 #### 06.06 · E-mail de outra pessoa → 409
+
+💡 **Em palavras simples:** Um e-mail que já é de outro cliente dá `409` (conflito): cada e-mail é de uma pessoa só.
 
 📥 usa: `email_destino`, `token_origem`
 
@@ -2968,7 +1645,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:39.958019200Z",
+  "timestamp": "2026-10-25T18:16:28.318593600Z",
   "status": 409,
   "error": "Conflict",
   "codigo": "EMAIL_JA_CADASTRADO",
@@ -2981,6 +1658,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 409* · *codigo EMAIL_JA_CADASTRADO*
 
 #### 06.07 · Trocar senha com a atual errada → 422
+
+💡 **Em palavras simples:** Para trocar a senha, é preciso saber a atual. Se alguém pegar o celular desbloqueado, não troca a senha sem saber a antiga.
 
 📥 usa: `token_novo`
 
@@ -3003,7 +1682,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.039275200Z",
+  "timestamp": "2026-10-25T18:16:28.425163700Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SENHA_ATUAL_INCORRETA",
@@ -3017,6 +1696,8 @@ Content-Type: application/json
 
 #### 06.08 · Nova senha igual à atual → 422
 
+💡 **Em palavras simples:** Trocar a senha pela mesma não é troca: recusado.
+
 📥 usa: `novo_senha`, `token_novo`
 
 **Pedido**
@@ -3027,8 +1708,8 @@ Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 
 {
-  "senhaAtual": "senha-do-novo-mvl9hscs",
-  "novaSenha": "senha-do-novo-mvl9hscs"
+  "senhaAtual": "senha-do-novo-mvo5ft77",
+  "novaSenha": "senha-do-novo-mvo5ft77"
 }
 ```
 
@@ -3038,7 +1719,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.172325Z",
+  "timestamp": "2026-10-25T18:16:28.592773500Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SENHA_REPETIDA",
@@ -3052,6 +1733,8 @@ Content-Type: application/json
 
 #### 06.09 · Trocar a própria senha (cliente novo)
 
+💡 **Em palavras simples:** A troca certa: senha atual + senha nova. `204` = trocou.
+
 Depois do `204`, todo token antigo (inclusive este) dá `401`. O script já guarda a senha nova.
 
 🎲 sorteia antes: `senha_trocada` · 📥 usa: `novo_senha`, `senha_trocada`, `token_novo` · 📤 guarda: `novo_senha`
@@ -3064,8 +1747,8 @@ Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 
 {
-  "senhaAtual": "trocada-mvl9htin",
-  "novaSenha": "trocada-mvl9htin"
+  "senhaAtual": "trocada-mvo5fusz",
+  "novaSenha": "trocada-mvo5fusz"
 }
 ```
 
@@ -3076,6 +1759,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 204*
 
 #### 06.10 · Token antigo depois da troca → 401
+
+💡 **Em palavras simples:** Trocou a senha, todos os crachás antigos caem. Se alguém estava logado com a senha velha, foi desconectado.
 
 📥 usa: `token_novo`
 
@@ -3092,7 +1777,7 @@ Authorization: Bearer {{ token_novo }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.376394600Z",
+  "timestamp": "2026-10-25T18:16:28.841197800Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "ACESSO_ALTERADO",
@@ -3106,6 +1791,8 @@ Authorization: Bearer {{ token_novo }}
 
 #### 06.11 · Login · cliente novo com a senha nova
 
+💡 **Em palavras simples:** Entra de novo, agora com a senha nova.
+
 📥 usa: `novo_cpf`, `novo_senha` · 📤 guarda: `token_novo`, `refresh_novo`
 
 **Pedido**
@@ -3115,8 +1802,8 @@ POST /auth/login
 Content-Type: application/json
 
 {
-  "cpf": "62623456801",
-  "senha": "trocada-mvl9htin"
+  "cpf": "09199180189",
+  "senha": "trocada-mvo5fusz"
 }
 ```
 
@@ -3129,7 +1816,7 @@ Content-Type: application/json
   "token": "eyJhbGciOiJIUzI1NiJ9...",
   "tipo": "Bearer",
   "expiraEmSegundos": 3600,
-  "clienteId": "d42c98e2-adfa-4890-bbbc-cc0b8b3a9ad3",
+  "clienteId": "10da6aa3-770c-45a1-83ef-d9a7d53588ee",
   "perfil": "CLIENTE",
   "deveTrocarSenha": false,
   "refreshToken": "q3Jd0kX4...",
@@ -3140,6 +1827,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 200*
 
 #### 06.12 · Encerrar com a senha errada → 422
+
+💡 **Em palavras simples:** Encerrar o cadastro pede a senha, para ninguém encerrar a conta de outra pessoa por engano.
 
 📥 usa: `token_novo`
 
@@ -3161,7 +1850,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.524582700Z",
+  "timestamp": "2026-10-25T18:16:29.017971800Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SENHA_INCORRETA",
@@ -3174,6 +1863,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 422* · *codigo SENHA_INCORRETA*
 
 #### 06.13 · Encerrar com saldo (ORIGEM) → 422
+
+💡 **Em palavras simples:** Não dá para encerrar com dinheiro na conta: primeiro a pessoa saca ou transfere tudo.
 
 Dinheiro não some: com saldo, o encerramento é recusado (e nada muda na conta de origem).
 
@@ -3197,7 +1888,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.602738900Z",
+  "timestamp": "2026-10-25T18:16:29.112071400Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SALDO_NAO_ZERADO",
@@ -3211,6 +1902,8 @@ Content-Type: application/json
 
 #### 06.14 · Zerar a ORIGEM (saque de R$ 75,00)
 
+💡 **Em palavras simples:** Saca o que sobrou na conta ORIGEM do cliente novo, para poder encerrar.
+
 Dinheiro não some: antes de encerrar, o titular tira o saldo das contas (as da pasta 02).
 
 📥 usa: `conta_nova_id`, `token_novo`
@@ -3218,7 +1911,7 @@ Dinheiro não some: antes de encerrar, o titular tira o saldo das contas (as da 
 **Pedido**
 
 ```http
-POST /contas/fbf5ab74-4a50-4125-9507-a5e7656009ce/saques
+POST /contas/d88e0c8d-11b3-428c-889d-2c02fac34997/saques
 Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
@@ -3237,12 +1930,14 @@ Idempotency-Key: <UUID novo a cada envio>
 
 #### 06.15 · Zerar o DESTINO (saque de R$ 25,00)
 
+💡 **Em palavras simples:** Saca o que sobrou na conta DESTINO. As duas ficam com zero.
+
 📥 usa: `conta_nova_destino_id`, `token_novo`
 
 **Pedido**
 
 ```http
-POST /contas/8c354810-efd9-4181-a4fd-93b6feb26f8e/saques
+POST /contas/8d8da206-c2f5-4a47-b654-940c74454675/saques
 Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
@@ -3261,6 +1956,8 @@ Idempotency-Key: <UUID novo a cada envio>
 
 #### 06.16 · ⚠️ Encerrar o cadastro (cliente novo)
 
+💡 **Em palavras simples:** Encerra o cadastro: o login para de funcionar na hora. Os dados ficam guardados só pelo prazo que a lei exige de um banco (repare em `anonimizacaoPrevistaPara`, 5 anos depois) e então são anonimizados, sem que ninguém precise lembrar.
+
 Exige saldo zero em todas as contas (as do cliente novo estão zeradas). Contas ficam inativas, o login é desativado e os dados são anonimizados depois de 5 anos. Para repetir, cadastre outro cliente novo (pasta 02).
 
 📥 usa: `novo_senha`, `token_novo`
@@ -3273,7 +1970,7 @@ Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 
 {
-  "senha": "trocada-mvl9htin"
+  "senha": "trocada-mvo5fusz"
 }
 ```
 
@@ -3283,8 +1980,8 @@ Content-Type: application/json
 
 ```json
 {
-  "encerradoEm": "2026-10-23T17:46:40.701266400Z",
-  "anonimizacaoPrevistaPara": "2031-10-23",
+  "encerradoEm": "2026-10-25T18:16:29.284116500Z",
+  "anonimizacaoPrevistaPara": "2031-10-25",
   "motivoDaRetencao": "Lei 9.613/1998, art. 10: cadastro e operacoes guardados pelo prazo legal depois do fim do relacionamento; em seguida, os dados pessoais sao anonimizados"
 }
 ```
@@ -3292,6 +1989,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 200* · *prazo de anonimização*
 
 #### 06.17 · Token do encerrado → 401
+
+💡 **Em palavras simples:** Depois de encerrar, o crachá para de funcionar na hora.
 
 📥 usa: `token_novo`
 
@@ -3308,7 +2007,7 @@ Authorization: Bearer {{ token_novo }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.711268600Z",
+  "timestamp": "2026-10-25T18:16:29.301165100Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "ACESSO_ALTERADO",
@@ -3322,6 +2021,8 @@ Authorization: Bearer {{ token_novo }}
 
 #### 06.18 · Login do encerrado → 401
 
+💡 **Em palavras simples:** E não dá mais para entrar, nem com a senha certa.
+
 📥 usa: `novo_cpf`, `novo_senha`
 
 **Pedido**
@@ -3331,8 +2032,8 @@ POST /auth/login
 Content-Type: application/json
 
 {
-  "cpf": "62623456801",
-  "senha": "trocada-mvl9htin"
+  "cpf": "09199180189",
+  "senha": "trocada-mvo5fusz"
 }
 ```
 
@@ -3342,7 +2043,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.780777800Z",
+  "timestamp": "2026-10-25T18:16:29.388201500Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "CREDENCIAIS_INVALIDAS",
@@ -3356,9 +2057,13 @@ Content-Type: application/json
 
 ### 07 · Erros que DEVEM acontecer
 
+💡 Os erros que o banco TEM que dar. Um teste que espera um erro e recebe o erro certo está passando: é a prova de que a proteção funciona.
+
 Cada uma testa uma proteção. Se alguma passar com 2xx, achamos um bug.
 
 #### 07.01 · Sem token → 401
+
+💡 **Em palavras simples:** Pedir as contas sem o crachá: `401` ("quem é você?").
 
 **Pedido**
 
@@ -3372,7 +2077,7 @@ GET /contas
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.784774300Z",
+  "timestamp": "2026-10-25T18:16:29.398202300Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "AUTENTICACAO_NECESSARIA",
@@ -3385,6 +2090,8 @@ GET /contas
 🔎 A coleção confere: *status 401* · *codigo AUTENTICACAO_NECESSARIA*
 
 #### 07.02 · Token adulterado → 401
+
+💡 **Em palavras simples:** Um crachá falsificado, que diz ser ADMIN. A assinatura não bate e o banco recusa: não dá para inventar o próprio crachá.
 
 Um JWT com payload trocado e assinatura que não bate: o Resource Server recusa.
 
@@ -3403,7 +2110,7 @@ Authorization: Bearer {{ token_falso }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.787313800Z",
+  "timestamp": "2026-10-25T18:16:29.404200400Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "TOKEN_INVALIDO",
@@ -3416,6 +2123,8 @@ Authorization: Bearer {{ token_falso }}
 🔎 A coleção confere: *status 401* · *codigo TOKEN_INVALIDO*
 
 #### 07.03 · Senha errada no login → 401
+
+💡 **Em palavras simples:** Senha errada não entra. A mensagem não diz se o erro foi o CPF ou a senha, para não ajudar quem tenta adivinhar.
 
 CPF sem cadastro e senha errada dão a MESMA resposta: não dá para descobrir quem é cliente. 5 erros seguidos no mesmo CPF → `429` (mande esta 6 vezes para ver; o CPF fica 15 min bloqueado).
 
@@ -3437,7 +2146,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.857941400Z",
+  "timestamp": "2026-10-25T18:16:29.496235900Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "CREDENCIAIS_INVALIDAS",
@@ -3450,6 +2159,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 401* · *codigo CREDENCIAIS_INVALIDAS*
 
 #### 07.04 · CLIENTE em rota de ADMIN → 403
+
+💡 **Em palavras simples:** Um cliente comum tentando ver a lista de todos os clientes: `403` ("sei quem você é, mas você não pode").
 
 📥 usa: `token_origem`
 
@@ -3466,7 +2177,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.864939900Z",
+  "timestamp": "2026-10-25T18:16:29.507237900Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "PERFIL_SEM_PERMISSAO",
@@ -3479,6 +2190,8 @@ Authorization: Bearer {{ token_origem }}
 🔎 A coleção confere: *status 403* · *codigo PERFIL_SEM_PERMISSAO*
 
 #### 07.05 · CLIENTE na gestão de usuários → 403
+
+💡 **Em palavras simples:** Um cliente tentando entrar na gestão de usuários do ADMIN: `403`.
 
 📥 usa: `token_origem`
 
@@ -3495,7 +2208,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.870532700Z",
+  "timestamp": "2026-10-25T18:16:29.516238300Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "PERFIL_SEM_PERMISSAO",
@@ -3508,6 +2221,8 @@ Authorization: Bearer {{ token_origem }}
 🔎 A coleção confere: *status 403*
 
 #### 07.06 · Depositar na conta de outro cliente → 403
+
+💡 **Em palavras simples:** O Bruno tentando mexer na conta da Ana: `403`. Só o dono movimenta a própria conta.
 
 📥 usa: `conta_origem_id`, `token_destino`
 
@@ -3530,7 +2245,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.877537100Z",
+  "timestamp": "2026-10-25T18:16:29.530237700Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "CONTA_DE_OUTRO_CLIENTE",
@@ -3543,6 +2258,8 @@ Idempotency-Key: <UUID novo a cada envio>
 🔎 A coleção confere: *status 403* · *codigo CONTA_DE_OUTRO_CLIENTE*
 
 #### 07.07 · Ver o extrato de outro cliente → 403
+
+💡 **Em palavras simples:** O Bruno tentando ver o extrato da Ana: `403`.
 
 📥 usa: `conta_origem_id`, `token_destino`
 
@@ -3559,7 +2276,7 @@ Authorization: Bearer {{ token_destino }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.885182600Z",
+  "timestamp": "2026-10-25T18:16:29.544236600Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "CONTA_DE_OUTRO_CLIENTE",
@@ -3572,6 +2289,8 @@ Authorization: Bearer {{ token_destino }}
 🔎 A coleção confere: *status 403*
 
 #### 07.08 · Ver a conta de outro cliente → 403
+
+💡 **Em palavras simples:** O Bruno tentando ver o saldo da Ana: `403`.
 
 📥 usa: `conta_origem_id`, `token_destino`
 
@@ -3588,7 +2307,7 @@ Authorization: Bearer {{ token_destino }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.892180200Z",
+  "timestamp": "2026-10-25T18:16:29.558238200Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "CONTA_DE_OUTRO_CLIENTE",
@@ -3601,6 +2320,8 @@ Authorization: Bearer {{ token_destino }}
 🔎 A coleção confere: *status 403* · *codigo CONTA_DE_OUTRO_CLIENTE*
 
 #### 07.09 · CLIENTE na conciliação → 403
+
+💡 **Em palavras simples:** A auditoria do banco é só do ADMIN: `403` para cliente.
 
 📥 usa: `token_origem`
 
@@ -3617,7 +2338,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.898182500Z",
+  "timestamp": "2026-10-25T18:16:29.567759800Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "PERFIL_SEM_PERMISSAO",
@@ -3630,6 +2351,8 @@ Authorization: Bearer {{ token_origem }}
 🔎 A coleção confere: *status 403*
 
 #### 07.10 · Sacar mais que o saldo → 422
+
+💡 **Em palavras simples:** Sacar mais do que tem: recusado com o `codigo` `SALDO_INSUFICIENTE`. Nenhum centavo sai.
 
 📥 usa: `conta_origem_id`, `token_origem`
 
@@ -3652,7 +2375,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.906825500Z",
+  "timestamp": "2026-10-25T18:16:29.584279400Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SALDO_INSUFICIENTE",
@@ -3665,6 +2388,8 @@ Idempotency-Key: <UUID novo a cada envio>
 🔎 A coleção confere: *status 422* · *codigo SALDO_INSUFICIENTE*
 
 #### 07.11 · Transferir mais que o saldo → 422
+
+💡 **Em palavras simples:** Transferir mais do que tem: recusado, e nada muda em nenhuma das duas contas.
 
 📥 usa: `conta_origem_id`, `conta_destino_id`, `token_origem`
 
@@ -3689,7 +2414,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.917347700Z",
+  "timestamp": "2026-10-25T18:16:29.603279300Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SALDO_INSUFICIENTE",
@@ -3702,6 +2427,8 @@ Idempotency-Key: <UUID novo a cada envio>
 🔎 A coleção confere: *status 422* · *codigo SALDO_INSUFICIENTE*
 
 #### 07.12 · Transferir para a mesma conta → 422
+
+💡 **Em palavras simples:** Transferir de uma conta para ela mesma não faz sentido: recusado.
 
 📥 usa: `conta_origem_id`, `token_origem`
 
@@ -3726,7 +2453,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.925141600Z",
+  "timestamp": "2026-10-25T18:16:29.616280200Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "MESMA_CONTA",
@@ -3739,6 +2466,8 @@ Idempotency-Key: <UUID novo a cada envio>
 🔎 A coleção confere: *status 422* · *codigo MESMA_CONTA*
 
 #### 07.13 · Conta que não existe → 404
+
+💡 **Em palavras simples:** O extrato de uma conta que não existe: `404` (não encontrado).
 
 📥 usa: `token_origem`
 
@@ -3755,7 +2484,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.932760100Z",
+  "timestamp": "2026-10-25T18:16:29.629802400Z",
   "status": 404,
   "error": "Not Found",
   "codigo": "CONTA_NAO_ENCONTRADA",
@@ -3768,6 +2497,8 @@ Authorization: Bearer {{ token_origem }}
 🔎 A coleção confere: *status 404*
 
 #### 07.14 · Ver conta que não existe → 404
+
+💡 **Em palavras simples:** Uma conta que não existe: `404`.
 
 📥 usa: `token_origem`
 
@@ -3784,7 +2515,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.939759400Z",
+  "timestamp": "2026-10-25T18:16:29.643803500Z",
   "status": 404,
   "error": "Not Found",
   "codigo": "CONTA_NAO_ENCONTRADA",
@@ -3797,6 +2528,8 @@ Authorization: Bearer {{ token_origem }}
 🔎 A coleção confere: *status 404* · *codigo CONTA_NAO_ENCONTRADA*
 
 #### 07.15 · Id que não é UUID → 400
+
+💡 **Em palavras simples:** O id das contas tem um formato fixo (UUID). `abc` nem chega a ser procurado: `400`.
 
 📥 usa: `token_origem`
 
@@ -3813,7 +2546,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.953760400Z",
+  "timestamp": "2026-10-25T18:16:29.658329100Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "PARAMETRO_INVALIDO",
@@ -3832,6 +2565,8 @@ Authorization: Bearer {{ token_origem }}
 
 #### 07.16 · Paginação inválida → 400
 
+💡 **Em palavras simples:** Pedir páginas de tamanho zero: `400`.
+
 📥 usa: `token_origem`
 
 **Pedido**
@@ -3847,7 +2582,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.960864200Z",
+  "timestamp": "2026-10-25T18:16:29.667327900Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -3865,6 +2600,8 @@ Authorization: Bearer {{ token_origem }}
 🔎 A coleção confere: *status 400*
 
 #### 07.17 · Tipo de conta inválido → 400
+
+💡 **Em palavras simples:** Só existem conta CORRENTE e POUPANCA. Outro tipo: `400`.
 
 📥 usa: `token_origem`
 
@@ -3886,7 +2623,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.968894700Z",
+  "timestamp": "2026-10-25T18:16:29.681332900Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "JSON_INVALIDO",
@@ -3899,6 +2636,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 400*
 
 #### 07.18 · JSON quebrado → 400
+
+💡 **Em palavras simples:** O corpo do pedido com erro de digitação (JSON inválido): `400`, sem quebrar a API.
 
 📥 usa: `conta_origem_id`, `token_origem`
 
@@ -3919,7 +2658,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:40.976420800Z",
+  "timestamp": "2026-10-25T18:16:29.693851900Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "JSON_INVALIDO",
@@ -3932,6 +2671,8 @@ Idempotency-Key: <UUID novo a cada envio>
 🔎 A coleção confere: *status 400*
 
 #### 07.19 · Valor com 3 casas → 400
+
+💡 **Em palavras simples:** Dinheiro tem duas casas depois da vírgula. R$ 10,999 não existe: `400`.
 
 📥 usa: `conta_origem_id`, `token_origem`
 
@@ -3954,7 +2695,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.003181300Z",
+  "timestamp": "2026-10-25T18:16:29.715381700Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -3972,6 +2713,8 @@ Idempotency-Key: <UUID novo a cada envio>
 🔎 A coleção confere: *status 400*
 
 #### 07.20 · Cadastro inválido → 400 com os campos
+
+💡 **Em palavras simples:** Um cadastro todo errado. Repare em `campos`: a resposta diz o que está errado em CADA campo, para a tela mostrar embaixo de cada um.
 
 **Pedido**
 
@@ -3997,7 +2740,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.017133400Z",
+  "timestamp": "2026-10-25T18:16:29.728375300Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -4009,8 +2752,8 @@ Content-Type: application/json
       "mensagem": "cep é obrigatório"
     },
     {
-      "campo": "cpf",
-      "mensagem": "cpf inválido"
+      "campo": "email",
+      "mensagem": "email inválido"
     },
     "… mais 5 itens no mesmo formato"
   ]
@@ -4020,6 +2763,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 400* · *lista os campos*
 
 #### 07.21 · CPF já cadastrado → 409
+
+💡 **Em palavras simples:** Um CPF que já tem cadastro: `409` (conflito). Cada CPF é um cliente só.
 
 📥 usa: `cpf_origem`
 
@@ -4032,7 +2777,7 @@ Content-Type: application/json
 {
   "nomeCompleto": "CPF Repetido",
   "cpf": "24681357928",
-  "email": "repetido.91346182-7425-4d8e-a462-2e85a8be2188@exemplo.test",
+  "email": "repetido.1d57711c-2c14-480d-b474-e458ea9ffda3@exemplo.test",
   "telefone": "11999998888",
   "cep": "01001000",
   "numero": "1",
@@ -4047,7 +2792,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.030298300Z",
+  "timestamp": "2026-10-25T18:16:29.742896400Z",
   "status": 409,
   "error": "Conflict",
   "codigo": "CPF_JA_CADASTRADO",
@@ -4061,6 +2806,8 @@ Content-Type: application/json
 
 #### 07.22 · Cadastro sem aceitar os termos → 400
 
+💡 **Em palavras simples:** Sem aceitar os termos, não tem cadastro (LGPD).
+
 LGPD (contrato 3.1): sem o aceite dos Termos de Uso e da Política de Privacidade, o cadastro nem chega ao banco.
 
 🎲 sorteia antes: `cpf_extra` · 📥 usa: `cpf_extra`
@@ -4073,8 +2820,8 @@ Content-Type: application/json
 
 {
   "nomeCompleto": "Sem Aceite",
-  "cpf": "35316838882",
-  "email": "aceite.a386312a-ff97-4091-a8c5-f4b8502c7e35@exemplo.test",
+  "cpf": "61372487476",
+  "email": "aceite.4af2be22-9727-4567-a22b-52c9fd2c324a@exemplo.test",
   "telefone": "11999998888",
   "cep": "01001000",
   "numero": "1",
@@ -4089,7 +2836,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.036299900Z",
+  "timestamp": "2026-10-25T18:16:29.752896900Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -4108,6 +2855,8 @@ Content-Type: application/json
 
 #### 07.23 · Cadastro com termos antigos → 422
 
+💡 **Em palavras simples:** Aceitar uma versão velha dos termos não vale: a pessoa precisa aceitar a versão atual.
+
 A pessoa aceitou uma versão dos termos que não vale mais (página aberta antes de eles mudarem): recarregar e aceitar de novo.
 
 🎲 sorteia antes: `cpf_extra` · 📥 usa: `cpf_extra`
@@ -4120,8 +2869,8 @@ Content-Type: application/json
 
 {
   "nomeCompleto": "Termos Antigos",
-  "cpf": "08119144880",
-  "email": "termos.73537030-5796-4b76-87ed-c116af7bcd05@exemplo.test",
+  "cpf": "59564102480",
+  "email": "termos.46a721fa-d9e8-4775-883e-501a2dcaa32a@exemplo.test",
   "telefone": "11999998888",
   "cep": "01001000",
   "numero": "1",
@@ -4137,7 +2886,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.044006100Z",
+  "timestamp": "2026-10-25T18:16:29.766898300Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "TERMOS_DESATUALIZADOS",
@@ -4151,6 +2900,8 @@ Content-Type: application/json
 
 #### 07.24 · CEP que não existe → 422
 
+💡 **Em palavras simples:** Um CEP que o ViaCEP não conhece: o cadastro é recusado em vez de salvar um endereço vazio.
+
 O endereço vem do ViaCEP: CEP inexistente → `422`; ViaCEP fora do ar → `503`.
 
 🎲 sorteia antes: `cpf_extra` · 📥 usa: `cpf_extra`
@@ -4163,8 +2914,8 @@ Content-Type: application/json
 
 {
   "nomeCompleto": "CEP Inexistente",
-  "cpf": "77722418600",
-  "email": "cep.c655a157-c7c8-4bf6-944c-e2be810e9510@exemplo.test",
+  "cpf": "04508924689",
+  "email": "cep.17282d78-a434-438a-bb08-87d4152c0e10@exemplo.test",
   "telefone": "11999998888",
   "cep": "99999999",
   "numero": "1",
@@ -4179,7 +2930,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.217270700Z",
+  "timestamp": "2026-10-25T18:16:29.919459Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "CEP_NAO_ENCONTRADO",
@@ -4193,9 +2944,13 @@ Content-Type: application/json
 
 ### 08 · CORS (navegador chamando a API direto)
 
+💡 Uma regra do navegador (CORS): só o site do RKF Bank pode chamar a API de dentro de uma página. Um site estranho é barrado.
+
 O site de hoje passa pelo proxy do Next e não usa CORS. Isto vale para um navegador chamando a API direto. As origens permitidas vêm de `CORS_ORIGENS` (padrão `http://localhost:3000`).
 
 #### 08.01 · Preflight de origem permitida → 200
+
+💡 **Em palavras simples:** Antes de chamar a API, o navegador pergunta "posso?" (o preflight). Vindo do site do RKF Bank (`localhost:3000`), a resposta é sim.
 
 **Pedido**
 
@@ -4213,6 +2968,8 @@ Access-Control-Request-Headers: authorization,content-type,idempotency-key
 🔎 A coleção confere: *status 200* · *Allow-Origin*
 
 #### 08.02 · Preflight de origem estranha → 403
+
+💡 **Em palavras simples:** A mesma pergunta vinda de um site desconhecido: não (`403`). Assim um site malicioso não usa a sua sessão para mexer na sua conta.
 
 **Pedido**
 
@@ -4234,9 +2991,13 @@ Invalid CORS request
 
 ### 09 · Sessão: renovar e sair (refresh token)
 
+💡 Ficar logado sem digitar a senha de novo, e sair de verdade. O crachá curto (token) é renovado com um segundo crachá, mais longo (refresh token).
+
 Contrato 3.1. O login devolve, além do token de acesso (15 min), um **token de renovação** (7 dias) que troca o par sem pedir a senha. Ele é de **uso único**: usar de novo um já trocado é sinal de roubo e derruba todas as sessões da pessoa. Mande na ordem; usa o cliente DESTINO, e no fim ele entra de novo para as outras pastas continuarem.
 
 #### 09.01 · Login · cliente DESTINO
+
+💡 **Em palavras simples:** Entra de novo para ter um par novinho de crachás: o de acesso (curto) e o de renovação (7 dias).
 
 📥 usa: `cpf_destino`, `senha_clientes` · 📤 guarda: `token_destino`, `refresh_destino`, `refresh_usado`
 
@@ -4272,6 +3033,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 200*
 
 #### 09.02 · Renovar: troca o par
+
+💡 **Em palavras simples:** Troca o crachá de renovação por um par novo, sem digitar a senha. É assim que o app te mantém logado. O de renovação antigo deixa de valer.
 
 Público: o token de renovação vai no corpo (o de acesso pode já ter vencido). Mesmo formato do login.
 
@@ -4309,6 +3072,8 @@ Content-Type: application/json
 
 #### 09.03 · O token novo funciona
 
+💡 **Em palavras simples:** O crachá novo abre as contas normalmente.
+
 📥 usa: `token_destino`
 
 **Pedido**
@@ -4330,7 +3095,7 @@ Authorization: Bearer {{ token_destino }}
     "agencia": "0001",
     "numeroConta": "900002",
     "tipoConta": "CORRENTE",
-    "saldo": 725,
+    "saldo": 525,
     "ativa": true
   }
 ]
@@ -4339,6 +3104,8 @@ Authorization: Bearer {{ token_destino }}
 🔎 A coleção confere: *status 200*
 
 #### 09.04 · Reusar o token já trocado → 401
+
+💡 **Em palavras simples:** Usar de novo um crachá de renovação que já foi trocado é sinal de roubo: o banco recusa E derruba todas as sessões da pessoa.
 
 Reuso = alguém copiou o token. A API derruba **todas** as renovações da pessoa, inclusive a legítima.
 
@@ -4361,7 +3128,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.342328500Z",
+  "timestamp": "2026-10-25T18:16:30.092542Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "SESSAO_EXPIRADA",
@@ -4374,6 +3141,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 401* · *codigo SESSAO_EXPIRADA*
 
 #### 09.05 · Depois do reuso, a renovação legítima também caiu → 401
+
+💡 **Em palavras simples:** Prova do passo anterior: até o crachá novo, que era legítimo, foi derrubado. Quem roubou fica sem acesso; o dono só precisa entrar de novo.
 
 📥 usa: `refresh_destino`
 
@@ -4394,7 +3163,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.350063800Z",
+  "timestamp": "2026-10-25T18:16:30.104068300Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "SESSAO_EXPIRADA",
@@ -4407,6 +3176,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 401* · *codigo SESSAO_EXPIRADA*
 
 #### 09.06 · Login · cliente DESTINO (de novo)
+
+💡 **Em palavras simples:** Entra de novo depois da derrubada.
 
 📥 usa: `cpf_destino`, `senha_clientes` · 📤 guarda: `token_destino`, `refresh_destino`, `refresh_usado`
 
@@ -4443,6 +3214,8 @@ Content-Type: application/json
 
 #### 09.07 · Sair (logout)
 
+💡 **Em palavras simples:** Sair de verdade: o crachá de renovação é cancelado no banco, não só apagado do aparelho.
+
 Revoga o token de renovação. O de acesso continua valendo até vencer (no máximo 15 min): o front o apaga.
 
 📥 usa: `refresh_usado`
@@ -4466,6 +3239,8 @@ Content-Type: application/json
 
 #### 09.08 · Renovar depois de sair → 401
 
+💡 **Em palavras simples:** Depois de sair, o crachá de renovação não serve mais para nada.
+
 📥 usa: `refresh_usado`
 
 **Pedido**
@@ -4485,7 +3260,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.435200800Z",
+  "timestamp": "2026-10-25T18:16:30.215115900Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "SESSAO_EXPIRADA",
@@ -4498,6 +3273,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 401* · *codigo SESSAO_EXPIRADA*
 
 #### 09.09 · Sair com token desconhecido → 204
+
+💡 **Em palavras simples:** Sair com um crachá que o banco não conhece também responde `204`: a API não revela se o crachá existia.
 
 Sair nunca falha (nem revela se o token existia).
 
@@ -4520,6 +3297,8 @@ Content-Type: application/json
 
 #### 09.10 · Renovar sem o token → 400
 
+💡 **Em palavras simples:** Pedir renovação sem mandar o crachá: `400`.
+
 **Pedido**
 
 ```http
@@ -4535,7 +3314,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-23T17:46:41.449497400Z",
+  "timestamp": "2026-10-25T18:16:30.229115200Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -4553,6 +3332,8 @@ Content-Type: application/json
 🔎 A coleção confere: *status 400*
 
 #### 09.11 · Login · cliente DESTINO (para as outras pastas)
+
+💡 **Em palavras simples:** Deixa o Bruno logado no fim, para você poder mandar as outras pastas de novo sem refazer o login.
 
 📥 usa: `cpf_destino`, `senha_clientes` · 📤 guarda: `token_destino`, `refresh_destino`, `cliente_destino_id`
 
@@ -4591,7 +3372,7 @@ Content-Type: application/json
 
 ---
 
-## Parte 4 — Por dentro e problemas comuns
+## Parte 3 — Por dentro e problemas comuns
 
 ### Conferindo nos logs
 
@@ -4738,16 +3519,16 @@ baixo nem ficam sabendo. É por isso que cada cenário deste guia "morre" num lu
 flowchart TB
     REQ(["📨 Requisição HTTP"]) --> F1
     F1["1 · FiltroLogRequisicao<br/>X-Request-Id no MDC"] --> F2
-    F2["2 · Spring Security<br/>JWT válido? perfil pode a rota?"] -->|"S01–S06 · A21 → 401<br/>S11 · A04 → 403"| X1(["❌"])
+    F2["2 · Spring Security<br/>JWT válido? perfil pode a rota?"] -->|"07.01–07.03 → 401<br/>07.04 · 07.05 · 07.09 → 403"| X1(["❌"])
     F2 --> F3
-    F3["3 · Controller + Bean Validation<br/>formato do JSON e dos campos"] -->|"E01 · E02 · E08–E11 · E16–E19 → 400"| X2(["❌"])
+    F3["3 · Controller + Bean Validation<br/>formato do JSON e dos campos"] -->|"04.04 · 07.15–07.20 · 07.22 → 400"| X2(["❌"])
     F3 --> F4
-    F4["4 · Service<br/>regra de negócio, dono, idempotência,<br/>@Transactional"] -->|"S07–S10 → 403 · E12–E15 → 422/404<br/>T07 → 204 repetido · E20 → 422"| X3(["❌"])
+    F4["4 · Service<br/>regra de negócio, dono, idempotência,<br/>@Transactional"] -->|"07.06–07.08 → 403 · 07.10–07.14 → 422/404<br/>04.02 → 204 repetido · 04.03 → 422"| X3(["❌"])
     F4 --> F5
     F5["5 · Repository + JPA<br/>@Version (lock otimista)"] -->|"conflito simultâneo → 409"| X4(["❌"])
     F5 --> F6
-    F6[("6 · MySQL/H2 + Flyway<br/>UNIQUE, FK, CHECK")] -->|"E03 · E04 · E07 → 409"| X5(["❌"])
-    F4 -.-> V["ViaCEP<br/>(client com timeout)"] -.->|"E05 → 422 · fora → 503"| X6(["❌"])
+    F6[("6 · MySQL/H2 + Flyway<br/>UNIQUE, FK, CHECK")] -->|"06.06 · 07.21 → 409"| X5(["❌"])
+    F4 -.-> V["ViaCEP<br/>(client com timeout)"] -.->|"07.24 → 422 · fora → 503"| X6(["❌"])
     X1 & X2 & X3 & X4 & X5 & X6 --> EH["TratadorGlobalDeErros / TratadorErrosSeguranca<br/>mesmo formato de erro para tudo"]
     F6 --> OK(["✅ 2xx + DTO"])
 ```
@@ -4755,14 +3536,14 @@ flowchart TB
 | # | Camada (onde fica) | O que faz | Por que foi feita assim | Sem ela... | Cenários |
 |:-:|---|---|---|---|---|
 | 1 | **Filtro de log** (`config/FiltroLogRequisicao`) | dá um `X-Request-Id` a cada requisição, põe no MDC e devolve no header; loga método, rota, status e tempo | filtro roda **antes de tudo**, até de uma requisição recusada pela segurança; o id liga todas as linhas de log da mesma chamada | um erro em produção vira "agulha no palheiro": mil linhas sem saber quais são da mesma chamada | seção 16 |
-| 2 | **Segurança** (`config/ConfiguracaoSeguranca`, `security/*`) | valida o JWT (assinatura HS256, validade), confere o usuário no banco e o perfil exigido pela rota | Resource Server oficial do Spring em vez de filtro caseiro; **stateless** (sem sessão), então a API escala; conferir `tb_usuario` a cada chamada faz desativação valer na hora | qualquer um movimenta qualquer conta; token roubado ou de rebaixado vale até expirar | S01–S06, S11–S13, A04–A13, A21 |
-| 3 | **Controller** (`controllers/*`) + **Bean Validation** (`dto/request/*`, `validation/@CpfValido`) | traduz HTTP ↔ Java: lê o JSON, valida o **formato** (`@Valid`), chama o service, escolhe o status (`201`, `204`) | controller fino: **não tem regra de negócio**, então a regra pode ser testada sem HTTP; validação de formato declarada no DTO, num lugar só | regra espalhada entre controllers; dado inválido chegando ao banco | E01, E02, E08–E11, E16–E19, A18, A20, A23 |
-| 4 | **Service** (`services/*`) | as regras do banco: saldo, conta ativa, **dono da conta**, uma movimentação por chave (`IdempotenciaService`), débito + crédito + lançamento numa **transação** | é o "cérebro": não sabe nada de HTTP; o `@Transactional` garante tudo-ou-nada; a regra de dono usa o `clienteId` **do token**, nunca do corpo | transferência pela metade, saque duplicado quando a rede falha, cliente mexendo na conta do outro | T04–T11, S07–S10, E12–E15, E20, A10, A11, A15–A17 |
+| 2 | **Segurança** (`config/ConfiguracaoSeguranca`, `security/*`) | valida o JWT (assinatura HS256, validade), confere o usuário no banco e o perfil exigido pela rota | Resource Server oficial do Spring em vez de filtro caseiro; **stateless** (sem sessão), então a API escala; conferir `tb_usuario` a cada chamada faz desativação valer na hora | qualquer um movimenta qualquer conta; token roubado ou de rebaixado vale até expirar | 07.01–07.05, 07.09, 09.04, 09.05 |
+| 3 | **Controller** (`controllers/*`) + **Bean Validation** (`dto/request/*`, `validation/@CpfValido`) | traduz HTTP ↔ Java: lê o JSON, valida o **formato** (`@Valid`), chama o service, escolhe o status (`201`, `204`) | controller fino: **não tem regra de negócio**, então a regra pode ser testada sem HTTP; validação de formato declarada no DTO, num lugar só | regra espalhada entre controllers; dado inválido chegando ao banco | 04.04, 07.15–07.20, 07.22 |
+| 4 | **Service** (`services/*`) | as regras do banco: saldo, conta ativa, **dono da conta**, uma movimentação por chave (`IdempotenciaService`), débito + crédito + lançamento numa **transação** | é o "cérebro": não sabe nada de HTTP; o `@Transactional` garante tudo-ou-nada; a regra de dono usa o `clienteId` **do token**, nunca do corpo | transferência pela metade, saque duplicado quando a rede falha, cliente mexendo na conta do outro | 02.06–02.12, 03.03–03.07, 04.01–04.03, 07.06–07.14 |
 | 5 | **Repository + JPA** (`repositories/*`, `entities/*`) | lê e grava; `@Version` na `Conta` detecta duas escritas simultâneas | Spring Data gera o SQL a partir do nome do método; o lock otimista não trava a tabela (bom para conflito raro) | SQL à mão em todo lugar; duas transferências ao mesmo tempo apagando uma à outra (*lost update*) | conflito → `409` (teste `ContaRepositoryTest`) |
-| 6 | **Banco + Flyway** (`db/migration/V1…V9`) | `UNIQUE`, `FK`, `CHECK`, índices do extrato; schema versionado | o banco é a **última linha de defesa**: mesmo com bug no Java, ele recusa CPF repetido; o Flyway deixa o banco igual em toda máquina (seção 5.3) | bancos diferentes em cada máquina; dado duplicado quando duas chamadas passam juntas pela checagem do service | E03, E04, E07 |
-| ↗ | **Client ViaCEP** (`clients/viacep`) | busca o endereço com timeout de 3 s; "CEP não existe" vira `422`, "ViaCEP fora" vira `503` | integração isolada num client: dá para trocar de fornecedor ou mockar no teste sem mexer no service | uma API externa lenta trava as threads da nossa; endereço `null` gravado | T12, E05 |
+| 6 | **Banco + Flyway** (`db/migration/V1…V15`) | `UNIQUE`, `FK`, `CHECK`, índices do extrato; schema versionado | o banco é a **última linha de defesa**: mesmo com bug no Java, ele recusa CPF repetido; o Flyway deixa o banco igual em toda máquina (seção 5.3) | bancos diferentes em cada máquina; dado duplicado quando duas chamadas passam juntas pela checagem do service | 06.06, 07.21 |
+| ↗ | **Client ViaCEP** (`clients/viacep`) | busca o endereço com timeout de 3 s; "CEP não existe" vira `422`, "ViaCEP fora" vira `503` | integração isolada num client: dá para trocar de fornecedor ou mockar no teste sem mexer no service | uma API externa lenta trava as threads da nossa; endereço `null` gravado | 02.01, 07.24 |
 | ⤴ | **Tratamento de erros** (`controllers/handlers/TratadorGlobalDeErros`, `config/TratadorErrosSeguranca`) | toda exceção vira o **mesmo JSON** (`status`, `message`, `campos`...) com o status certo e log no nível certo | o front decide pelo `status` e mostra o `message`; nenhum stack trace ou SQL vaza para fora | cada erro num formato, `500` para regra de negócio, nome de classe e SQL expostos | todos os cenários de erro |
-| ⇄ | **DTOs** (`dto/*`, `record`) | contrato de entrada e saída, separado das entidades | a entidade pode mudar sem quebrar o front; resposta leva só o necessário (LGPD: nada de senha, CPF mascarado na gestão) | a API devolveria a entidade inteira (hash de senha, relações, *lazy loading*) | A06, T12 |
+| ⇄ | **DTOs** (`dto/*`, `record`) | contrato de entrada e saída, separado das entidades | a entidade pode mudar sem quebrar o front; resposta leva só o necessário (LGPD: nada de senha, CPF mascarado) | a API devolveria a entidade inteira (hash de senha, relações, *lazy loading*) | 02.01, 06.01 |
 
 > 💡 **Para entrevista:** "cada camada tem uma responsabilidade e um tipo de erro". Formato errado é `400` no controller;
 > sem identidade é `401` na segurança; sem permissão é `403` (perfil na segurança, dono no service); regra é `422` no
@@ -4773,47 +3554,31 @@ flowchart TB
 
 | Sintoma | Causa | Solução |
 |---|---|---|
-| `RequireJavaVersion failed` | JDK diferente do 25 | instale o JDK 25 e escolha-o na IDE (1.2) |
-| `JWT_SEGREDO` / *Could not resolve placeholder* ao subir | perfil equipe ou MySQL sem `.env`, ou API iniciada fora da raiz | preencha o `.env` (1.4) e rode da raiz (*Working directory* = `$PROJECT_DIR## Problemas comuns
-
-| Sintoma | Causa | Solução |
-|---|---|---|
-| `RequireJavaVersion failed` | JDK diferente do 25 | instale o JDK 25 e escolha-o na IDE (1.2) |
-| `JWT_SEGREDO` / *Could not resolve placeholder* ao subir | perfil equipe ou MySQL sem `.env`, ou API iniciada fora da raiz ) |
-| `Communications link failure` | MySQL desligado ou ainda subindo | `docker compose up -d` e espere `(healthy)` no `docker ps` |
-| `error during connect ... dockerDesktopLinuxEngine` | o Docker Desktop está fechado | abra o Docker Desktop e espere o ícone ficar verde |
-| `Migration checksum mismatch for migration version 1` | seu volume do MySQL é de antes da reorganização das migrações (20/10/2026) | ⚠️ `docker compose down -v` (apaga os dados locais) e `docker compose up -d`: o Flyway recria tudo do zero |
-| Console do H2 conecta, mas não há tabelas | ficou a URL sugerida `jdbc:h2:mem:testdb` | use `jdbc:h2:mem:rkfbank-visitante` ou `rkfbank-equipe` (1.5) |
-| `/h2-console` dá `401` | API no perfil MySQL (o console só existe nos perfis H2) | suba com `visitante` ou `equipe`, ou use o cliente do MySQL |
-| Login da Ana dá `401` | a API não está no perfil `visitante` | suba com `-Dspring-boot.run.profiles=visitante` |
-| Login do Fellipe/Renan dá `401` | `EQUIPE_SENHA` vazia no `.env`, ou a API ainda não terminou de subir | preencha e reinicie; espere o `health` dar `UP` |
+| `RequireJavaVersion failed` ou `invalid source release: 25` | JDK diferente do 25 | instale o JDK 25 e escolha-o na IDE (1.2) |
+| No log, `No active profile set` e a API pede `JWT_SEGREDO` | a VM option do perfil não pegou | confira `-Dspring.profiles.active=visitante` no campo **VM options** (1.3) |
+| Console do H2 conecta, mas não há tabelas | ficou a URL sugerida `jdbc:h2:mem:testdb` | use `jdbc:h2:mem:rkfbank-visitante` (1.4) |
+| Login da Ana dá `401` | a API não está no perfil `visitante` | suba com **API · Visitante (H2)** ou `-Dspring-boot.run.profiles=visitante` |
 | `health` dá `OUT_OF_SERVICE` | a API ainda está subindo | espere alguns segundos |
-| Insomnia: tudo dá `401` depois de um tempo | o token venceu (15 ou 60 min) | mande de novo o login da pasta `01` |
-| Insomnia: `{{ _.token_origem }}` vazio | nenhum ambiente escolhido, ou o login não rodou | escolha o ambiente (1.6) e rode a pasta `01` |
-| `400` em toda movimentação | faltou `Idempotency-Key` | 18.6 |
-| Cadastro `400` com o campo `aceiteTermos` | faltou `"aceiteTermos": true` (LGPD, contrato 3.1) | mande o aceite |
-| `403 TROCA_DE_SENHA_OBRIGATORIA` em tudo | a senha foi redefinida pelo ADMIN (temporária) | troque em `PATCH /usuarios/me/senha` (A15) |
-| `401 SESSAO_EXPIRADA` no `/auth/refresh` | token de renovação já usado, logout, troca de senha ou 7 dias | faça login de novo |
-| Login do ADMIN dá `401` | a API está no perfil `visitante` (sem ADMIN) ou o `.env` não tem `ADMIN_CPF`/`ADMIN_SENHA` | suba no perfil MySQL com o seu `.env` (1.4) |
+| Insomnia: tudo dá `401` depois de um tempo | o crachá (token) venceu (60 min) | mande de novo o login da pasta `01` |
+| Insomnia: `{{ _.token_origem }}` vazio | nenhum ambiente escolhido, ou o login não rodou | escolha o ambiente **Visitante** (1.6) e rode a pasta `01` |
+| `400` em toda movimentação | faltou o header `Idempotency-Key` | 18.6 |
+| Cadastro `400` com o campo `aceiteTermos` | faltou `"aceiteTermos": true` (LGPD) | mande o aceite |
+| `401 SESSAO_EXPIRADA` no `/auth/refresh` | crachá de renovação já usado, logout, troca de senha ou 7 dias | faça login de novo |
 | `429` no login | 5 senhas erradas seguidas | espere 15 min ou reinicie a API |
-| `401` depois de reiniciar (visitante) | o segredo do JWT é sorteado a cada subida | faça login de novo |
-| `Port 8080 was already in use` | outra API rodando | feche a outra ou suba com `-Dspring-boot.run.arguments=--server.port=8081` (e use `--base-url` no script) |
-| `Bind for 0.0.0.0:5441 failed` | outro MySQL usando a porta | mude `MYSQL_PORT` no `.env` |
-| Cadastro `503` | ViaCEP fora ou sem internet | os testes com as contas prontas não dependem dele |
-| Acento vira `JSON invalido` no curl | Git Bash quebra UTF-8 no `-d` | `--data-binary @corpo.json` (ou use o Insomnia) |
+| `401` depois de reiniciar a API | no perfil `visitante`, o segredo que assina os crachás é sorteado a cada subida | faça login de novo |
+| `Port 8080 was already in use` | outro programa usando a porta | feche o outro ou suba com `-Dserver.port=8081` (1.3) e use `--base-url http://localhost:8081` no script |
+| Cadastro `503` | ViaCEP fora do ar ou sem internet | os testes com as contas prontas (Ana e Bruno) não dependem dele |
+| Acento vira `JSON invalido` no curl | o Git Bash quebra o UTF-8 no `-d` | `--data-binary @corpo.json` (ou use o Insomnia) |
 
 ---
 
-### Atualizar as Partes 2 e 3 depois de mudar o contrato
+### Atualizar a Parte 2 depois de mudar o contrato
 
 Os blocos "Pela coleção" são gerados da coleção e de uma execução real dela (`scripts/gerar-roteiro-e2e.mjs`):
 
 ```bash
 node scripts/gerar-colecao-insomnia.mjs
-# Parte 3: API no perfil visitante
+# com a API no perfil visitante
 node scripts/rodar-colecao-insomnia.mjs --registrar /tmp/registro-visitante.json
 node scripts/gerar-roteiro-e2e.mjs --registro /tmp/registro-visitante.json --bloco cliente --pastas 00,01,02,03,04,06,07,08,09 --saida backend/README_TESTES_E2E.md
-# Parte 2: API no perfil MySQL com o seu .env, coleção com os COLE_AQUI trocados pelos valores dele (arquivo fora do Git)
-node scripts/rodar-colecao-insomnia.mjs --ambiente equipe --arquivo /tmp/colecao-com-meu-env.json --registrar /tmp/registro-admin.json
-node scripts/gerar-roteiro-e2e.mjs --registro /tmp/registro-admin.json --colecao /tmp/colecao-com-meu-env.json --env .env --ambiente "MySQL com o seu .env" --bloco admin --pastas 05 --saida backend/README_TESTES_E2E.md
 ```

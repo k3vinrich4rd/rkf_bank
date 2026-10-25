@@ -69,7 +69,7 @@ curl -s $API/contas/$BRUNO/lancamentos -H "Authorization: Bearer $TOKEN"  # 403:
 - **Insomnia:** *Import* → arquivo [`backend/insomnia/rkfbank.insomnia.yaml`](backend/insomnia/rkfbank.insomnia.yaml)
   (Insomnia 10+; para o 9, o [`.json`](backend/insomnia/rkfbank.insomnia.json)) → ambiente **Visitante (H2, Ana e
   Bruno)** → mande as requisições de cima para baixo. O login guarda o token sozinho: nada de copiar e colar. O pedido
-  e a resposta esperada de cada uma estão no [guia, Parte 3](backend/README_TESTES_E2E.md#parte-3--teste-como-cliente).
+  e a resposta esperada de cada uma estão no [guia, Parte 2](backend/README_TESTES_E2E.md#parte-2--teste-como-cliente), cada uma com um **💡 Em palavras simples** do que ela faz.
 - **Ver as tabelas:** abra `http://localhost:8080/h2-console`, troque a JDBC URL para `jdbc:h2:mem:rkfbank-visitante`
   (usuário `sa`, senha vazia) e rode `SELECT numero_conta, saldo FROM tb_conta;` antes e depois da transferência.
 
@@ -121,17 +121,16 @@ cadastro de quem está logado: não existe id de cliente na URL para trocar.
 forjar o token de vários jeitos.
 </details>
 
-Guia completo (rodar pela IDE, H2 ou MySQL, permissões de cada rota, como tornar alguém ADMIN, todos os payloads, os
-roteiros com cada resposta esperada e a explicação de Spring Security, OAuth2 e JWT):
+Guia completo (o que é uma API e como ler cada resposta, rodar pela IDE com as VM options, o Swagger, todos os
+payloads, os roteiros com cada resposta esperada e a explicação de Spring Security, OAuth2 e JWT):
 [backend/README_TESTES_E2E.md](backend/README_TESTES_E2E.md).
 
-## 🛡️ E como ADMIN?
+## 🛡️ E o administrador?
 
-O perfil `visitante` não tem ADMIN de propósito: a senha dele é pública. Para testar a gestão de usuários (promover,
-rebaixar, desativar, senha temporária, conciliação), crie **o seu** ADMIN na **sua** máquina: copie o `.env.example`
-para `.env`, preencha `JWT_SEGREDO`, `ADMIN_CPF` e `ADMIN_SENHA` com valores seus e suba no perfil MySQL
-(`docker compose up -d` e **API · MySQL (Docker)**). Passo a passo, com cada pedido e resposta:
-[guia, Parte 2](backend/README_TESTES_E2E.md#parte-2--teste-como-admin).
+O banco tem um perfil `ADMIN` (gestão de usuários e auditoria dos saldos), mas o perfil `visitante` **não tem ADMIN**,
+de propósito: a senha dos visitantes é pública, e um ADMIN com senha pública seria um ADMIN de qualquer um. Os testes
+de ADMIN são feitos pela equipe. Daqui você vê o outro lado: a Ana tentando entrar numa rota de ADMIN recebe `403`
+(pasta **07 · Erros** da coleção). Por isso a coleção pula da pasta `04` para a `06`.
 
 ## 5. O que este perfil garante (e por quê)
 

@@ -756,7 +756,7 @@ curl $API/contas/$DESTINO/lancamentos -H "$AUTH"    # 1 lançamento: a transfer�
 
 Sem `uuidgen`? Use qualquer texto único de 8 a 100 caracteres (`deposito-001`, `saque-001`...).
 CPF já cadastrado? Troque por outro válido: `70483726052`, `39053344705`, `11144477735`.
-A coleção inteira (114 requisições, com os erros esperados) roda pelo terminal: `node scripts/rodar-colecao-insomnia.mjs`.
+A coleção pública inteira (82 requisições do cliente, com os erros esperados) roda pelo terminal: `node scripts/rodar-colecao-insomnia.mjs`.
 
 </details>
 
@@ -1112,7 +1112,7 @@ privado da equipe, fora do repositório. As migrações foram reorganizadas em 2
 | Quero... | Como |
 |---|---|
 | rodar pela IntelliJ | o projeto traz 3 configurações prontas (pasta `.run/`): **API · Visitante (H2)**, **API · Equipe (H2)** e **API · MySQL (Docker)** |
-| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.yaml`](backend/insomnia/rkfbank.insomnia.yaml) (ou o `.json`, Insomnia 9) no Insomnia: 114 requisições em ordem (a pasta 02 é o roteiro E2E completo), e o login guarda o token sozinho |
+| testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.yaml`](backend/insomnia/rkfbank.insomnia.yaml) (ou o `.json`, Insomnia 9) no Insomnia: 82 requisições do cliente em ordem, cada uma com uma explicação em palavras simples (a pasta 02 é o roteiro E2E completo), e o login guarda o token sozinho |
 | ver as tabelas no H2 | `http://localhost:8080/h2-console` · JDBC URL `jdbc:h2:mem:rkfbank-visitante` (ou `rkfbank-equipe`) · usuário `sa`, senha vazia |
 | ver as tabelas no MySQL | `localhost:5441` com o usuário do `.env` (IntelliJ *Database*, DBeaver) ou `docker exec` no container `rkfbank-mysql` |
 | tornar alguém ADMIN | pelo `.env` (primeiro admin), pela API (`PATCH /admin/usuarios/{id}/perfil`) ou por SQL num banco local |

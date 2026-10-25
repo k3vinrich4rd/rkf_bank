@@ -4,10 +4,11 @@
 > ajuda: visitantes, recrutadores, quem está chegando no projeto. Usa só as **contas de visitante** (senha pública).
 > Cada caso tem o que **fazer**, o que o navegador **manda por baixo** (pedido e resposta, como aparecem no DevTools →
 > **Network**) e o que tem que **aparecer** na tela.
-> A API sozinha, sem o site (inclusive como ADMIN): [guia de testes do backend](../backend/README_TESTES_E2E.md).
+> A API sozinha, sem o site: [guia de testes do backend](../backend/README_TESTES_E2E.md) (a Parte 0 dele explica,
+> do zero, o que é um pedido, um status `200`/`403`/`422` e um token).
 >
-> 🔒 A equipe tem o mesmo roteiro com as contas internas (Fellipe e Renan) e os casos de ADMIN no repositório privado
-> (`.equipe/testes/FRONTEND_E2E.md`).
+> 🔒 Os casos de ADMIN não aparecem aqui: o perfil de visitante não tem administrador, de propósito (a senha é
+> pública). A equipe testa o ADMIN no roteiro privado (`.equipe/testes/FRONTEND_E2E.md`).
 
 Conferido em 23/10/2026 com o contrato **3.1** da API. O que muda ao repetir: ids, o número da conta (gerado pelo
 banco), datas e horários.
@@ -60,6 +61,21 @@ Navegador ──► http://localhost:3000/api/...  ──(proxy.ts do Next)─�
 O navegador **nunca** vê os tokens: o login guarda três cookies `httpOnly` (`rkf_token`, o de acesso; `rkf_refresh`,
 o de renovação, 7 dias; e `rkf_sessao`, só com perfil e validade), e o servidor do Next coloca o
 `Authorization: Bearer` em cada chamada para a API.
+
+### Primeira vez no DevTools? Como ver o que o site manda "por baixo"
+
+Cada clique na tela vira um **pedido** para a API, e o navegador mostra todos eles:
+
+1. Com o site aberto, aperte **F12** (ou botão direito → **Inspecionar**) e abra a aba **Network** (Rede).
+2. No filtro, digite `api` para ver só os pedidos do banco (sem imagens e scripts).
+3. Faça a ação na tela (ex.: **Depositar**). Aparece uma linha nova: clique nela.
+   - **Headers:** o método e o endereço (`POST /api/contas/.../depositos`) e o **Status** (`204`).
+   - **Payload:** o que o site mandou (`{"valor":150.00,...}`).
+   - **Response:** o que a API respondeu (vazio num `204`, que quer dizer "feito, nada para mostrar").
+4. Erro de propósito (ex.: sacar mais do que tem)? A linha fica vermelha com `422`, e a **Response** traz o `codigo`
+   (`SALDO_INSUFICIENTE`) que a tela usou para escolher a mensagem. Vermelho aqui é o teste **passando**.
+
+Nos casos abaixo, a coluna **Por baixo** é exatamente o que essa aba mostra.
 
 ---
 
