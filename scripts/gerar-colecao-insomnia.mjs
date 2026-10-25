@@ -134,7 +134,8 @@ const PASTAS = [
     itens: [
       req("Login · cliente ORIGEM (Ana / Fellipe)", "POST", "/auth/login", {
         corpo: '{\n  "cpf": "{{ _.cpf_origem }}",\n  "senha": "{{ _.senha_clientes }}"\n}',
-        depois: guardaLogin("token_origem", "cliente_origem_id"),
+        // O id do usuário (o "sub" do token) é o alvo do 07.25: o cliente tentando se promover a ADMIN.
+        depois: guardaLogin("token_origem", "cliente_origem_id") + "\n" + ID_DO_TOKEN("usuario_origem_id"),
       }),
       req("Login · cliente DESTINO (Bruno / Renan)", "POST", "/auth/login", {
         corpo: '{\n  "cpf": "{{ _.cpf_destino }}",\n  "senha": "{{ _.senha_clientes }}"\n}',
@@ -368,10 +369,23 @@ const PASTAS = [
       req("Rebaixar de volta a CLIENTE", "PATCH", "/admin/usuarios/{{ _.usuario_novo_id }}/perfil", {
         auth: "token_admin", corpo: { perfil: "CLIENTE" }, depois: status(200),
       }),
+      req("Login · cliente novo (rebaixado, sessão aberta)", "POST", "/auth/login", {
+        corpo: '{\n  "cpf": "{{ _.novo_cpf }}",\n  "senha": "{{ _.novo_senha }}"\n}',
+        depois: guardaLogin("token_novo") + '\ninsomnia.test("perfil CLIENTE", () => insomnia.expect(insomnia.response.json().perfil).to.equal("CLIENTE"));',
+        descricao: "Uma sessão aberta (token de acesso e de renovação) para provar, a seguir, que desativar derruba quem **já está logado**.",
+      }),
       req("Desativar o acesso", "PATCH", "/admin/usuarios/{{ _.usuario_novo_id }}/acesso", {
         auth: "token_admin", corpo: { ativo: false },
         depois: status(200) + '\ninsomnia.test("ativo false", () => insomnia.expect(insomnia.response.json().ativo).to.equal(false));',
         descricao: "\"Remover\" = desativar: o usuário nunca é apagado (o histórico de movimentações aponta para ele).",
+      }),
+      req("Sessão aberta do desativado → 401", "GET", "/contas", {
+        auth: "token_novo", depois: [status(401), codigo("ACESSO_ALTERADO")].join("\n"),
+        descricao: "O `ConversorTokenUsuario` confere `tb_usuario` a cada requisição: o token ainda não venceu, mas o acesso mudou.",
+      }),
+      req("Renovação do desativado → 401", "POST", "/auth/refresh", {
+        corpo: '{\n  "refreshToken": "{{ _.refresh_novo }}"\n}', depois: [status(401), codigo("SESSAO_EXPIRADA")].join("\n"),
+        descricao: "O token de renovação de quem foi desativado também não serve: sem isso, ele ganharia um par novo e voltaria.",
       }),
       req("Login do desativado → 401", "POST", "/auth/login", {
         corpo: '{\n  "cpf": "{{ _.novo_cpf }}",\n  "senha": "{{ _.novo_senha }}"\n}',
@@ -439,8 +453,13 @@ const PASTAS = [
         depois: [status(403), codigo("CONTA_DE_OUTRO_CLIENTE")].join("\n"),
         descricao: "O ADMIN **vê** todas as contas, mas não **mexe** no dinheiro dos outros: a regra de dono vale para todos.",
       }),
+      req("ADMIN transfere da conta de um cliente → 403", "POST", "/transferencias", {
+        auth: "token_admin", headers: [CHAVE_NOVA],
+        corpo: '{\n  "contaOrigemId": "{{ _.conta_origem_id }}",\n  "contaDestinoId": "{{ _.conta_destino_id }}",\n  "valor": 1.00\n}',
+        depois: [status(403), codigo("CONTA_DE_OUTRO_CLIENTE")].join("\n"),
+      }),
       req("ADMIN vê o extrato de um cliente → 403", "GET", "/contas/{{ _.conta_origem_id }}/lancamentos", {
-        auth: "token_admin", depois: status(403),
+        auth: "token_admin", depois: [status(403), codigo("CONTA_DE_OUTRO_CLIENTE")].join("\n"),
       }),
       req("ADMIN vê uma conta de cliente → 200", "GET", "/contas/{{ _.conta_origem_id }}", {
         auth: "token_admin", depois: status(200),
@@ -547,18 +566,22 @@ const PASTAS = [
       req("CLIENTE em rota de ADMIN → 403", "GET", "/clientes", {
         auth: "token_origem", depois: [status(403), codigo("PERFIL_SEM_PERMISSAO")].join("\n"),
       }),
-      req("CLIENTE na gestão de usuários → 403", "GET", "/admin/usuarios", { auth: "token_origem", depois: status(403) }),
+      req("CLIENTE na gestão de usuários → 403", "GET", "/admin/usuarios", {
+        auth: "token_origem", depois: [status(403), codigo("PERFIL_SEM_PERMISSAO")].join("\n"),
+      }),
       req("Depositar na conta de outro cliente → 403", "POST", "/contas/{{ _.conta_origem_id }}/depositos", {
         auth: "token_destino", headers: [CHAVE_NOVA], corpo: { valor: 1.0 },
         depois: [status(403), codigo("CONTA_DE_OUTRO_CLIENTE")].join("\n"),
       }),
       req("Ver o extrato de outro cliente → 403", "GET", "/contas/{{ _.conta_origem_id }}/lancamentos", {
-        auth: "token_destino", depois: status(403),
+        auth: "token_destino", depois: [status(403), codigo("CONTA_DE_OUTRO_CLIENTE")].join("\n"),
       }),
       req("Ver a conta de outro cliente → 403", "GET", "/contas/{{ _.conta_origem_id }}", {
         auth: "token_destino", depois: [status(403), codigo("CONTA_DE_OUTRO_CLIENTE")].join("\n"),
       }),
-      req("CLIENTE na conciliação → 403", "GET", "/admin/conciliacao", { auth: "token_origem", depois: status(403) }),
+      req("CLIENTE na conciliação → 403", "GET", "/admin/conciliacao", {
+        auth: "token_origem", depois: [status(403), codigo("PERFIL_SEM_PERMISSAO")].join("\n"),
+      }),
       req("Sacar mais que o saldo → 422", "POST", "/contas/{{ _.conta_origem_id }}/saques", {
         auth: "token_origem", headers: [CHAVE_NOVA], corpo: { valor: 999999.0 },
         depois: [status(422), codigo("SALDO_INSUFICIENTE")].join("\n"),
@@ -574,25 +597,31 @@ const PASTAS = [
         depois: [status(422), codigo("MESMA_CONTA")].join("\n"),
       }),
       req("Conta que não existe → 404", "GET", "/contas/00000000-0000-4000-8000-000000000000/lancamentos", {
-        auth: "token_origem", depois: status(404),
+        auth: "token_origem", depois: [status(404), codigo("CONTA_NAO_ENCONTRADA")].join("\n"),
       }),
       req("Ver conta que não existe → 404", "GET", "/contas/00000000-0000-4000-8000-000000000000", {
         auth: "token_origem", depois: [status(404), codigo("CONTA_NAO_ENCONTRADA")].join("\n"),
       }),
-      req("Id que não é UUID → 400", "GET", "/contas/abc/lancamentos", { auth: "token_origem", depois: status(400) }),
-      req("Paginação inválida → 400", "GET", "/contas?size=0", { auth: "token_origem", depois: status(400) }),
+      req("Id que não é UUID → 400", "GET", "/contas/abc/lancamentos", {
+        auth: "token_origem", depois: [status(400), codigo("PARAMETRO_INVALIDO")].join("\n"),
+      }),
+      req("Paginação inválida → 400", "GET", "/contas?size=0", {
+        auth: "token_origem", depois: [status(400), codigo("CAMPOS_INVALIDOS")].join("\n"),
+      }),
       req("Tipo de conta inválido → 400", "POST", "/contas", {
-        auth: "token_origem", corpo: { tipoConta: "SALARIO" }, depois: status(400),
+        auth: "token_origem", corpo: { tipoConta: "SALARIO" }, depois: [status(400), codigo("JSON_INVALIDO")].join("\n"),
       }),
       req("JSON quebrado → 400", "POST", "/contas/{{ _.conta_origem_id }}/depositos", {
-        auth: "token_origem", headers: [CHAVE_NOVA], corpo: '{ "valor": ', depois: status(400),
+        auth: "token_origem", headers: [CHAVE_NOVA], corpo: '{ "valor": ', depois: [status(400), codigo("JSON_INVALIDO")].join("\n"),
       }),
       req("Valor com 3 casas → 400", "POST", "/contas/{{ _.conta_origem_id }}/depositos", {
-        auth: "token_origem", headers: [CHAVE_NOVA], corpo: '{\n  "valor": 10.001\n}', depois: status(400),
+        auth: "token_origem", headers: [CHAVE_NOVA], corpo: '{\n  "valor": 10.001\n}',
+        depois: [status(400), codigo("CAMPOS_INVALIDOS")].join("\n"),
       }),
       req("Cadastro inválido → 400 com os campos", "POST", "/clientes", {
         corpo: { nomeCompleto: "", cpf: "11111111111", email: "nao-e-email", telefone: "", cep: "", numero: "", senha: "curta", aceiteTermos: true },
-        depois: status(400) + '\ninsomnia.test("lista os campos", () => insomnia.expect(insomnia.response.json().campos.length).to.be.above(0));',
+        depois: [status(400), codigo("CAMPOS_INVALIDOS")].join("\n") +
+          '\ninsomnia.test("lista os campos", () => insomnia.expect(insomnia.response.json().campos.length).to.be.above(0));',
       }),
       req("CPF já cadastrado → 409", "POST", "/clientes", {
         corpo:
@@ -623,6 +652,10 @@ const PASTAS = [
           '  "telefone": "11999998888",\n  "cep": "99999999",\n  "numero": "1",\n' + ACEITE,
         depois: [status(422), codigo("CEP_NAO_ENCONTRADO")].join("\n"),
         descricao: "O endereço vem do ViaCEP: CEP inexistente → `422`; ViaCEP fora do ar → `503`.",
+      }),
+      req("CLIENTE tenta se promover a ADMIN → 403", "PATCH", "/admin/usuarios/{{ _.usuario_origem_id }}/perfil", {
+        auth: "token_origem", corpo: { perfil: "ADMIN" }, depois: [status(403), codigo("PERFIL_SEM_PERMISSAO")].join("\n"),
+        descricao: "O próprio id (o `sub` do token, guardado no login 01.01) na rota do ADMIN: o perfil `CLIENTE` não passa nem da porta.",
       }),
     ],
   },
@@ -708,7 +741,7 @@ const PASTAS = [
 const PREENCHIDAS_PELOS_SCRIPTS = {
   token_origem: "", token_destino: "", token_admin: "", token_novo: "",
   refresh_origem: "", refresh_destino: "", refresh_admin: "", refresh_novo: "", refresh_usado: "", termos_versao: "",
-  cliente_origem_id: "", cliente_destino_id: "",
+  cliente_origem_id: "", cliente_destino_id: "", usuario_origem_id: "",
   novo_cpf: "", novo_email: "", novo_senha: "", novo_cliente_id: "", conta_nova_id: "", conta_nova_destino_id: "", usuario_novo_id: "",
   chave_fixa: "", novo_cpf_mascara: "", senha_redefinida: "", senha_trocada: "", senha_escolhida: "", usuario_admin_id: "", cpf_extra: "",
   // JWT de mentira (payload com perfil ADMIN e assinatura falsa) para o teste "Token adulterado".
