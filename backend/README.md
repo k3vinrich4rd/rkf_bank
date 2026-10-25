@@ -17,9 +17,8 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 | [README_CONTRATO_API.md](README_CONTRATO_API.md) | **fonte da verdade** de rotas, payloads, regras e erros |
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
 | [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou MySQL), ver o banco (console do H2, MySQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
-| [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia (89 requisições encadeadas: o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
-| `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Felipe, do Renan e do admin, roteiro ponta a ponta completo |
-| [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md) | checklist de validação do MVP com o resultado da última execução |
+| [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia pública (82 requisições do cliente, sem o ADMIN; também em `.yaml` para o Insomnia 10+; a pasta 02 é o roteiro E2E completo e o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
+| `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Fellipe, do Renan e do admin, roteiro ponta a ponta completo |
 
 ---
 
@@ -46,7 +45,7 @@ Os scripts de shell que usam as variáveis (`scripts/testar-no-mysql.sh`, `docke
 Conferindo: `curl -s http://localhost:8080/actuator/health` → `{"status":"UP",...}` e
 `curl -i http://localhost:8080/contas` → `401` (a API está no ar e exige login). Nos perfis com H2, o banco abre no
 navegador em `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:rkfbank-visitante` ou `rkfbank-equipe`,
-usuário `sa`, senha vazia; [guia, seção 5](README_TESTES_E2E.md#5-olhar-o-banco-h2-ou-mysql)). Para as rotas protegidas, faça
+usuário `sa`, senha vazia; [guia, 1.5](README_TESTES_E2E.md#15-ver-o-banco)). Para as rotas protegidas, faça
 `POST /auth/login` e mande `Authorization: Bearer <token>` em toda chamada, e `Idempotency-Key` nas movimentações
 ([contrato](README_CONTRATO_API.md#autenticação-jwt) e
 [guia, seção 18](README_TESTES_E2E.md#18-como-a-segurança-funciona-spring-security--oauth2--jwt)).
@@ -64,7 +63,7 @@ usuário `sa`, senha vazia; [guia, seção 5](README_TESTES_E2E.md#5-olhar-o-ban
 | `JWT_SEGREDO` | valor de exemplo: **troque** | Spring: assina e confere o JWT. **Obrigatório**, mínimo 32 bytes; sem ele a API não sobe |
 | `JWT_EXPIRACAO` | `15m` | Spring: validade do token (opcional) |
 | `ADMIN_CPF` / `ADMIN_SENHA` | vazios | Spring: criam o primeiro `ADMIN` na subida, se preenchidos (opcional) |
-| `EQUIPE_SENHA` | vazio | Spring: login do Felipe e do Renan (contas da equipe); mín. 12 bytes. Valor real só no guia privado |
+| `EQUIPE_SENHA` | vazio | Spring: login do Fellipe e do Renan (contas da equipe); mín. 12 bytes. Valor real só no guia privado |
 | `FLYWAY_LOCATIONS` | (não está no exemplo) | Spring: em produção, `classpath:db/migration` (sem dados prontos) |
 
 > O Spring lê o `.env` da raiz sozinho. Sem ele (ou rodando de outra pasta), usa os padrões do
@@ -116,7 +115,7 @@ Ativa-se com `-Dspring-boot.run.profiles=<nome>` (Maven), `--spring.profiles.act
 
 | Perfil | Para quem | Banco | Contas prontas | Segredos | Arquivo |
 |---|---|---|---|---|---|
-| **padrão** (nenhum) | equipe, dia a dia | MySQL (Docker), dados **ficam** | Felipe e Renan (login com `EQUIPE_SENHA`) + admin do `.env` | todos do `.env`; sem `JWT_SEGREDO` não sobe | `application.properties` |
+| **padrão** (nenhum) | equipe, dia a dia | MySQL (Docker), dados **ficam** | Fellipe e Renan (login com `EQUIPE_SENHA`) + admin do `.env` | todos do `.env`; sem `JWT_SEGREDO` não sobe | `application.properties` |
 | **`equipe`** | equipe, teste rápido sem Docker | H2 em memória, dados **somem** | iguais ao padrão | todos do `.env` | `application-equipe.properties` |
 | **`visitante`** | quem chega pelo GitHub | H2 em memória, dados **somem** | Ana e Bruno Visitante (senha pública) — **sem** equipe, **sem** admin | JWT sorteado a cada subida; `.env` ignorado para segredos | `application-visitante.properties` |
 | **`test`** | testes automatizados | H2 em memória, **vazio** | nenhuma (os testes criam as suas) | fixos de teste | `src/test/resources/application-test.properties` (fora do jar) |
@@ -129,12 +128,12 @@ quem está sem Docker; o `visitante` existe para o repositório público poder s
 - **Senha pública só abre contas de mentira:** Ana e Bruno existem apenas nesse perfil, num banco que some ao parar.
 - **Ninguém forja token:** `rkfbank.jwt.segredo-aleatorio=true` sorteia 48 bytes com `SecureRandom` na subida. Não
   há segredo escrito em lugar nenhum: com um segredo fixo no Git, quem o lesse emitiria token de admin.
-- **Nada da equipe vaza para ele:** não existe admin, não existem Felipe e Renan, e `JWT_SEGREDO`, `ADMIN_*` e
+- **Nada da equipe vaza para ele:** não existe admin, não existem Fellipe e Renan, e `JWT_SEGREDO`, `ADMIN_*` e
   `EQUIPE_SENHA` do `.env` de quem roda são ignorados. O `PerfilVisitanteIntegracaoTest` prova os três pontos.
 
 ### Por que as contas da equipe não têm senha no Git
 
-O repositório é público. O seed `db/seed/equipe` cria clientes, contas e lançamentos do Felipe e do Renan **sem
+O repositório é público. O seed `db/seed/equipe` cria clientes, contas e lançamentos do Fellipe e do Renan **sem
 usuário**; na subida, o `InicializadorAcessoEquipe` cria o login deles com a `EQUIPE_SENHA` do `.env` (mesmo raciocínio
 do `InicializadorAdmin`). Sem `EQUIPE_SENHA`, as contas existem mas ninguém entra. Trocou a senha no `.env`? Na próxima
 subida a nova vale. Os acessos ficam no **guia privado da equipe**, em `.equipe/` (pasta no `.gitignore`).
@@ -151,7 +150,7 @@ subida a nova vale. Os acessos ficam no **guia privado da equipe**, em `.equipe/
 Três jeitos, do mais simples ao mais completo:
 
 ```bash
-# 1. Sem Docker: perfil "test" usa H2 em memória (recomendado no dia a dia)
+# 1. Perfil "test": H2 em memória + os testes de mysql/ num MySQL 8.4 do Testcontainers (pulados sem Docker)
 ./mvnw clean verify -Dspring.profiles.active=test     # PowerShell: .\mvnw.cmd clean verify "-Dspring.profiles.active=test"
 
 # 2. Com o MySQL do Docker já no ar e o .env carregado no terminal (ver "Como rodar")
@@ -171,8 +170,8 @@ Relatório de cobertura: abra `target/site/jacoco/index.html` no navegador.
 Atalhos que mostram só o resumo (o log completo fica em `.validar/`):
 
 ```bash
-scripts/validar.sh backend         # testes em H2 + cobertura, sem Docker
-node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verificações (cadastro → extrato + erros)
+scripts/validar.sh backend         # testes (H2 + MySQL do Testcontainers se houver Docker) + cobertura
+node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 42 verificações (cadastro com aceite → extrato, sessão e erros)
 ```
 
 ### 🔁 Mudei algo: quais testes rodar?
@@ -190,8 +189,8 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | **só documentação** | nada | links e comandos citados continuam funcionando |
 
 **Antes do PR que mexe em regra, rota ou banco:** `./run-test.sh` (**apaga o MySQL local**) → subir a API → `node scripts/smoke-e2e.mjs`
-→ se mudou o comportamento visível, refazer os itens afetados do [roteiro E2E manual](README_TESTES_E2E.md) e atualizar o
-[checklist E2E](CHECKLIST_TESTES_E2E.md).
+→ `node scripts/rodar-colecao-insomnia.mjs` → se mudou o comportamento visível, refazer os itens afetados do
+[roteiro E2E manual](README_TESTES_E2E.md).
 
 > ⚠️ Classe de teste precisa terminar em `Test`, `Tests` ou `TestCase`; senão o Surefire **ignora em silêncio**.
 
@@ -200,7 +199,7 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | `CpfValidoValidatorTest` | algoritmo de CPF | unitário puro |
 | `ViaCepClientTest` | integração com ViaCEP (sucesso, CEP inexistente, falha) | unitário com mock |
 | `ClienteServiceTest` / `ContaServiceTest` | regras de negócio | Mockito (`@ExtendWith(MockitoExtension.class)`) |
-| `ClienteControllerTest` / `ContaControllerTest` | status HTTP e delegação ao service | Mockito |
+| `ClienteControllerTest` / `ContaControllerTest` | JSON de entrada e saída, Bean Validation, formato de erro com `codigo`, `401`/`403` das regras de rota, header de repetição da idempotência | `@WebMvcTest` + MockMvc (base `ControllerWebMvcBase`, services mockados) |
 | `TratadorGlobalDeErrosTest` | exceção → status + corpo de erro | unitário |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e saneado | unitário |
 | `EntitiesAndEnumsTest` | getters/setters, enums, `@PrePersist` | unitário |
@@ -218,23 +217,32 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 17 verifica�
 | `DadosEquipeIntegracaoTest` | seed da equipe + `EQUIPE_SENHA`, idempotência de ponta a ponta, conciliação saldo × extrato, seed rodando duas vezes, versões do Flyway | `@SpringBootTest` + MockMvc (H2 próprio) |
 | `GestaoUsuariosIntegracaoTest` | promover, rebaixar, desativar e trocar/redefinir senha derrubando o token antigo na hora | `@SpringBootTest` + MockMvc (H2 novo por teste) |
 | `PerfilVisitanteIntegracaoTest` | perfil `visitante`: só Ana e Bruno, sem admin nem equipe, JWT sorteado (segredo do ambiente não vale) | `@SpringBootTest` + MockMvc (H2 próprio) |
+| `RefreshTokenIntegracaoTest` | `POST /auth/refresh` (rotação, reuso derruba todas as sessões, vencido), `POST /auth/logout` e troca de senha revogando as renovações | `@SpringBootTest` + MockMvc (H2 próprio) |
+| `TermosIntegracaoTest` / `TitularIntegracaoTest` | LGPD: versão dos termos, aceite obrigatório no cadastro, CPF mascarado, meus dados, encerramento e anonimização (inclusive a descrição dos lançamentos) | `@SpringBootTest` + MockMvc (H2 próprio) |
+| `ConciliacaoIntegracaoTest` | `GET /admin/conciliacao`: só ADMIN, aponta conta com saldo diferente do extrato | `@SpringBootTest` + MockMvc (H2 próprio) |
+| `SwaggerIntegracaoTest` | especificação OpenAPI pública com as rotas do contrato, rotas públicas sem cadeado, Swagger UI abrindo sem token | `@SpringBootTest` + MockMvc |
+| `ConversorTokenUsuarioTest` | token de usuário desativado, com perfil ou senha alterados; senha temporária; cache opcional | unitário com relógio manual |
+| `CodigoErroEnumTest` | todo código com mensagem própria e o tipo `CodigoErro` do frontend com exatamente os mesmos códigos | unitário (lê `frontend/lib/api/types.ts`) |
+| `mysql/MigracoesMySqlTest` | MySQL 8.4 de verdade: V1 a V15 em ordem e os tipos de produção (`DECIMAL`, `BINARY(16)`) | Testcontainers (`MySqlIntegracaoBase`) |
+| `mysql/FluxoBancarioMySqlTest` | do cadastro ao extrato no MySQL; saldo insuficiente não grava nada | Testcontainers + MockMvc |
+| `mysql/ConcorrenciaMySqlTest` | transferências simultâneas não criam nem somem dinheiro; cópia desatualizada perde para o lock otimista | Testcontainers, threads de verdade |
 
 > **H2 × MySQL: qual banco cada teste usa?**
 >
 > | Comando | `@SpringBootTest` | `@DataJpaTest` | Para quê |
 > |---|---|---|---|
-> | `scripts/validar.sh backend` | H2 | H2 | dia a dia: rápido, sem Docker |
-> | `./run-test.sh` | H2 (o script recria o MySQL, mas roda com o perfil `test`) | H2 | garantir banco limpo; **não** testa o MySQL |
+> | `scripts/validar.sh backend` | H2; os de `mysql/` num **MySQL 8.4 do Testcontainers** | H2 (modo MySQL) | dia a dia; sem Docker, os de `mysql/` são pulados |
+> | `./run-test.sh` | igual ao de cima (o script recria o MySQL local, mas roda com o perfil `test`) | H2 (modo MySQL) | garantir banco limpo para o teste manual |
 > | `scripts/testar-no-mysql.sh` | **MySQL** do Docker | (não roda) | provar consultas, tipos e migrações no banco real |
 > | API no ar + `smoke-e2e.mjs` | **MySQL** (perfil padrão) | — | fluxo real por HTTP |
 >
-> Usar H2 nos testes é decisão do projeto (rapidez e nada de Docker para rodar). O custo é que diferença de
-> dialeto só aparece no MySQL, por isso o `testar-no-mysql.sh` e o smoke antes do PR que mexe no banco.
-> `@DataJpaTest` troca o banco por H2 embutido **em qualquer perfil**; MySQL real para eles é a feature 3 (Testcontainers).
+> A maior parte dos testes continua em H2 (rápido e sem Docker), em `MODE=MySQL`. Diferença de dialeto, migração
+> e concorrência de verdade ficam com os testes de `mysql/` (Testcontainers, feature 3), que o CI sempre roda.
+> `@DataJpaTest` usa o H2 do perfil `test` (`spring.test.database.replace=none`), não um embutido sem modo.
 > Com o perfil padrão (sem `-Dspring.profiles.active=test`), `RkfbankApplicationTests` precisa do MySQL e do `.env` carregado.
 
-Teste manual ponta a ponta: [README_TESTES_E2E.md](README_TESTES_E2E.md) ·
-resultado da última execução: [CHECKLIST_TESTES_E2E.md](CHECKLIST_TESTES_E2E.md).
+Teste manual ponta a ponta: [README_TESTES_E2E.md](README_TESTES_E2E.md) · conferência automática:
+`node scripts/rodar-colecao-insomnia.mjs` (a coleção inteira contra a API no ar).
 
 **Padrão de nome:** `deve<Resultado>[Quando<Condição>]` — ex.: `deveRetornarEnderecoQuandoViaCepResponderComSucesso`,
 `deveRejeitarPaginacaoComPaginaNegativa`.
@@ -328,7 +336,7 @@ src/main/resources/db/
 │   ├── V8__adicionar_versao_credencial_usuario.sql (troca de senha derruba tokens antigos)
 │   └── V9__adicionar_encerramento_cliente.sql (LGPD: encerramento pelo titular e anonimização)
 └── seed/                              ← dados prontos: só onde spring.flyway.locations incluir a pasta
-    ├── equipe/afterMigrate__dados_equipe.sql         (Felipe = origem, Renan = destino; sem senha)
+    ├── equipe/afterMigrate__dados_equipe.sql         (Fellipe = origem, Renan = destino; sem senha)
     └── visitante/afterMigrate__dados_visitantes.sql  (Ana e Bruno Visitante; senha pública)
 ```
 
@@ -353,7 +361,7 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 > 🔁 **Reestruturação de 20/10/2026** ([decisão](../planing/decisoes.md)): os antigos `V1__schema_inicial`,
 > `V2__email_minusculo` e `V3__usuarios` viraram `V1`→`V5` (uma tabela por versão; a `V6` veio depois, com a idempotência), aproveitando que ainda não existe
 > banco de produção. **Uma vez por máquina**, recrie o MySQL local: `docker compose down -v && docker compose up -d`
-> (apaga os dados locais; as contas do Felipe e do Renan voltam sozinhas na subida).
+> (apaga os dados locais; as contas do Fellipe e do Renan voltam sozinhas na subida).
 
 ---
 
@@ -364,7 +372,7 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 | `Access denied for user 'rkfbank'` | rodou fora da raiz (o `.env` não foi achado) ou `.env` sem `MYSQL_*` | rode da raiz; confira o `.env` |
 | `Could not resolve placeholder 'JWT_SEGREDO'` ou `JWT_SEGREDO ausente ou curto` | `.env` sem `JWT_SEGREDO` (ou com menos de 32 bytes), ou não carregado | gere com `openssl rand -base64 48`, ponha no `.env` e rode da raiz |
 | Toda chamada devolve `401` | sem `Authorization: Bearer`, token vencido (15 min) ou `JWT_SEGREDO` trocado | faça login de novo |
-| Felipe/Renan dão `401` | `EQUIPE_SENHA` vazia ou diferente da do guia privado (o log diz `0 de 2 contas com login`) | confira o `.env` e reinicie |
+| Fellipe/Renan dão `401` | `EQUIPE_SENHA` vazia ou diferente da do guia privado (o log diz `0 de 2 contas com login`) | confira o `.env` e reinicie |
 | Toda movimentação dá `400` | faltou o header `Idempotency-Key` (contrato 2.1) | gere um UUID por operação |
 | Login dá `429` | 5 senhas erradas seguidas para o mesmo CPF | espere 15 min ou reinicie a API |
 | `Communications link failure` | MySQL não está no ar ou ainda subindo | `docker compose ps` — espere `healthy` |
@@ -375,6 +383,7 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 | `Schema validation: missing column` / `wrong column type` | mudou a entidade sem criar migração | crie um `V<n>__...sql` com a alteração; o Hibernate não altera mais o banco |
 | `Found non-empty schema(s) ... but no schema history table` | MySQL local criado pelo Hibernate antes do Flyway | `docker compose down -v && docker compose up -d` uma vez (apaga os dados locais) |
 | `Migration checksum mismatch` ou `Detected applied migration not resolved locally` | banco local de antes da reestruturação de 20/10, ou alguém editou uma migração já aplicada | primeira vez depois de 20/10: `docker compose down -v && docker compose up -d`; fora isso, desfaça a edição e crie um `V` novo |
-| Felipe e Renan não aparecem | API no perfil `visitante`/`test` ou `FLYWAY_LOCATIONS` sem `db/seed/equipe` | suba sem perfil (MySQL) ou com `equipe` |
+| Fellipe e Renan não aparecem | API no perfil `visitante`/`test` ou `FLYWAY_LOCATIONS` sem `db/seed/equipe` | suba sem perfil (MySQL) ou com `equipe` |
 | `mvnw: Permission denied` (Linux/macOS) | arquivo sem permissão de execução | `chmod +x mvnw` |
-| Testes de repositório falham com `The database has been closed` | H2 2.4.x quebra o `CHECK ... IN (...)` das colunas de enum | mantenha `<h2.version>2.3.232</h2.version>` no `pom.xml` até o H2 corrigir |
+| Testes de repositório falham com `The database has been closed` | H2 2.4.x (o que o Boot traz) quebra o `CHECK ... IN (...)` das colunas de enum | mantenha `<h2.version>2.5.252</h2.version>` no `pom.xml` |
+| `Unknown data type: "DATETIME"` ao subir com H2 | URL do H2 sem `MODE=MySQL` (o H2 2.5 só aceita `DATETIME` nesse modo) | acrescente `;MODE=MySQL` à URL (`jdbc:h2:mem:nome;MODE=MySQL`) |

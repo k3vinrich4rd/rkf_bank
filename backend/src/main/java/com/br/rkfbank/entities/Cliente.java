@@ -59,6 +59,11 @@ public class Cliente {
 
     private Instant anonimizadoEm;
 
+    // LGPD (V10): qual versao dos termos o titular aceitou no cadastro e quando. Nulos = cadastro anterior a V10.
+    private String termosVersao;
+
+    private Instant termosAceitosEm;
+
     public UUID getId() {
         return id;
     }
@@ -125,5 +130,18 @@ public class Cliente {
 
     public void marcarAnonimizado(Instant quando) {
         this.anonimizadoEm = quando;
+    }
+
+    public String getTermosVersao() {
+        return termosVersao;
+    }
+
+    public Instant getTermosAceitosEm() {
+        return termosAceitosEm;
+    }
+
+    public void registrarAceiteDosTermos(String versao, Instant quando) {
+        this.termosVersao = versao;
+        this.termosAceitosEm = quando;
     }
 }

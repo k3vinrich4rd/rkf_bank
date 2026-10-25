@@ -2,14 +2,17 @@ package com.br.rkfbank.services;
 
 import com.br.rkfbank.entities.RegistroIdempotencia;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
-import com.br.rkfbank.exceptions.RegraNegocioException;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.ConflitoException;
+import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.RequisicaoInvalidaException;
 import com.br.rkfbank.repositories.IdempotenciaRepository;
 import com.br.rkfbank.security.UsuarioLogado;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -39,6 +42,17 @@ public class IdempotenciaService {
         this.repository = repository;
     }
 
+    // Quanto tempo uma chave fica guardada. Repeticao de verdade acontece em segundos; 30 dias e folga de sobra.
+    static final Duration RETENCAO_DAS_CHAVES = Duration.ofDays(30);
+
+    // Chamado todo dia pela RotinaLimpezaIdempotencia: sem isto a tb_idempotencia so cresce. Devolve quantas sairam.
+    @Transactional
+    public int apagarChavesAntigas(Instant agora) {
+        int apagadas = repository.apagarCriadasAntesDe(agora.minus(RETENCAO_DAS_CHAVES));
+        log.info("Limpeza de idempotencia: {} chave(s) com mais de {} dias apagada(s)", apagadas, RETENCAO_DAS_CHAVES.toDays());
+        return apagadas;
+    }
+
     // Executa a movimentacao uma unica vez por chave. Tres casos:
     //  1. chave nova: roda a movimentacao e grava a chave (mesma transacao) -> devolve false;
     //  2. chave ja usada para a MESMA operacao (mesma assinatura): nao movimenta de novo -> devolve true, e o
@@ -56,7 +70,7 @@ public class IdempotenciaService {
             RegistroIdempotencia registro = existente.get();
             if (registro.getOperacao() != operacao || !registro.getHashRequisicao().equals(hash)) {
                 log.warn("Idempotency-Key reutilizada com outra requisicao pelo usuario {} ({})", usuario.usuarioId(), operacao);
-                throw new RegraNegocioException("Idempotency-Key ja usada em outra requisicao; gere uma chave nova para esta operacao");
+                throw new RegraNegocioException(CodigoErroEnum.IDEMPOTENCIA_CHAVE_REUSADA);
             }
             log.info("Repeticao de {} ignorada pela Idempotency-Key (usuario {})", operacao, usuario.usuarioId());
             return true;
@@ -76,7 +90,7 @@ public class IdempotenciaService {
         } catch (DataIntegrityViolationException ex) {
             // Outra chamada com a mesma chave gravou primeiro (corrida). Lancar aqui desfaz a movimentacao desta.
             log.warn("Idempotency-Key em uso por outra chamada simultanea do usuario {} ({})", usuario.usuarioId(), operacao);
-            throw new ConflitoException("Esta operacao ja esta sendo processada; repita com a mesma Idempotency-Key para ver o resultado");
+            throw new ConflitoException(CodigoErroEnum.IDEMPOTENCIA_EM_ANDAMENTO);
         }
         return false;
     }
@@ -84,7 +98,7 @@ public class IdempotenciaService {
     private static void validarFormato(String chave) {
         if (chave == null || chave.isBlank()) {
             throw new RequisicaoInvalidaException(HEADER,
-                    "header Idempotency-Key e obrigatorio nas movimentacoes (gere um UUID novo por operacao)");
+                    "header Idempotency-Key é obrigatório nas movimentações (gere um UUID novo por operação)");
         }
         if (!FORMATO_CHAVE.matcher(chave).matches()) {
             throw new RequisicaoInvalidaException(HEADER,

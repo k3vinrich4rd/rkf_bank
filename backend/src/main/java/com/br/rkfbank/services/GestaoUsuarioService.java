@@ -3,6 +3,7 @@ package com.br.rkfbank.services;
 import com.br.rkfbank.dto.response.usuario.UsuarioAdminResponseDto;
 import com.br.rkfbank.entities.Usuario;
 import com.br.rkfbank.entities.enums.PerfilEnum;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.RegraNegocioException;
 import com.br.rkfbank.exceptions.UsuarioNaoEncontradoException;
 import com.br.rkfbank.repositories.UsuarioRepository;
@@ -44,7 +45,7 @@ public class GestaoUsuarioService {
         Usuario alvo = buscarOutro(usuarioId, quem);
         if (perfil == PerfilEnum.CLIENTE && alvo.getCliente() == null) {
             // Admin criado pelo .env nao tem cadastro: como CLIENTE ele nao teria conta nem dados. Desative em vez disso.
-            throw new RegraNegocioException("Usuario sem cadastro de cliente nao pode virar CLIENTE; desative o acesso");
+            throw new RegraNegocioException(CodigoErroEnum.PERFIL_CLIENTE_SEM_CADASTRO);
         }
         if (alvo.getPerfil() != perfil) {
             log.info("Usuario {} mudou o perfil do usuario {} de {} para {}", quem.usuarioId(), alvo.getId(), alvo.getPerfil(), perfil);
@@ -61,7 +62,7 @@ public class GestaoUsuarioService {
         if (ativo && alvo.getCliente() != null && alvo.getCliente().isEncerrado()) {
             // LGPD: o titular encerrou o cadastro. Reativar seria reabrir uma relacao que ele pediu para acabar.
             log.warn("Usuario {} tentou reativar o usuario {}, cujo cadastro foi encerrado", quem.usuarioId(), alvo.getId());
-            throw new RegraNegocioException("O titular encerrou o cadastro; o acesso nao pode ser reativado");
+            throw new RegraNegocioException(CodigoErroEnum.CADASTRO_ENCERRADO);
         }
         if (alvo.isAtivo() != ativo) {
             log.info("Usuario {} {} o acesso do usuario {}", quem.usuarioId(), ativo ? "reativou" : "desativou", alvo.getId());
@@ -71,16 +72,17 @@ public class GestaoUsuarioService {
     }
 
     // Para quem esqueceu a senha: o ADMIN define uma nova, que passa a pessoa por canal privado. Os tokens dela caem
-    // na hora. A propria senha o ADMIN troca por PATCH /auth/senha (com a senha atual), nunca por aqui.
+    // na hora. A propria senha o ADMIN troca por PATCH /usuarios/me/senha (com a senha atual), nunca por aqui.
     @Transactional
     public void redefinirSenha(UUID usuarioId, String novaSenha, UsuarioLogado quem) {
         if (usuarioId.equals(quem.usuarioId())) {
-            throw new RegraNegocioException("Para trocar a sua propria senha use PATCH /auth/senha");
+            throw new RegraNegocioException(CodigoErroEnum.PROPRIA_SENHA_PELA_GESTAO);
         }
         ClienteService.garantirLimiteDoBcrypt("novaSenha", novaSenha);
         Usuario alvo = buscarOutro(usuarioId, quem);
-        alvo.trocarSenha(passwordEncoder.encode(novaSenha));
-        log.info("Usuario {} redefiniu a senha do usuario {}; tokens anteriores revogados", quem.usuarioId(), alvo.getId());
+        // Temporaria: no proximo login a pessoa so consegue trocar a senha (o ADMIN conhece esta).
+        alvo.redefinirSenhaTemporaria(passwordEncoder.encode(novaSenha));
+        log.info("Usuario {} redefiniu a senha do usuario {}; tokens anteriores revogados e troca obrigatoria", quem.usuarioId(), alvo.getId());
     }
 
     // Ninguem mexe no proprio perfil ou acesso. Alem de evitar o admin se trancar para fora, garante que sempre sobra
@@ -88,7 +90,7 @@ public class GestaoUsuarioService {
     private Usuario buscarOutro(UUID usuarioId, UsuarioLogado quem) {
         if (usuarioId.equals(quem.usuarioId())) {
             log.warn("Usuario {} tentou alterar o proprio perfil ou acesso", quem.usuarioId());
-            throw new RegraNegocioException("Voce nao pode alterar o seu proprio perfil ou acesso; peca a outro ADMIN");
+            throw new RegraNegocioException(CodigoErroEnum.PROPRIO_ACESSO);
         }
         return usuarioRepository.findById(usuarioId).orElseThrow(() -> {
             log.warn("Usuario {} nao encontrado na gestao de usuarios", usuarioId);
@@ -106,11 +108,8 @@ public class GestaoUsuarioService {
                 usuario.getCliente() != null ? usuario.getCliente().getId() : null);
     }
 
-    // 12345678909 -> ***.456.789-** : da para reconhecer a pessoa sem expor o CPF inteiro.
+    // 12345678909 -> ***.456.789-** (a regra mora no ClienteService: um formato so de CPF mascarado na API inteira).
     static String mascararCpf(String cpf) {
-        if (cpf == null || cpf.length() != 11) {
-            return "***";
-        }
-        return "***." + cpf.substring(3, 6) + "." + cpf.substring(6, 9) + "-**";
+        return ClienteService.mascararCpf(cpf);
     }
 }

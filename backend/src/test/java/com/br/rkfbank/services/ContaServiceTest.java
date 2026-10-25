@@ -24,6 +24,7 @@ import com.br.rkfbank.entities.Lancamento;
 import com.br.rkfbank.entities.enums.PerfilEnum;
 import com.br.rkfbank.entities.enums.TipoContaEnum;
 import com.br.rkfbank.entities.enums.TipoLancamentoEnum;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
 import com.br.rkfbank.exceptions.AcessoNegadoException;
 import com.br.rkfbank.exceptions.ContaNaoEncontradaException;
 import com.br.rkfbank.exceptions.RegraNegocioException;
@@ -73,21 +74,14 @@ class ContaServiceTest {
     }
 
     @Test
-    void deveRecusarAberturaDeContaParaOutroCliente() {
-        UUID clienteDeOutro = UUID.randomUUID();
-        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
+    void adminSemCadastroDeClienteNaoAbreConta() {
+        AberturaContaRequestDto request = new AberturaContaRequestDto(TipoContaEnum.CORRENTE);
 
-        assertThrows(AcessoNegadoException.class, () -> contaService.abrir(clienteDeOutro, request, DONO));
+        RegraNegocioException ex = assertThrows(RegraNegocioException.class, () -> contaService.abrir(request, ADMIN));
 
+        assertEquals(CodigoErroEnum.SEM_CADASTRO_CLIENTE, ex.getCodigo());
         verifyNoInteractions(clienteService);
         verify(contaRepository, never()).saveAndFlush(any(Conta.class));
-    }
-
-    @Test
-    void adminNaoAbreContaPorNinguem() {
-        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
-
-        assertThrows(AcessoNegadoException.class, () -> contaService.abrir(DONO_ID, request, ADMIN));
     }
 
     @Test
@@ -201,39 +195,23 @@ class ContaServiceTest {
     }
 
     @Test
-    void deveAbrirContaComSaldoInicialZero() {
+    void deveAbrirContaNoCadastroDoTokenComSaldoZeroAgenciaPadraoENumeroComDigitoVerificador() {
         UUID clienteId = UUID.randomUUID();
         Cliente cliente = new Cliente();
         ReflectionTestUtils.setField(cliente, "id", clienteId);
-
-        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
-
         when(clienteService.buscar(clienteId)).thenReturn(cliente);
-        when(contaRepository.existsByNumeroConta("12345678")).thenReturn(false);
         when(contaRepository.saveAndFlush(any(Conta.class))).thenAnswer(invocation -> {
             Conta conta = invocation.getArgument(0);
             ReflectionTestUtils.setField(conta, "id", UUID.randomUUID());
             return conta;
         });
 
-        ContaResponseDto response = contaService.abrir(clienteId, request, donoDe(clienteId));
+        ContaResponseDto response = contaService.abrir(new AberturaContaRequestDto(TipoContaEnum.POUPANCA), donoDe(clienteId));
 
         assertNotNull(response.id());
+        assertEquals(clienteId, response.clienteId());
         assertEquals(new BigDecimal("0.00"), response.saldo());
-        assertEquals(TipoContaEnum.CORRENTE, response.tipoContaEnum());
-    }
-
-    @Test
-    void semNumeroNoPedidoOBancoGeraOitoDigitosComDigitoVerificadorNaAgenciaPadrao() {
-        UUID clienteId = UUID.randomUUID();
-        Cliente cliente = new Cliente();
-        ReflectionTestUtils.setField(cliente, "id", clienteId);
-        when(clienteService.buscar(clienteId)).thenReturn(cliente);
-        when(contaRepository.saveAndFlush(any(Conta.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        ContaResponseDto response = contaService.abrir(clienteId,
-                new AberturaContaRequestDto(null, null, TipoContaEnum.POUPANCA), donoDe(clienteId));
-
+        assertEquals(TipoContaEnum.POUPANCA, response.tipoConta());
         assertEquals(ContaService.AGENCIA_PADRAO, response.agencia());
         String numero = response.numeroConta();
         assertTrue(numero.matches("[1-9]\\d{7}"), numero);
@@ -248,9 +226,22 @@ class ContaServiceTest {
         when(contaRepository.existsByNumeroConta(any())).thenReturn(true, false);
         when(contaRepository.saveAndFlush(any(Conta.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        contaService.abrir(clienteId, new AberturaContaRequestDto(null, null, TipoContaEnum.CORRENTE), donoDe(clienteId));
+        contaService.abrir(new AberturaContaRequestDto(TipoContaEnum.CORRENTE), donoDe(clienteId));
 
-        verify(contaRepository, times(3)).existsByNumeroConta(any());
+        verify(contaRepository, times(2)).existsByNumeroConta(any());
+    }
+
+    @Test
+    void cincoSorteiosOcupadosDao409() {
+        UUID clienteId = UUID.randomUUID();
+        when(clienteService.buscar(clienteId)).thenReturn(new Cliente());
+        when(contaRepository.existsByNumeroConta(any())).thenReturn(true);
+
+        ConflitoException ex = assertThrows(ConflitoException.class,
+                () -> contaService.abrir(new AberturaContaRequestDto(TipoContaEnum.CORRENTE), donoDe(clienteId)));
+
+        assertEquals(CodigoErroEnum.NUMERO_CONTA_INDISPONIVEL, ex.getCodigo());
+        verify(contaRepository, never()).saveAndFlush(any(Conta.class));
     }
 
     @Test
@@ -262,27 +253,15 @@ class ContaServiceTest {
     }
 
     @Test
-    void deveImpedirAberturaComNumeroContaDuplicado() {
-        UUID clienteId = UUID.randomUUID();
-        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
-
-        when(clienteService.buscar(clienteId)).thenReturn(new Cliente());
-        when(contaRepository.existsByNumeroConta("12345678")).thenReturn(true);
-
-        assertThrows(ConflitoException.class, () -> contaService.abrir(clienteId, request, donoDe(clienteId)));
-    }
-
-    @Test
     void deveConverterConflitoDeNumeroContaNoInsertEm409() {
         UUID clienteId = UUID.randomUUID();
-        AberturaContaRequestDto request = new AberturaContaRequestDto("0001", "12345678", TipoContaEnum.CORRENTE);
-
         when(clienteService.buscar(clienteId)).thenReturn(new Cliente());
-        when(contaRepository.existsByNumeroConta("12345678")).thenReturn(false);
         when(contaRepository.saveAndFlush(any(Conta.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate account number"));
 
-        assertThrows(ConflitoException.class, () -> contaService.abrir(clienteId, request, donoDe(clienteId)));
+        ConflitoException ex = assertThrows(ConflitoException.class,
+                () -> contaService.abrir(new AberturaContaRequestDto(TipoContaEnum.CORRENTE), donoDe(clienteId)));
+        assertEquals(CodigoErroEnum.NUMERO_CONTA_INDISPONIVEL, ex.getCodigo());
     }
 
     @Test

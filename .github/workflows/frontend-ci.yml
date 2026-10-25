@@ -1,0 +1,65 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/frontend-ci.yml"
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "frontend/**"
+      # O tipo CodigoErro do front e o CodigoErroEnum do back andam juntos (CodigoErroEnumTest).
+      - "backend/src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java"
+      - ".github/workflows/frontend-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-testes-build:
+    name: Lint, tipos, testes e build (Node 22)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v7
+
+      # Versão do pnpm vem do "packageManager" do frontend/package.json.
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+
+      - name: Configurar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Instalar dependências (lockfile congelado)
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Tipos
+        run: pnpm typecheck
+
+      - name: Testes (Vitest)
+        run: pnpm test
+
+      # O build não chama a API: API_URL só é lida pelo rewrite em tempo de execução.
+      - name: Build
+        run: pnpm build

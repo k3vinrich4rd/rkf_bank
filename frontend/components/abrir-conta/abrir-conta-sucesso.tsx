@@ -11,7 +11,7 @@ interface AbrirContaSucessoProps {
 
 export function AbrirContaSucesso({ conta }: AbrirContaSucessoProps) {
   const dados = [
-    { rotulo: "Tipo", valor: formatTipoConta(conta.tipoContaEnum) },
+    { rotulo: "Tipo", valor: formatTipoConta(conta.tipoConta) },
     { rotulo: "Agência", valor: conta.agencia },
     { rotulo: "Conta", valor: conta.numeroConta },
     { rotulo: "Saldo", valor: formatCurrency(decimalToCents(conta.saldo)) },

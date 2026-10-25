@@ -16,9 +16,9 @@ description: Sobe a API do RKF Bank contra o MySQL do Docker e roda o smoke test
 ## 2. Rodar (script, não IA)
 `node scripts/smoke-e2e.mjs` (ou `node scripts/smoke-e2e.mjs <baseUrl>`). Ele cria dados novos a cada execução, então não precisa apagar o banco.
 
-O smoke já confere as contas do seed: no `visitante`, a Ana; no padrão/`equipe`, Felipe e Renan **se** `EQUIPE_SENHA` estiver no ambiente do terminal (`set -a && source <(tr -d '\r' < .env) && set +a`). Esperado: 32/32 no `visitante`, 35/35 no `equipe` com o `.env` carregado. Nunca escreva a `EQUIPE_SENHA` na resposta ao usuário.
+O smoke já confere as contas do seed: no `visitante`, a Ana; no padrão/`equipe`, Fellipe e Renan **se** `EQUIPE_SENHA` estiver no ambiente do terminal (`set -a && source <(tr -d '\r' < .env) && set +a`). Esperado: 32/32 no `visitante`, 35/35 no `equipe` com o `.env` carregado. Nunca escreva a `EQUIPE_SENHA` na resposta ao usuário.
 
-Depois, a coleção do Insomnia (cobre ADMIN, LGPD e rotas obsoletas, que o smoke não cobre): `node scripts/rodar-colecao-insomnia.mjs` (visitante: 62/62, pula o ADMIN) ou, no `equipe`/padrão, `node scripts/rodar-colecao-insomnia.mjs --ambiente equipe --arquivo .equipe/testes/rkfbank-equipe.insomnia.json` (89/89; se o arquivo não existir, gere com `node scripts/gerar-colecao-insomnia.mjs --equipe`).
+Depois, a coleção do Insomnia (cobre ADMIN, LGPD e o roteiro E2E da pasta 02, que o smoke não cobre): `node scripts/rodar-colecao-insomnia.mjs` (visitante: 82/82, pula o ADMIN) ou, no `equipe`/padrão, `node scripts/rodar-colecao-insomnia.mjs --ambiente equipe --arquivo .equipe/testes/rkfbank-equipe.insomnia.json` (114/114; se o arquivo não existir, gere com `node scripts/gerar-colecao-insomnia.mjs --equipe`).
 
 ## 3. Interpretar
 - Tudo ✅: informe `X/Y verificações OK` em uma linha.
@@ -27,4 +27,4 @@ Depois, a coleção do Insomnia (cobre ADMIN, LGPD e rotas obsoletas, que o smok
 
 ## 4. Encerrar
 Pare a API que você subiu (no Windows: `Get-NetTCPConnection -LocalPort 8080` → `Stop-Process`). Não derrube o MySQL.
-Se o resultado mudou algo do roteiro manual, sugira atualizar `backend/README_TESTES_E2E.md` (guia passo a passo) e `backend/CHECKLIST_TESTES_E2E.md`.
+Se o resultado mudou algo do roteiro manual, sugira atualizar `backend/README_TESTES_E2E.md` (guia passo a passo) e, se mudou rota ou payload, `scripts/gerar-colecao-insomnia.mjs`.

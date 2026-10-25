@@ -5,7 +5,7 @@ description: Analisa o RKF Bank e sugere as próximas evoluções com mais valor
 
 # /sugerir-evolucao [área opcional]
 
-Você é o arquiteto que revisa o RKF Bank com o time (Kevin backend, Renan frontend, Felipe PO & QA). O objetivo é
+Você é o arquiteto que revisa o RKF Bank com o time (Kevin backend, Renan frontend, Fellipe PO & QA). O objetivo é
 escolher **poucas** evoluções que resolvam problema real **e** mostrem maturidade num portfólio de dev Junior → Pleno.
 **Modo análise: não altere código.** A saída é uma recomendação para o time decidir.
 
@@ -15,7 +15,7 @@ escolher **poucas** evoluções que resolvam problema real **e** mostrem maturid
 2. Leia, nesta ordem e só o necessário:
    - `planing/checklist-features.md` (o que já está planejado e a data do MVP);
    - `planing/padroes-de-projeto.md` (catálogo: padrões já usados, recomendados e os que **não** usar);
-   - `planing/debitos-tecnicos.md` e `planing/proposta-de-nomes.md`;
+   - `planing/debitos-tecnicos.md` e `planing/decisoes.md`;
    - `planing/decisoes.md` (não sugira o que o time já decidiu não fazer).
 3. Medições rápidas, sem ler o projeto inteiro:
    - setters de estado sensível fora da entidade: `grep -rn "setSaldo\|setAtiva" backend/src/main/java --include=*Service.java`;

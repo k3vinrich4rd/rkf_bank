@@ -58,6 +58,8 @@ try {
   const cadastro = await chamar("POST", "/clientes", {
     nomeCompleto: "Alvo Engenharia Reversa", cpf, email: `alvo.${Date.now()}@rkfbank.com`,
     telefone: "11999999999", cep: "01001000", numero: "1", senha,
+    // Contrato 3.1: sem o aceite dos termos (LGPD) o cadastro dá 400.
+    aceiteTermos: true,
   });
   if (cadastro.status !== 201) throw new Error(`cadastro falhou (status ${cadastro.status}); a API está no ar e com acesso ao ViaCEP?`);
   const login = await chamar("POST", "/auth/login", { cpf, senha });

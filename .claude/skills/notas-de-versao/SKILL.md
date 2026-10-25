@@ -27,7 +27,7 @@ Padrão: `base = origin/main`, `alvo = origin/develop`. Rode `git fetch --prune 
 Separe **Backend** e **Frontend** dentro de cada seção quando houver os dois. Commits fora do padrão vão para "Outros".
 
 ## 3. Escrever
-- Primeiro um **resumo de 3 linhas para o PO (Felipe)**: o que o usuário final ganha, sem jargão.
+- Primeiro um **resumo de 3 linhas para o PO (Fellipe)**: o que o usuário final ganha, sem jargão.
 - Depois as seções técnicas, uma linha por item: `descrição (#PR ou hash) — autor`.
 - **⚠️ Atenção na implantação:** migrações de banco, variáveis de ambiente novas, mudanças de contrato da API, versões sobrescritas no `pom.xml`.
 - **Sugestão de versão** (SemVer): `feat` → minor; só `fix` → patch; `!` ou mudança incompatível de contrato → major. Sem tag anterior, sugira `v0.1.0`.

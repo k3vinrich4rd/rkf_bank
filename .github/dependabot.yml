@@ -37,3 +37,32 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  # Dependências do frontend (frontend/package.json + pnpm-lock.yaml)
+  - package-ecosystem: npm
+    directory: "/frontend"
+    target-branch: develop
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build"
+      include: scope
+    groups:
+      next-e-react:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      testes:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "jsdom"
+          - "@vitejs/*"

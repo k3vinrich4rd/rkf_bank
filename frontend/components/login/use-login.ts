@@ -2,6 +2,7 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { ApiError, authApi, isFalhaDeServidor, type LoginRequest } from "@/lib/api";
 import { useLogDeTela } from "@/components/logs";
+import { ROUTES } from "@/lib/routes";
 import { maskCpf, onlyDigits } from "@/lib/masks";
 
 export type Campo = keyof LoginRequest;
@@ -71,10 +72,12 @@ export function useLogin(destino: string) {
     logTela.acao("Login enviado");
 
     try {
-      await authApi.login({ cpf: onlyDigits(valores.cpf), senha: valores.senha });
-      logTela.sucesso("Login concluído", { destino });
+      const sessao = await authApi.login({ cpf: onlyDigits(valores.cpf), senha: valores.senha });
+      // Senha temporária (redefinida pelo ADMIN): a API só libera a troca de senha, então vai direto para ela.
+      const proximaTela = sessao.deveTrocarSenha ? `${ROUTES.trocarSenha}?temporaria=1` : destino;
+      logTela.sucesso("Login concluído", { destino: proximaTela });
       // `replace`: voltar no navegador não deve trazer de novo a tela de login.
-      router.replace(destino);
+      router.replace(proximaTela);
     } catch (error) {
       const mensagem = mensagemDeErro(error);
       logTela.falha("Login não concluído", error, { mensagemExibida: mensagem });

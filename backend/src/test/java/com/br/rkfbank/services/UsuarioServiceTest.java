@@ -39,7 +39,7 @@ class UsuarioServiceTest {
     @Mock
     private ClienteRepository clienteRepository;
 
-    private static final UUID FELIPE = UUID.fromString("5eed0000-0000-4000-8000-000000000012");
+    private static final UUID FELLIPE = UUID.fromString("5eed0000-0000-4000-8000-000000000012");
     private static final String SENHA_EQUIPE = "senha-da-equipe-de-teste";
 
     @InjectMocks
@@ -102,44 +102,44 @@ class UsuarioServiceTest {
 
     @Test
     void criaOLoginDaContaDaEquipeComOCpfDoCliente() {
-        Cliente felipe = cliente(FELIPE, "12345678909");
-        when(clienteRepository.findById(FELIPE)).thenReturn(Optional.of(felipe));
+        Cliente fellipe = cliente(FELLIPE, "12345678909");
+        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.of(fellipe));
         when(usuarioRepository.findByLogin("12345678909")).thenReturn(Optional.empty());
         when(passwordEncoder.encode(SENHA_EQUIPE)).thenReturn("$2a$10$hash-da-equipe");
 
-        assertTrue(usuarioService.garantirAcessoDaEquipe(FELIPE, SENHA_EQUIPE));
+        assertTrue(usuarioService.garantirAcessoDaEquipe(FELLIPE, SENHA_EQUIPE));
 
         ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
         verify(usuarioRepository).save(captor.capture());
         assertEquals("12345678909", captor.getValue().getLogin());
         assertEquals("$2a$10$hash-da-equipe", captor.getValue().getSenhaHash());
         assertEquals(PerfilEnum.CLIENTE, captor.getValue().getPerfil());
-        assertEquals(felipe, captor.getValue().getCliente());
+        assertEquals(fellipe, captor.getValue().getCliente());
     }
 
     @Test
     void trocaOHashQuandoAEquipeSenhaMuda() {
-        Cliente felipe = cliente(FELIPE, "12345678909");
-        Usuario existente = usuarioDo(felipe, "$2a$10$hash-antigo");
-        when(clienteRepository.findById(FELIPE)).thenReturn(Optional.of(felipe));
+        Cliente fellipe = cliente(FELLIPE, "12345678909");
+        Usuario existente = usuarioDo(fellipe, "$2a$10$hash-antigo");
+        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.of(fellipe));
         when(usuarioRepository.findByLogin("12345678909")).thenReturn(Optional.of(existente));
         when(passwordEncoder.matches(SENHA_EQUIPE, "$2a$10$hash-antigo")).thenReturn(false);
         when(passwordEncoder.encode(SENHA_EQUIPE)).thenReturn("$2a$10$hash-novo");
 
-        assertTrue(usuarioService.garantirAcessoDaEquipe(FELIPE, SENHA_EQUIPE));
+        assertTrue(usuarioService.garantirAcessoDaEquipe(FELLIPE, SENHA_EQUIPE));
 
         assertEquals("$2a$10$hash-novo", existente.getSenhaHash());
     }
 
     @Test
     void naoMexeQuandoASenhaJaConfere() {
-        Cliente felipe = cliente(FELIPE, "12345678909");
-        Usuario existente = usuarioDo(felipe, "$2a$10$hash-atual");
-        when(clienteRepository.findById(FELIPE)).thenReturn(Optional.of(felipe));
+        Cliente fellipe = cliente(FELLIPE, "12345678909");
+        Usuario existente = usuarioDo(fellipe, "$2a$10$hash-atual");
+        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.of(fellipe));
         when(usuarioRepository.findByLogin("12345678909")).thenReturn(Optional.of(existente));
         when(passwordEncoder.matches(SENHA_EQUIPE, "$2a$10$hash-atual")).thenReturn(true);
 
-        assertTrue(usuarioService.garantirAcessoDaEquipe(FELIPE, SENHA_EQUIPE));
+        assertTrue(usuarioService.garantirAcessoDaEquipe(FELLIPE, SENHA_EQUIPE));
 
         assertEquals("$2a$10$hash-atual", existente.getSenhaHash());
         verify(passwordEncoder, never()).encode(any());
@@ -147,12 +147,12 @@ class UsuarioServiceTest {
 
     @Test
     void nuncaAssumeOLoginDeOutroCadastroComOMesmoCpf() {
-        Cliente felipe = cliente(FELIPE, "12345678909");
+        Cliente fellipe = cliente(FELLIPE, "12345678909");
         Usuario deOutro = usuarioDo(cliente(UUID.randomUUID(), "12345678909"), "$2a$10$hash-de-outro");
-        when(clienteRepository.findById(FELIPE)).thenReturn(Optional.of(felipe));
+        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.of(fellipe));
         when(usuarioRepository.findByLogin("12345678909")).thenReturn(Optional.of(deOutro));
 
-        assertFalse(usuarioService.garantirAcessoDaEquipe(FELIPE, SENHA_EQUIPE));
+        assertFalse(usuarioService.garantirAcessoDaEquipe(FELLIPE, SENHA_EQUIPE));
 
         assertEquals("$2a$10$hash-de-outro", deOutro.getSenhaHash());
         verifyNoInteractions(passwordEncoder);
@@ -160,16 +160,16 @@ class UsuarioServiceTest {
 
     @Test
     void semOClienteDoSeedNaoCriaNada() {
-        when(clienteRepository.findById(FELIPE)).thenReturn(Optional.empty());
+        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.empty());
 
-        assertFalse(usuarioService.garantirAcessoDaEquipe(FELIPE, SENHA_EQUIPE));
+        assertFalse(usuarioService.garantirAcessoDaEquipe(FELLIPE, SENHA_EQUIPE));
 
         verifyNoInteractions(usuarioRepository);
     }
 
     @Test
     void recusaEquipeSenhaCurta() {
-        assertThrows(IllegalStateException.class, () -> usuarioService.garantirAcessoDaEquipe(FELIPE, "curta-11b"));
+        assertThrows(IllegalStateException.class, () -> usuarioService.garantirAcessoDaEquipe(FELLIPE, "curta-11b"));
         verifyNoInteractions(clienteRepository, usuarioRepository);
     }
 

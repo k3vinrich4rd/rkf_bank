@@ -3,7 +3,7 @@
 // Cria dados novos a cada execução (CPF, e-mail e número de conta aleatórios), então pode rodar
 // várias vezes no mesmo banco. Segue o roteiro de backend/README_TESTES_E2E.md em versão resumida.
 // Login: cada cliente se cadastra com senha e entra em POST /auth/login; as rotas de conta vão com o token.
-// Contas do seed (só leitura): visitantes Ana e Bruno no perfil visitante; Felipe e Renan com EQUIPE_SENHA no ambiente.
+// Contas do seed (só leitura): visitantes Ana e Bruno no perfil visitante; Fellipe e Renan com EQUIPE_SENHA no ambiente.
 // Admin (opcional): com ADMIN_CPF e ADMIN_SENHA no ambiente (os mesmos da API), também confere GET /clientes.
 // Sai com código 0 se todas as verificações passaram e 1 se alguma falhou.
 
@@ -59,9 +59,11 @@ async function novoCliente(nome) {
   const cpf = cpfValido();
   const r = await chamar("POST", "/clientes", {
     nomeCompleto: nome, cpf, email: `smoke.${aleatorio(8)}@rkfbank.com`,
-    telefone: "11999999999", cep: "01001000", numero: "123", senha: SENHA,
+    telefone: "11999999999", cep: "01001000", numero: "123", senha: SENHA, aceiteTermos: true,
   });
   verificar(`Cadastrar ${nome} → 201 com endereço do ViaCEP`, r.status === 201 && r.json?.endereco?.logradouro, `status ${r.status} ${JSON.stringify(r.json)}`);
+  verificar(`Cadastro de ${nome} devolve o CPF mascarado e o aceite dos termos`,
+      /^\*\*\*\.\d{3}\.\d{3}-\*\*$/.test(r.json?.cpf ?? "") && r.json?.termosVersao && r.json?.termosAceitosEm, JSON.stringify(r.json));
   verificar(`Cadastro de ${nome} não devolve senha`, r.json && !("senha" in r.json) && !JSON.stringify(r.json).includes(SENHA));
   const l = await login(cpf, SENHA);
   verificar(`Login de ${nome} → 200 com token Bearer e clienteId`, l.status === 200 && l.json?.token && l.json?.tipo === "Bearer" && l.json?.clienteId === r.json?.id, `status ${l.status}`);
@@ -99,6 +101,10 @@ try {
   verificar("Transferência de 50.00 → 204", r.status === 204, `status ${r.status}`);
 
   verificar("Saldo da origem = 80.00", (await saldoDe(contaOrigem.id, origem.token)) === 80);
+  r = await chamar("GET", `/contas/${contaOrigem.id}`, undefined, origem.token);
+  verificar("GET /contas/{id} → 200 com o mesmo saldo", r.status === 200 && Number(r.json?.saldo) === 80, `status ${r.status}`);
+  r = await chamar("GET", `/contas/${contaOrigem.id}`, undefined, destino.token);
+  verificar("GET /contas/{id} de outro cliente → 403 CONTA_DE_OUTRO_CLIENTE", r.status === 403 && r.json?.codigo === "CONTA_DE_OUTRO_CLIENTE", `status ${r.status}`);
   verificar("Saldo do destino = 50.00", (await saldoDe(contaDestino.id, destino.token)) === 50);
 
   r = await chamar("GET", `/contas/${contaOrigem.id}/lancamentos`, undefined, origem.token);
@@ -114,7 +120,7 @@ try {
   r = await chamar("GET", "/contas", undefined, "token.falso.qualquer");
   verificar("Token inválido → 401", r.status === 401, `status ${r.status}`);
   r = await login(origem.cpf, "senha-errada");
-  verificar("Senha errada → 401 'CPF ou senha invalidos'", r.status === 401 && r.json?.message === "CPF ou senha invalidos", `status ${r.status}`);
+  verificar("Senha errada → 401 com codigo CREDENCIAIS_INVALIDAS", r.status === 401 && r.json?.codigo === "CREDENCIAIS_INVALIDAS", `status ${r.status}`);
   r = await chamar("POST", `/contas/${contaOrigem.id}/saques`, { valor: 1.0, descricao: "smoke" }, destino.token);
   verificar("Saque na conta de outro cliente → 403", r.status === 403 && r.json?.status === 403, `status ${r.status}`);
   r = await chamar("GET", `/contas/${contaOrigem.id}/lancamentos`, undefined, destino.token);
@@ -129,7 +135,7 @@ try {
     console.log("⏭️  GET /clientes com ADMIN pulado (perfil visitante nao tem admin)");
   } else if (process.env.ADMIN_CPF && process.env.ADMIN_SENHA) {
     const admin = await login(process.env.ADMIN_CPF, process.env.ADMIN_SENHA);
-    r = await chamar("GET", "/clientes?paginado=true", undefined, admin.json?.token);
+    r = await chamar("GET", "/clientes?page=0&size=10", undefined, admin.json?.token);
     verificar("GET /clientes com perfil ADMIN → 200", admin.json?.perfil === "ADMIN" && r.status === 200, `login ${admin.status}, listagem ${r.status}`);
   } else {
     console.log("⏭️  GET /clientes com ADMIN pulado (defina ADMIN_CPF e ADMIN_SENHA para conferir)");
@@ -148,8 +154,25 @@ try {
   r = await chamar("POST", `/contas/${contaOrigem.id}/depositos`, { valor: 1.0 }, origem.token, { chave: null });
   verificar("Movimentação sem Idempotency-Key → 400", r.status === 400 && (r.json?.campos ?? []).some((c) => c.campo === "Idempotency-Key"), `status ${r.status}`);
 
+  // Contrato 3.1: o token de renovação troca o par uma vez só; reusar derruba as sessões; sair revoga.
+  console.log("\nSessão (refresh token) e termos");
+  r = await chamar("GET", "/termos");
+  verificar("GET /termos (público) → 200 com a versão vigente", r.status === 200 && Boolean(r.json?.versao), `status ${r.status}`);
+  const sessao = await login(origem.cpf, SENHA);
+  r = await chamar("POST", "/auth/refresh", { refreshToken: sessao.json?.refreshToken });
+  verificar("Renovar → 200 com um par novo", r.status === 200 && r.json?.token && r.json?.refreshToken && r.json.refreshToken !== sessao.json?.refreshToken, `status ${r.status}`);
+  const renovada = r.json;
+  r = await chamar("POST", "/auth/refresh", { refreshToken: sessao.json?.refreshToken });
+  verificar("Reusar o token já trocado → 401 SESSAO_EXPIRADA", r.status === 401 && r.json?.codigo === "SESSAO_EXPIRADA", `status ${r.status}`);
+  r = await chamar("POST", "/auth/refresh", { refreshToken: renovada?.refreshToken });
+  verificar("Depois do reuso, a renovação legítima também caiu → 401", r.status === 401, `status ${r.status}`);
+  const deNovo = await login(origem.cpf, SENHA);
+  r = await chamar("POST", "/auth/logout", { refreshToken: deNovo.json?.refreshToken });
+  const depoisDeSair = await chamar("POST", "/auth/refresh", { refreshToken: deNovo.json?.refreshToken });
+  verificar("Sair → 204 e a renovação deixa de valer", r.status === 204 && depoisDeSair.status === 401, `logout ${r.status}, refresh ${depoisDeSair.status}`);
+
   // Contas que o Flyway (db/seed) cria a cada subida. Só leitura: o smoke nunca mexe no saldo delas.
-  // Perfil visitante: Ana e Bruno com a senha pública. Perfil padrão/equipe: Felipe e Renan com a EQUIPE_SENHA do ambiente.
+  // Perfil visitante: Ana e Bruno com a senha pública. Perfil padrão/equipe: Fellipe e Renan com a EQUIPE_SENHA do ambiente.
   console.log("\nContas pré-criadas pelo seed");
   const ana = await login("24681357928", "Visitante@2026");
   if (ana.status === 200) {
@@ -157,24 +180,26 @@ try {
     verificar("Visitante Ana vê só a conta 0001/900001", r.json?.length >= 1 && r.json.every((c) => c.clienteId === ana.json.clienteId)
         && r.json.some((c) => c.numeroConta === "900001"), JSON.stringify(r.json));
   } else if (process.env.EQUIPE_SENHA) {
-    const felipe = await login("12345678909", process.env.EQUIPE_SENHA);
+    const fellipe = await login("12345678909", process.env.EQUIPE_SENHA);
     const renan = await login("98765432100", process.env.EQUIPE_SENHA);
-    if (verificar("Login do Felipe e do Renan com a EQUIPE_SENHA → 200", felipe.status === 200 && renan.status === 200,
-        `Felipe ${felipe.status}, Renan ${renan.status} (a API leu a mesma EQUIPE_SENHA? db/seed/equipe ligado?)`)) {
-      r = await chamar("GET", "/contas", undefined, felipe.json.token);
-      verificar("Felipe vê só as próprias contas, entre elas a 0001/100001", r.json?.length >= 1
-          && r.json.every((c) => c.clienteId === felipe.json.clienteId)
+    if (verificar("Login do Fellipe e do Renan com a EQUIPE_SENHA → 200", fellipe.status === 200 && renan.status === 200,
+        `Fellipe ${fellipe.status}, Renan ${renan.status} (a API leu a mesma EQUIPE_SENHA? db/seed/equipe ligado?)`)) {
+      r = await chamar("GET", "/contas", undefined, fellipe.json.token);
+      verificar("Fellipe vê só as próprias contas, entre elas a 0001/100001", r.json?.length >= 1
+          && r.json.every((c) => c.clienteId === fellipe.json.clienteId)
           && r.json.some((c) => c.id === "5eed0000-0000-4000-8000-000000000014" && c.numeroConta === "100001"), JSON.stringify(r.json));
       r = await chamar("GET", "/contas/5eed0000-0000-4000-8000-000000000014/lancamentos", undefined, renan.json.token);
-      verificar("Renan não vê o extrato do Felipe → 403", r.status === 403, `status ${r.status}`);
+      verificar("Renan não vê o extrato do Fellipe → 403", r.status === 403, `status ${r.status}`);
     }
   } else {
     console.log("⏭️  Contas do seed puladas (perfil visitante não está no ar e EQUIPE_SENHA não está no ambiente)");
   }
 
   console.log("\nCenários de erro");
-  r = await chamar("POST", "/clientes", { nomeCompleto: "X", cpf: "11111111111", email: "x@x.com", telefone: "11999999999", cep: "01001000", numero: "1", senha: SENHA });
+  r = await chamar("POST", "/clientes", { nomeCompleto: "X", cpf: "11111111111", email: "x@x.com", telefone: "11999999999", cep: "01001000", numero: "1", senha: SENHA, aceiteTermos: true });
   verificar("CPF inválido → 400 com campo cpf", r.status === 400 && (r.json?.campos ?? []).some((c) => c.campo === "cpf"), `status ${r.status}`);
+  r = await chamar("POST", "/clientes", { nomeCompleto: "Sem Aceite", cpf: cpfValido(), email: `smoke.${aleatorio(8)}@rkfbank.com`, telefone: "11999999999", cep: "01001000", numero: "1", senha: SENHA, aceiteTermos: false });
+  verificar("Cadastro sem aceitar os termos → 400 com campo aceiteTermos", r.status === 400 && (r.json?.campos ?? []).some((c) => c.campo === "aceiteTermos"), `status ${r.status}`);
   r = await chamar("POST", `/contas/${contaOrigem.id}/saques`, { valor: 1000000, descricao: "smoke" }, origem.token);
   verificar("Saque maior que o saldo → 422", r.status === 422, `status ${r.status}`);
   r = await chamar("POST", "/transferencias", { contaOrigemId: contaOrigem.id, contaDestinoId: contaOrigem.id, valor: 1, descricao: "smoke" }, origem.token);
