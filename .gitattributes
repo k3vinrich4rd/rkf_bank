@@ -2,3 +2,5 @@
 *.cmd text eol=crlf
 *.sh text eol=lf
 scripts/hooks/* text eol=lf
+Dockerfile text eol=lf
+.dockerignore text eol=lf
