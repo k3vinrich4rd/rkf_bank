@@ -767,6 +767,14 @@ function ambientes({ equipeSenha, adminCpf, adminSenha }) {
       conta_destino_id: "5eed0000-0000-4000-8000-000000000024",
       admin_cpf: adminCpf, admin_senha: adminSenha,
     },
+    prod: {
+      // Perfil prod no container local (Dockerfile, porta 8081): banco vazio, sem Fellipe, Renan, Ana ou Bruno.
+      // Só o ADMIN (mesmo do .env da equipe) e os clientes que os testes cadastram. Roteiro: .equipe/testes/PROD_E2E.md.
+      base_url: "http://localhost:8081",
+      cpf_origem: "", cpf_destino: "", senha_clientes: "", email_destino: "",
+      conta_origem_id: "", conta_destino_id: "",
+      admin_cpf: adminCpf, admin_senha: adminSenha,
+    },
   };
 }
 
@@ -806,6 +814,9 @@ function montar(valores, publica) {
     recursos.push({
       _id: "env_rkfbank_equipe", _type: "environment", parentId: "env_rkfbank_base", name: "Equipe (MySQL ou H2, Fellipe e Renan)",
       data: amb.equipe, color: "#1565c0", metaSortKey: 2,
+    }, {
+      _id: "env_rkfbank_prod", _type: "environment", parentId: "env_rkfbank_base", name: "Prod (Docker local, banco vazio)",
+      data: amb.prod, color: "#c62828", metaSortKey: 3,
     });
   }
   pastasDa(publica).forEach((pasta) => {
@@ -906,6 +917,7 @@ function montarV5(valores, publica) {
         { name: "Visitante (H2, Ana e Bruno)", meta: meta("env_rkfbank_visitante", { isPrivate: false, sortKey: 1 }), data: amb.visitante, color: "#2e7d32" },
         ...(publica ? [] : [
           { name: "Equipe (MySQL ou H2, Fellipe e Renan)", meta: meta("env_rkfbank_equipe", { isPrivate: false, sortKey: 2 }), data: amb.equipe, color: "#1565c0" },
+          { name: "Prod (Docker local, banco vazio)", meta: meta("env_rkfbank_prod", { isPrivate: false, sortKey: 3 }), data: amb.prod, color: "#c62828" },
         ]),
       ],
     },
