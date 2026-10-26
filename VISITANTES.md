@@ -549,6 +549,25 @@ sacou 50, transferiu 25 e depositou 10 uma vez só (o passo 10 foi a repetição
 
 ---
 
+## 📖 Sem Insomnia? Use o Swagger, no navegador
+
+O **Swagger** é uma página que a própria API gera a partir do código: lista todas as rotas, os campos de cada uma e
+deixa você mandar o pedido ali mesmo, sem instalar nada. Os exemplos já vêm preenchidos com a Ana e o Bruno.
+
+| Passo | O que fazer | Tem que voltar |
+|:-:|---|---|
+| 1 | Com a API no ar, abra http://localhost:8080/swagger-ui.html | a lista de rotas, agrupada (Autenticação, Contas e dinheiro...) |
+| 2 | **Autenticação → `POST /auth/login`** → **Try it out** → **Execute** (o corpo já vem com o CPF e a senha da Ana) | **200** com um `token` |
+| 3 | Copie o valor de `token` (sem as aspas) → botão **Authorize** 🔓 no alto → cole → **Authorize** → **Close** | os cadeados das rotas ficam 🔒 fechados |
+| 4 | **Contas e dinheiro → `GET /contas`** → **Try it out** → **Execute** | **200** com a conta da Ana (`900001`) |
+| 5 | **`POST /contas/{contaId}/depositos`** → **Try it out** → **Execute** (conta, chave e valor já preenchidos) | **204**: o depósito entrou |
+| 6 | Clique em **Execute** de novo, sem mudar nada | **204** com o header `idempotency-replayed: true`: a mesma chave **não** deposita de novo |
+| 7 | Troque o `Idempotency-Key` por outro UUID (`node -e "console.log(crypto.randomUUID())"`) → **Execute** | **204** sem o header: agora é outro depósito |
+
+Cada rota mostra embaixo **todas as respostas possíveis** (`204`, `400`, `401`, `403`...) com o formato do erro. O
+mesmo conteúdo em formato de máquina (OpenAPI, JSON) está em http://localhost:8080/v3/api-docs: é o que o Insomnia
+e o Postman importam. Na versão publicada do banco o Swagger fica **fechado** (`404`), de propósito.
+
 ## Quer ir além? (opcional)
 
 | Pasta da coleção | O que testa | Tempo |

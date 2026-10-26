@@ -8,18 +8,30 @@ código e teste, e **nada** do que era publicar.
 | # | Item (tabela da seção 2) | 23/10 | 26/10 |
 |:-:|---|:-:|---|
 | 1 | Mergear o PR #60 (contrato 3.1) | ⏳ | ✅ na `develop` e na `main` (#68); CVEs do front (#67) e dependências do front (#69) também |
-| 2 | Decidir onde publicar | ⏳ | ⏳ **trava todo o resto** |
-| 3 | Perfil `prod` | ⏳ | ⏳ não existe (`application-prod.properties`) |
-| 4 | Empacotar API e site | ⏳ | ⏳ nenhum `Dockerfile` |
+| 2 | Decidir onde publicar | ⏳ | 🟡 proposta em [`backend/README_DEPLOY.md`](../backend/README_DEPLOY.md): **A** grátis (Render + Aiven MySQL + Vercel) ou **B** sempre ligado (Railway ~US$ 5/mês + Vercel). Falta o time escolher |
+| 3 | Perfil `prod` | ⏳ | ✅ `application-prod.properties` (sem seed, sem Swagger, segredos só do ambiente, CORS obrigatório) + `PerfilProdIntegracaoTest` (4 testes) |
+| 4 | Empacotar API e site | ⏳ | ✅ API: `Dockerfile` (testado: 21/21 passos e smoke 42/42 num MySQL vazio, ~370 MB de 512 MB); imagem publicada no ghcr.io pela Action `backend-docker.yml`. Site: a Vercel publica o Next direto, sem imagem |
 | 5 | Banco gerenciado com backup | ⏳ | ⏳ depende do item 2 |
-| 6 | Encarregado LGPD | ⏳ | ⏳ |
+| 6 | Encarregado LGPD | ⏳ | ✅ **Kevin e Renan**, também responsáveis pela publicação; seção 7 da política e termos `2026-10-26` |
 | 7 | Teste do Fellipe | ⏳ | 🟡 **roteiros prontos e curtos** (`.equipe/testes/BACKEND_E2E.md`: ADMIN em 25 passos e cliente em 36, H2 ou Docker); dá para ele começar **hoje, local**, sem esperar o ambiente publicado |
 | 10 | `develop` → `main` | — | PR #70 aberto para a reunião |
+
+**Actions novas em 26/10:** `backend-docker.yml` (imagem no perfil `prod` + smoke) e `e2e.yml` (site + API + coleção, a aplicação inteira).
+
+**Ajustes que a revisão de 26/10 achou para a publicação** (nenhum é bug; são do ambiente publicado):
+
+| # | Ajuste | Quem | Por quê |
+|:-:|---|---|---|
+| a | ~~Encarregado LGPD na seção 7~~ ✅ feito em 26/10 (Kevin e Renan, termos `2026-10-26`). Falta só um e-mail dedicado, se o time quiser um canal privado além do GitHub | Kevin e Renan | hoje o contato é pelo GitHub de cada um |
+| b | Tela de "acordando o servidor" no login e no cadastro, se for o caminho A (Render Free dorme) | Renan | a 1ª requisição depois de 15 min parada leva ~1 min; hoje vira o erro genérico de conexão |
+| c | Deixar o pacote `rkfbank-api` do ghcr.io **público** depois do 1º push na `main` (ou dar ao provedor um token de leitura) | Kevin | o GitHub cria o pacote privado; o provedor não consegue puxar a imagem |
+| d | `CORS_ORIGENS` e `API_URL` com os domínios definitivos | Kevin (API) e Renan (site) | os dois dependem um do outro: publicar a API primeiro, o site depois |
+| e | Lembrete "use dados fictícios" também no cadastro (hoje só a landing avisa que é portfólio) | Renan | o banco publicado guarda o que a pessoa digitar |
 
 **Coleções conferidas em 26/10** contra a API de verdade: `83/83` (visitante) e `119/119` (equipe).
 
 **Sugestão para não perder o 31/10:** decidir o item 2 **hoje** pelo caminho simples (API no Render ou Railway com
-MySQL gerenciado, site na Vercel); fazer 3 e 4 juntos numa branch `feature/deploy-mvp` (Kevin); Fellipe testa local
+MySQL gerenciado, site na Vercel); 3 e 4 feitos na `feature/deploy-mvp`; Fellipe testa local
 em paralelo, e repete só a Parte 3 (cliente) do `BACKEND_E2E.md` no ambiente publicado. Se o 31/10 apertar, o corte honesto é lançar
 **local + vídeo/prints** no README e publicar na semana seguinte: é melhor do que publicar sem perfil `prod` (o seed
 da equipe e o Swagger iriam para a internet).
