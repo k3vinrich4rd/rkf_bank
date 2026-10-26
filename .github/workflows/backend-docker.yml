@@ -1,0 +1,127 @@
+name: Backend Docker
+
+# A imagem que vai para a internet (Dockerfile da raiz, perfil prod), testada como no provedor: container com
+# 512 MB, banco MySQL VAZIO e segredos só por variável. Em PR, só constrói e testa; na main, também publica a
+# imagem no GitHub Container Registry (ghcr.io), pronta para o provedor puxar.
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "backend/src/main/**"
+      - "pom.xml"
+      - ".mvn/**"
+      - "scripts/smoke-e2e.mjs"
+      - ".github/workflows/backend-docker.yml"
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - ".dockerignore"
+      - "backend/src/main/**"
+      - "pom.xml"
+      - ".mvn/**"
+      - ".github/workflows/backend-docker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-docker-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGEM: ghcr.io/${{ github.repository_owner }}/rkfbank-api
+
+jobs:
+  imagem-prod:
+    name: Imagem da API no perfil prod (banco vazio)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # O MySQL do provedor, aqui como serviço do runner: sobe vazio, sem nenhum dado de teste.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root-do-ci
+          MYSQL_DATABASE: rkfbank
+          MYSQL_USER: rkfbank
+          MYSQL_PASSWORD: senha-do-ci
+        ports:
+          - "3306:3306"
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -urkfbank -psenha-do-ci"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v7
+
+      - name: Construir a imagem
+        run: docker build -t rkfbank-api:ci .
+
+      # Segredos de mentira, gerados na hora: o CI nunca vê os do provedor.
+      - name: Subir o container (512 MB, perfil prod)
+        run: |
+          docker run -d --name api --network host -m 512m \
+            -e DB_HOST=127.0.0.1 -e DB_NAME=rkfbank -e DB_USER=rkfbank -e DB_PASSWORD=senha-do-ci \
+            -e JWT_SEGREDO="$(openssl rand -base64 48)" -e CORS_ORIGENS=https://rkfbank.example \
+            -e ADMIN_CPF=11144477735 -e ADMIN_SENHA=admin-do-ci-123 \
+            rkfbank-api:ci
+          for i in $(seq 1 60); do curl -fs http://localhost:8080/actuator/health && exit 0; sleep 3; done
+          echo "a API não ficou UP em 3 minutos"; exit 1
+
+      - name: Conferir o que só o prod garante
+        run: |
+          set -e
+          docker logs api 2>&1 | grep -q 'profile is active: "prod"'
+          if docker logs api 2>&1 | grep -q "dados equipe"; then echo "o prod carregou dados de teste"; exit 1; fi
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/swagger-ui.html)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/v3/api-docs)" = 404
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS http://localhost:8080/contas \
+            -H 'Origin: https://site-estranho.example' -H 'Access-Control-Request-Method: GET')" = 403
+          echo "✅ perfil prod, sem seed, Swagger fechado e CORS só para o site"
+
+      - name: Configurar Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+
+      - name: Smoke ponta a ponta (cadastro ao extrato, com o ADMIN)
+        env:
+          ADMIN_CPF: "11144477735"
+          ADMIN_SENHA: admin-do-ci-123
+        run: node scripts/smoke-e2e.mjs http://localhost:8080
+
+      - name: Memória usada pelo container
+        run: docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' api
+
+      - name: Log da API (se falhou)
+        if: failure()
+        run: docker logs api
+
+  publicar:
+    name: Publicar a imagem no ghcr.io
+    needs: imagem-prod
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v7
+
+      - name: Construir e publicar (latest e o commit)
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker build -t "$IMAGEM:latest" -t "$IMAGEM:${GITHUB_SHA::7}" .
+          docker push "$IMAGEM:latest"
+          docker push "$IMAGEM:${GITHUB_SHA::7}"
+          echo "✅ $IMAGEM:latest e :${GITHUB_SHA::7}"
