@@ -72,6 +72,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 
 - H2 está fixado em **2.5.252** (o 2.4.240 que o Boot traz quebra o `CHECK ... IN` das colunas de enum); toda URL do H2 leva `MODE=MySQL` (o 2.5 só aceita `DATETIME` assim) e o perfil de teste tem `spring.test.database.replace=none`.
 - `@DataJpaTest` troca o datasource por H2 embutido em qualquer perfil.
+- **IntelliJ antigo × Maven 3.10 do wrapper:** a IntelliJ Community 2024.3 não importa o projeto (`Unable to create injector ... ArtifactHandlerManager` no log da IDE) e marca em vermelho as dependências mais novas (springdoc, ShedLock), mesmo com o `mvnw` verde. Solução: IntelliJ 2025.3+ ou Maven home = **Bundled** nas configurações. Não troque o wrapper por causa disso.
 - Testes Spring têm `@ActiveProfiles("test")` e o `application-test.properties` fica em `src/test/resources` (fora do jar). O `pom.xml` aponta `RKFBANK_ENV` para um arquivo inexistente: o `.env` de quem roda não entra nos testes.
 - O Mockito é carregado como `-javaagent` no surefire (Java 21+); não remova o `argLine`.
 - Classe de teste precisa terminar em `Test`, `Tests` ou `TestCase`; senão o Surefire **ignora em silêncio**.
