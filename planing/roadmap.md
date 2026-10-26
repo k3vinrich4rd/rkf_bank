@@ -51,7 +51,7 @@ O cliente consegue:
 
 - [x] LGPD mínimo: política de privacidade e aceite dos termos (V10, contrato 3.1)
 - [ ] LGPD: definir o encarregado e o canal de contato
-- [ ] Fellipe (idealizador e primeiro cliente) testa tudo (roteiro em `backend/README_TESTES_E2E.md`)
+- [ ] Fellipe (idealizador e primeiro cliente) testa tudo (roteiros curtos em `.equipe/testes/`: `ROTEIRO_CLIENTE.md`, `ROTEIRO_ADMIN.md` e `FRONTEND_E2E.md`)
 - [ ] Corrigir bugs
 - [ ] Colocar no ar
 - [ ] Atualizar o README com link e prints

@@ -27,6 +27,10 @@ Resolveu um item? Apague a linha no mesmo PR.
 
 | Prioridade | Problema | Sugestão |
 |:---:|---|---|
+| 🟡 | **Não existe perfil `prod` nem `Dockerfile`** (itens 3 e 4 de [analise-mvp.md](analise-mvp.md)): o perfil padrão carrega o seed da equipe e deixa o Swagger ligado. Bloqueia publicar, não o código. | `application-prod.properties` (Flyway só com `db/migration`, Swagger desligado, `CORS_ORIGENS` do domínio) e um `Dockerfile` multi-stage com o `.jar` (Java 25), assim que o time decidir onde publicar. |
+| 🟢 | O guia de testes do frontend (`frontend/README_TESTES_E2E.md`) ainda é só o roteiro longo; a API ganhou a trilha curta ([VISITANTES.md](../VISITANTES.md), 13 passos). | Trilha curta das telas no mesmo formato (onde clicar, o que aparece, caixinha). Área do Renan. |
+| 🟢 | Os roteiros gerados mostram `1000` onde a API devolve `1000.00` (o `JSON.parse` do `scripts/gerar-roteiro-e2e.mjs` perde as casas decimais). | Formatar o JSON a partir do texto da resposta, sem passar por número. Há um aviso no `VISITANTES.md`. |
+| 🟢 | Recados antigos ficam abertos (`- [ ]`) depois de resolvidos, e a lista de [recados.md](recados.md) fica difícil de ler. | Quem recebe marca `[x]` com uma linha de resposta no mesmo PR que resolve. |
 | 🟢 | A pasta `planing` está escrita errado (o certo é `planning`). | Renomear quando ninguém estiver mexendo nela: além dos links do repositório, mudam as skills em `.claude/skills` e os roteiros do `.equipe` que apontam para cá. |
 
 ---

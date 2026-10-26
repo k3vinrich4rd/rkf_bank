@@ -1,5 +1,29 @@
 # Análise do MVP — o que falta até 31/10/2026
 
+## ⏱️ Revisão de 26/10/2026 (5 dias para o prazo)
+
+**O produto continua pronto; o lançamento continua parado nas mesmas decisões.** Desde 23/10 andou tudo o que era
+código e teste, e **nada** do que era publicar.
+
+| # | Item (tabela da seção 2) | 23/10 | 26/10 |
+|:-:|---|:-:|---|
+| 1 | Mergear o PR #60 (contrato 3.1) | ⏳ | ✅ na `develop` e na `main` (#68); CVEs do front (#67) e dependências do front (#69) também |
+| 2 | Decidir onde publicar | ⏳ | ⏳ **trava todo o resto** |
+| 3 | Perfil `prod` | ⏳ | ⏳ não existe (`application-prod.properties`) |
+| 4 | Empacotar API e site | ⏳ | ⏳ nenhum `Dockerfile` |
+| 5 | Banco gerenciado com backup | ⏳ | ⏳ depende do item 2 |
+| 6 | Encarregado LGPD | ⏳ | ⏳ |
+| 7 | Teste do Fellipe | ⏳ | 🟡 **roteiros prontos e curtos** (`.equipe/testes/ROTEIRO_CLIENTE.md` 36 passos, `ROTEIRO_ADMIN.md` 25 passos); dá para ele começar **hoje, local**, sem esperar o ambiente publicado |
+| 10 | `develop` → `main` | — | PR #70 aberto para a reunião |
+
+**Coleções conferidas em 26/10** contra a API de verdade: `83/83` (visitante) e `119/119` (equipe).
+
+**Sugestão para não perder o 31/10:** decidir o item 2 **hoje** pelo caminho simples (API no Render ou Railway com
+MySQL gerenciado, site na Vercel); fazer 3 e 4 juntos numa branch `feature/deploy-mvp` (Kevin); Fellipe testa local
+em paralelo, e repete só o `ROTEIRO_CLIENTE` no ambiente publicado. Se o 31/10 apertar, o corte honesto é lançar
+**local + vídeo/prints** no README e publicar na semana seguinte: é melhor do que publicar sem perfil `prod` (o seed
+da equipe e o Swagger iriam para a internet).
+
 Revisão do projeto inteiro em **23/10/2026** (8 dias para o prazo), comparando o que o [roadmap](roadmap.md), o
 [checklist](checklist-features.md) e os [débitos](debitos-tecnicos.md) dizem com o que o código faz hoje
 (branch `refactor/contrato-3-0-integracao`, PR #60).
