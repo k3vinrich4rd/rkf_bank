@@ -76,13 +76,15 @@ const testes = (r) => [...(r.afterResponseScript ?? "").matchAll(/insomnia\.test
 // ── Registro: o que a API respondeu de verdade ───────────────────────────────────────────────────────────────
 
 const registro = JSON.parse(readFileSync(REGISTRO, "utf8")).filter((item) => !SO_PASTAS || SO_PASTAS.includes(item.pasta.slice(0, 2)));
-const ambiente = opcao("--ambiente", REGISTRO.includes("equipe") ? "equipe" : "visitante");
+const ambiente = opcao("--ambiente", registro[0]?.ambiente ?? (REGISTRO.includes("equipe") ? "equipe" : "visitante"));
 
 function formatarJson(texto) {
   if (!texto) return null;
   let valor;
   try {
-    valor = JSON.parse(texto);
+    // Número com casas decimais vira texto marcado antes do parse, para o roteiro mostrar 1000.00 como a API
+    // manda (o JSON.parse transformaria em 1000).
+    valor = JSON.parse(texto.replace(/([:[,]\s*)(-?\d+\.\d+)(?=\s*[,}\]])/g, '$1"__NUM__$2"'));
   } catch {
     return limpar(texto);
   }
@@ -96,7 +98,7 @@ function formatarJson(texto) {
     if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, encurtar(x)]));
     return v;
   };
-  return limpar(JSON.stringify(encurtar(valor), null, 2));
+  return limpar(JSON.stringify(encurtar(valor), null, 2).replace(/"__NUM__(-?\d+\.\d+)"/g, "$1"));
 }
 
 function blocoPedido(item, req) {
@@ -205,7 +207,8 @@ function gerarTrilha() {
     const prefixo = item.pasta.slice(0, 2);
     const n = (contagem.get(prefixo) ?? 0) + 1;
     contagem.set(prefixo, n);
-    porId.set(`${prefixo}.${String(n).padStart(2, "0")}`, item);
+    // O registro novo já traz o id; o antigo (execução completa) é numerado pela ordem.
+    porId.set(item.id ?? `${prefixo}.${String(n).padStart(2, "0")}`, item);
   }
   const passos = SO_PASSOS.map((id) => {
     const item = porId.get(id);
