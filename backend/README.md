@@ -18,7 +18,7 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
 | [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou MySQL), ver o banco (console do H2, MySQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
 | [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia pública (83 requisições do cliente, sem o ADMIN; também em `.yaml` para o Insomnia 10+; a pasta 02 é o roteiro E2E completo e o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
-| `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Fellipe, do Renan e do admin, roteiro da API (`.equipe/testes/TESTES_API.md`) |
+| `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe (Kevin, Renan e Fellipe): acessos de teste do Fellipe, do Renan e do ADMIN; o roteiro da API fica em `.equipe/testes/BACKEND_E2E.md` |
 
 ---
 

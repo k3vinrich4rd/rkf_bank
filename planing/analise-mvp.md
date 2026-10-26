@@ -13,14 +13,14 @@ código e teste, e **nada** do que era publicar.
 | 4 | Empacotar API e site | ⏳ | ⏳ nenhum `Dockerfile` |
 | 5 | Banco gerenciado com backup | ⏳ | ⏳ depende do item 2 |
 | 6 | Encarregado LGPD | ⏳ | ⏳ |
-| 7 | Teste do Fellipe | ⏳ | 🟡 **roteiros prontos e curtos** (`.equipe/testes/TESTES_API.md`: ADMIN em 25 passos e cliente em 36, H2 ou Docker); dá para ele começar **hoje, local**, sem esperar o ambiente publicado |
+| 7 | Teste do Fellipe | ⏳ | 🟡 **roteiros prontos e curtos** (`.equipe/testes/BACKEND_E2E.md`: ADMIN em 25 passos e cliente em 36, H2 ou Docker); dá para ele começar **hoje, local**, sem esperar o ambiente publicado |
 | 10 | `develop` → `main` | — | PR #70 aberto para a reunião |
 
 **Coleções conferidas em 26/10** contra a API de verdade: `83/83` (visitante) e `119/119` (equipe).
 
 **Sugestão para não perder o 31/10:** decidir o item 2 **hoje** pelo caminho simples (API no Render ou Railway com
 MySQL gerenciado, site na Vercel); fazer 3 e 4 juntos numa branch `feature/deploy-mvp` (Kevin); Fellipe testa local
-em paralelo, e repete só a Parte 3 (cliente) do `TESTES_API.md` no ambiente publicado. Se o 31/10 apertar, o corte honesto é lançar
+em paralelo, e repete só a Parte 3 (cliente) do `BACKEND_E2E.md` no ambiente publicado. Se o 31/10 apertar, o corte honesto é lançar
 **local + vídeo/prints** no README e publicar na semana seguinte: é melhor do que publicar sem perfil `prod` (o seed
 da equipe e o Swagger iriam para a internet).
 
@@ -61,7 +61,7 @@ entrar antes do lançamento.
 | 4 | **Empacotar** API e site | Kevin (API) · Renan (site) | sim | não há `Dockerfile` ainda. API: imagem com o `.jar` (Java 25). Site: depende do provedor (Vercel publica o Next direto; outros pedem imagem com `next start`). |
 | 5 | **Banco gerenciado** com backup | Kevin | sim | MySQL 8.4; as migrações V1 a V15 já provaram rodar no MySQL real (`MigracoesMySqlTest`). |
 | 6 | **Encarregado LGPD** e canal de contato | time | sim | débito 🔴: publicar na seção 7 da política e subir a versão dos termos. |
-| 7 | **Teste do Fellipe** | Fellipe | sim | roteiro em `.equipe` (`TESTES_API.md` / `FRONTEND_E2E.md`) contra o ambiente publicado. |
+| 7 | **Teste do Fellipe** | Fellipe | sim | roteiro em `.equipe` (`BACKEND_E2E.md` / `FRONTEND_E2E.md`) contra o ambiente publicado. |
 | 8 | Corrigir o que o Fellipe achar | Kevin + Renan | sim | — |
 | 9 | README com link e prints | Kevin | não | último passo do roadmap. |
 | 10 | Reunião aprova `develop` → `main` (PR #51) | Kevin + Renan | — | a `main` só recebe o que for aprovado na reunião semanal. |
