@@ -22,9 +22,13 @@ while [ "$(docker inspect --format='{{.State.Health.Status}}' rkfbank-mysql 2>/d
 done
 echo ">>> Banco MySQL healthy!"
 
-# JDK 25 da maquina (mesmo exigido pelo maven-enforcer-plugin no pom.xml)
-export JAVA_HOME='/c/Users/Estudo$/.jdks/ms-25.0.4'
-export PATH="$JAVA_HOME/bin:$PATH"
+# JDK 25 (mesmo exigido pelo maven-enforcer-plugin no pom.xml): o baixado pelo IntelliJ, se existir nesta maquina;
+# senao, o JAVA_HOME/java que ja estiver configurado.
+JDK_INTELLIJ="$HOME/.jdks/ms-25.0.4"
+if [ -d "$JDK_INTELLIJ" ]; then
+  export JAVA_HOME="$JDK_INTELLIJ"
+  export PATH="$JAVA_HOME/bin:$PATH"
+fi
 
 if [ -n "$TEST_CLASS" ]; then
   echo ">>> Rodando teste especifico: $TEST_CLASS"

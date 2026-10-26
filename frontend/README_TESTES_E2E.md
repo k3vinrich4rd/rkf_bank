@@ -1,5 +1,14 @@
 # RKF Bank — Como testar as telas, do zero
 
+| | |
+|---|---|
+| 🎯 **Para que serve** | testar **as telas do site** na sua máquina, com as contas de visitante |
+| 👥 **Área responsável** | 🟩 **Frontend** (o site) · dono: Renan · público |
+| ⏰ **Quando usar** | quer ver o banco pelo navegador, como um cliente |
+| 🧰 **Como** | navegador, com a API no perfil `visitante` e o site rodando |
+| 🚫 **Não cobre** | as regras da API sozinha → [backend/README_TESTES_E2E.md](../backend/README_TESTES_E2E.md) · o essencial em 15 min → [VISITANTES.md](../VISITANTES.md) |
+
+
 > **Para quem é:** qualquer pessoa que queira usar o site do RKF Bank na própria máquina e conferir cada tela, sem
 > ajuda: visitantes, recrutadores, quem está chegando no projeto. Usa só as **contas de visitante** (senha pública).
 > Cada caso tem o que **fazer**, o que o navegador **manda por baixo** (pedido e resposta, como aparecem no DevTools →

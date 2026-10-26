@@ -32,6 +32,9 @@ if (!REGISTRO || !SAIDA) {
 // Um roteiro pode ter vários blocos (ex.: o ADMIN primeiro e o cliente depois); sem --bloco, o bloco único de sempre.
 const BLOCO = opcao("--bloco", null);
 const SO_PASTAS = opcao("--pastas", null)?.split(",");
+// --passos 01.01,03.03,...: modo "trilha" — só esses passos (pasta.posição na execução), na ordem dada, em cartões
+// numerados e curtos (onde clicar, o que mandar, o que volta e uma caixinha). É o formato dos guias de primeira vez.
+const SO_PASSOS = opcao("--passos", null)?.split(",");
 const INICIO = BLOCO ? `<!-- roteiro-gerado:${BLOCO}:inicio -->` : "<!-- roteiro-gerado:inicio -->";
 const FIM = BLOCO ? `<!-- roteiro-gerado:${BLOCO}:fim -->` : "<!-- roteiro-gerado:fim -->";
 
@@ -73,13 +76,15 @@ const testes = (r) => [...(r.afterResponseScript ?? "").matchAll(/insomnia\.test
 // ── Registro: o que a API respondeu de verdade ───────────────────────────────────────────────────────────────
 
 const registro = JSON.parse(readFileSync(REGISTRO, "utf8")).filter((item) => !SO_PASTAS || SO_PASTAS.includes(item.pasta.slice(0, 2)));
-const ambiente = opcao("--ambiente", REGISTRO.includes("equipe") ? "equipe" : "visitante");
+const ambiente = opcao("--ambiente", registro[0]?.ambiente ?? (REGISTRO.includes("equipe") ? "equipe" : "visitante"));
 
 function formatarJson(texto) {
   if (!texto) return null;
   let valor;
   try {
-    valor = JSON.parse(texto);
+    // Número com casas decimais vira texto marcado antes do parse, para o roteiro mostrar 1000.00 como a API
+    // manda (o JSON.parse transformaria em 1000).
+    valor = JSON.parse(texto.replace(/([:[,]\s*)(-?\d+\.\d+)(?=\s*[,}\]])/g, '$1"__NUM__$2"'));
   } catch {
     return limpar(texto);
   }
@@ -93,7 +98,7 @@ function formatarJson(texto) {
     if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, encurtar(x)]));
     return v;
   };
-  return limpar(JSON.stringify(encurtar(valor), null, 2));
+  return limpar(JSON.stringify(encurtar(valor), null, 2).replace(/"__NUM__(-?\d+\.\d+)"/g, "$1"));
 }
 
 function blocoPedido(item, req) {
@@ -194,6 +199,51 @@ if (ini < 0 || fim < ini) {
   console.error(`${SAIDA} precisa ter os marcadores ${INICIO} e ${FIM} onde o passo a passo entra`);
   process.exit(1);
 }
-const novo = texto.slice(0, ini + INICIO.length) + "\n" + gerar() + "\n" + texto.slice(fim);
+// Modo trilha: cada passo vira um cartão curto. Só o 💡 da descrição entra; o texto técnico fica no roteiro completo.
+function gerarTrilha() {
+  const porId = new Map();
+  const contagem = new Map();
+  for (const item of registro) {
+    const prefixo = item.pasta.slice(0, 2);
+    const n = (contagem.get(prefixo) ?? 0) + 1;
+    contagem.set(prefixo, n);
+    // O registro novo já traz o id; o antigo (execução completa) é numerado pela ordem.
+    porId.set(item.id ?? `${prefixo}.${String(n).padStart(2, "0")}`, item);
+  }
+  const passos = SO_PASSOS.map((id) => {
+    const item = porId.get(id);
+    if (!item) throw new Error(`passo ${id} não existe nesta execução`);
+    const pasta = pastas.find((p) => p.name === item.pasta);
+    return { item, req: requisicoes.find((r) => r.parentId === pasta?._id && r.name === item.nome) };
+  });
+  // Mapa da trilha: a ordem dos métodos HTTP, com a rota em forma de molde ({conta_origem_id}) e quem está logado.
+  const rota = (item, req) =>
+    (req?.url ?? item.caminho).replace(/\{\{\s*_\.base_url\s*\}\}/, "").replace(/\{\{\s*_\.(\w+)\s*\}\}/g, "{$1}");
+  const quem = (req) => req?.authentication?.type === "bearer" ? `\`${req.authentication.token.match(/_\.(\w+)/)?.[1]}\`` : "— (público)";
+  const saida = [
+    `> 🤖 Pedidos e respostas reais (ambiente **${ambiente}**), gerados por \`scripts/gerar-roteiro-e2e.mjs\`. ` +
+      "Ids, números de conta e datas mudam a cada execução; o **status** e o `codigo` não.\n",
+    "**A ordem, de uma olhada** (o detalhe de cada passo vem logo abaixo):\n",
+    "| Passo | Método | Rota | Crachá (token) | O que faz | Tem que voltar |",
+    "|:-:|:-:|---|---|---|:-:|",
+    ...passos.map(({ item, req }, i) =>
+      `| ${i + 1} | \`${item.metodo}\` | \`${rota(item, req)}\` | ${quem(req)} | ${item.nome.replace(/\|/g, "\\|")} | **${item.status}** |`),
+    "",
+  ];
+  passos.forEach(({ item, req }, i) => {
+    const simples = (req?.description ?? "").split(/\n\s*\n/)[0].replace(/^💡 \*\*Em palavras simples:\*\*\s*/, "");
+    saida.push(
+      `### Passo ${i + 1} · ${item.nome}`, "",
+      `📂 Insomnia: **${item.pasta}** → **${item.nome}** → **Send**`, "",
+      ...(simples ? [`💡 ${limpar(simples)}`, ""] : []),
+      "**Você manda**", "", blocoPedido(item, req), "",
+      "**Tem que voltar**", "", blocoResposta(item), "",
+      "- [ ] voltou igual", "",
+    );
+  });
+  return saida.join("\n");
+}
+
+const novo = texto.slice(0, ini + INICIO.length) + "\n" + (SO_PASSOS ? gerarTrilha() : gerar()) + "\n" + texto.slice(fim);
 writeFileSync(SAIDA, crlf ? novo.replace(/\n/g, "\r\n") : novo);
 console.log(`✅ ${registro.length} passos → ${SAIDA}`);

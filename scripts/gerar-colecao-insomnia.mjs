@@ -828,11 +828,20 @@ function montar(valores, publica) {
   return { _type: "export", __export_format: 4, __export_source: "rkfbank.gerar-colecao-insomnia", resources: recursos };
 }
 
+// A coleção da equipe usa o .env PADRÃO da equipe (bloco dotenv da seção 1 do guia privado), não o .env pessoal de
+// quem roda o script: senão o "Login · ADMIN" sai com o admin de uma máquina e dá 401 na dos outros.
+// Sem o guia, cai no .env da raiz.
 function lerEnv() {
+  const guia = join(RAIZ, ".equipe", "GUIA_TESTES_EQUIPE.md");
   const arquivo = join(RAIZ, ".env");
-  if (!existsSync(arquivo)) throw new Error("--equipe precisa do .env na raiz (EQUIPE_SENHA, ADMIN_CPF, ADMIN_SENHA)");
+  let texto;
+  if (existsSync(guia)) {
+    texto = readFileSync(guia, "utf8").replace(/\r\n/g, "\n").split(/^## 1\./m)[1]?.match(/```dotenv\n([\s\S]*?)```/)?.[1];
+  }
+  if (!texto && existsSync(arquivo)) texto = readFileSync(arquivo, "utf8");
+  if (!texto) throw new Error("--equipe precisa do guia da equipe (.equipe) ou do .env na raiz (EQUIPE_SENHA, ADMIN_CPF, ADMIN_SENHA)");
   const valores = {};
-  for (const linha of readFileSync(arquivo, "utf8").split(/\r?\n/)) {
+  for (const linha of texto.split(/\r?\n/)) {
     const m = linha.match(/^\s*([A-Z_]+)\s*=\s*(.*)\s*$/);
     if (m) valores[m[1]] = m[2].replace(/^["']|["']$/g, "");
   }

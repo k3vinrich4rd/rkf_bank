@@ -1,5 +1,18 @@
 # 🧪 Como testar o RKF Bank (API) — do zero, com pedido e resposta de cada passo
 
+| | |
+|---|---|
+| 🎯 **Para que serve** | **referência completa** da API como cliente: as 83 requisições da coleção pública, com cada conceito explicado |
+| 👥 **Área responsável** | 🟦 **Backend** (a API) · público |
+| ⏰ **Quando usar** | depois do [VISITANTES.md](../VISITANTES.md), para ir além ou entender um resultado |
+| 🧰 **Como** | Insomnia + coleção pública, perfil `visitante` |
+| 🚫 **Não cobre** | o ADMIN (só a equipe testa) · as telas → [frontend/README_TESTES_E2E.md](../frontend/README_TESTES_E2E.md) |
+
+
+> 👉 **Primeira vez? Comece pelo [VISITANTES.md](../VISITANTES.md):** 13 passos, 15 minutos, só o essencial (login,
+> depósito, saque, transferência, extrato e três proteções). Este guia é a **referência completa**: todas as 83
+> requisições da coleção, com cada conceito explicado. Use quando quiser ir além ou entender um resultado.
+
 > Para **qualquer pessoa** que clonou o repositório (recrutador, colega, curioso) testar a API na própria máquina,
 > **como cliente do banco**: cadastro, contas, depósito, saque, transferência, extrato, dados pessoais, sessão e os
 > erros que o banco tem que dar. Contrato **3.1**. Nunca testou uma API? Comece pela Parte 0: cada palavra nova é
@@ -583,13 +596,13 @@ Content-Type: application/json
 
 {
   "nomeCompleto": "Cliente Novo do Insomnia",
-  "cpf": "202.166.565-83",
-  "email": "cliente.novo.mvo7cs9t@exemplo.test",
+  "cpf": "570.268.705-13",
+  "email": "cliente.novo.mvpc43j3@exemplo.test",
   "telefone": "(11) 99999-8888",
   "cep": "06020-010",
   "numero": "123",
   "complemento": "Apto 45",
-  "senha": "senha-do-novo-mvo7cs9t",
+  "senha": "senha-do-novo-mvpc43j3",
   "aceiteTermos": true
 }
 ```
@@ -600,10 +613,10 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+  "id": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
   "nomeCompleto": "Cliente Novo do Insomnia",
-  "cpf": "***.166.565-**",
-  "email": "cliente.novo.mvo7cs9t@exemplo.test",
+  "cpf": "***.268.705-**",
+  "email": "cliente.novo.mvpc43j3@exemplo.test",
   "telefone": "(11) 99999-8888",
   "endereco": {
     "cep": "06020-010",
@@ -616,7 +629,7 @@ Content-Type: application/json
     "complemento": "Apto 45"
   },
   "termosVersao": "2026-10-23",
-  "termosAceitosEm": "2026-10-25T19:10:05.463090600Z"
+  "termosAceitosEm": "2026-10-26T14:11:04.176097600Z"
 }
 ```
 
@@ -635,8 +648,8 @@ POST /auth/login
 Content-Type: application/json
 
 {
-  "cpf": "20216656583",
-  "senha": "senha-do-novo-mvo7cs9t"
+  "cpf": "57026870513",
+  "senha": "senha-do-novo-mvpc43j3"
 }
 ```
 
@@ -649,7 +662,7 @@ Content-Type: application/json
   "token": "eyJhbGciOiJIUzI1NiJ9...",
   "tipo": "Bearer",
   "expiraEmSegundos": 3600,
-  "clienteId": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+  "clienteId": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
   "perfil": "CLIENTE",
   "deveTrocarSenha": false,
   "refreshToken": "q3Jd0kX4...",
@@ -685,12 +698,12 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "f8f20d12-1acc-4243-bb4b-eb26fc777061",
-  "clienteId": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+  "id": "51938e99-d26b-4a37-9882-9f278035d216",
+  "clienteId": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
   "agencia": "0001",
-  "numeroConta": "95627243",
+  "numeroConta": "57320187",
   "tipoConta": "CORRENTE",
-  "saldo": 0,
+  "saldo": 0.00,
   "ativa": true
 }
 ```
@@ -723,12 +736,12 @@ Content-Type: application/json
 
 ```json
 {
-  "id": "7fc9c094-1f88-4e67-ac07-fdab6c69dd17",
-  "clienteId": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+  "id": "347408d4-0f49-44c0-b3b3-4d7e04641a9a",
+  "clienteId": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
   "agencia": "0001",
-  "numeroConta": "80543456",
+  "numeroConta": "87041332",
   "tipoConta": "POUPANCA",
-  "saldo": 0,
+  "saldo": 0.00,
   "ativa": true
 }
 ```
@@ -755,21 +768,21 @@ Authorization: Bearer {{ token_novo }}
 ```json
 [
   {
-    "id": "f8f20d12-1acc-4243-bb4b-eb26fc777061",
-    "clienteId": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+    "id": "51938e99-d26b-4a37-9882-9f278035d216",
+    "clienteId": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
     "agencia": "0001",
-    "numeroConta": "95627243",
+    "numeroConta": "57320187",
     "tipoConta": "CORRENTE",
-    "saldo": 0,
+    "saldo": 0.00,
     "ativa": true
   },
   {
-    "id": "7fc9c094-1f88-4e67-ac07-fdab6c69dd17",
-    "clienteId": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+    "id": "347408d4-0f49-44c0-b3b3-4d7e04641a9a",
+    "clienteId": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
     "agencia": "0001",
-    "numeroConta": "80543456",
+    "numeroConta": "87041332",
     "tipoConta": "POUPANCA",
-    "saldo": 0,
+    "saldo": 0.00,
     "ativa": true
   }
 ]
@@ -788,7 +801,7 @@ Authorization: Bearer {{ token_novo }}
 **Pedido**
 
 ```http
-POST /contas/f8f20d12-1acc-4243-bb4b-eb26fc777061/depositos
+POST /contas/51938e99-d26b-4a37-9882-9f278035d216/depositos
 Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
@@ -814,7 +827,7 @@ Idempotency-Key: <UUID novo a cada envio>
 **Pedido**
 
 ```http
-POST /contas/f8f20d12-1acc-4243-bb4b-eb26fc777061/saques
+POST /contas/51938e99-d26b-4a37-9882-9f278035d216/saques
 Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
@@ -848,9 +861,9 @@ Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
 
 {
-  "contaOrigemId": "f8f20d12-1acc-4243-bb4b-eb26fc777061",
-  "contaDestinoId": "7fc9c094-1f88-4e67-ac07-fdab6c69dd17",
-  "valor": 25,
+  "contaOrigemId": "51938e99-d26b-4a37-9882-9f278035d216",
+  "contaDestinoId": "347408d4-0f49-44c0-b3b3-4d7e04641a9a",
+  "valor": 25.00,
   "descricao": "Transferencia pelo Insomnia"
 }
 ```
@@ -881,21 +894,21 @@ Authorization: Bearer {{ token_novo }}
 ```json
 [
   {
-    "id": "f8f20d12-1acc-4243-bb4b-eb26fc777061",
-    "clienteId": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+    "id": "51938e99-d26b-4a37-9882-9f278035d216",
+    "clienteId": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
     "agencia": "0001",
-    "numeroConta": "95627243",
+    "numeroConta": "57320187",
     "tipoConta": "CORRENTE",
-    "saldo": 75,
+    "saldo": 75.00,
     "ativa": true
   },
   {
-    "id": "7fc9c094-1f88-4e67-ac07-fdab6c69dd17",
-    "clienteId": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+    "id": "347408d4-0f49-44c0-b3b3-4d7e04641a9a",
+    "clienteId": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
     "agencia": "0001",
-    "numeroConta": "80543456",
+    "numeroConta": "87041332",
     "tipoConta": "POUPANCA",
-    "saldo": 25,
+    "saldo": 25.00,
     "ativa": true
   }
 ]
@@ -914,7 +927,7 @@ Authorization: Bearer {{ token_novo }}
 **Pedido**
 
 ```http
-GET /contas/f8f20d12-1acc-4243-bb4b-eb26fc777061
+GET /contas/51938e99-d26b-4a37-9882-9f278035d216
 Authorization: Bearer {{ token_novo }}
 ```
 
@@ -924,12 +937,12 @@ Authorization: Bearer {{ token_novo }}
 
 ```json
 {
-  "id": "f8f20d12-1acc-4243-bb4b-eb26fc777061",
-  "clienteId": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+  "id": "51938e99-d26b-4a37-9882-9f278035d216",
+  "clienteId": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
   "agencia": "0001",
-  "numeroConta": "95627243",
+  "numeroConta": "57320187",
   "tipoConta": "CORRENTE",
-  "saldo": 75,
+  "saldo": 75.00,
   "ativa": true
 }
 ```
@@ -947,7 +960,7 @@ Do mais recente para o mais antigo. `valor` sempre positivo: se `contaDestinoId`
 **Pedido**
 
 ```http
-GET /contas/f8f20d12-1acc-4243-bb4b-eb26fc777061/lancamentos
+GET /contas/51938e99-d26b-4a37-9882-9f278035d216/lancamentos
 Authorization: Bearer {{ token_novo }}
 ```
 
@@ -958,22 +971,22 @@ Authorization: Bearer {{ token_novo }}
 ```json
 [
   {
-    "id": "0d27bb35-7554-4619-b482-3742f8e54875",
+    "id": "470cf309-109c-4bc6-bb94-90e38c4bf479",
     "tipoLancamento": "TRANSFERENCIA",
-    "valor": 25,
-    "contaOrigemId": "f8f20d12-1acc-4243-bb4b-eb26fc777061",
-    "contaDestinoId": "7fc9c094-1f88-4e67-ac07-fdab6c69dd17",
+    "valor": 25.00,
+    "contaOrigemId": "51938e99-d26b-4a37-9882-9f278035d216",
+    "contaDestinoId": "347408d4-0f49-44c0-b3b3-4d7e04641a9a",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-25T19:10:05.980780Z"
+    "dataHora": "2026-10-26T14:11:04.546494Z"
   },
   {
-    "id": "0fd998ce-0640-4d76-9e2b-6b11040abfb0",
+    "id": "21aaa7a6-4938-4d79-9e55-414d53c1d49a",
     "tipoLancamento": "SAQUE",
-    "valor": 50,
-    "contaOrigemId": "f8f20d12-1acc-4243-bb4b-eb26fc777061",
+    "valor": 50.00,
+    "contaOrigemId": "51938e99-d26b-4a37-9882-9f278035d216",
     "contaDestinoId": null,
     "descricao": "Saque pelo Insomnia",
-    "dataHora": "2026-10-25T19:10:05.939265Z"
+    "dataHora": "2026-10-26T14:11:04.518843Z"
   },
   "… mais 1 item no mesmo formato"
 ]
@@ -990,7 +1003,7 @@ Authorization: Bearer {{ token_novo }}
 **Pedido**
 
 ```http
-GET /contas/7fc9c094-1f88-4e67-ac07-fdab6c69dd17/lancamentos
+GET /contas/347408d4-0f49-44c0-b3b3-4d7e04641a9a/lancamentos
 Authorization: Bearer {{ token_novo }}
 ```
 
@@ -1001,13 +1014,13 @@ Authorization: Bearer {{ token_novo }}
 ```json
 [
   {
-    "id": "0d27bb35-7554-4619-b482-3742f8e54875",
+    "id": "470cf309-109c-4bc6-bb94-90e38c4bf479",
     "tipoLancamento": "TRANSFERENCIA",
-    "valor": 25,
-    "contaOrigemId": "f8f20d12-1acc-4243-bb4b-eb26fc777061",
-    "contaDestinoId": "7fc9c094-1f88-4e67-ac07-fdab6c69dd17",
+    "valor": 25.00,
+    "contaOrigemId": "51938e99-d26b-4a37-9882-9f278035d216",
+    "contaDestinoId": "347408d4-0f49-44c0-b3b3-4d7e04641a9a",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-25T19:10:05.980780Z"
+    "dataHora": "2026-10-26T14:11:04.546494Z"
   }
 ]
 ```
@@ -1047,7 +1060,7 @@ Authorization: Bearer {{ token_origem }}
     "agencia": "0001",
     "numeroConta": "900001",
     "tipoConta": "CORRENTE",
-    "saldo": 1000,
+    "saldo": 1000.00,
     "ativa": true
   }
 ]
@@ -1083,7 +1096,7 @@ Authorization: Bearer {{ token_origem }}
       "agencia": "0001",
       "numeroConta": "900001",
       "tipoConta": "CORRENTE",
-      "saldo": 1000,
+      "saldo": 1000.00,
       "ativa": true
     }
   ],
@@ -1169,7 +1182,7 @@ Idempotency-Key: <UUID novo a cada envio>
 {
   "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
   "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
-  "valor": 25,
+  "valor": 25.00,
   "descricao": "Transferencia pelo Insomnia"
 }
 ```
@@ -1202,22 +1215,22 @@ Authorization: Bearer {{ token_origem }}
 ```json
 [
   {
-    "id": "b0ddf069-d95f-43da-9a8d-3c3eaa96bdc8",
+    "id": "741ab800-cd83-42db-910e-fc6c054c136d",
     "tipoLancamento": "TRANSFERENCIA",
-    "valor": 25,
+    "valor": 25.00,
     "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
     "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-25T19:10:06.204893Z"
+    "dataHora": "2026-10-26T14:11:04.682891Z"
   },
   {
-    "id": "1c864724-fb0e-4380-90ab-16485718b6e3",
+    "id": "2283a605-5832-4f64-bca7-d565437a56da",
     "tipoLancamento": "SAQUE",
-    "valor": 50,
+    "valor": 50.00,
     "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
     "contaDestinoId": null,
     "descricao": "Saque pelo Insomnia",
-    "dataHora": "2026-10-25T19:10:06.177375Z"
+    "dataHora": "2026-10-26T14:11:04.669891Z"
   },
   "… mais 2 itens no mesmo formato"
 ]
@@ -1245,18 +1258,18 @@ Authorization: Bearer {{ token_destino }}
 ```json
 [
   {
-    "id": "b0ddf069-d95f-43da-9a8d-3c3eaa96bdc8",
+    "id": "741ab800-cd83-42db-910e-fc6c054c136d",
     "tipoLancamento": "TRANSFERENCIA",
-    "valor": 25,
+    "valor": 25.00,
     "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
     "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-25T19:10:06.204893Z"
+    "dataHora": "2026-10-26T14:11:04.682891Z"
   },
   {
     "id": "a0000000-0000-4000-8000-000000000125",
     "tipoLancamento": "DEPOSITO",
-    "valor": 500,
+    "valor": 500.00,
     "contaOrigemId": null,
     "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
     "descricao": "Saldo de boas-vindas do visitante",
@@ -1351,7 +1364,7 @@ Idempotency-Key: {{ chave_fixa }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:06.312933600Z",
+  "timestamp": "2026-10-26T14:11:04.741267Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "IDEMPOTENCIA_CHAVE_REUSADA",
@@ -1387,7 +1400,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:06.333981600Z",
+  "timestamp": "2026-10-26T14:11:04.754852800Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -1572,7 +1585,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:06.556624900Z",
+  "timestamp": "2026-10-26T14:11:04.960195400Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -1611,7 +1624,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:06.568625100Z",
+  "timestamp": "2026-10-26T14:11:04.969038500Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -1652,7 +1665,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:06.589154100Z",
+  "timestamp": "2026-10-26T14:11:04.981156700Z",
   "status": 409,
   "error": "Conflict",
   "codigo": "EMAIL_JA_CADASTRADO",
@@ -1689,7 +1702,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:06.696286400Z",
+  "timestamp": "2026-10-26T14:11:05.064232800Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SENHA_ATUAL_INCORRETA",
@@ -1715,8 +1728,8 @@ Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 
 {
-  "senhaAtual": "senha-do-novo-mvo7cs9t",
-  "novaSenha": "senha-do-novo-mvo7cs9t"
+  "senhaAtual": "senha-do-novo-mvpc43j3",
+  "novaSenha": "senha-do-novo-mvpc43j3"
 }
 ```
 
@@ -1726,7 +1739,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:06.863887200Z",
+  "timestamp": "2026-10-26T14:11:05.204793400Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SENHA_REPETIDA",
@@ -1754,8 +1767,8 @@ Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 
 {
-  "senhaAtual": "trocada-mvo7cu1g",
-  "novaSenha": "trocada-mvo7cu1g"
+  "senhaAtual": "senha-do-novo-mvpc43j3",
+  "novaSenha": "trocada-mvpc44ty"
 }
 ```
 
@@ -1784,7 +1797,7 @@ Authorization: Bearer {{ token_novo }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.118530700Z",
+  "timestamp": "2026-10-26T14:11:05.418136400Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "ACESSO_ALTERADO",
@@ -1809,8 +1822,8 @@ POST /auth/login
 Content-Type: application/json
 
 {
-  "cpf": "20216656583",
-  "senha": "trocada-mvo7cu1g"
+  "cpf": "57026870513",
+  "senha": "trocada-mvpc44ty"
 }
 ```
 
@@ -1823,7 +1836,7 @@ Content-Type: application/json
   "token": "eyJhbGciOiJIUzI1NiJ9...",
   "tipo": "Bearer",
   "expiraEmSegundos": 3600,
-  "clienteId": "9fa7ac9b-2d17-46f7-8919-62c0df7110d4",
+  "clienteId": "3dbe11aa-98bf-479e-96bc-d81bc32d11aa",
   "perfil": "CLIENTE",
   "deveTrocarSenha": false,
   "refreshToken": "q3Jd0kX4...",
@@ -1857,7 +1870,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.320608300Z",
+  "timestamp": "2026-10-26T14:11:05.568058400Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SENHA_INCORRETA",
@@ -1895,7 +1908,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.418608400Z",
+  "timestamp": "2026-10-26T14:11:05.647231900Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SALDO_NAO_ZERADO",
@@ -1918,7 +1931,7 @@ Dinheiro não some: antes de encerrar, o titular tira o saldo das contas (as da 
 **Pedido**
 
 ```http
-POST /contas/f8f20d12-1acc-4243-bb4b-eb26fc777061/saques
+POST /contas/51938e99-d26b-4a37-9882-9f278035d216/saques
 Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
@@ -1944,7 +1957,7 @@ Idempotency-Key: <UUID novo a cada envio>
 **Pedido**
 
 ```http
-POST /contas/7fc9c094-1f88-4e67-ac07-fdab6c69dd17/saques
+POST /contas/347408d4-0f49-44c0-b3b3-4d7e04641a9a/saques
 Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 Idempotency-Key: <UUID novo a cada envio>
@@ -1977,7 +1990,7 @@ Authorization: Bearer {{ token_novo }}
 Content-Type: application/json
 
 {
-  "senha": "trocada-mvo7cu1g"
+  "senha": "trocada-mvpc44ty"
 }
 ```
 
@@ -1987,8 +2000,8 @@ Content-Type: application/json
 
 ```json
 {
-  "encerradoEm": "2026-10-25T19:10:07.563353400Z",
-  "anonimizacaoPrevistaPara": "2031-10-25",
+  "encerradoEm": "2026-10-26T14:11:05.746382300Z",
+  "anonimizacaoPrevistaPara": "2031-10-26",
   "motivoDaRetencao": "Lei 9.613/1998, art. 10: cadastro e operacoes guardados pelo prazo legal depois do fim do relacionamento; em seguida, os dados pessoais sao anonimizados"
 }
 ```
@@ -2014,7 +2027,7 @@ Authorization: Bearer {{ token_novo }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.582507800Z",
+  "timestamp": "2026-10-26T14:11:05.757393700Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "ACESSO_ALTERADO",
@@ -2039,8 +2052,8 @@ POST /auth/login
 Content-Type: application/json
 
 {
-  "cpf": "20216656583",
-  "senha": "trocada-mvo7cu1g"
+  "cpf": "57026870513",
+  "senha": "trocada-mvpc44ty"
 }
 ```
 
@@ -2050,7 +2063,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.677696200Z",
+  "timestamp": "2026-10-26T14:11:05.829087500Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "CREDENCIAIS_INVALIDAS",
@@ -2084,7 +2097,7 @@ GET /contas
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.690567400Z",
+  "timestamp": "2026-10-26T14:11:05.834688900Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "AUTENTICACAO_NECESSARIA",
@@ -2117,7 +2130,7 @@ Authorization: Bearer {{ token_falso }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.698567800Z",
+  "timestamp": "2026-10-26T14:11:05.837685800Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "TOKEN_INVALIDO",
@@ -2153,7 +2166,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.788547200Z",
+  "timestamp": "2026-10-26T14:11:05.908826500Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "CREDENCIAIS_INVALIDAS",
@@ -2184,7 +2197,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.800546200Z",
+  "timestamp": "2026-10-26T14:11:05.917828500Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "PERFIL_SEM_PERMISSAO",
@@ -2215,7 +2228,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.811549100Z",
+  "timestamp": "2026-10-26T14:11:05.922827500Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "PERFIL_SEM_PERMISSAO",
@@ -2252,7 +2265,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.831328Z",
+  "timestamp": "2026-10-26T14:11:05.931827200Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "CONTA_DE_OUTRO_CLIENTE",
@@ -2283,7 +2296,7 @@ Authorization: Bearer {{ token_destino }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.847329Z",
+  "timestamp": "2026-10-26T14:11:05.940460400Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "CONTA_DE_OUTRO_CLIENTE",
@@ -2314,7 +2327,7 @@ Authorization: Bearer {{ token_destino }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.863494400Z",
+  "timestamp": "2026-10-26T14:11:05.949464800Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "CONTA_DE_OUTRO_CLIENTE",
@@ -2345,7 +2358,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.875493700Z",
+  "timestamp": "2026-10-26T14:11:05.954988900Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "PERFIL_SEM_PERMISSAO",
@@ -2382,7 +2395,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.890248900Z",
+  "timestamp": "2026-10-26T14:11:05.964058300Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SALDO_INSUFICIENTE",
@@ -2411,7 +2424,7 @@ Idempotency-Key: <UUID novo a cada envio>
 {
   "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
   "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
-  "valor": 999999
+  "valor": 999999.00
 }
 ```
 
@@ -2421,7 +2434,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.909179200Z",
+  "timestamp": "2026-10-26T14:11:05.976060500Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SALDO_INSUFICIENTE",
@@ -2450,7 +2463,7 @@ Idempotency-Key: <UUID novo a cada envio>
 {
   "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
   "contaDestinoId": "a0000000-0000-4000-8000-000000000114",
-  "valor": 1
+  "valor": 1.00
 }
 ```
 
@@ -2460,7 +2473,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.925503700Z",
+  "timestamp": "2026-10-26T14:11:05.986070500Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "MESMA_CONTA",
@@ -2491,7 +2504,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.939662900Z",
+  "timestamp": "2026-10-26T14:11:05.994172600Z",
   "status": 404,
   "error": "Not Found",
   "codigo": "CONTA_NAO_ENCONTRADA",
@@ -2522,7 +2535,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.954887700Z",
+  "timestamp": "2026-10-26T14:11:06.003363700Z",
   "status": 404,
   "error": "Not Found",
   "codigo": "CONTA_NAO_ENCONTRADA",
@@ -2553,7 +2566,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.974537Z",
+  "timestamp": "2026-10-26T14:11:06.011987100Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "PARAMETRO_INVALIDO",
@@ -2589,7 +2602,7 @@ Authorization: Bearer {{ token_origem }}
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:07.988244800Z",
+  "timestamp": "2026-10-26T14:11:06.019989200Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -2630,7 +2643,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.007240100Z",
+  "timestamp": "2026-10-26T14:11:06.028986200Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "JSON_INVALIDO",
@@ -2665,7 +2678,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.027191700Z",
+  "timestamp": "2026-10-26T14:11:06.037988500Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "JSON_INVALIDO",
@@ -2702,7 +2715,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.053186700Z",
+  "timestamp": "2026-10-26T14:11:06.051986700Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -2747,7 +2760,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.070070Z",
+  "timestamp": "2026-10-26T14:11:06.059986200Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -2755,12 +2768,12 @@ Content-Type: application/json
   "path": "/clientes",
   "campos": [
     {
-      "campo": "cep",
-      "mensagem": "cep é obrigatório"
-    },
-    {
       "campo": "email",
       "mensagem": "email inválido"
+    },
+    {
+      "campo": "nomeCompleto",
+      "mensagem": "nomeCompleto é obrigatório"
     },
     "… mais 5 itens no mesmo formato"
   ]
@@ -2784,7 +2797,7 @@ Content-Type: application/json
 {
   "nomeCompleto": "CPF Repetido",
   "cpf": "24681357928",
-  "email": "repetido.bba837c0-f647-4a29-a761-e43972d8cac2@exemplo.test",
+  "email": "repetido.7c5a1242-deaa-4f08-b42b-9adbc982c8dd@exemplo.test",
   "telefone": "11999998888",
   "cep": "01001000",
   "numero": "1",
@@ -2799,7 +2812,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.086587600Z",
+  "timestamp": "2026-10-26T14:11:06.068988Z",
   "status": 409,
   "error": "Conflict",
   "codigo": "CPF_JA_CADASTRADO",
@@ -2827,8 +2840,8 @@ Content-Type: application/json
 
 {
   "nomeCompleto": "Sem Aceite",
-  "cpf": "07461455869",
-  "email": "aceite.a44ded61-bb56-479f-b17b-7c6bd2ef5ec5@exemplo.test",
+  "cpf": "83534213130",
+  "email": "aceite.912b83f9-2377-4cb4-b55e-c3630fbea8e6@exemplo.test",
   "telefone": "11999998888",
   "cep": "01001000",
   "numero": "1",
@@ -2843,7 +2856,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.099256900Z",
+  "timestamp": "2026-10-26T14:11:06.075986800Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",
@@ -2876,8 +2889,8 @@ Content-Type: application/json
 
 {
   "nomeCompleto": "Termos Antigos",
-  "cpf": "95123630899",
-  "email": "termos.5514f967-fbdb-4560-b5e0-21e305224c52@exemplo.test",
+  "cpf": "42425713131",
+  "email": "termos.32025fdc-d581-4f28-8c77-7312045071cd@exemplo.test",
   "telefone": "11999998888",
   "cep": "01001000",
   "numero": "1",
@@ -2893,7 +2906,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.113330700Z",
+  "timestamp": "2026-10-26T14:11:06.084988Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "TERMOS_DESATUALIZADOS",
@@ -2921,8 +2934,8 @@ Content-Type: application/json
 
 {
   "nomeCompleto": "CEP Inexistente",
-  "cpf": "01893226247",
-  "email": "cep.6cad8077-052b-4b39-81ae-9466c852eeb9@exemplo.test",
+  "cpf": "43357980754",
+  "email": "cep.ac8e3db6-5ef4-48cf-b867-8199dcb2ea5f@exemplo.test",
   "telefone": "11999998888",
   "cep": "99999999",
   "numero": "1",
@@ -2937,7 +2950,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.269334900Z",
+  "timestamp": "2026-10-26T14:11:06.229086200Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "CEP_NAO_ENCONTRADO",
@@ -2975,7 +2988,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.281547500Z",
+  "timestamp": "2026-10-26T14:11:06.236086Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "PERFIL_SEM_PERMISSAO",
@@ -3140,7 +3153,7 @@ Authorization: Bearer {{ token_destino }}
     "agencia": "0001",
     "numeroConta": "900002",
     "tipoConta": "CORRENTE",
-    "saldo": 525,
+    "saldo": 525.00,
     "ativa": true
   }
 ]
@@ -3173,7 +3186,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.448187200Z",
+  "timestamp": "2026-10-26T14:11:06.349568300Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "SESSAO_EXPIRADA",
@@ -3208,7 +3221,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.464706700Z",
+  "timestamp": "2026-10-26T14:11:06.357577700Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "SESSAO_EXPIRADA",
@@ -3305,7 +3318,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.578352900Z",
+  "timestamp": "2026-10-26T14:11:06.444322400Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "SESSAO_EXPIRADA",
@@ -3359,7 +3372,7 @@ Content-Type: application/json
 
 ```json
 {
-  "timestamp": "2026-10-25T19:10:08.595302400Z",
+  "timestamp": "2026-10-26T14:11:06.453321300Z",
   "status": 400,
   "error": "Bad Request",
   "codigo": "CAMPOS_INVALIDOS",

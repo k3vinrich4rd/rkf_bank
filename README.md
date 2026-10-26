@@ -1062,7 +1062,7 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 ```
 
 Sobe com H2 em memória, sem `.env`, com duas contas fictícias prontas e segredo do JWT sorteado (ninguém forja token).
-Não existe admin nem conta da equipe nesse perfil. Guia de 5 minutos: **[VISITANTES.md](VISITANTES.md)**.
+Não existe admin nem conta da equipe nesse perfil. Guia de 15 minutos, 13 passos: **[VISITANTES.md](VISITANTES.md)**.
 
 | Quem | CPF (login) | Senha | Conta |
 |---|---|---|---|
