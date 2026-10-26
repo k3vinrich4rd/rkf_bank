@@ -207,15 +207,27 @@ function gerarTrilha() {
     contagem.set(prefixo, n);
     porId.set(`${prefixo}.${String(n).padStart(2, "0")}`, item);
   }
-  const saida = [
-    `> 🤖 Pedidos e respostas reais (ambiente **${ambiente}**), gerados por \`scripts/gerar-roteiro-e2e.mjs\`. ` +
-      "Ids, números de conta e datas mudam a cada execução; o **status** e o `codigo` não.\n",
-  ];
-  SO_PASSOS.forEach((id, i) => {
+  const passos = SO_PASSOS.map((id) => {
     const item = porId.get(id);
     if (!item) throw new Error(`passo ${id} não existe nesta execução`);
     const pasta = pastas.find((p) => p.name === item.pasta);
-    const req = requisicoes.find((r) => r.parentId === pasta?._id && r.name === item.nome);
+    return { item, req: requisicoes.find((r) => r.parentId === pasta?._id && r.name === item.nome) };
+  });
+  // Mapa da trilha: a ordem dos métodos HTTP, com a rota em forma de molde ({conta_origem_id}) e quem está logado.
+  const rota = (item, req) =>
+    (req?.url ?? item.caminho).replace(/\{\{\s*_\.base_url\s*\}\}/, "").replace(/\{\{\s*_\.(\w+)\s*\}\}/g, "{$1}");
+  const quem = (req) => req?.authentication?.type === "bearer" ? `\`${req.authentication.token.match(/_\.(\w+)/)?.[1]}\`` : "— (público)";
+  const saida = [
+    `> 🤖 Pedidos e respostas reais (ambiente **${ambiente}**), gerados por \`scripts/gerar-roteiro-e2e.mjs\`. ` +
+      "Ids, números de conta e datas mudam a cada execução; o **status** e o `codigo` não.\n",
+    "**A ordem, de uma olhada** (o detalhe de cada passo vem logo abaixo):\n",
+    "| Passo | Método | Rota | Crachá (token) | O que faz | Tem que voltar |",
+    "|:-:|:-:|---|---|---|:-:|",
+    ...passos.map(({ item, req }, i) =>
+      `| ${i + 1} | \`${item.metodo}\` | \`${rota(item, req)}\` | ${quem(req)} | ${item.nome.replace(/\|/g, "\\|")} | **${item.status}** |`),
+    "",
+  ];
+  passos.forEach(({ item, req }, i) => {
     const simples = (req?.description ?? "").split(/\n\s*\n/)[0].replace(/^💡 \*\*Em palavras simples:\*\*\s*/, "");
     saida.push(
       `### Passo ${i + 1} · ${item.nome}`, "",
