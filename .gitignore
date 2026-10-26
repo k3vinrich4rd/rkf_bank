@@ -39,6 +39,9 @@ build/
 .env
 .env.local
 .env.*.local
+# Variaveis de producao para docker run --env-file (backend/README_DEPLOY.md): segredo de verdade, nunca no Git
+deploy.env
+*.prod.env
 
 # properties files (local secrets)
 .application.properties

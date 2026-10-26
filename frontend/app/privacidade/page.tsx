@@ -64,13 +64,24 @@ export default function PrivacidadePage() {
         </p>
       </section>
       <section>
-        <h2>7. Contato</h2>
+        <h2>7. Encarregados e contato</h2>
         <p>
-          Dúvidas sobre os seus dados: abra uma{" "}
-          <a href="https://github.com/k3vinrich4rd/rkf_bank/issues" className="underline underline-offset-4">
-            issue no repositório do projeto
+          Os encarregados pelo tratamento de dados pessoais do RKF Bank (LGPD, art. 41) são <strong>Kevin Richard</strong>{" "}
+          e <strong>Renan Barros</strong>, idealizadores do projeto e responsáveis pela publicação do banco. São eles que
+          recebem os seus pedidos e dúvidas sobre dados pessoais e respondem à Autoridade Nacional de Proteção de Dados.
+        </p>
+        <p>
+          Ver, corrigir e encerrar o seu cadastro você faz sozinho, em <strong>Meus dados</strong>. Para qualquer outro
+          pedido, fale com os encarregados pelo GitHub:{" "}
+          <a href="https://github.com/k3vinrich4rd" className="underline underline-offset-4">
+            Kevin (@k3vinrich4rd)
           </a>{" "}
-          sem colocar dados pessoais nela. O canal oficial do encarregado será publicado aqui antes do lançamento.
+          ou{" "}
+          <a href="https://github.com/renanbarrostech-cmd" className="underline underline-offset-4">
+            Renan (@renanbarrostech-cmd)
+          </a>
+          . Não coloque dados pessoais em mensagens públicas (como as issues do repositório): diga só o que precisa, e a
+          resposta segue por um canal privado.
         </p>
       </section>
     </DocumentoLegal>

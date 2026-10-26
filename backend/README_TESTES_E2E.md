@@ -217,16 +217,22 @@ senha em si.
 ### 1.5 📖 Swagger: a lista de todas as rotas, no navegador
 
 Com a API no ar, abra http://localhost:8080/swagger-ui.html. É o "cardápio" da API: cada rota com os campos que ela
-recebe e devolve, gerado a partir do próprio código (então nunca fica desatualizado). Para testar por ali:
+recebe e devolve, gerado a partir do próprio código (então nunca fica desatualizado). Os **exemplos já vêm
+preenchidos** com as contas públicas da Ana e do Bruno: no perfil `visitante`, é só clicar.
 
-1. Abra **Autenticação → `POST /auth/login`** → **Try it out** → troque o corpo por
-   `{ "cpf": "24681357928", "senha": "Visitante@2026" }` → **Execute**.
+1. **Autenticação → `POST /auth/login`** → **Try it out** → **Execute** (o corpo já traz o CPF e a senha da Ana) → `200`.
 2. Copie o valor de `token` da resposta (sem as aspas).
-3. Clique em **Authorize** 🔓 (no alto, à direita), cole o token e **Authorize** → **Close**.
-4. Agora qualquer rota protegida funciona: **`GET /contas`** → **Try it out** → **Execute** → as contas da Ana.
+3. Clique em **Authorize** 🔓 (no alto, à direita), cole o token e **Authorize** → **Close**: os cadeados fecham 🔒.
+4. **`GET /contas`** → **Try it out** → **Execute** → `200` com a conta da Ana.
+5. **`POST /contas/{contaId}/depositos`** → **Try it out** → **Execute**: a conta, o `Idempotency-Key` e o valor já vêm
+   preenchidos → `204`. **Execute** de novo → `204` com `idempotency-replayed: true` (não depositou duas vezes).
+   Para um depósito novo, troque a chave por outro UUID (`node -e "console.log(crypto.randomUUID())"`).
+6. Cada rota lista embaixo todas as respostas possíveis (`201`, `204`, `400`, `401`, `403`, `404`, `409`, `422`) com o
+   formato do erro: é o jeito mais rápido de saber "o que essa rota pode me devolver".
 
 O mesmo cardápio em formato de máquina (o **OpenAPI**, em JSON) está em http://localhost:8080/v3/api-docs: é o
-arquivo que ferramentas como o Insomnia e o Postman importam para montar requisições sozinhas.
+arquivo que ferramentas como o Insomnia e o Postman importam para montar requisições sozinhas. Na versão publicada
+(perfil `prod`) os dois ficam **fechados** (`404`), de propósito.
 
 ### 1.6 Importar a coleção no Insomnia
 

@@ -6,6 +6,13 @@ Escreva seu recado no topo. Quando resolver, marque `[x]` e escreva a resposta e
 
 ---
 
+- [ ] Kevin → Renan (26/10): **a API já tem imagem Docker e perfil `prod`; falta o site entrar na publicação.** Branch `feature/deploy-mvp`. Guia completo em `backend/README_DEPLOY.md`.
+  1. **Proposta de onde publicar** (decidimos juntos): site na **Vercel** (publica o Next direto, sem imagem; Root Directory `frontend`, variável `API_URL` com o endereço da API). API no Render Free (grátis, dorme após 15 min) ou no Railway (~US$ 5/mês, sempre ligado).
+  2. **Se for o Render Free:** a primeira requisição depois de 15 min parada leva ~1 min. Dá para mostrar "acordando o servidor..." no login e no cadastro em vez do erro genérico de conexão?
+  3. **LGPD (feito, revise):** nós dois somos os encarregados e os responsáveis pela publicação. Escrevi a seção 7 de `app/privacidade/page.tsx` (contato pelo GitHub de cada um), o aviso de `components/legal/documento-legal.tsx` e subi os termos para `2026-10-26` (`lib/legal/termos.ts` e `LGPD_TERMOS_VERSAO` da API). Se preferir um e-mail dedicado, trocamos o contato.
+  4. **Cadastro:** um lembrete "use dados fictícios" na tela (hoje só a landing avisa que é portfólio).
+  5. **Action nova `e2e.yml`:** a cada PR que mexe no front ou na API, o CI sobe a API (visitante) e o build de produção do site e roda `scripts/e2e-site.mjs` (páginas, login pelo site, cookie e conta pelo proxy). Se mudar uma rota de página ou o login, ajuste o script junto.
+
 - [ ] Kevin → Renan (26/10): **faltam 5 dias para o MVP: o que depende de você e o que mudou nos testes.** Resumo em `planing/analise-mvp.md` → "Revisão de 26/10".
   1. **Situação:** o #69 (dependências do front) entrou na `develop` e os PRs do Dependabot #62, #64, #65 e #66 foram fechados. Só ficou aberto o **#70 (`develop` → `main`)**, para a nossa reunião.
   2. **Preciso de você até quarta (28/10), para não perder o 31/10:**
