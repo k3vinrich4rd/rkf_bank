@@ -32,6 +32,9 @@ if (!REGISTRO || !SAIDA) {
 // Um roteiro pode ter vários blocos (ex.: o ADMIN primeiro e o cliente depois); sem --bloco, o bloco único de sempre.
 const BLOCO = opcao("--bloco", null);
 const SO_PASTAS = opcao("--pastas", null)?.split(",");
+// --passos 01.01,03.03,...: modo "trilha" — só esses passos (pasta.posição na execução), na ordem dada, em cartões
+// numerados e curtos (onde clicar, o que mandar, o que volta e uma caixinha). É o formato dos guias de primeira vez.
+const SO_PASSOS = opcao("--passos", null)?.split(",");
 const INICIO = BLOCO ? `<!-- roteiro-gerado:${BLOCO}:inicio -->` : "<!-- roteiro-gerado:inicio -->";
 const FIM = BLOCO ? `<!-- roteiro-gerado:${BLOCO}:fim -->` : "<!-- roteiro-gerado:fim -->";
 
@@ -194,6 +197,38 @@ if (ini < 0 || fim < ini) {
   console.error(`${SAIDA} precisa ter os marcadores ${INICIO} e ${FIM} onde o passo a passo entra`);
   process.exit(1);
 }
-const novo = texto.slice(0, ini + INICIO.length) + "\n" + gerar() + "\n" + texto.slice(fim);
+// Modo trilha: cada passo vira um cartão curto. Só o 💡 da descrição entra; o texto técnico fica no roteiro completo.
+function gerarTrilha() {
+  const porId = new Map();
+  const contagem = new Map();
+  for (const item of registro) {
+    const prefixo = item.pasta.slice(0, 2);
+    const n = (contagem.get(prefixo) ?? 0) + 1;
+    contagem.set(prefixo, n);
+    porId.set(`${prefixo}.${String(n).padStart(2, "0")}`, item);
+  }
+  const saida = [
+    `> 🤖 Pedidos e respostas reais (ambiente **${ambiente}**), gerados por \`scripts/gerar-roteiro-e2e.mjs\`. ` +
+      "Ids, números de conta e datas mudam a cada execução; o **status** e o `codigo` não.\n",
+  ];
+  SO_PASSOS.forEach((id, i) => {
+    const item = porId.get(id);
+    if (!item) throw new Error(`passo ${id} não existe nesta execução`);
+    const pasta = pastas.find((p) => p.name === item.pasta);
+    const req = requisicoes.find((r) => r.parentId === pasta?._id && r.name === item.nome);
+    const simples = (req?.description ?? "").split(/\n\s*\n/)[0].replace(/^💡 \*\*Em palavras simples:\*\*\s*/, "");
+    saida.push(
+      `### Passo ${i + 1} · ${item.nome}`, "",
+      `📂 Insomnia: **${item.pasta}** → **${item.nome}** → **Send**`, "",
+      ...(simples ? [`💡 ${limpar(simples)}`, ""] : []),
+      "**Você manda**", "", blocoPedido(item, req), "",
+      "**Tem que voltar**", "", blocoResposta(item), "",
+      "- [ ] voltou igual", "",
+    );
+  });
+  return saida.join("\n");
+}
+
+const novo = texto.slice(0, ini + INICIO.length) + "\n" + (SO_PASSOS ? gerarTrilha() : gerar()) + "\n" + texto.slice(fim);
 writeFileSync(SAIDA, crlf ? novo.replace(/\n/g, "\r\n") : novo);
 console.log(`✅ ${registro.length} passos → ${SAIDA}`);
