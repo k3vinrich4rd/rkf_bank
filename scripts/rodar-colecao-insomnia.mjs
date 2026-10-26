@@ -94,9 +94,11 @@ for (const pasta of pastas) {
     const headers = Object.fromEntries(r.headers.map((h) => [h.name, renderizar(h.value)]));
     if (r.authentication?.type === "bearer") headers.Authorization = `Bearer ${renderizar(r.authentication.token)}`;
     const url = renderizar(r.url);
+    // Renderiza o corpo uma vez só: o script de depois pode mudar as variáveis (ex.: a senha trocada).
+    const corpo = r.body?.text ? renderizar(r.body.text) : undefined;
     let resposta;
     try {
-      const http = await fetch(url, { method: r.method, headers, body: r.body?.text ? renderizar(r.body.text) : undefined });
+      const http = await fetch(url, { method: r.method, headers, body: corpo });
       resposta = { status: http.status, headers: http.headers, corpo: await http.text() };
     } catch (e) {
       console.log(`  ❌ ${r.name}: API fora do ar em ${url} (${e.cause?.code ?? e.message})`);
@@ -111,7 +113,7 @@ for (const pasta of pastas) {
     if (REGISTRAR) {
       registro.push({
         pasta: pasta.name, nome: r.name, metodo: r.method, caminho: url.replace(env.base_url, ""),
-        headers: Object.keys(headers), corpo: cortarTokens(r.body?.text ? renderizar(r.body.text) : ""),
+        headers: Object.keys(headers), corpo: cortarTokens(corpo ?? ""),
         status: resposta.status, repetida: resposta.headers.get("Idempotency-Replayed"), resposta: cortarTokens(resposta.corpo),
       });
     }
