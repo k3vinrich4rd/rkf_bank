@@ -60,7 +60,8 @@ Não precisa de Docker nem de `.env`: o perfil `visitante` usa um banco em memó
 > 💡 **O que é cada coisa:** uma *requisição* é um pedido para o banco (ex.: "deposite R$ 150"). O banco devolve um
 > **status** (um número: `200`/`201`/`204` = deu certo; `4xx` = o banco recusou de propósito) e, às vezes, um JSON com
 > os dados. Você só precisa comparar o **status** e os campos principais com o que está em "Tem que voltar".
-> Ids e datas mudam a cada execução, e o Insomnia mostra `1000.00` onde aqui aparece `1000`: é o mesmo valor.
+> Os exemplos saíram de uma API recém-ligada, seguindo estes 13 passos na ordem: fazendo igual, os saldos batem.
+> Só mudam as datas (`dataHora`) e os ids dos lançamentos novos.
 
 | Método | Quer dizer | Nos passos |
 |:-:|---|---|
@@ -217,7 +218,7 @@ Authorization: Bearer {{ token_origem }}
     "agencia": "0001",
     "numeroConta": "900001",
     "tipoConta": "CORRENTE",
-    "saldo": 1000,
+    "saldo": 1000.00,
     "ativa": true
   }
 ]
@@ -294,7 +295,7 @@ Idempotency-Key: <UUID novo a cada envio>
 {
   "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
   "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
-  "valor": 25,
+  "valor": 25.00,
   "descricao": "Transferencia pelo Insomnia"
 }
 ```
@@ -325,22 +326,22 @@ Authorization: Bearer {{ token_origem }}
 ```json
 [
   {
-    "id": "22ba5e1d-2e68-4d6e-9b89-c5126acdf1be",
+    "id": "5df1409b-d68c-47eb-b35d-6d0507ad3108",
     "tipoLancamento": "TRANSFERENCIA",
-    "valor": 25,
+    "valor": 25.00,
     "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
     "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-26T13:14:08.012722Z"
+    "dataHora": "2026-10-26T14:10:33.262486Z"
   },
   {
-    "id": "9d064e76-dc53-46a1-bd09-4a8e923b2a59",
+    "id": "62106082-bdd0-4659-81f4-0b46a7693b48",
     "tipoLancamento": "SAQUE",
-    "valor": 50,
+    "valor": 50.00,
     "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
     "contaDestinoId": null,
     "descricao": "Saque pelo Insomnia",
-    "dataHora": "2026-10-26T13:14:08.000726Z"
+    "dataHora": "2026-10-26T14:10:33.233973Z"
   },
   "… mais 2 itens no mesmo formato"
 ]
@@ -368,18 +369,18 @@ Authorization: Bearer {{ token_destino }}
 ```json
 [
   {
-    "id": "22ba5e1d-2e68-4d6e-9b89-c5126acdf1be",
+    "id": "5df1409b-d68c-47eb-b35d-6d0507ad3108",
     "tipoLancamento": "TRANSFERENCIA",
-    "valor": 25,
+    "valor": 25.00,
     "contaOrigemId": "a0000000-0000-4000-8000-000000000114",
     "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
     "descricao": "Transferencia pelo Insomnia",
-    "dataHora": "2026-10-26T13:14:08.012722Z"
+    "dataHora": "2026-10-26T14:10:33.262486Z"
   },
   {
     "id": "a0000000-0000-4000-8000-000000000125",
     "tipoLancamento": "DEPOSITO",
-    "valor": 500,
+    "valor": 500.00,
     "contaOrigemId": null,
     "contaDestinoId": "a0000000-0000-4000-8000-000000000124",
     "descricao": "Saldo de boas-vindas do visitante",
@@ -460,7 +461,7 @@ GET /contas
 
 ```json
 {
-  "timestamp": "2026-10-26T13:14:09.100821900Z",
+  "timestamp": "2026-10-26T14:10:33.340995600Z",
   "status": 401,
   "error": "Unauthorized",
   "codigo": "AUTENTICACAO_NECESSARIA",
@@ -491,7 +492,7 @@ Authorization: Bearer {{ token_destino }}
 
 ```json
 {
-  "timestamp": "2026-10-26T13:14:09.198146300Z",
+  "timestamp": "2026-10-26T14:10:33.358510400Z",
   "status": 403,
   "error": "Forbidden",
   "codigo": "CONTA_DE_OUTRO_CLIENTE",
@@ -528,7 +529,7 @@ Idempotency-Key: <UUID novo a cada envio>
 
 ```json
 {
-  "timestamp": "2026-10-26T13:14:09.217664300Z",
+  "timestamp": "2026-10-26T14:10:33.374543400Z",
   "status": 422,
   "error": "Unprocessable Entity",
   "codigo": "SALDO_INSUFICIENTE",
