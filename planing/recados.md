@@ -14,7 +14,7 @@ Escreva seu recado no topo. Quando resolver, marque `[x]` e escreva a resposta e
      - (c) quem é o **encarregado LGPD** e o e-mail de contato (seção 7 de `app/privacidade/page.tsx`): é o último débito 🔴.
   3. **Testes mais simples (é o que mais mudou):** a API ganhou **trilhas curtas** no lugar de começar pelos roteiros de milhares de linhas. Cada passo diz onde clicar no Insomnia, o que vai, o que tem que voltar, e tem uma caixinha:
      - público: `VISITANTES.md` (13 passos, Ana e Bruno);
-     - equipe: `.equipe/testes/ROTEIRO_CLIENTE.md` (36 passos, todas as funções do cliente) e `ROTEIRO_ADMIN.md` (25 passos). `git -C .equipe pull` para pegar.
+     - equipe: um documento só, `.equipe/testes/TESTES_API.md`: Parte 1 prepara (`.env` pronto, H2 ou Docker, VM options no IntelliJ), Parte 2 é o ADMIN (25 passos) e Parte 3 o cliente (36 passos, todas as funções). O `BACKEND_E2E.md` (5 mil linhas) saiu. `git -C .equipe pull` e **reimporte a coleção da equipe**: ela agora usa o ADMIN padrão do `.env` da equipe (antes saía com o admin da minha máquina e dava 401 na sua).
      - Os roteiros longos continuam como referência. Saem de uma execução real (`node scripts/gerar-roteiro-e2e.mjs --passos ...`), então não divergem da API.
   4. **Para você decidir:** quer o mesmo formato curto para o `frontend/README_TESTES_E2E.md` (as telas)? Anotei como débito 🟢 na sua área. Se quiser, eu gero a primeira versão e você revisa.
   5. **Arrumei a lista:** marquei como resolvidos os recados de 20 a 22/10 que você confirmou no seu de 22/10. Continuam abertos para você: os de 23/10 e 25/10 (revisão do contrato 3.0/3.1, das CVEs e das dependências) e o de 15/10 (recriar o MySQL local uma vez; se já fez, é só marcar `[x]`).

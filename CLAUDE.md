@@ -37,7 +37,8 @@ scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do D
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe     # equipe sem Docker (H2 + Fellipe e Renan; segredos do .env)
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
 node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 83/83 visitante, 119/119 equipe (a pública não tem o ADMIN)
-node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou rota ou payload? mude aqui); --equipe gera a privada em .equipe/
+node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou rota ou payload? mude aqui); --equipe gera a privada em .equipe/ com o .env padrão do guia da equipe
+node scripts/gerar-roteiro-e2e.mjs       # passos dos guias de teste a partir de uma execução real (--registrar); --passos gera a trilha curta (VISITANTES.md, .equipe/testes/TESTES_API.md)
 node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas (OSV.dev) no Maven e no pnpm-lock
 node scripts/gerar-svgs-readme.mjs  # regera os SVGs animados do README (assets/readme/) com o número atual de testes e migrações
