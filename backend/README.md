@@ -45,7 +45,7 @@ Os scripts de shell que usam as variáveis (`scripts/testar-no-mysql.sh`, `docke
 Conferindo: `curl -s http://localhost:8080/actuator/health` → `{"status":"UP",...}` e
 `curl -i http://localhost:8080/contas` → `401` (a API está no ar e exige login). Nos perfis com H2, o banco abre no
 navegador em `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:rkfbank-visitante` ou `rkfbank-equipe`,
-usuário `sa`, senha vazia; [guia, 1.5](README_TESTES_E2E.md#15-ver-o-banco)). Para as rotas protegidas, faça
+usuário `sa`, senha vazia; [guia, 1.4](README_TESTES_E2E.md#14-ver-o-banco-por-dentro-opcional)). Para as rotas protegidas, faça
 `POST /auth/login` e mande `Authorization: Bearer <token>` em toda chamada, e `Idempotency-Key` nas movimentações
 ([contrato](README_CONTRATO_API.md#autenticação-jwt) e
 [guia, seção 18](README_TESTES_E2E.md#18-como-a-segurança-funciona-spring-security--oauth2--jwt)).

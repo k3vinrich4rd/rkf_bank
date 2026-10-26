@@ -1,5 +1,14 @@
 # 🧪 Como testar o RKF Bank (API) — do zero, com pedido e resposta de cada passo
 
+| | |
+|---|---|
+| 🎯 **Para que serve** | **referência completa** da API como cliente: as 83 requisições da coleção pública, com cada conceito explicado |
+| 👥 **Área responsável** | 🟦 **Backend** (a API) · público |
+| ⏰ **Quando usar** | depois do [VISITANTES.md](../VISITANTES.md), para ir além ou entender um resultado |
+| 🧰 **Como** | Insomnia + coleção pública, perfil `visitante` |
+| 🚫 **Não cobre** | o ADMIN (só a equipe testa) · as telas → [frontend/README_TESTES_E2E.md](../frontend/README_TESTES_E2E.md) |
+
+
 > 👉 **Primeira vez? Comece pelo [VISITANTES.md](../VISITANTES.md):** 13 passos, 15 minutos, só o essencial (login,
 > depósito, saque, transferência, extrato e três proteções). Este guia é a **referência completa**: todas as 83
 > requisições da coleção, com cada conceito explicado. Use quando quiser ir além ou entender um resultado.

@@ -1,5 +1,14 @@
 # 👋 Teste o RKF Bank em 15 minutos
 
+| | |
+|---|---|
+| 🎯 **Para que serve** | ver o banco funcionando em 15 minutos: **só o essencial** de um cliente |
+| 👥 **Área responsável** | 🟦 **Backend** (a API) · para visitantes, recrutadores e curiosos |
+| ⏰ **Quando usar** | primeira vez no projeto |
+| 🧰 **Como** | Insomnia + coleção pública, perfil `visitante` (H2, sem Docker e sem `.env`) |
+| 🚫 **Não cobre** | o ADMIN (só a equipe testa) · as telas → [frontend/README_TESTES_E2E.md](frontend/README_TESTES_E2E.md) · tudo o que o cliente faz → [backend/README_TESTES_E2E.md](backend/README_TESTES_E2E.md) |
+
+
 Você chegou pelo GitHub e quer ver o banco funcionando? Aqui está **só o necessário**: você entra como a **Ana**,
 manda dinheiro para o **Bruno**, confere o extrato e vê três proteções do banco em ação. Sem Docker, sem `.env`,
 sem cadastrar nada, e você **não digita nenhum dado**: a coleção do Insomnia já vem preenchida.
