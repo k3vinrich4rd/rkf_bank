@@ -22,6 +22,11 @@ RUN ./mvnw -B -ntp package -DskipTests -Djacoco.skip=true \
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 
+# Liga a imagem ao repositorio no ghcr.io: sem este rotulo, o GITHUB_TOKEN do Actions nao tem permissao para
+# criar o pacote (o push termina em "denied"), e a pagina do pacote nao mostra de onde ele veio.
+LABEL org.opencontainers.image.source="https://github.com/k3vinrich4rd/rkf_bank" \
+      org.opencontainers.image.description="API do RKF Bank (perfil prod)"
+
 # Usuario sem privilegio: se alguem explorar a API, nao vira root dentro do container.
 RUN groupadd --system rkfbank && useradd --system --gid rkfbank --no-create-home rkfbank
 COPY --from=build --chown=rkfbank:rkfbank /app/app.jar app.jar
