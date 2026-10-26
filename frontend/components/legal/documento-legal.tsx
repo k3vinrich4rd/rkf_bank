@@ -25,8 +25,8 @@ export function DocumentoLegal({ titulo, resumo, children }: DocumentoLegalProps
         Versão <span className="font-mono">{TERMOS_VERSAO}</span> · publicada em {TERMOS_DATA_EXTENSO}
       </p>
       <p role="note" className="mt-6 rounded-lg border border-border px-4 py-3 text-sm text-muted-foreground">
-        O RKF Bank é um projeto de estudo: não movimenta dinheiro de verdade. Este texto é um rascunho que o time ainda
-        revisa antes do lançamento (o encarregado de dados e o canal de contato oficial estão sendo definidos).
+        O RKF Bank é um projeto de estudo: não movimenta dinheiro de verdade. Use dados fictícios sempre que puder.
+        Encarregados pelos dados pessoais: Kevin Richard e Renan Barros (seção 7 da Política de Privacidade).
       </p>
       <div className="mt-10 flex flex-col gap-8 leading-relaxed [&_h2]:text-xl [&_h2]:font-semibold [&_li]:ml-5 [&_li]:list-disc [&_section]:flex [&_section]:flex-col [&_section]:gap-3">
         {children}

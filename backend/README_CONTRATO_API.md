@@ -163,7 +163,7 @@ não existe "conta ou cadastro de outro" para pedir). Rotas que não estão nest
   "complemento": "Apto 45",
   "senha": "minha-senha-forte",
   "aceiteTermos": true,
-  "termosVersao": "2026-10-23"
+  "termosVersao": "2026-10-26"
 }
 ```
 
@@ -187,7 +187,7 @@ não existe "conta ou cadastro de outro" para pedir). Rotas que não estão nest
   O front pode mostrar o valor da resposta como está; não precisa normalizar antes de enviar.
 - **Endereço:** logradouro, bairro, cidade, UF e IBGE vêm do **ViaCEP**, não do usuário.
 - **Tempo:** a consulta ao ViaCEP tem timeout de **3 segundos** — mostre um *loading* no botão.
-- **Termos:** `GET /termos` (público) → `200` `{"versao": "2026-10-23"}`. O backend grava a versão e o momento do
+- **Termos:** `GET /termos` (público) → `200` `{"versao": "2026-10-26"}`. O backend grava a versão e o momento do
   aceite no cadastro (`termos_versao`, `termos_aceitos_em`); a versão muda pela configuração `rkfbank.lgpd.termos-versao`.
 
 **Resposta `201 Created`:**
@@ -209,8 +209,8 @@ não existe "conta ou cadastro de outro" para pedir). Rotas que não estão nest
     "numero": "123",
     "complemento": "Apto 45"
   },
-  "termosVersao": "2026-10-23",
-  "termosAceitosEm": "2026-10-23T14:02:11.483Z"
+  "termosVersao": "2026-10-26",
+  "termosAceitosEm": "2026-10-26T14:02:11.483Z"
 }
 ```
 

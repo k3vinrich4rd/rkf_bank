@@ -767,6 +767,14 @@ function ambientes({ equipeSenha, adminCpf, adminSenha }) {
       conta_destino_id: "5eed0000-0000-4000-8000-000000000024",
       admin_cpf: adminCpf, admin_senha: adminSenha,
     },
+    prod: {
+      // Perfil prod no container local (Dockerfile, porta 8081): banco vazio, sem Fellipe, Renan, Ana ou Bruno.
+      // Só o ADMIN (mesmo do .env da equipe) e os clientes que os testes cadastram. Roteiro: .equipe/testes/PROD_E2E.md.
+      base_url: "http://localhost:8081",
+      cpf_origem: "", cpf_destino: "", senha_clientes: "", email_destino: "",
+      conta_origem_id: "", conta_destino_id: "",
+      admin_cpf: adminCpf, admin_senha: adminSenha,
+    },
   };
 }
 
@@ -806,6 +814,9 @@ function montar(valores, publica) {
     recursos.push({
       _id: "env_rkfbank_equipe", _type: "environment", parentId: "env_rkfbank_base", name: "Equipe (MySQL ou H2, Fellipe e Renan)",
       data: amb.equipe, color: "#1565c0", metaSortKey: 2,
+    }, {
+      _id: "env_rkfbank_prod", _type: "environment", parentId: "env_rkfbank_base", name: "Prod (Docker local, banco vazio)",
+      data: amb.prod, color: "#c62828", metaSortKey: 3,
     });
   }
   pastasDa(publica).forEach((pasta) => {
@@ -828,11 +839,20 @@ function montar(valores, publica) {
   return { _type: "export", __export_format: 4, __export_source: "rkfbank.gerar-colecao-insomnia", resources: recursos };
 }
 
+// A coleção da equipe usa o .env PADRÃO da equipe (bloco dotenv da seção 1 do guia privado), não o .env pessoal de
+// quem roda o script: senão o "Login · ADMIN" sai com o admin de uma máquina e dá 401 na dos outros.
+// Sem o guia, cai no .env da raiz.
 function lerEnv() {
+  const guia = join(RAIZ, ".equipe", "GUIA_TESTES_EQUIPE.md");
   const arquivo = join(RAIZ, ".env");
-  if (!existsSync(arquivo)) throw new Error("--equipe precisa do .env na raiz (EQUIPE_SENHA, ADMIN_CPF, ADMIN_SENHA)");
+  let texto;
+  if (existsSync(guia)) {
+    texto = readFileSync(guia, "utf8").replace(/\r\n/g, "\n").split(/^## 1\./m)[1]?.match(/```dotenv\n([\s\S]*?)```/)?.[1];
+  }
+  if (!texto && existsSync(arquivo)) texto = readFileSync(arquivo, "utf8");
+  if (!texto) throw new Error("--equipe precisa do guia da equipe (.equipe) ou do .env na raiz (EQUIPE_SENHA, ADMIN_CPF, ADMIN_SENHA)");
   const valores = {};
-  for (const linha of readFileSync(arquivo, "utf8").split(/\r?\n/)) {
+  for (const linha of texto.split(/\r?\n/)) {
     const m = linha.match(/^\s*([A-Z_]+)\s*=\s*(.*)\s*$/);
     if (m) valores[m[1]] = m[2].replace(/^["']|["']$/g, "");
   }
@@ -897,6 +917,7 @@ function montarV5(valores, publica) {
         { name: "Visitante (H2, Ana e Bruno)", meta: meta("env_rkfbank_visitante", { isPrivate: false, sortKey: 1 }), data: amb.visitante, color: "#2e7d32" },
         ...(publica ? [] : [
           { name: "Equipe (MySQL ou H2, Fellipe e Renan)", meta: meta("env_rkfbank_equipe", { isPrivate: false, sortKey: 2 }), data: amb.equipe, color: "#1565c0" },
+          { name: "Prod (Docker local, banco vazio)", meta: meta("env_rkfbank_prod", { isPrivate: false, sortKey: 3 }), data: amb.prod, color: "#c62828" },
         ]),
       ],
     },

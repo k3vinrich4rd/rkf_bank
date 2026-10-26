@@ -17,7 +17,7 @@ O cliente consegue:
 
 - **Backend:** tudo do MVP pronto e testado (307 testes, 7 no MySQL real com Testcontainers), com refresh token, aceite LGPD, `GET /contas/{contaId}` e Swagger.
 - **Frontend:** todas as telas do MVP, renovação de sessão, aceite dos termos, seletor de conta e 31 testes (Vitest) com CI próprio.
-- **Antes de ir ao ar:** decidir onde publicar, perfil `prod`, encarregado LGPD e o teste do Fellipe. Análise completa em [analise-mvp.md](analise-mvp.md).
+- **Antes de ir ao ar:** decidir onde publicar (proposta em `backend/README_DEPLOY.md`), e o teste do Fellipe. Encarregados LGPD: Kevin e Renan (26/10). Perfil `prod` e `Dockerfile` prontos (26/10). Análise completa em [analise-mvp.md](analise-mvp.md).
 
 ---
 
@@ -50,8 +50,8 @@ O cliente consegue:
 ## Semana 4 (26/10 a 31/10) — Testar e lançar
 
 - [x] LGPD mínimo: política de privacidade e aceite dos termos (V10, contrato 3.1)
-- [ ] LGPD: definir o encarregado e o canal de contato
-- [ ] Fellipe (idealizador e primeiro cliente) testa tudo (roteiro em `backend/README_TESTES_E2E.md`)
+- [x] LGPD: encarregados Kevin e Renan, publicados na política (26/10)
+- [ ] Fellipe (idealizador e primeiro cliente) testa tudo (roteiros em `.equipe/testes/`: `BACKEND_E2E.md` e `FRONTEND_E2E.md`)
 - [ ] Corrigir bugs
 - [ ] Colocar no ar
 - [ ] Atualizar o README com link e prints

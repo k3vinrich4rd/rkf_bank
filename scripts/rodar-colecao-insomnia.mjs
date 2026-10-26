@@ -5,6 +5,7 @@
 //   node scripts/rodar-colecao-insomnia.mjs --ambiente equipe --arquivo .equipe/testes/rkfbank-equipe.insomnia.json
 //   ... --base-url http://localhost:8081    (outra porta)    ... --pasta 03   (só as pastas que começam com "03")
 //   ... --registrar saida.json   (grava cada pedido e resposta reais, com tokens cortados: base dos roteiros E2E)
+//   ... --passos 01.03,02.01     (só esses passos, nessa ordem: a ordem de um roteiro; 03.05 = 5ª da pasta 03)
 //
 // Imita só o que a coleção usa do Insomnia: {{ _.variavel }}, {% uuid 'v4' %}, Auth Bearer e, nos scripts,
 // insomnia.environment.get/set, insomnia.response.code/json()/headers.get, insomnia.test e insomnia.expect
@@ -80,23 +81,36 @@ const cortarTokens = (texto) =>
     .replace(/eyJ[\w-]+\.[\w-]+\.[\w-]+/g, "eyJhbGciOiJIUzI1NiJ9...")
     .replace(/("refreshToken"\s*:\s*")[^"]{12,}"/g, '$1q3Jd0kX4..."');
 
-for (const pasta of pastas) {
+// Cada requisição ganha um id "pasta.posição" (03.05 = 5ª da pasta 03), o mesmo dos roteiros gerados.
+const doCatalogo = pastas.flatMap((pasta) =>
+  recursos.filter((r) => r._type === "request" && r.parentId === pasta._id)
+    .sort((a, b) => a.metaSortKey - b.metaSortKey)
+    .map((r, i) => ({ pasta, r, id: `${pasta.name.slice(0, 2)}.${String(i + 1).padStart(2, "0")}` })));
+// --passos 01.03,02.01,...: só esses, nesta ordem (a ordem de um roteiro), para o registro mostrar o que quem segue
+// o roteiro vai ver de verdade (saldos e ids dependem do que veio antes).
+const PASSOS = opcao("--passos", null)?.split(",");
+const fila = PASSOS
+  ? PASSOS.map((id) => doCatalogo.find((p) => p.id === id) ?? (() => { throw new Error(`passo ${id} não existe na coleção`); })())
+  : doCatalogo;
+
+let pastaAtual = null;
+for (const { pasta, r, id } of fila) {
   if (PASTA && !pasta.name.startsWith(PASTA)) continue;
-  console.log(`\n📁 ${pasta.name}`);
+  if (pasta !== pastaAtual) { console.log(`\n📁 ${pasta.name}`); pastaAtual = pasta; }
   // Sem ADMIN no ambiente (o perfil visitante não tem, de propósito): a gestão de usuários não tem como rodar.
-  if (semAdmin && pasta.name.includes("ADMIN")) { console.log("  ⏭️  pulada: este ambiente não tem ADMIN"); continue; }
-  const requisicoes = recursos.filter((r) => r._type === "request" && r.parentId === pasta._id)
-    .sort((a, b) => a.metaSortKey - b.metaSortKey);
-  for (const r of requisicoes) {
+  if (semAdmin && pasta.name.includes("ADMIN")) { console.log(`  ⏭️  ${r.name}: este ambiente não tem ADMIN`); continue; }
+  {
     if (semAdmin && /admin_cpf|token_admin/.test(JSON.stringify(r))) { console.log(`  ⏭️  ${r.name}: este ambiente não tem ADMIN`); continue; }
     const testes = [];
     rodarScript(r.preRequestScript, null, testes);
     const headers = Object.fromEntries(r.headers.map((h) => [h.name, renderizar(h.value)]));
     if (r.authentication?.type === "bearer") headers.Authorization = `Bearer ${renderizar(r.authentication.token)}`;
     const url = renderizar(r.url);
+    // Renderiza o corpo uma vez só: o script de depois pode mudar as variáveis (ex.: a senha trocada).
+    const corpo = r.body?.text ? renderizar(r.body.text) : undefined;
     let resposta;
     try {
-      const http = await fetch(url, { method: r.method, headers, body: r.body?.text ? renderizar(r.body.text) : undefined });
+      const http = await fetch(url, { method: r.method, headers, body: corpo });
       resposta = { status: http.status, headers: http.headers, corpo: await http.text() };
     } catch (e) {
       console.log(`  ❌ ${r.name}: API fora do ar em ${url} (${e.cause?.code ?? e.message})`);
@@ -110,8 +124,8 @@ for (const pasta of pastas) {
     console.log(`  ${ruins.length ? "❌" : "✅"} ${resposta.status} ${r.name}`);
     if (REGISTRAR) {
       registro.push({
-        pasta: pasta.name, nome: r.name, metodo: r.method, caminho: url.replace(env.base_url, ""),
-        headers: Object.keys(headers), corpo: cortarTokens(r.body?.text ? renderizar(r.body.text) : ""),
+        id, ambiente: AMBIENTE, pasta: pasta.name, nome: r.name, metodo: r.method, caminho: url.replace(env.base_url, ""),
+        headers: Object.keys(headers), corpo: cortarTokens(corpo ?? ""),
         status: resposta.status, repetida: resposta.headers.get("Idempotency-Replayed"), resposta: cortarTokens(resposta.corpo),
       });
     }

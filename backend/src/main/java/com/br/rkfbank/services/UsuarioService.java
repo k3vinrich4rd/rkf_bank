@@ -100,6 +100,6 @@ public class UsuarioService {
         admin.setSenhaHash(passwordEncoder.encode(senha));
         admin.setPerfil(PerfilEnum.ADMIN);
         Usuario salvo = usuarioRepository.save(admin);
-        log.info("Usuario admin {} criado a partir do .env", salvo.getId());
+        log.info("Usuario admin {} criado a partir de ADMIN_CPF e ADMIN_SENHA (.env ou variaveis do ambiente)", salvo.getId());
     }
 }

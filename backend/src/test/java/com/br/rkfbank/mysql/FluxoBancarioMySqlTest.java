@@ -25,7 +25,7 @@ class FluxoBancarioMySqlTest extends MySqlIntegracaoBase {
                         .formatted(cpfComMascara, cpf, SENHA)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.cpf").value("***." + cpf.substring(3, 6) + "." + cpf.substring(6, 9) + "-**"))
-                .andExpect(jsonPath("$.termosVersao").value("2026-10-23"))
+                .andExpect(jsonPath("$.termosVersao").value("2026-10-26"))
                 .andExpect(jsonPath("$.telefone").value("(11) 99999-8888"))
                 .andExpect(jsonPath("$.endereco.cidade").value("Osasco"))
                 .andExpect(jsonPath("$.senha").doesNotExist());

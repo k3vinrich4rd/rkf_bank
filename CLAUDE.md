@@ -37,8 +37,11 @@ scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do D
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe     # equipe sem Docker (H2 + Fellipe e Renan; segredos do .env)
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
 node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 83/83 visitante, 119/119 equipe (a pública não tem o ADMIN)
-node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou rota ou payload? mude aqui); --equipe gera a privada em .equipe/
+node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou rota ou payload? mude aqui); --equipe gera a privada em .equipe/ com o .env padrão do guia da equipe
+node scripts/gerar-roteiro-e2e.mjs       # passos dos guias de teste a partir de uma execução real (--registrar); --passos gera a trilha curta (VISITANTES.md, .equipe/testes/BACKEND_E2E.md)
 node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401
+node scripts/e2e-site.mjs           # site (Next, porta 3000) + API visitante juntos: páginas, login pelo site e conta pelo proxy
+docker build -t rkfbank-api .       # imagem da API para publicar (perfil prod; variáveis em backend/README_DEPLOY.md)
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas (OSV.dev) no Maven e no pnpm-lock
 node scripts/gerar-svgs-readme.mjs  # regera os SVGs animados do README (assets/readme/) com o número atual de testes e migrações
 scripts/instalar-hooks.sh           # ativa o hook que valida mensagens de commit
@@ -62,6 +65,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 - **Dados prontos** por callback `afterMigrate` do Flyway (roda a cada subida, idempotente): `db/seed/equipe` (Fellipe = origem, Renan = destino; perfis padrão e `equipe`) e `db/seed/visitante` (Ana e Bruno; só no perfil `visitante`). **Desligados no `test`** e em produção (`FLYWAY_LOCATIONS=classpath:db/migration`). Mudou tabela usada pelo seed → ajuste o seed no mesmo PR.
 - 🔒 **Repositório público: nenhuma senha real no Git.** Login das contas da equipe vem de `EQUIPE_SENHA` (`InicializadorAcessoEquipe`) e o admin de `ADMIN_CPF`/`ADMIN_SENHA` (`InicializadorAdmin`), só no `.env`. Acessos e roteiro completo da equipe ficam em `.equipe/GUIA_TESTES_EQUIPE.md`, **fora do Git** (`.gitignore`): nunca copie conteúdo de lá para README, PR, issue, recado ou commit. Doc pública usa só as contas de visitante.
 - **Perfil e acesso valem na hora:** o `ConversorTokenUsuario` confere `tb_usuario` (existe, `ativo`, mesmo perfil e mesma `versaoCredencial` do token) a cada requisição. Gestão de usuários só pelo ADMIN em `/admin/usuarios`; usuário nunca é apagado, é desativado.
+- **Perfil `prod`** (`application-prod.properties`, ligado pelo `Dockerfile`): só `db/migration` (sem seed), sem Swagger, segredos e banco só por variável (`DB_*`, `JWT_SEGREDO`, `CORS_ORIGENS`), sem login da equipe. Garantias em `PerfilProdIntegracaoTest`; CI da imagem em `backend-docker.yml` (publica no ghcr.io na `main`) e da aplicação inteira em `e2e.yml`. Mudou o prod? Teste com `.equipe/testes/PROD_E2E.md`.
 - **Movimentações exigem `Idempotency-Key`** (`IdempotenciaService`, mesma transação do dinheiro). Nova rota que move dinheiro → passe pelo `executarUmaVez`.
 
 ## Armadilhas conhecidas

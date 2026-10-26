@@ -32,7 +32,7 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 307 testes da API, 22 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 4 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 312 testes da API, 22 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -69,7 +69,9 @@
 | Sessão que se renova sozinha (*refresh token*) e logout de verdade | ✅ | ✅ |
 | Várias contas por cliente (`GET /contas/{id}` e seletor de conta) | ✅ | ✅ |
 | Política de privacidade e aceite dos termos (LGPD) | ✅ | ✅ |
-| Encarregado LGPD e publicação (colocar no ar) | ⏳ | ⏳ |
+| Encarregados LGPD (Kevin e Renan) na Política de Privacidade | ✅ | ✅ |
+| Imagem Docker e perfil `prod` prontos para publicar | ✅ | — |
+| Publicação (colocar no ar), por Kevin e Renan | ⏳ | ⏳ |
 
 <sub>✅ pronto na <code>develop</code> · ⏳ a fazer antes do lançamento</sub>
 
@@ -103,7 +105,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **338 testes** (307 na API e 31 no site), CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **342 testes** (307 na API e 31 no site), CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -548,9 +550,7 @@ Suba o perfil `visitante` ([VISITANTES.md](VISITANTES.md)), entre como a Ana e t
 
 - ✅ Termos de Uso e Política de Privacidade publicados (`/termos` e `/privacidade`), aceite obrigatório no cadastro com versão e data gravadas (V10) e CPF mascarado nas respostas.
 
-**Falta antes de colocar no ar** (bloqueia o deploy, não o desenvolvimento):
-
-- ⏳ Encarregado e canal de contato do titular.
+- ✅ Encarregados pelos dados pessoais: **Kevin Richard e Renan Barros**, publicados na seção 7 da política (termos versão `2026-10-26`).
 
 **Depois do MVP:** auditoria (quem fez o quê, quando e de onde).
 Detalhes e prioridades em [planing/debitos-tecnicos.md](planing/debitos-tecnicos.md) e [planing/decisoes.md](planing/decisoes.md).
@@ -590,7 +590,11 @@ Contrato completo (com a versão atual e o histórico de mudanças): [backend/RE
 | `GET` | `/admin/conciliacao` | contas cujo saldo não bate com o extrato | `ADMIN` | `200` |
 
 📖 **Swagger UI:** com a API no ar, [`http://localhost:8080/swagger-ui.html`](http://localhost:8080/swagger-ui.html) documenta
-todas as rotas a partir do código; faça o login, cole o `token` no botão **Authorize** e teste por ali.
+todas as rotas a partir do código, com **exemplos prontos** (contas públicas da Ana e do Bruno): `POST /auth/login` →
+**Try it out** → **Execute**, cole o `token` no botão **Authorize** e teste qualquer rota por ali. Depósito, saque e
+transferência já vêm com o `Idempotency-Key` preenchido; cada rota mostra o status real (`201`, `204`) e todos os erros
+possíveis. Passo a passo em [VISITANTES.md](VISITANTES.md#-sem-insomnia-use-o-swagger-no-navegador). Em produção
+(perfil `prod`) o Swagger fica fechado.
 
 <details>
 <summary><b>👤 <code>POST /clientes</code> — cadastrar</b></summary>
@@ -1038,7 +1042,7 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 | Backend | Java 25 · Spring Boot 4.1 · Spring Web MVC · Spring Data JPA (Hibernate 7) · Spring Security + OAuth2 Resource Server · Bean Validation · `RestClient` · Flyway · Log4j2 |
 | Banco | MySQL 8.4 (Docker Compose) · H2 2.5.252 (modo MySQL) nos testes · MySQL real com Testcontainers |
 | Testes | JUnit 5 · Mockito · `@DataJpaTest` · `@SpringBootTest` · JaCoCo |
-| Frontend | Next.js 16 (App Router) · React 19 · TypeScript 5 · Tailwind CSS 4 · shadcn/ui · Lucide · pnpm 10 |
+| Frontend | Next.js 16 (App Router) · React 19 · TypeScript 6 · Tailwind CSS 4 · shadcn/ui · Lucide · pnpm 10 |
 | Esteira | GitHub Actions · CodeQL · Dependency Review · Dependabot · Conventional Commits |
 
 </details>
@@ -1062,7 +1066,7 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 ```
 
 Sobe com H2 em memória, sem `.env`, com duas contas fictícias prontas e segredo do JWT sorteado (ninguém forja token).
-Não existe admin nem conta da equipe nesse perfil. Guia de 5 minutos: **[VISITANTES.md](VISITANTES.md)**.
+Não existe admin nem conta da equipe nesse perfil. Guia de 15 minutos, 13 passos: **[VISITANTES.md](VISITANTES.md)**.
 
 | Quem | CPF (login) | Senha | Conta |
 |---|---|---|---|
@@ -1161,7 +1165,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 307 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 312 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1207,6 +1211,10 @@ Relatório de cobertura: `target/site/jacoco/index.html`. Teste manual de aceite
 ```mermaid
 flowchart LR
     PR([Pull Request<br/>para develop/main]) --> CI[Backend CI<br/>JDK 25 · mvnw verify · JaCoCo]
+    PR --> FE[Frontend CI<br/>lint · tipos · Vitest · build]
+    PR --> E2E[E2E<br/>site + API + coleção]
+    PR --> DK[Backend Docker<br/>imagem prod · banco vazio · smoke]
+    DK -->|na main| GH[(ghcr.io<br/>rkfbank-api)]
     PR --> CQ[CodeQL<br/>análise de segurança]
     PR --> DR{Dependency Review<br/>vulnerabilidade alta?}
     DR -->|sim| X[❌ bloqueia]
@@ -1217,6 +1225,9 @@ flowchart LR
 | Workflow | Arquivo | O que faz |
 |---|---|---|
 | Backend CI | [`backend-ci.yml`](.github/workflows/backend-ci.yml) | compila, testa e publica relatórios |
+| Frontend CI | [`frontend-ci.yml`](.github/workflows/frontend-ci.yml) | lint, tipos, testes (Vitest) e build do site |
+| E2E (aplicação inteira) | [`e2e.yml`](.github/workflows/e2e.yml) | sobe a API e o build de produção do site juntos: coleção do Insomnia (83), smoke (42) e o site falando com a API pelo proxy |
+| Backend Docker | [`backend-docker.yml`](.github/workflows/backend-docker.yml) | constrói a imagem, roda no perfil `prod` (512 MB, MySQL vazio) com o smoke; na `main`, publica no ghcr.io |
 | Backend CodeQL | [`backend-codeql.yml`](.github/workflows/backend-codeql.yml) | procura vulnerabilidades no código Java |
 | Dependency Review | [`backend-dependency-review.yml`](.github/workflows/backend-dependency-review.yml) | barra dependência vulnerável ou com licença AGPL |
 | Dependabot | [`dependabot.yml`](.github/dependabot.yml) | PRs de atualização para a `develop` |
@@ -1273,9 +1284,10 @@ gantt
 - [x] Backend: `GET /contas/{id}` (a lista por cliente virou `GET /contas`, do token)
 - [x] LGPD mínimo: política de privacidade e aceite dos termos versionado
 - [x] Sessão com *refresh token*, logout de verdade e Swagger UI
-- [ ] LGPD: encarregado e canal de contato do titular
+- [x] LGPD: encarregados (Kevin e Renan) e canal de contato na Política de Privacidade
 - [ ] Fellipe testa tudo como primeiro cliente e os bugs são corrigidos
-- [ ] Colocar no ar (Docker, perfil `prod` sem dados de teste, banco gerenciado) e atualizar este README com link e prints
+- [x] Imagem Docker e perfil `prod` sem dados de teste, testados num MySQL vazio ([guia de publicação](backend/README_DEPLOY.md))
+- [ ] Colocar no ar (provedor e banco gerenciado) e atualizar este README com link e prints
 
 </details>
 
@@ -1575,6 +1587,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
 | Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou MySQL), ver o banco, permissões, payloads e roteiros; aceite do MVP pela coleção |
+| Deploy | [Publicar o RKF Bank](backend/README_DEPLOY.md) · [Dockerfile](Dockerfile) | onde publicar (grátis × sempre ligado), imagem Docker, perfil `prod`, variáveis e o que conferir; responsáveis: Kevin e Renan |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
 | Planejamento | [planing/](planing/README.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e padrões |
 

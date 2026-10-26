@@ -11,7 +11,7 @@ public class TermosDeUso {
 
     private final String versaoVigente;
 
-    public TermosDeUso(@Value("${rkfbank.lgpd.termos-versao:2026-10-23}") String versaoVigente) {
+    public TermosDeUso(@Value("${rkfbank.lgpd.termos-versao:2026-10-26}") String versaoVigente) {
         this.versaoVigente = versaoVigente;
     }
 

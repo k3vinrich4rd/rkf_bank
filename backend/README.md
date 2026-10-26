@@ -18,7 +18,7 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
 | [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou MySQL), ver o banco (console do H2, MySQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
 | [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia pública (83 requisições do cliente, sem o ADMIN; também em `.yaml` para o Insomnia 10+; a pasta 02 é o roteiro E2E completo e o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
-| `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe: acessos do Fellipe, do Renan e do admin, roteiro ponta a ponta completo |
+| `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe (Kevin, Renan e Fellipe): acessos de teste do Fellipe, do Renan e do ADMIN; o roteiro da API fica em `.equipe/testes/BACKEND_E2E.md` |
 
 ---
 
@@ -45,7 +45,7 @@ Os scripts de shell que usam as variáveis (`scripts/testar-no-mysql.sh`, `docke
 Conferindo: `curl -s http://localhost:8080/actuator/health` → `{"status":"UP",...}` e
 `curl -i http://localhost:8080/contas` → `401` (a API está no ar e exige login). Nos perfis com H2, o banco abre no
 navegador em `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:rkfbank-visitante` ou `rkfbank-equipe`,
-usuário `sa`, senha vazia; [guia, 1.5](README_TESTES_E2E.md#15-ver-o-banco)). Para as rotas protegidas, faça
+usuário `sa`, senha vazia; [guia, 1.4](README_TESTES_E2E.md#14-ver-o-banco-por-dentro-opcional)). Para as rotas protegidas, faça
 `POST /auth/login` e mande `Authorization: Bearer <token>` em toda chamada, e `Idempotency-Key` nas movimentações
 ([contrato](README_CONTRATO_API.md#autenticação-jwt) e
 [guia, seção 18](README_TESTES_E2E.md#18-como-a-segurança-funciona-spring-security--oauth2--jwt)).

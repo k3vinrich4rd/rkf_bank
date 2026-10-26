@@ -1,0 +1,22 @@
+# O que NAO entra no contexto do docker build. Segredos primeiro: nada de .env nem da pasta privada da equipe.
+.env
+.env.*
+!.env.example
+.equipe/
+deploy.env
+
+.git/
+.github/
+.claude/
+.idea/
+.run/
+target/
+frontend/
+assets/
+planing/
+scripts/
+**/*.md
+docker-compose.yml
+run-test.sh
+backend/src/test/
+backend/insomnia/
