@@ -26,6 +26,19 @@ cd rkf_bank
 - **IntelliJ:** **File → Open** na pasta `rkf_bank` → escolha **API · Visitante (H2)** ao lado do ▶️ e clique ▶️.
   JDK 25 em **File → Project Structure → SDK** (*Download JDK* se não tiver).
 
+<details>
+<summary>⚙️ A configuração <b>API · Visitante (H2)</b> não apareceu? Crie na mão (VM options)</summary>
+
+1. **Run → Edit Configurations… → + → Application**.
+2. **Name** `API · Visitante (H2)` · **JDK** 25 · **Main class** `com.br.rkfbank.RkfbankApplication`.
+3. **Modify options → Add VM options** → cole `-Dspring.profiles.active=visitante`.
+   (A 8080 já está em uso? Acrescente ` -Dserver.port=8081` e troque `base_url` no ambiente do Insomnia.)
+4. **Working directory:** `$PROJECT_DIR$` (a pasta `rkf_bank`) → **OK** → ▶️.
+5. No log tem que aparecer `The following 1 profile is active: "visitante"`.
+
+Não precisa de Docker nem de `.env`: o perfil `visitante` usa um banco em memória (H2) e sorteia o segredo do login.
+</details>
+
 ✅ **Pronto quando** o log mostra `Started RkfbankApplication` e http://localhost:8080/actuator/health mostra
 `{"groups":["liveness","readiness"],"status":"UP"}`.
 
@@ -39,6 +52,16 @@ cd rkf_bank
 > **status** (um número: `200`/`201`/`204` = deu certo; `4xx` = o banco recusou de propósito) e, às vezes, um JSON com
 > os dados. Você só precisa comparar o **status** e os campos principais com o que está em "Tem que voltar".
 > Ids e datas mudam a cada execução, e o Insomnia mostra `1000.00` onde aqui aparece `1000`: é o mesmo valor.
+
+| Método | Quer dizer | Nos passos |
+|:-:|---|---|
+| `GET` | **ler**, sem mudar nada (sem corpo) | ver contas e extrato |
+| `POST` | **criar** ou **fazer uma ação** (corpo em JSON) | login, depósito, saque, transferência |
+| `PATCH` | **mudar uma parte** (corpo em JSON) | corrigir dados e trocar senha (pasta 06) |
+
+Os headers que aparecem: `Authorization: Bearer …` é o crachá do login (a coleção põe sozinha);
+`Idempotency-Key` é o número único de cada depósito, saque ou transferência (a coleção sorteia).
+Status: `2xx` deu certo · `400` pedido mal escrito · `401` sem login · `403` não pode · `422` a regra do banco não deixa.
 
 ### Quem é quem
 
@@ -67,6 +90,24 @@ Errou algo ou quer começar de novo? Pare a API e suba outra vez: os saldos volt
 
 <!-- roteiro-gerado:trilha:inicio -->
 > 🤖 Pedidos e respostas reais (ambiente **visitante**), gerados por `scripts/gerar-roteiro-e2e.mjs`. Ids, números de conta e datas mudam a cada execução; o **status** e o `codigo` não.
+
+**A ordem, de uma olhada** (o detalhe de cada passo vem logo abaixo):
+
+| Passo | Método | Rota | Crachá (token) | O que faz | Tem que voltar |
+|:-:|:-:|---|---|---|:-:|
+| 1 | `POST` | `/auth/login` | — (público) | Login · cliente ORIGEM (Ana / Fellipe) | **200** |
+| 2 | `POST` | `/auth/login` | — (público) | Login · cliente DESTINO (Bruno / Renan) | **200** |
+| 3 | `GET` | `/contas` | `token_origem` | Minhas contas (ORIGEM) | **200** |
+| 4 | `POST` | `/contas/{conta_origem_id}/depositos` | `token_origem` | Depositar R$ 150,00 | **204** |
+| 5 | `POST` | `/contas/{conta_origem_id}/saques` | `token_origem` | Sacar R$ 50,00 | **204** |
+| 6 | `POST` | `/transferencias` | `token_origem` | Transferir R$ 25,00 ORIGEM → DESTINO | **204** |
+| 7 | `GET` | `/contas/{conta_origem_id}/lancamentos` | `token_origem` | Extrato da ORIGEM | **200** |
+| 8 | `GET` | `/contas/{conta_destino_id}/lancamentos` | `token_destino` | Extrato do DESTINO (token do destino) | **200** |
+| 9 | `POST` | `/contas/{conta_origem_id}/depositos` | `token_origem` | 1ª vez: depósito com chave fixa | **204** |
+| 10 | `POST` | `/contas/{conta_origem_id}/depositos` | `token_origem` | 2ª vez: mesma chave, mesmo corpo → repetição | **204** |
+| 11 | `GET` | `/contas` | — (público) | Sem token → 401 | **401** |
+| 12 | `GET` | `/contas/{conta_origem_id}/lancamentos` | `token_destino` | Ver o extrato de outro cliente → 403 | **403** |
+| 13 | `POST` | `/contas/{conta_origem_id}/saques` | `token_origem` | Sacar mais que o saldo → 422 | **422** |
 
 ### Passo 1 · Login · cliente ORIGEM (Ana / Fellipe)
 
