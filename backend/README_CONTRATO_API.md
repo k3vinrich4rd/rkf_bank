@@ -15,7 +15,7 @@ discordarem, um dos dois está errado e precisa ser corrigido.
 |---|---|
 | **Backend** | Kevin |
 | **Frontend** | Renan |
-| **Versão** | 3.1 (23/10/2026) — *refresh token* e logout, aceite dos termos no cadastro (`GET /termos`), CPF mascarado nas respostas, senha temporária depois da redefinição pelo ADMIN, `GET /contas/{contaId}` e conciliação; o frontend foi ajustado no mesmo PR (ver [histórico](#8-histórico-de-versões)) |
+| **Versão** | 3.2 (27/10/2026) — `GET /clientes/{clienteId}/contas` só para o `ADMIN` · 3.1 (23/10/2026) — *refresh token* e logout, aceite dos termos no cadastro (`GET /termos`), CPF mascarado nas respostas, senha temporária depois da redefinição pelo ADMIN, `GET /contas/{contaId}` e conciliação; o frontend foi ajustado no mesmo PR (ver [histórico](#8-histórico-de-versões)) |
 
 ---
 
@@ -117,6 +117,7 @@ recusada (ex.: `422` de saldo) não grava a chave.
 | `POST` | `/contas` | abre conta **no próprio cadastro** (cliente vem do token) | o próprio cliente | `201` + conta | [4.1](#41-abrir-conta) |
 | `GET` | `/contas` | lista contas | `ADMIN`: todas · `CLIENTE`: só as dele | `200` | [4.2](#42-listar-contas) |
 | `GET` | `/contas/{contaId}` | uma conta (saldo, tipo, ativa) | dono da conta ou `ADMIN` | `200` + conta | [4.2](#42-listar-contas) |
+| `GET` | `/clientes/{clienteId}/contas` | contas de um cliente escolhido pelo id (suporte, conciliação) | só `ADMIN` | `200` | [4.2](#42-listar-contas) |
 | `POST` | `/contas/{contaId}/depositos` | deposita | dono da conta | `204` | [4.3](#43-depositar-e-sacar) |
 | `POST` | `/contas/{contaId}/saques` | saca | dono da conta | `204` | [4.3](#43-depositar-e-sacar) |
 | `POST` | `/transferencias` | transfere entre contas | dono da conta de **origem** | `204` | [4.4](#44-transferir) |
@@ -463,6 +464,12 @@ Cada item tem o formato da resposta da 4.1.
 movimentação sem buscar a lista inteira. **Erros:** `400` (id não é UUID), `401`, `403` `CONTA_DE_OUTRO_CLIENTE`,
 `404` `CONTA_NAO_ENCONTRADA`. O `ADMIN` vê qualquer conta.
 
+**Contas de um cliente (só `ADMIN`):** `GET /clientes/{clienteId}/contas` (array) ou com `?page=0&size=10` (página),
+cada item no formato da 4.1. Serve ao suporte e à conciliação, que partem de um cliente e não de uma conta.
+**Erros:** `400` (id não é UUID, `page`/`size` inválidos), `401`, `403` `PERFIL_SEM_PERMISSAO` para **qualquer** `CLIENTE` (mesmo com o
+próprio id: o cliente usa `GET /contas`, que tira o dono do token), `404` `CLIENTE_NAO_ENCONTRADO` (só o `ADMIN`
+chega a ver: o `403` vem antes, então quem não é `ADMIN` não descobre se o id existe).
+
 ### 4.3 Depositar e sacar
 
 `POST /contas/{contaId}/depositos` · `POST /contas/{contaId}/saques`
@@ -688,8 +695,8 @@ status. No front, o tipo `CodigoErro` de [`lib/api/types.ts`](../frontend/lib/ap
 Ainda **não implementados**. Quando um deles for feito, ele sai daqui e entra nas seções 3/4.
 
 Nenhuma proposta aberta para o MVP: `GET /contas/{contaId}` e `POST /auth/refresh` entraram na 3.1, e
-`GET /clientes/{clienteId}/contas` foi descartada (o cliente vem do token: `GET /contas` já lista as dele, e um id de
-cliente na URL reabriria a porta para pedir as contas de outra pessoa). As funcionalidades futuras (Pix, boleto,
+`GET /clientes/{clienteId}/contas` entrou na 3.2 **só para o `ADMIN`** (para o cliente continua descartada: o cliente vem
+do token, `GET /contas` já lista as dele, e um id de cliente na URL reabriria a porta para pedir as contas de outra pessoa). As funcionalidades futuras (Pix, boleto,
 comprovante) estão em [planing/debitos-tecnicos.md](../planing/debitos-tecnicos.md#funcionalidades-futuras-).
 
 ---
@@ -698,6 +705,7 @@ comprovante) estão em [planing/debitos-tecnicos.md](../planing/debitos-tecnicos
 
 | Versão | Data | Mudança |
 |---|---|---|
+| 3.2 | 27/10/2026 | `GET /clientes/{clienteId}/contas` (lista ou página) **só para o `ADMIN`**: `403` `PERFIL_SEM_PERMISSAO` para qualquer `CLIENTE`, `404` `CLIENTE_NAO_ENCONTRADO`. Não quebra o frontend (rota nova, mesmo formato da 4.1) |
 | 3.1 | 23/10/2026 | `POST /auth/refresh` e `POST /auth/logout` (token de renovação de 7 dias, uso único, reuso derruba todas as sessões; V15); login devolve `refreshToken`, `refreshExpiraEmSegundos` e `deveTrocarSenha`. Aceite dos termos: `GET /termos`, `aceiteTermos` obrigatório e `termosVersao` no cadastro (V10), `termosVersao`/`termosAceitosEm` na resposta. **CPF mascarado** nas respostas de cliente. Senha redefinida pelo ADMIN vira temporária (`403` `TROCA_DE_SENHA_OBRIGATORIA`; V14). `GET /contas/{contaId}` e `GET /admin/conciliacao`. Códigos `SESSAO_EXPIRADA`, `TROCA_DE_SENHA_OBRIGATORIA` e `TERMOS_DESATUALIZADOS`. Swagger em `/swagger-ui.html`. Regras R28–R30. Quebra o cadastro de quem não manda `aceiteTermos` (frontend ajustado no mesmo PR) |
 | 3.0 | 23/10/2026 | **Quebra o frontend (ajustado no mesmo PR).** Saem as rotas do contrato 2.x (`POST /contas/clientes/{id}`, `/contas/{id}/deposito` e `/saque`, `POST /contas/transferencia`, `PATCH /auth/senha`) e o `?paginado`: respondem `404`/são ignorados. `tipoConta` no pedido e na resposta (sai `tipoContaEnum`); `agencia` e `numeroConta` saem do pedido. Todo erro ganha `codigo` (`CodigoErroEnum`) e as mensagens passam a ter acento |
 | 2.6 | 22/10/2026 | Rotas no padrão de mercado: `POST /contas` (cliente do token), `/contas/{id}/depositos` e `/saques`, `POST /transferencias`, `PATCH /usuarios/me/senha`; paginação só com `page`/`size`; pedido de abertura aceita `tipoConta`. As antigas seguem funcionando com `Deprecation` + `Link` até a 3.0. Não quebra o frontend |

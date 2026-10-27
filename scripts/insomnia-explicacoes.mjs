@@ -62,6 +62,8 @@ export const EXPLICACOES = {
   "05|Listar clientes (array)": "O ADMIN vê a lista de todos os clientes, com o CPF escondido. Um cliente comum que tentar a mesma rota recebe `403`.",
   "05|Listar clientes (paginado)": "A mesma lista, em páginas. Repare em `totalElements` (quantos existem) e `totalPages` (quantas páginas).",
   "05|Listar TODAS as contas (paginado)": "A mesma rota que o cliente usa para ver as dele; para o ADMIN, ela devolve as contas de todo mundo.",
+  "05|Contas do cliente novo pelo id (só ADMIN)": "O atendente do banco abre a ficha de um cliente e vê as contas dele. Só o administrador consegue: é assim que o suporte ajuda alguém sem pedir a senha da pessoa.",
+  "05|Cliente tentando listar contas pelo id → 403": "O cliente tenta usar a rota do atendente, mesmo com o próprio número: o banco recusa (`403`). Para ver as próprias contas existe outro caminho, que descobre quem você é pelo crachá.",
   "05|Listar usuários (guarda o id do cliente novo)": "Lista os logins (quem pode entrar) com o perfil de cada um. O Insomnia guarda o id do cliente novo para o ADMIN mexer nele a seguir.",
   "05|Promover o cliente novo a ADMIN": "Transforma o cliente novo em administrador. Vale na hora: não precisa reiniciar nada.",
   "05|Token antigo do promovido → 401": "O crachá que o cliente novo tinha antes da promoção para de funcionar (`401`). Mudou o perfil, o crachá velho cai: ninguém fica com permissão desatualizada.",
