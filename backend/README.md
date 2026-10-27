@@ -199,7 +199,9 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 42 verifica�
 | `CpfValidoValidatorTest` | algoritmo de CPF | unitário puro |
 | `ViaCepClientTest` | integração com ViaCEP (sucesso, CEP inexistente, falha) | unitário com mock |
 | `ClienteServiceTest` / `ContaServiceTest` | regras de negócio | Mockito (`@ExtendWith(MockitoExtension.class)`) |
-| `ClienteControllerTest` / `ContaControllerTest` | JSON de entrada e saída, Bean Validation, formato de erro com `codigo`, `401`/`403` das regras de rota, header de repetição da idempotência | `@WebMvcTest` + MockMvc (base `ControllerWebMvcBase`, services mockados) |
+| `ClienteControllerTest` / `ContaControllerTest` | JSON de entrada e saída, Bean Validation, formato de erro com `codigo`, `401`/`403` das regras de rota, header de repetição da idempotência, `GET /clientes/{id}/contas` só para o ADMIN | `@WebMvcTest` + MockMvc (base `ControllerWebMvcBase`, services mockados) |
+| `IdentidadeEntidadesTest` / `ImutabilidadeRespostasTest` | `equals`/`hashCode` das 7 entidades (sem id, mesmo id, `HashSet` depois do persist) e records com lista imutáveis (`List.copyOf`) | JUnit puro (parametrizado) |
+| `ThreadsVirtuaisTest` | o executor da aplicação roda as tarefas em thread virtual (`spring.threads.virtual.enabled`) | `@SpringBootTest` |
 | `TratadorGlobalDeErrosTest` | exceção → status + corpo de erro | unitário |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e saneado | unitário |
 | `EntitiesAndEnumsTest` | getters/setters, enums, `@PrePersist` | unitário |
