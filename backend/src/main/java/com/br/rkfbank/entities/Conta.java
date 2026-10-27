@@ -78,6 +78,18 @@ public class Conta {
     public Cliente getCliente() { return cliente; }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }
 
+    public void depositar(BigDecimal valor) {
+        throw new UnsupportedOperationException("TDD: implementar");
+    }
+
+    public void sacar(BigDecimal valor) {
+        throw new UnsupportedOperationException("TDD: implementar");
+    }
+
+    public void transferirPara(Conta destino, BigDecimal valor) {
+        throw new UnsupportedOperationException("TDD: implementar");
+    }
+
     // Identidade de entidade JPA = o id do banco (UUID gerado no persist). Antes do persist o id e null: so a
     // propria instancia e igual a si mesma (dois cadastros novos nunca "colidem"). O hashCode e fixo por classe
     // porque o id muda de null para o UUID no persist: se o hash dependesse dele, a entidade "sumiria" de um
