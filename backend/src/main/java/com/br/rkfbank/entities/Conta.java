@@ -77,4 +77,21 @@ public class Conta {
     public void setAtiva(boolean ativa) { this.ativa = ativa; }
     public Cliente getCliente() { return cliente; }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }
+
+    // Identidade de entidade JPA = o id do banco (UUID gerado no persist). Antes do persist o id e null: so a
+    // propria instancia e igual a si mesma (dois cadastros novos nunca "colidem"). O hashCode e fixo por classe
+    // porque o id muda de null para o UUID no persist: se o hash dependesse dele, a entidade "sumiria" de um
+    // HashSet/HashMap depois de salva. Usa getId() (e nao o campo) porque o proxy lazy do Hibernate e uma
+    // subclasse que so responde pelo getter; por isso tambem instanceof (aceita o proxy) e nada de final.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Conta outro)) return false;
+        return getId() != null && getId().equals(outro.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Conta.class.hashCode();
+    }
 }

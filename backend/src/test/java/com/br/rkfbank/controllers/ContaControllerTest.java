@@ -231,6 +231,43 @@ class ContaControllerTest extends ControllerWebMvcBase {
         return requisicao.contentType(MediaType.APPLICATION_JSON).content(corpo);
     }
 
+    @Test
+    void adminListaContasDeUmClientePeloId() throws Exception {
+        when(contaService.listarDoCliente(eq(CLIENTE_ID), any())).thenReturn(List.of(contaResponse()));
+
+        mockMvc.perform(get("/clientes/{clienteId}/contas", CLIENTE_ID).with(tokenDoAdmin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].clienteId").value(CLIENTE_ID.toString()));
+    }
+
+    @Test
+    void adminListaContasDeUmClientePaginado() throws Exception {
+        when(contaService.listarDoClientePaginado(eq(CLIENTE_ID), eq(PageRequest.of(0, 5)), any()))
+                .thenReturn(new PageImpl<>(List.of(contaResponse()), PageRequest.of(0, 5), 1));
+
+        mockMvc.perform(get("/clientes/{clienteId}/contas", CLIENTE_ID).param("size", "5").with(tokenDoAdmin()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.size").value(5));
+    }
+
+    @Test
+    void clienteRecebe403AoListarContasPeloIdDeCliente() throws Exception {
+        // Mesmo o proprio id: cliente comum usa GET /contas (o cliente vem do token).
+        mockMvc.perform(get("/clientes/{clienteId}/contas", CLIENTE_ID).with(tokenDoCliente()))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
+        verifyNoInteractions(contaService);
+    }
+
+    @Test
+    void contasPorClienteSemTokenResponde401() throws Exception {
+        mockMvc.perform(get("/clientes/{clienteId}/contas", CLIENTE_ID))
+                .andExpect(status().isUnauthorized());
+        verifyNoInteractions(contaService);
+    }
+
     private ContaResponseDto contaResponse() {
         return new ContaResponseDto(CONTA_ID, CLIENTE_ID, "0001", "12345678", TipoContaEnum.CORRENTE,
                 new BigDecimal("0.00"), true);

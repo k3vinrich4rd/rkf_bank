@@ -217,6 +217,30 @@ public class ContaService {
         return contas;
     }
 
+    // GET /clientes/{clienteId}/contas: so ADMIN (suporte, conciliacao). A rota ja e barrada na ConfiguracaoSeguranca;
+    // a checagem aqui e a segunda camada (defesa em profundidade): se alguem mudar a regra da rota por engano, o
+    // CLIENTE continua sem conseguir listar contas de outra pessoa pelo id da URL. Cliente comum usa GET /contas.
+    // Ordem 403 -> 404: quem nao e ADMIN nao descobre se o id de cliente existe.
+    @Transactional(readOnly = true)
+    public List<ContaResponseDto> listarDoCliente(UUID clienteId, UsuarioLogado usuario) {
+        return contaRepository.findByClienteId(clienteParaAdmin(clienteId, usuario)).stream()
+                .map(this::paraContaResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ContaResponseDto> listarDoClientePaginado(UUID clienteId, Pageable pageable, UsuarioLogado usuario) {
+        return contaRepository.findByClienteId(clienteParaAdmin(clienteId, usuario), pageable).map(this::paraContaResponse);
+    }
+
+    private UUID clienteParaAdmin(UUID clienteId, UsuarioLogado usuario) {
+        if (!usuario.isAdmin()) {
+            log.warn("Listagem de contas por cliente recusada: usuario {} nao e ADMIN", usuario.usuarioId());
+            throw new AcessoNegadoException();
+        }
+        return clienteService.buscar(clienteId).getId(); // 404 se o cliente nao existe
+    }
+
     // Versao paginada: o banco devolve so uma fatia (LIMIT/OFFSET) e o total, em vez da tabela inteira.
     @Transactional(readOnly = true)
     public Page<ContaResponseDto> listarPaginado(Pageable pageable, UsuarioLogado usuario) {

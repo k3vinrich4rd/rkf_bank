@@ -74,6 +74,21 @@ class RotasContratoIntegracaoTest {
     }
 
     @Test
+    void contasDeUmClientePeloIdSoParaOAdmin() throws Exception {
+        String admin = "Bearer " + login(CPF_ADMIN, SENHA_ADMIN);
+        mockMvc.perform(get("/clientes/" + CLIENTE_FELLIPE + "/contas").header("Authorization", admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].clienteId").value(CLIENTE_FELLIPE));
+        mockMvc.perform(get("/clientes/" + UUID.randomUUID() + "/contas").header("Authorization", admin))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.codigo").value("CLIENTE_NAO_ENCONTRADO"));
+        // O proprio Fellipe recebe 403: cliente comum lista as dele em GET /contas (o cliente vem do token).
+        mockMvc.perform(get("/clientes/" + CLIENTE_FELLIPE + "/contas")
+                        .header("Authorization", "Bearer " + login(CPF_FELLIPE, SENHA_EQUIPE)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void movimentacoesPelasRotasDoContrato() throws Exception {
         String token = login(CPF_FELLIPE, SENHA_EQUIPE);
         movimentar(token, "/contas/" + CONTA_FELLIPE + "/depositos", "{\"valor\":10.00}").andExpect(status().isNoContent());

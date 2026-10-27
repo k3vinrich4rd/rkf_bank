@@ -125,6 +125,26 @@ Data: 23/10
 Decisão: todo erro da API leva um `codigo` (`SALDO_INSUFICIENTE`, `IDEMPOTENCIA_EM_ANDAMENTO`...) além da `message`. Código e mensagem moram juntos no `CodigoErroEnum`; as exceções recebem só o código (`new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE)`) e o `TratadorGlobalDeErros` só escolhe o status. As mensagens de validação **por campo** continuam nas anotações dos DTOs (Bean Validation). As mensagens passaram a ter acento.
 Por quê: o front decidia alguns erros comparando o texto (`startsWith("Esta operacao ja esta sendo processada")`, `=== "Senha atual incorreta"`), e qualquer acento quebraria a tela em silêncio (apontado pelo Renan em 22/10). Com o texto num lugar só, não há frase repetida nem divergente entre service, teste e documentação.
 
+## Contas de um cliente pelo id, só para o ADMIN (contrato 3.2)
+Data: 27/10
+Decisão: `GET /clientes/{clienteId}/contas` volta, mas **só para o ADMIN** (regra na `ConfiguracaoSeguranca` e de novo no `ContaService`, 403 antes do 404). O cliente continua usando `GET /contas`, que tira o dono do token.
+Por quê: suporte e conciliação partem de um cliente, não de uma conta. O motivo do descarte na 2.6 (id na URL abre a porta para pedir dados de outra pessoa) vale para o CLIENTE, não para quem já pode ver todas as contas.
+
+## Identidade das entidades e imutabilidade das respostas
+Data: 27/10
+Decisão: as 7 entidades têm `equals` pelo id do banco e `hashCode` fixo por classe (padrão para entidade JPA com id gerado); os records com lista (`ErroResponse`, `PaginaResponse`) fazem cópia defensiva com `List.copyOf`.
+Por quê: sem `equals`, duas instâncias da mesma linha (carregadas em consultas diferentes) eram "diferentes"; com `hashCode` pelo id, a entidade "sumiria" de um `HashSet` ao ganhar id no persist. Record é imutável só na casca: a lista de dentro continuava mutável.
+
+## Threads virtuais
+Data: 27/10
+Decisão: `spring.threads.virtual.enabled=true` (Java 25 continua; threads virtuais existem desde o 21). Tomcat, `@Scheduled` e `@Async` rodam em threads virtuais; garantido pelo `ThreadsVirtuaisTest`.
+Por quê: a API passa a maior parte do tempo esperando I/O (MySQL, ViaCEP até 3 s). Com threads virtuais, esperar não ocupa uma das ~200 threads do Tomcat. Sem `synchronized` com I/O no código e com o Java 24+ (JEP 491), não há risco de *pinning*. O limite passa a ser o pool do Hikari.
+
+## Arquitetura distribuída fica em estudo
+Data: 27/10
+Decisão: Spring Cloud/microsserviços, Mensageria com Outbox, Pub/Sub com DLQ, AWS e OAuth2/OIDC com provedor externo ficam **em estudo para implementação**, com plano em [estudos-arquitetura.md](estudos-arquitetura.md). Nenhuma dependência nova antes do MVP de 31/10.
+Por quê: o MVP está em testes finais; essas peças resolvem problemas de escala e de vários serviços que o RKF Bank ainda não tem. O plano deixa pronto o "como" para quando houver o "porquê".
+
 ---
 
 ## Ainda falta decidir

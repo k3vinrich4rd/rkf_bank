@@ -16,7 +16,7 @@
 [![Flyway](https://img.shields.io/badge/Flyway-V1→V15_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-264_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-328_✔-22C55E)](#-qualidade-e-testes)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
 <a href="#-conheça-o-rkf-bank"><img src="assets/readme/botoes/abrir-conta.svg" alt="🏦 Conheça o banco" height="46"/></a>
@@ -32,7 +32,9 @@
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 312 testes da API, 22 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI e 3 pessoas de Osasco"/>
+[![🔬 Laboratório de arquitetura](https://img.shields.io/badge/🔬_Laboratório-o_que_já_está_no_código_e_o_que_está_em_estudo-7C3AED?style=for-the-badge)](#-laboratório-de-arquitetura)
+
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 328 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -105,7 +107,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **342 testes** (307 na API e 31 no site), CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **359 testes** (328 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -139,7 +141,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 2. Suba tudo: [rodando o projeto](#-rodando-o-projeto).
 3. Branch nova **sempre** da `origin/develop` atualizada: `git switch -c feature/minha-tarefa origin/develop`.
 4. Antes do PR: `scripts/validar.sh backend` (ou `frontend` / `tudo`).
-5. **Fellipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); a conferência automática é `node scripts/rodar-colecao-insomnia.mjs` com a coleção da equipe (119 requisições, inclusive o ADMIN). A coleção pública tem só o fluxo do cliente (83): o perfil `visitante` não tem ADMIN de propósito.
+5. **Fellipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); a conferência automática é `node scripts/rodar-colecao-insomnia.mjs` com a coleção da equipe (121 requisições, inclusive o ADMIN). A coleção pública tem só o fluxo do cliente (83): o perfil `visitante` não tem ADMIN de propósito.
 6. Recados entre o time: [planing/recados.md](planing/recados.md).
 
 </details>
@@ -359,6 +361,13 @@ stateDiagram-v2
 `403 Forbidden`. A regra de dono fica no `ContaService`: o `clienteId` vem do token assinado, não do que você manda na URL. E a ordem 404 → 403 → 422 garante que ninguém descubra o saldo alheio pela mensagem de erro.
 
 </details>
+<details><summary>🗂️ ...listar as contas de alguém pelo id do cadastro (<code>GET /clientes/{id}/contas</code>)?</summary>
+
+`403 Forbidden` (`PERFIL_SEM_PERMISSAO`), **mesmo com o seu próprio id**. Essa rota é do atendente (ADMIN), para o
+suporte partir do cliente. Você vê as suas em `GET /contas`, que descobre quem você é pelo token. E o `403` vem antes
+do `404`: quem não é ADMIN nem descobre se aquele id de cliente existe.
+
+</details>
 <details><summary>⏰ ...usar o app depois de 15 minutos parado?</summary>
 
 Nada: o token de acesso vence em 15 minutos, mas o servidor do Next troca o par pelo **token de renovação** (7 dias,
@@ -576,6 +585,7 @@ Contrato completo (com a versão atual e o histórico de mudanças): [backend/RE
 | `PATCH` | `/clientes/me` | corrige meus dados (LGPD; CPF não muda) | o próprio cliente | `200` |
 | `POST` | `/clientes/me/encerramento` | encerra o cadastro (senha + saldo zero; anonimiza depois de 5 anos) | o próprio cliente | `200` |
 | `GET` | `/clientes` | lista clientes (`?page=0&size=10`) | `ADMIN` | `200` |
+| `GET` | `/clientes/{clienteId}/contas` | contas de um cliente escolhido pelo id (suporte e conciliação) | `ADMIN` (cliente → `403`, mesmo com o próprio id) | `200` |
 | `POST` | `/contas` | abre conta no próprio cadastro (cliente vem do token) | o próprio cliente | `201` |
 | `GET` | `/contas` | lista contas | `ADMIN`: todas · `CLIENTE`: as dele | `200` |
 | `GET` | `/contas/{contaId}` | uma conta (saldo, tipo, ativa) | dono da conta ou `ADMIN` | `200` |
@@ -1049,6 +1059,107 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 
 <img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
+## 🔬 Laboratório de arquitetura
+
+> O que já virou código, provado por teste, e o que está **em estudo para implementação**, com plano pronto.
+> Adivinhe a resposta antes de abrir cada caixa. Detalhes e código de cada tema: [planing/estudos-arquitetura.md](planing/estudos-arquitetura.md).
+
+```mermaid
+flowchart LR
+    subgraph JA["✅ No código"]
+        A["equals/hashCode<br/>pelo id"] --- B["records<br/>imutáveis"] --- C["GET /clientes/{id}/contas<br/>só ADMIN"] --- D["threads<br/>virtuais"]
+    end
+    subgraph EST["🔬 Em estudo para implementação"]
+        E["Outbox"] --> F["Pub/Sub + DLQ"]
+        G["OAuth2/OIDC<br/>Keycloak"] --> H["Gateway"]
+        F --> I["Microsserviços<br/>Spring Cloud"]
+        H --> I
+        I --> J["AWS"]
+    end
+    JA --> EST
+    classDef feito fill:#14532d,stroke:#22c55e,color:#fff
+    classDef estudo fill:#3b0764,stroke:#a855f7,color:#fff
+    class A,B,C,D feito
+    class E,F,G,H,I,J estudo
+```
+
+<details>
+<summary><b>✅ Já no código</b> (clique em cada desafio)</summary>
+<br/>
+
+<details><summary>🧩 Salvei uma <code>Conta</code> que estava num <code>HashSet</code>. Ela continua lá?</summary>
+
+**Continua**, porque o `hashCode` é fixo por classe. Se ele dependesse do id, mudaria de `null` para o UUID no `persist`
+e a conta "sumiria" do conjunto. O `equals` compara o **id do banco** (pelo getter, para funcionar com o proxy do
+Hibernate). As 7 entidades seguem o mesmo padrão. Prova: `IdentidadeEntidadesTest` (21 casos).
+
+</details>
+<details><summary>🧊 Um <code>record</code> é imutável. Dá para mudar a lista de erros depois de montar a resposta?</summary>
+
+Dava: o record é imutável só "na casca", e a lista de dentro continuava aberta para quem tinha a referência. Agora
+`ErroResponse` e `PaginaResponse` fazem `List.copyOf` no construtor compacto. Quem tentar `add` recebe
+`UnsupportedOperationException`. Prova: `ImutabilidadeRespostasTest`.
+
+</details>
+<details><summary>🧵 200 cadastros esperando o ViaCEP (3 s). E o 201º?</summary>
+
+Antes, esperava na fila: o Tomcat tem ~200 threads e cada espera prendia uma. Com `spring.threads.virtual.enabled=true`
+(Java **25** continua; threads virtuais são do 21), cada requisição roda numa **thread virtual** que "desmonta" enquanto
+espera I/O. O limite passa a ser o pool de conexões do banco. Prova: `ThreadsVirtuaisTest`.
+
+</details>
+<details><summary>🗂️ O cliente pode listar as contas pelo próprio id em <code>/clientes/{id}/contas</code>?</summary>
+
+**Não** (`403`). A rota existe só para o ADMIN (suporte), com a regra na `ConfiguracaoSeguranca` **e de novo** no
+`ContaService` (defesa em profundidade). O `403` vem antes do `404`: quem não é ADMIN nem descobre se o id existe. O
+cliente usa `GET /contas`, que tira o dono do token. Contrato 3.2.
+
+</details>
+
+</details>
+
+<details>
+<summary><b>🔬 Em estudo para implementação</b> (clique em cada tema)</summary>
+<br/>
+
+<details><summary>☁️ Spring Cloud e microsserviços: por que ainda não?</summary>
+
+O RKF Bank é um monólito bem dividido em camadas; microsserviço resolve problema de **times e escala independentes**,
+que ainda não temos. Primeiro passo viável: **circuit breaker** (Resilience4j) no ViaCEP, que devolve `503` na hora em
+vez de esperar o timeout. Depois: Gateway e Config Server quando houver 2+ serviços.
+
+</details>
+<details><summary>📨 Mensageria + Transactional Outbox: e se o broker cair no meio da transferência?</summary>
+
+Publicar direto no broker pode perder o evento (o banco gravou, o broker não) ou mandar comprovante de algo que deu
+*rollback*. Com **Outbox**, o evento vai para a `tb_outbox` **na mesma transação** do dinheiro, e um publicador agendado
+(com o ShedLock que já usamos) envia depois.
+
+</details>
+<details><summary>☠️ Pub/Sub + DLQ: e a mensagem que sempre falha?</summary>
+
+Um *exchange* `topic` com uma fila por interessado (comprovante, auditoria). Depois de 3 tentativas (1 s, 2 s, 4 s), a
+mensagem vai para a **Dead Letter Queue** e para de travar as outras; um alerta avisa e o ADMIN reprocessa.
+
+</details>
+<details><summary>🟧 AWS: o que muda no código para subir?</summary>
+
+**Nada** no primeiro passo: a imagem Docker do perfil `prod` já existe. ECS Fargate roda a imagem, RDS guarda o MySQL e
+o Secrets Manager guarda `JWT_SEGREDO` e `DB_*`. SNS + SQS (com DLQ nativa) entram junto com o Outbox.
+
+</details>
+<details><summary>🔐 OAuth2 + OIDC: a API já não usa OAuth2?</summary>
+
+Usa **metade**: ela já é um *OAuth2 Resource Server* (valida o token). O estudo é tirar a emissão da API e passar para
+um **Authorization Server** (Keycloak), com login, MFA e o *ID token* do OIDC. Regra de dono, `@AuthenticationPrincipal`
+e os testes com `jwt()` ficam iguais.
+
+</details>
+
+</details>
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
 ## 🚀 Rodando o projeto
 
 | Ferramenta | Versão |
@@ -1165,7 +1276,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 312 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 328 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1192,7 +1303,11 @@ node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no 
 | `IdempotenciaServiceTest` / `DadosEquipeIntegracaoTest` | dinheiro nunca sai duas vezes (`Idempotency-Key`) e saldo sempre bate com o extrato |
 | `GestaoUsuariosIntegracaoTest` | promover, rebaixar, desativar e trocar senha valendo na hora |
 | `PerfilVisitanteIntegracaoTest` | o perfil público não expõe nada da equipe |
-| `ClienteControllerTest` / `ContaControllerTest` | status de cada rota e limites da paginação |
+| `ClienteControllerTest` / `ContaControllerTest` | status de cada rota e limites da paginação (inclui `GET /clientes/{id}/contas`: `200`, página, `403`, `401`) |
+| `RotasContratoIntegracaoTest` | as rotas do contrato com o seed real: ADMIN `200`, cliente inexistente `404`, Fellipe `403` |
+| `IdentidadeEntidadesTest` | `equals`/`hashCode` das 7 entidades: sem id, mesmo id e `HashSet` depois do persist |
+| `ImutabilidadeRespostasTest` | records com lista não mudam depois de montados (`List.copyOf`) |
+| `ThreadsVirtuaisTest` | as tarefas da aplicação rodam em thread virtual (`spring.threads.virtual.enabled`) |
 | `TratadorGlobalDeErrosTest` | cada exceção no formato de erro |
 | `ViaCepClientTest` | CEP encontrado, inexistente (`422`) e ViaCEP fora (`503`) |
 | `CpfValidoValidatorTest` | dígitos verificadores e máscara |
@@ -1300,8 +1415,23 @@ gantt
 - [x] Refresh token (2FA continua ideia futura)
 - [x] "Meus dados", editar perfil e encerrar conta (direitos do titular)
 - [x] CI do frontend (lint, tipos, Vitest e build)
+- [x] Threads virtuais, `equals`/`hashCode` nas entidades, respostas imutáveis e `GET /clientes/{id}/contas` só para o ADMIN (contrato 3.2)
 - [ ] Pix, boleto, QR Code e cartão virtual (simulados) — [funcionalidades futuras](planing/debitos-tecnicos.md#funcionalidades-futuras-)
 - [ ] 🤖 Assistente do extrato com Spring AI (ideia)
+
+</details>
+
+<details>
+<summary><b>🔬 Em estudo para implementação</b> (com plano e código de exemplo)</summary>
+<br/>
+
+| Tema | Primeiro passo viável | Gatilho |
+|---|---|---|
+| [Spring Cloud e microsserviços](planing/estudos-arquitetura.md#5-spring-cloud-e-microsserviços-) | circuit breaker (Resilience4j) no ViaCEP | 2º time ou parte com carga diferente |
+| [Mensageria + Transactional Outbox](planing/estudos-arquitetura.md#6-mensageria-e-transactional-outbox-) | `tb_outbox` na transação do dinheiro + publicador com ShedLock | comprovante e notificação |
+| [Pub/Sub + DLQ](planing/estudos-arquitetura.md#7-pubsub-e-dead-letter-queue-dlq-) | exchange `topic` com DLQ e 3 tentativas | depende do Outbox |
+| [AWS](planing/estudos-arquitetura.md#8-serviços-aws-) | ECS Fargate + RDS + Secrets Manager com a imagem atual | deploy depois do MVP |
+| [OAuth2 + OIDC](planing/estudos-arquitetura.md#9-oauth2-e-oidc-com-provedor-externo-) | Keycloak emitindo o token; a API já é Resource Server | login social, MFA ou 2º sistema |
 
 </details>
 

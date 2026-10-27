@@ -16,4 +16,12 @@ public record ErroResponse(
     String message,
     String path,
     List<ErroCampoResponse> campos
-) {}
+) {
+
+    // Record e imutavel so na "casca": a lista recebida continuaria mutavel por quem guardou a referencia.
+    // List.copyOf faz a copia defensiva (e devolve uma lista que recusa add/remove); null vira lista vazia,
+    // que e o que o contrato promete em "campos".
+    public ErroResponse {
+        campos = campos == null ? List.of() : List.copyOf(campos);
+    }
+}

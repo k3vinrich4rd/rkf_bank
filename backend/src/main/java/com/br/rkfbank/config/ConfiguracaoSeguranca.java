@@ -68,6 +68,8 @@ public class ConfiguracaoSeguranca {
                         // exigindo token, que se cola no botao Authorize. Em producao, springdoc.*.enabled=false.
                         .requestMatchers(HttpMethod.GET, "/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/clientes").hasRole("ADMIN")
+                        // Contas de um cliente pelo id: so ADMIN. O "*" e um segmento so: /clientes/me nao entra aqui.
+                        .requestMatchers(HttpMethod.GET, "/clientes/*/contas").hasRole("ADMIN")
                         // Gestao de usuarios (promover, rebaixar, desativar): so ADMIN.
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         // Senha temporaria (ConversorTokenUsuario: so a autoridade SENHA_TEMPORARIA) chega ate aqui so para

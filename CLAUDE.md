@@ -36,7 +36,7 @@ scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do D
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante  # API pública sem Docker e sem .env (H2 + Ana e Bruno Visitante, JWT sorteado)
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe     # equipe sem Docker (H2 + Fellipe e Renan; segredos do .env)
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
-node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 83/83 visitante, 119/119 equipe (a pública não tem o ADMIN)
+node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 83/83 visitante, 121/121 equipe (a pública não tem o ADMIN)
 node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou rota ou payload? mude aqui); --equipe gera a privada em .equipe/ com o .env padrão do guia da equipe
 node scripts/gerar-roteiro-e2e.mjs       # passos dos guias de teste a partir de uma execução real (--registrar); --passos gera a trilha curta (VISITANTES.md, .equipe/testes/BACKEND_E2E.md)
 node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401

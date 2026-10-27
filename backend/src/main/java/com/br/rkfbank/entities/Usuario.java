@@ -86,4 +86,17 @@ public class Usuario {
         this.deveTrocarSenha = true;
     }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }
+
+    // Identidade pelo id do banco e hashCode fixo por classe: mesmo motivo explicado em Conta.equals.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Usuario outro)) return false;
+        return getId() != null && getId().equals(outro.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Usuario.class.hashCode();
+    }
 }
