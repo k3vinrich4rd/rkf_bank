@@ -21,6 +21,9 @@ set -a
 # shellcheck disable=SC1090
 source <(tr -d '\r' < .env)
 set +a
+# Do .env, o teste so precisa das variaveis do MySQL (viram -D abaixo). As outras mudariam o comportamento que os
+# testes conferem: JWT_EXPIRACAO=60m faria o login devolver 3600 s em vez dos 900 s do padrao, por exemplo.
+unset JWT_EXPIRACAO JWT_SEGREDO EQUIPE_SENHA ADMIN_CPF ADMIN_SENHA CORS_ORIGENS LGPD_RETENCAO FLYWAY_LOCATIONS
 
 if ! docker inspect --format='{{.State.Health.Status}}' rkfbank-mysql 2>/dev/null | grep -q healthy; then
   echo "MySQL fora do ar. Suba com: docker compose up -d" >&2

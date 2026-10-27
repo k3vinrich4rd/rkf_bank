@@ -1,5 +1,5 @@
 // Gera os SVGs animados do README (assets/readme/): banner, botões, números, extrato, fluxo, segurança, time.
-// Uso: node scripts/gerar-svgs-readme.mjs   (rode de novo quando mudar o número de testes, rotas ou migrações)
+// Uso: node scripts/gerar-svgs-readme.mjs   (depois do scripts/validar.sh backend: os testes vêm do relatório do Maven)
 // O GitHub mostra SVG como imagem: animação CSS funciona; clique só no <a> ou no <summary> em volta; sem JS e sem fonte externa.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -46,7 +46,17 @@ function contarRotas() {
   return total;
 }
 
+// Mesmo número do "Tests run" do Maven: soma o atributo tests dos relatórios do último ./mvnw verify
+// (scripts/validar.sh backend). Um teste parametrizado conta cada execução, como no resumo do Maven. Sem relatório
+// (ninguém rodou os testes nesta máquina), cai na contagem das anotações e avisa.
 function contarTestes() {
+  const relatorios = path.join(RAIZ, 'target/surefire-reports');
+  const xmls = fs.existsSync(relatorios) ? fs.readdirSync(relatorios).filter((f) => /^TEST-.*\.xml$/.test(f)) : [];
+  if (xmls.length) {
+    return xmls.reduce((soma, f) =>
+      soma + Number(/<testsuite[^>]*\btests="(\d+)"/.exec(fs.readFileSync(path.join(relatorios, f), 'utf8'))?.[1] ?? 0), 0);
+  }
+  console.warn('aviso: sem target/surefire-reports (rode scripts/validar.sh backend); contando as anotações @Test');
   let total = 0;
   const varrer = (dir) => {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -684,4 +694,15 @@ for (const [nome, conteudo] of Object.entries(arquivos)) {
   fs.mkdirSync(path.dirname(destino), { recursive: true });
   fs.writeFileSync(destino, conteudo);
 }
+// Os mesmos números no texto do README (badge, textos alternativos das imagens e a linha do recrutador).
+const arquivoReadme = path.join(RAIZ, 'README.md');
+const readmeBruto = fs.readFileSync(arquivoReadme, 'utf8');
+const readme = readmeBruto
+  .replace(/badge\/testes-\d+_/, `badge/testes-${NUMEROS.testes}_`)
+  .replace(/RKF Bank em números: \d+ testes da API, \d+ rotas REST, \d+ migrações Flyway/,
+    `RKF Bank em números: ${NUMEROS.testes} testes da API, ${NUMEROS.rotas} rotas REST, ${NUMEROS.migracoes} migrações Flyway`)
+  .replace(/Terminal: \d+ testes, 0 falhas/, `Terminal: ${NUMEROS.testes} testes, 0 falhas`)
+  .replace(/\*\*\d+ testes\*\* \(\d+ na API e (\d+) no site\)/,
+    (_, site) => `**${NUMEROS.testes + Number(site)} testes** (${NUMEROS.testes} na API e ${site} no site)`);
+if (readme !== readmeBruto) fs.writeFileSync(arquivoReadme, readme);
 console.log(`${Object.keys(arquivos).length} SVGs em assets/readme/ (testes=${NUMEROS.testes}, migracoes=${NUMEROS.migracoes}, workflows=${NUMEROS.workflows})`);
