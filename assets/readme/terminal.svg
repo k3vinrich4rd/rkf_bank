@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="290" viewBox="0 0 1200 290" role="img" aria-label="Terminal rodando os testes do RKF Bank: 328 testes, 0 falhas, BUILD SUCCESS.">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="290" viewBox="0 0 1200 290" role="img" aria-label="Terminal rodando os testes do RKF Bank: 346 testes, 0 falhas, BUILD SUCCESS.">
   <!-- Gerado por scripts/gerar-svgs-readme.mjs. Não edite à mão. -->
   <style>
     .ln { opacity: 0; animation: mostra .3s ease-out forwards; }
@@ -15,7 +15,7 @@
   <text x="28" y="130" class="ln" style="font: 400 15px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace; animation-delay:1.20s" fill="#06B6D4" xml:space="preserve">[INFO] Flyway: Successfully applied 15 migrations (V1 a V15)</text>
   <text x="28" y="158" class="ln" style="font: 400 15px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace; animation-delay:1.65s" fill="#94A3B8" xml:space="preserve">[INFO] SegurancaIntegracaoTest .... alg none → 401 ✔  conta de outro → 403 ✔</text>
   <text x="28" y="186" class="ln" style="font: 400 15px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace; animation-delay:2.10s" fill="#94A3B8" xml:space="preserve">[INFO] ContaRepositoryTest ........ @Version → OptimisticLock ✔</text>
-  <text x="28" y="214" class="ln" style="font: 400 15px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace; animation-delay:2.55s" fill="#F1F5F9" xml:space="preserve">    Tests run: 328, Failures: 0, Errors: 0, Skipped: 0</text>
+  <text x="28" y="214" class="ln" style="font: 400 15px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace; animation-delay:2.55s" fill="#F1F5F9" xml:space="preserve">    Tests run: 346, Failures: 0, Errors: 0, Skipped: 0</text>
   <text x="28" y="242" class="ln" style="font: 400 15px Consolas, 'JetBrains Mono', 'Fira Code', Menlo, monospace; animation-delay:3.00s" fill="#22C55E" xml:space="preserve">    ✅ BUILD SUCCESS (relatório de cobertura: target/site/jacoco/index.html)</text>
   <rect x="28" y="260" width="10" height="16" fill="#06B6D4" class="cursor"/>
 </svg>

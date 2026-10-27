@@ -16,7 +16,7 @@
 [![Flyway](https://img.shields.io/badge/Flyway-V1→V15_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-328_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-346_✔-22C55E)](#-qualidade-e-testes)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
 <a href="#-conheça-o-rkf-bank"><img src="assets/readme/botoes/abrir-conta.svg" alt="🏦 Conheça o banco" height="46"/></a>
@@ -34,7 +34,7 @@
 
 [![🔬 Laboratório de arquitetura](https://img.shields.io/badge/🔬_Laboratório-o_que_já_está_no_código_e_o_que_está_em_estudo-7C3AED?style=for-the-badge)](#-laboratório-de-arquitetura)
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 328 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 346 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -107,7 +107,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **359 testes** (328 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **377 testes** (346 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -1276,7 +1276,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 328 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 346 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1354,11 +1354,11 @@ flowchart LR
 <br/>
 
 ```text
-INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.s.ContaService : Transferencia de 50.00 da conta 672e4ddf-... para 83af15fb-...
-INFO  [http-nio-8080-exec-1] [e2e-transf-001] c.b.r.c.FiltroLogRequisicao : POST /transferencias -> 204 (15 ms)
+INFO  [tomcat-handler-12] [e2e-transf-001] c.b.r.s.ContaService : Transferencia de 50.00 da conta 672e4ddf-... para 83af15fb-...
+INFO  [tomcat-handler-12] [e2e-transf-001] c.b.r.c.FiltroLogRequisicao : POST /transferencias -> 204 (15 ms)
 ```
 
-Cada requisição ganha um `X-Request-Id` que aparece em todas as linhas, até no SQL. CPF, e-mail, senha e token **nunca** entram no log. Configuração: [`log4j2-spring.xml`](backend/src/main/resources/log4j2-spring.xml).
+Cada requisição ganha um `X-Request-Id` que aparece em todas as linhas, até no SQL. O `tomcat-handler-N` é a **thread virtual** que atendeu a requisição (com `spring.threads.virtual.enabled=true`; antes era `http-nio-8080-exec-N`, uma das ~200 threads do Tomcat). CPF, e-mail, senha e token **nunca** entram no log. Configuração: [`log4j2-spring.xml`](backend/src/main/resources/log4j2-spring.xml).
 
 </details>
 
