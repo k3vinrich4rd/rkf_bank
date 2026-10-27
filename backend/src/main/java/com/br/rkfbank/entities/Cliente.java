@@ -144,4 +144,17 @@ public class Cliente {
         this.termosVersao = versao;
         this.termosAceitosEm = quando;
     }
+
+    // Identidade pelo id do banco e hashCode fixo por classe: mesmo motivo explicado em Conta.equals.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Cliente outro)) return false;
+        return getId() != null && getId().equals(outro.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Cliente.class.hashCode();
+    }
 }

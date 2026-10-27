@@ -17,6 +17,11 @@ public record PaginaResponse<T>(
     boolean last
 ) {
 
+    // Copia defensiva: a pagina devolvida nao muda se alguem mexer na lista original (mesmo motivo do ErroResponse).
+    public PaginaResponse {
+        content = List.copyOf(content);
+    }
+
     public static <T> PaginaResponse<T> de(Page<T> pagina) {
         return new PaginaResponse<>(
                 pagina.getContent(),

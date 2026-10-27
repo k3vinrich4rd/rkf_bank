@@ -69,4 +69,17 @@ public class RefreshToken {
     public int getVersaoCredencial() { return versaoCredencial; }
     public Instant getExpiraEm() { return expiraEm; }
     public Instant getRevogadoEm() { return revogadoEm; }
+
+    // Identidade pelo id do banco e hashCode fixo por classe: mesmo motivo explicado em Conta.equals.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RefreshToken outro)) return false;
+        return getId() != null && getId().equals(outro.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return RefreshToken.class.hashCode();
+    }
 }

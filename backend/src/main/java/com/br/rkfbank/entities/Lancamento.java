@@ -101,4 +101,17 @@ public class Lancamento {
     public Instant getDataHora() {
         return dataHora;
     }
+
+    // Identidade pelo id do banco e hashCode fixo por classe: mesmo motivo explicado em Conta.equals.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Lancamento outro)) return false;
+        return getId() != null && getId().equals(outro.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Lancamento.class.hashCode();
+    }
 }

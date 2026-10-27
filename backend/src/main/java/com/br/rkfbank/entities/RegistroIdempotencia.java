@@ -63,4 +63,17 @@ public class RegistroIdempotencia {
     public String getHashRequisicao() { return hashRequisicao; }
     public void setHashRequisicao(String hashRequisicao) { this.hashRequisicao = hashRequisicao; }
     public Instant getCriadoEm() { return criadoEm; }
+
+    // Identidade pelo id do banco e hashCode fixo por classe: mesmo motivo explicado em Conta.equals.
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RegistroIdempotencia outro)) return false;
+        return getId() != null && getId().equals(outro.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return RegistroIdempotencia.class.hashCode();
+    }
 }
