@@ -105,7 +105,7 @@ public class ContaService {
         // Valor monetário validado e normalizado em 2 casas.
         BigDecimal valor = validarValor(request.valor());
 
-        conta.setSaldo(conta.getSaldo().add(valor));
+        conta.depositar(valor);
         contaRepository.save(conta);
 
         // Extrato: depósito é lançamento de entrada com origem nula.
@@ -113,20 +113,13 @@ public class ContaService {
         log.info("Deposito de {} na conta {}", valor, contaId);
     }
 
-    // Saque: confere o saldo antes de subtrair (422 se faltar). BigDecimal.compareTo, e nao equals: 10.0 e 10.00
-    // sao iguais em valor, mas equals os acha diferentes por causa da escala.
+    // Saque: a regra de saldo (422 se faltar) mora na Conta.sacar, testada no ContaTest.
     @Transactional
     public void sacar(UUID contaId, SaqueRequestDto request, UsuarioLogado usuario) {
         Conta conta = buscarDoDono(contaId, usuario);
         BigDecimal valor = validarValor(request.valor());
 
-        // Regra de saldo antes de debitar.
-        if (conta.getSaldo().compareTo(valor) < 0) {
-            log.warn("Saque de {} recusado na conta {}: saldo insuficiente", valor, contaId);
-            throw new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE);
-        }
-
-        conta.setSaldo(conta.getSaldo().subtract(valor));
+        conta.sacar(valor); // SALDO_INSUFICIENTE sobe daqui; o TratadorGlobalDeErros loga e devolve 422
         contaRepository.save(conta);
 
         // Extrato: saque é lançamento de saída com destino nulo.
@@ -149,15 +142,8 @@ public class ContaService {
         Conta origem = buscarDoDono(request.contaOrigemId(), usuario);
         Conta destino = buscarAtiva(request.contaDestinoId());
 
-        // Regra de saldo da origem antes de aplicar débito/crédito.
-        if (origem.getSaldo().compareTo(valor) < 0) {
-            log.warn("Transferencia de {} recusada da conta {} para {}: saldo insuficiente",
-                    valor, origem.getId(), destino.getId());
-            throw new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE);
-        }
-
-        origem.setSaldo(origem.getSaldo().subtract(valor));
-        destino.setSaldo(destino.getSaldo().add(valor));
+        // Débito e crédito tudo-ou-nada na entidade (saldo conferido antes de mexer em qualquer conta).
+        origem.transferirPara(destino, valor);
 
         // Mesma transação para manter atomicidade financeira.
         contaRepository.save(origem);

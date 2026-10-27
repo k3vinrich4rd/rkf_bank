@@ -16,7 +16,7 @@
 [![Flyway](https://img.shields.io/badge/Flyway-V1→V15_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-346_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-356_✔-22C55E)](#-qualidade-e-testes)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
 <a href="#-conheça-o-rkf-bank"><img src="assets/readme/botoes/abrir-conta.svg" alt="🏦 Conheça o banco" height="46"/></a>
@@ -34,7 +34,7 @@
 
 [![🔬 Laboratório de arquitetura](https://img.shields.io/badge/🔬_Laboratório-o_que_já_está_no_código_e_o_que_está_em_estudo-7C3AED?style=for-the-badge)](#-laboratório-de-arquitetura)
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 346 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 356 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -44,6 +44,10 @@
 
 > **Mais que um banco, um parceiro para o seu amanhã.**
 > O RKF Bank é um **banco digital full stack** (API REST + site) idealizado e construído por três amigos de **Osasco, SP** — **Kevin Richard**, **Renan Barros** e **Fellipe Santana**, com processo de time de verdade: contrato de API, Git Flow, Pull Requests revisados, decisões registradas, testes automatizados, CI e um MVP com data marcada.
+
+<div align="center">
+  <img src="assets/readme/cartao-app.svg" width="100%" alt="Cartão do RKF Bank, agência 0001, e as notificações do app: depósito de 150 reais, saque de 50, transferência de 25 para a poupança e sessão protegida por JWT"/>
+</div>
 
 <table>
   <tr>
@@ -107,7 +111,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **377 testes** (346 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **387 testes** (356 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, **TDD** (domínio rico em `Conta`), CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
 
@@ -1276,7 +1280,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 346 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 356 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1289,6 +1293,48 @@ node scripts/engenharia-reversa-jwt.mjs  # tenta forjar o JWT: tudo tem que dar 
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no pnpm
 ```
 
+<details open>
+<summary><b>🔁 TDD na prática: a regra do saldo nasceu de um teste</b></summary>
+<br/>
+
+A regra do dinheiro saiu do `ContaService` e foi morar na entidade `Conta` (**domínio rico**), seguindo o ciclo do
+**TDD** em três commits. Os testes vieram primeiro; o código, depois.
+
+```mermaid
+flowchart LR
+    R["🔴 Vermelho<br/>ContaTest: 10 casos<br/>6 falhas · 4 erros"] --> G["🟢 Verde<br/>Conta.depositar · sacar ·<br/>transferirPara: 10/10"]
+    G --> F["🔵 Refatorar<br/>ContaService usa a Conta<br/>356 testes verdes"]
+    F -. "próxima regra" .-> R
+    style R fill:#7f1d1d,stroke:#f87171,color:#fff
+    style G fill:#14532d,stroke:#22c55e,color:#fff
+    style F fill:#1e3a8a,stroke:#3b82f6,color:#fff
+```
+
+| Fase | Commit | O que aconteceu |
+|:-:|---|---|
+| 🔴 | [`4247476`](https://github.com/k3vinrich4rd/rkf_bank/commit/4247476) | `ContaTest` descreve as regras; a `Conta` só tem esqueletos e **os 10 casos falham** |
+| 🟢 | [`8895571`](https://github.com/k3vinrich4rd/rkf_bank/commit/8895571) | o mínimo para passar: valor positivo, saldo conferido antes de debitar, transferência tudo-ou-nada |
+| 🔵 | [`e745cfb`](https://github.com/k3vinrich4rd/rkf_bank/commit/e745cfb) | o `ContaService` passa a chamar a `Conta`; os 346 testes que já existiam seguem verdes |
+
+<details><summary>🧪 A borda que mais dá bug: dá para sacar <b>exatamente</b> o saldo? (clique)</summary>
+
+```java
+@ParameterizedTest(name = "saldo 100.00, saque {0} → saldo {1}")
+@CsvSource({"99.99, 0.01", "100.00, 0.00"})
+void deveSubtrairQuandoHaSaldo(String valor, String saldoFinal) {
+    Conta conta = contaComSaldo("100.00");
+    conta.sacar(new BigDecimal(valor));
+    assertThat(conta.getSaldo()).isEqualByComparingTo(saldoFinal);
+}
+```
+
+**Dá.** E está escrito no teste antes do código: `saldo.compareTo(valor) < 0` recusa, igual não. Teste de unidade
+puro, sem Spring, sem banco e sem mock: roda em milissegundos.
+
+</details>
+
+</details>
+
 <details>
 <summary><b>📋 O que cada suíte cobre</b></summary>
 <br/>
@@ -1296,6 +1342,7 @@ node scripts/varrer-cves.js         # vulnerabilidades conhecidas no Maven e no 
 | Suíte | O que cobre |
 |---|---|
 | `ClienteServiceTest` | cadastro, CPF/e-mail duplicado, ViaCEP, senha em BCrypt |
+| `ContaTest` | **regras de saldo na própria `Conta`** (depositar, sacar, transferir), escritas com **TDD** antes do código |
 | `ContaServiceTest` | abertura, depósito, saque, transferência, extrato e regra de dono (`403`) |
 | `TokenServiceTest` / `AutenticacaoServiceTest` | JWT (claims, 15 min, adulteração, chave errada) e login sem enumeração |
 | `UsuarioServiceTest` / `InicializadorAdminTest` | primeiro `ADMIN` pelo `.env` |
@@ -1415,6 +1462,7 @@ gantt
 - [x] Refresh token (2FA continua ideia futura)
 - [x] "Meus dados", editar perfil e encerrar conta (direitos do titular)
 - [x] CI do frontend (lint, tipos, Vitest e build)
+- [x] Domínio rico em `Conta` (regra de saldo na entidade) feito com **TDD**: vermelho → verde → refatorar
 - [x] Threads virtuais, `equals`/`hashCode` nas entidades, respostas imutáveis e `GET /clientes/{id}/contas` só para o ADMIN (contrato 3.2)
 - [ ] Pix, boleto, QR Code e cartão virtual (simulados) — [funcionalidades futuras](planing/debitos-tecnicos.md#funcionalidades-futuras-)
 - [ ] 🤖 Assistente do extrato com Spring AI (ideia)

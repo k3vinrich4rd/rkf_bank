@@ -200,6 +200,7 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 42 verifica�
 | `ViaCepClientTest` | integração com ViaCEP (sucesso, CEP inexistente, falha) | unitário com mock |
 | `ClienteServiceTest` / `ContaServiceTest` | regras de negócio | Mockito (`@ExtendWith(MockitoExtension.class)`) |
 | `ClienteControllerTest` / `ContaControllerTest` | JSON de entrada e saída, Bean Validation, formato de erro com `codigo`, `401`/`403` das regras de rota, header de repetição da idempotência, `GET /clientes/{id}/contas` só para o ADMIN | `@WebMvcTest` + MockMvc (base `ControllerWebMvcBase`, services mockados) |
+| `ContaTest` | regras de saldo na própria `Conta` (depositar, sacar com a borda do saldo exato, transferir tudo-ou-nada), escritas com TDD antes do código | JUnit puro (`@Nested`, parametrizado) |
 | `IdentidadeEntidadesTest` / `ImutabilidadeRespostasTest` | `equals`/`hashCode` das 7 entidades (sem id, mesmo id, `HashSet` depois do persist) e records com lista imutáveis (`List.copyOf`) | JUnit puro (parametrizado) |
 | `ThreadsVirtuaisTest` | o executor da aplicação roda as tarefas em thread virtual (`spring.threads.virtual.enabled`) | `@SpringBootTest` |
 | `TratadorGlobalDeErrosTest` | exceção → status + corpo de erro | unitário |

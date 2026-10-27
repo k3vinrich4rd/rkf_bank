@@ -1,6 +1,8 @@
 package com.br.rkfbank.entities;
 
 import com.br.rkfbank.entities.enums.TipoContaEnum;
+import com.br.rkfbank.exceptions.CodigoErroEnum;
+import com.br.rkfbank.exceptions.RegraNegocioException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -77,6 +79,38 @@ public class Conta {
     public void setAtiva(boolean ativa) { this.ativa = ativa; }
     public Cliente getCliente() { return cliente; }
     public void setCliente(Cliente cliente) { this.cliente = cliente; }
+
+    // Dominio rico: a regra do dinheiro mora aqui, perto do saldo, e nao espalhada pelo service. Quem chama nao
+    // consegue deixar o saldo negativo nem somar valor invalido, porque nao ha outro caminho (feito com TDD: ContaTest).
+    public void depositar(BigDecimal valor) {
+        exigirValorPositivo(valor);
+        saldo = saldo.add(valor);
+    }
+
+    // Saque: confere o saldo ANTES de subtrair (422 se faltar). compareTo, e nao equals: 10.0 e 10.00 sao o mesmo
+    // valor, mas equals os acha diferentes por causa da escala. Sacar exatamente o saldo e permitido.
+    public void sacar(BigDecimal valor) {
+        exigirValorPositivo(valor);
+        if (saldo.compareTo(valor) < 0) {
+            throw new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE);
+        }
+        saldo = saldo.subtract(valor);
+    }
+
+    // Transferencia: tudo ou nada. Confere destino e saldo antes de mexer em qualquer uma das duas contas.
+    public void transferirPara(Conta destino, BigDecimal valor) {
+        if (this.equals(destino)) {
+            throw new RegraNegocioException(CodigoErroEnum.MESMA_CONTA);
+        }
+        sacar(valor);
+        destino.depositar(valor);
+    }
+
+    private static void exigirValorPositivo(BigDecimal valor) {
+        if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RegraNegocioException(CodigoErroEnum.VALOR_INVALIDO);
+        }
+    }
 
     // Identidade de entidade JPA = o id do banco (UUID gerado no persist). Antes do persist o id e null: so a
     // propria instancia e igual a si mesma (dois cadastros novos nunca "colidem"). O hashCode e fixo por classe

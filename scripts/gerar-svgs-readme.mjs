@@ -278,6 +278,39 @@ function numeros() {
 
 // ---------- 📜 extrato animado ----------
 
+// Cartão RKF (o mesmo do 3D da landing) com notificações do app chegando: o roteiro E2E real da pasta 02 do Insomnia
+// (depósito de 150, saque de 50, transferência de 25 para a poupança) na conta pública da Ana Visitante, agência 0001.
+function cartaoApp() {
+  const avisos = [
+    ['✅', 'Depósito de R$ 150,00', 'conta corrente · agora', VERDE],
+    ['💸', 'Saque de R$ 50,00', 'saldo R$ 100,00 · conferido antes de debitar', TEXTO],
+    ['🔁', 'Transferência de R$ 25,00', 'para a poupança · tudo ou nada, uma vez só', CIANO],
+    ['🛡️', 'Sessão protegida', 'JWT de 15 min · renova sozinha · cookie httpOnly', AZUL],
+  ];
+  const notificacoes = avisos.map(([icone, titulo, sub, cor], i) => `
+  <g class="aviso" style="animation-delay:${(0.6 + i * 0.7).toFixed(1)}s">
+    <rect x="640" y="${38 + i * 62}" width="520" height="52" rx="14" fill="${SUPERFICIE}" stroke="${BORDA}"/>
+    <rect x="640" y="${38 + i * 62}" width="4" height="52" rx="2" fill="${cor}"/>
+    <text x="664" y="${70 + i * 62}" style="font: 20px ${SANS}">${icone}</text>
+    <text x="700" y="${60 + i * 62}" style="font: 700 15px ${SANS}" fill="${TEXTO}">${xml(titulo)}</text>
+    <text x="700" y="${79 + i * 62}" style="font: 400 12px ${SANS}" fill="${APAGADO}">${xml(sub)}</text>
+    <text x="1144" y="${60 + i * 62}" text-anchor="end" style="font: 600 11px ${SANS}" fill="${APAGADO}">RKF Bank</text>
+  </g>`).join('');
+  return `${cabecalho(1200, 300, 'Cartão do RKF Bank, agência 0001, e notificações do app: depósito de 150 reais, saque de 50, transferência de 25 para a poupança e sessão protegida por JWT.')}
+  <defs>${marca}
+  </defs>
+  <style>
+    .flutua { animation: flutua 5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes flutua { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-8px) rotate(1deg); } }
+    .aviso { opacity: 0; animation: aviso 9s cubic-bezier(.2,.8,.2,1) infinite; }
+    @keyframes aviso { 0% { opacity: 0; transform: translateX(40px); } 6%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  </style>
+  <rect width="1200" height="300" rx="18" fill="${FUNDO}" stroke="${BORDA}"/>
+  <g class="flutua" style="transform-origin: 290px 150px">${cartao(100, 30, 380, 'ANA VISITANTE', '0001')}</g>${notificacoes}
+</svg>
+`;
+}
+
 function extrato() {
   const linhas = [
     ['12/10 · 09:14', 'Depósito', 'Depósito inicial', '+ 150,00', VERDE, '150,00'],
@@ -678,6 +711,7 @@ function chamada() {
 const arquivos = {
   'banner.svg': banner(),
   'numeros.svg': numeros(),
+  'cartao-app.svg': cartaoApp(),
   'extrato.svg': extrato(),
   'fluxo-transferencia.svg': fluxo(),
   'seguranca.svg': seguranca(),
