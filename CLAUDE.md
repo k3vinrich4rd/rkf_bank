@@ -36,7 +36,7 @@ scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do D
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante  # API pública sem Docker e sem .env (H2 + Ana e Bruno Visitante, JWT sorteado)
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe     # equipe sem Docker (H2 + Fellipe e Renan; segredos do .env)
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
-node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 83/83 visitante, 119/119 equipe (a pública não tem o ADMIN)
+node scripts/rodar-colecao-insomnia.mjs  # roda a coleção do Insomnia (backend/insomnia) contra a API: 83/83 visitante, 121/121 equipe (a pública não tem o ADMIN)
 node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou rota ou payload? mude aqui); --equipe gera a privada em .equipe/ com o .env padrão do guia da equipe
 node scripts/gerar-roteiro-e2e.mjs       # passos dos guias de teste a partir de uma execução real (--registrar); --passos gera a trilha curta (VISITANTES.md, .equipe/testes/BACKEND_E2E.md)
 node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401
@@ -57,6 +57,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 - Camadas: controller só conhece service; service tem a regra e o `@Transactional`; repository só acesso a dados.
 - Entrada e saída por DTO `record`; nunca exponha a entidade JPA.
 - Erros: exceção de negócio → status pelo `TratadorGlobalDeErros` (`400`, `404`, `409`, `422`, `503`) no formato padrão (`timestamp`, `status`, `error`, `codigo`, `message`, `path`, `campos`). **Código e mensagem só no `CodigoErroEnum`**: o service lança `new RegraNegocioException(CodigoErroEnum.X)`, nunca escreve a frase. Código novo → contrato (seção 6) e `CodigoErro` em `frontend/lib/api/types.ts`; nunca renomeie um existente.
+- **Carregamento:** relacionamento para-um novo nasce `fetch = FetchType.LAZY`; lista que mostra o associado busca junto com `@EntityGraph` (ou `JOIN FETCH`, que não pagina para-muitos). O `ConsultasSqlIntegracaoTest` conta as consultas das listas do ADMIN: N+1 = teste vermelho.
 - Dinheiro em `BigDecimal` com 2 casas; `Conta` tem `@Version` (lock otimista → `409`).
 - Logs com Log4j2 e `X-Request-Id`; nunca logar CPF completo, senha ou token.
 - **LGPD:** dado pessoal novo precisa de finalidade; response devolve só o que a tela usa; nada de dado pessoal em log, exceção, URL ou prompt de IA. Pendências em `planing/debitos-tecnicos.md`.
@@ -72,6 +73,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 
 - H2 está fixado em **2.5.252** (o 2.4.240 que o Boot traz quebra o `CHECK ... IN` das colunas de enum); toda URL do H2 leva `MODE=MySQL` (o 2.5 só aceita `DATETIME` assim) e o perfil de teste tem `spring.test.database.replace=none`.
 - `@DataJpaTest` troca o datasource por H2 embutido em qualquer perfil.
+- **IntelliJ antigo × Maven 3.10 do wrapper:** a IntelliJ Community 2024.3 não importa o projeto (`Unable to create injector ... ArtifactHandlerManager` no log da IDE) e marca em vermelho as dependências mais novas (springdoc, ShedLock), mesmo com o `mvnw` verde. Solução: IntelliJ 2025.3+ ou Maven home = **Bundled** nas configurações. Não troque o wrapper por causa disso.
 - Testes Spring têm `@ActiveProfiles("test")` e o `application-test.properties` fica em `src/test/resources` (fora do jar). O `pom.xml` aponta `RKFBANK_ENV` para um arquivo inexistente: o `.env` de quem roda não entra nos testes.
 - O Mockito é carregado como `-javaagent` no surefire (Java 21+); não remova o `argLine`.
 - Classe de teste precisa terminar em `Test`, `Tests` ou `TestCase`; senão o Surefire **ignora em silêncio**.
@@ -86,9 +88,9 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 > Nunca use `git reset`, `revert`, `rebase` ou `push --force` sem pedido explícito.
 
 - `feature/*`, `fix/*`, `chore/*`, `docs/*` → Pull Request para a `develop`. Nunca commit direto em `main` ou `develop`.
-- 📅 **Fluxo de entrega:** o `/entregar` atualiza a branch com a `develop`, abre o PR para a `develop`, espera o CI e
-  **mergeia na `develop`**, deixando o checkout nela. A `main` só recebe o que o Kevin e o Renan aprovarem na **reunião
-  semanal** (fim da semana), com `/notas-de-versao`; nunca abra PR para a `main` sem esse pedido.
+- 📅 **Fluxo de entrega (Git Flow do time):** atualizar a `develop` (`git pull`) → criar a branch dela → `git pull origin develop`
+  na branch e resolver os conflitos → PR para a `develop`, CI verde e merge → PR `develop → main` **aberto** (o `/entregar`
+  abre ou atualiza). **O merge na `main` é só do Kevin e do Renan**, na reunião semanal, com `/notas-de-versao`: nunca mergeie nela.
 - 🌱 **Branch nova nasce sempre da `origin/develop` atualizada** (`git fetch` + `git switch -c <branch> origin/develop`).
   Nunca empilhe uma branch em outra que ainda não foi mergeada: se a feature depende de algo fora da `develop`
   (confira com `git merge-base --is-ancestor <commit> origin/develop`), **pare e espere o merge**. "Vou mergear" ou
@@ -103,7 +105,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 | Skill | Para quê |
 |---|---|
 | `/implementar-feature <n>` | implementa a feature `n` do `planing/checklist-features.md` explicando cada conceito na prática |
-| `/entregar` | atualiza com a `develop`, valida, atualiza a documentação, faz commits semânticos, push, PR para a `develop`, espera o CI e mergeia na `develop` |
+| `/entregar` | Git Flow do time: `develop` atualizada → branch → `git pull` da `develop` e conflitos → valida, documenta, commits semânticos → PR e merge na `develop` com CI verde → PR `develop → main` aberto (sem merge) |
 | `/verificar-contrato` | compara controllers/DTOs do backend, o contrato da API e os tipos do frontend, e aponta divergências |
 | `/varrer-vulnerabilidades` | roda a varredura de CVEs e propõe a correção mínima |
 | `/testar-e2e` | sobe o fluxo real (cadastro → extrato) contra a API e interpreta o resultado |

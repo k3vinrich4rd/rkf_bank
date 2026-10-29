@@ -35,7 +35,7 @@ O cliente consegue:
 - [x] Frontend: logs
 - [x] Decidir como o usuário acessa a conta sem login (resolvido com o login: feature 2)
 - [x] Backend: `GET /contas/{contaId}` (saldo)
-- [x] ~~Backend: `GET /clientes/{clienteId}/contas`~~ substituída por `GET /contas` (o cliente vem do token, contrato 2.6)
+- [x] ~~Backend: `GET /clientes/{clienteId}/contas`~~ substituída por `GET /contas` para o cliente (o cliente vem do token, contrato 2.6); volta **só para o ADMIN** no contrato 3.2 (27/10)
 - [x] Frontend: abrir conta depois do cadastro
 - [x] Frontend: tela da conta (saldo)
 

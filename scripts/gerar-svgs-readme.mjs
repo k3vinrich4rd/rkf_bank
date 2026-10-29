@@ -1,5 +1,5 @@
 // Gera os SVGs animados do README (assets/readme/): banner, botões, números, extrato, fluxo, segurança, time.
-// Uso: node scripts/gerar-svgs-readme.mjs   (rode de novo quando mudar o número de testes, rotas ou migrações)
+// Uso: node scripts/gerar-svgs-readme.mjs   (depois do scripts/validar.sh backend: os testes vêm do relatório do Maven)
 // O GitHub mostra SVG como imagem: animação CSS funciona; clique só no <a> ou no <summary> em volta; sem JS e sem fonte externa.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -28,6 +28,9 @@ const NUMEROS = {
   migracoes: fs.readdirSync(path.join(RAIZ, 'backend/src/main/resources/db/migration')).filter((f) => /^V\d+__.*\.sql$/.test(f)).length,
   status: 9, // 400, 401, 403, 404, 409, 422, 503 + 201/204 de sucesso
   workflows: fs.readdirSync(path.join(RAIZ, '.github/workflows')).filter((f) => f.endsWith('.yml')).length,
+  // Skills do time em .claude/skills/<nome>/SKILL.md (as mesmas da seção "Skills de IA do time" do README).
+  skills: fs.readdirSync(path.join(RAIZ, '.claude/skills'), { withFileTypes: true })
+    .filter((e) => e.isDirectory() && fs.existsSync(path.join(RAIZ, '.claude/skills', e.name, 'SKILL.md'))).length,
   time: 3,
 };
 
@@ -46,7 +49,17 @@ function contarRotas() {
   return total;
 }
 
+// Mesmo número do "Tests run" do Maven: soma o atributo tests dos relatórios do último ./mvnw verify
+// (scripts/validar.sh backend). Um teste parametrizado conta cada execução, como no resumo do Maven. Sem relatório
+// (ninguém rodou os testes nesta máquina), cai na contagem das anotações e avisa.
 function contarTestes() {
+  const relatorios = path.join(RAIZ, 'target/surefire-reports');
+  const xmls = fs.existsSync(relatorios) ? fs.readdirSync(relatorios).filter((f) => /^TEST-.*\.xml$/.test(f)) : [];
+  if (xmls.length) {
+    return xmls.reduce((soma, f) =>
+      soma + Number(/<testsuite[^>]*\btests="(\d+)"/.exec(fs.readFileSync(path.join(relatorios, f), 'utf8'))?.[1] ?? 0), 0);
+  }
+  console.warn('aviso: sem target/surefire-reports (rode scripts/validar.sh backend); contando as anotações @Test');
   let total = 0;
   const varrer = (dir) => {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -230,6 +243,7 @@ const BOTOES = {
   time: ['👥 Time', {}],
   osasco: ['📍 Osasco', { cor: CIANO }],
   aventura: ['🎮 Aventura', { destaque: true }],
+  skills: ['🤖 Skills de IA', {}],
   'trilha-recrutador': ['🧑‍💼 Sou recrutador(a)', { sub: 'tenho 1 minuto: o que esse projeto prova?' }],
   'trilha-dev': ['👩‍💻 Sou dev', { sub: 'quero ver código, testes e decisões' }],
   'trilha-cliente': ['💳 Quero ser cliente', { sub: 'o que o RKF Bank faz por mim?', destaque: true }],
@@ -245,6 +259,7 @@ function numeros() {
     [NUMEROS.migracoes, 'migrações Flyway', CIANO],
     [15, 'minutos de vida do JWT', AZUL],
     [NUMEROS.workflows, 'workflows de CI', CIANO],
+    [NUMEROS.skills, 'skills de IA do time', AZUL],
     [NUMEROS.time, 'pessoas de Osasco', VERDE],
   ];
   const w = 1200 / itens.length;
@@ -267,6 +282,39 @@ function numeros() {
 }
 
 // ---------- 📜 extrato animado ----------
+
+// Cartão RKF (o mesmo do 3D da landing) com notificações do app chegando: o roteiro E2E real da pasta 02 do Insomnia
+// (depósito de 150, saque de 50, transferência de 25 para a poupança) na conta pública da Ana Visitante, agência 0001.
+function cartaoApp() {
+  const avisos = [
+    ['✅', 'Depósito de R$ 150,00', 'conta corrente · agora', VERDE],
+    ['💸', 'Saque de R$ 50,00', 'saldo R$ 100,00 · conferido antes de debitar', TEXTO],
+    ['🔁', 'Transferência de R$ 25,00', 'para a poupança · tudo ou nada, uma vez só', CIANO],
+    ['🛡️', 'Sessão protegida', 'JWT de 15 min · renova sozinha · cookie httpOnly', AZUL],
+  ];
+  const notificacoes = avisos.map(([icone, titulo, sub, cor], i) => `
+  <g class="aviso" style="animation-delay:${(0.6 + i * 0.7).toFixed(1)}s">
+    <rect x="640" y="${38 + i * 62}" width="520" height="52" rx="14" fill="${SUPERFICIE}" stroke="${BORDA}"/>
+    <rect x="640" y="${38 + i * 62}" width="4" height="52" rx="2" fill="${cor}"/>
+    <text x="664" y="${70 + i * 62}" style="font: 20px ${SANS}">${icone}</text>
+    <text x="700" y="${60 + i * 62}" style="font: 700 15px ${SANS}" fill="${TEXTO}">${xml(titulo)}</text>
+    <text x="700" y="${79 + i * 62}" style="font: 400 12px ${SANS}" fill="${APAGADO}">${xml(sub)}</text>
+    <text x="1144" y="${60 + i * 62}" text-anchor="end" style="font: 600 11px ${SANS}" fill="${APAGADO}">RKF Bank</text>
+  </g>`).join('');
+  return `${cabecalho(1200, 300, 'Cartão do RKF Bank, agência 0001, e notificações do app: depósito de 150 reais, saque de 50, transferência de 25 para a poupança e sessão protegida por JWT.')}
+  <defs>${marca}
+  </defs>
+  <style>
+    .flutua { animation: flutua 5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    @keyframes flutua { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-8px) rotate(1deg); } }
+    .aviso { opacity: 0; animation: aviso 9s cubic-bezier(.2,.8,.2,1) infinite; }
+    @keyframes aviso { 0% { opacity: 0; transform: translateX(40px); } 6%, 90% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+  </style>
+  <rect width="1200" height="300" rx="18" fill="${FUNDO}" stroke="${BORDA}"/>
+  <g class="flutua" style="transform-origin: 290px 150px">${cartao(100, 30, 380, 'ANA VISITANTE', '0001')}</g>${notificacoes}
+</svg>
+`;
+}
 
 function extrato() {
   const linhas = [
@@ -668,6 +716,7 @@ function chamada() {
 const arquivos = {
   'banner.svg': banner(),
   'numeros.svg': numeros(),
+  'cartao-app.svg': cartaoApp(),
   'extrato.svg': extrato(),
   'fluxo-transferencia.svg': fluxo(),
   'seguranca.svg': seguranca(),
@@ -684,4 +733,17 @@ for (const [nome, conteudo] of Object.entries(arquivos)) {
   fs.mkdirSync(path.dirname(destino), { recursive: true });
   fs.writeFileSync(destino, conteudo);
 }
-console.log(`${Object.keys(arquivos).length} SVGs em assets/readme/ (testes=${NUMEROS.testes}, migracoes=${NUMEROS.migracoes}, workflows=${NUMEROS.workflows})`);
+// Os mesmos números no texto do README (badge, textos alternativos das imagens e a linha do recrutador).
+const arquivoReadme = path.join(RAIZ, 'README.md');
+const readmeBruto = fs.readFileSync(arquivoReadme, 'utf8');
+const readme = readmeBruto
+  .replace(/badge\/testes-\d+_/, `badge/testes-${NUMEROS.testes}_`)
+  .replace(/RKF Bank em números: \d+ testes da API, \d+ rotas REST, \d+ migrações Flyway/,
+    `RKF Bank em números: ${NUMEROS.testes} testes da API, ${NUMEROS.rotas} rotas REST, ${NUMEROS.migracoes} migrações Flyway`)
+  .replace(/\d+ skills de IA do time/g, `${NUMEROS.skills} skills de IA do time`)
+  .replace(/badge\/🤖_skills_de_IA-\d+/, `badge/🤖_skills_de_IA-${NUMEROS.skills}`)
+  .replace(/Terminal: \d+ testes, 0 falhas/, `Terminal: ${NUMEROS.testes} testes, 0 falhas`)
+  .replace(/\*\*\d+ testes\*\* \(\d+ na API e (\d+) no site\)/,
+    (_, site) => `**${NUMEROS.testes + Number(site)} testes** (${NUMEROS.testes} na API e ${site} no site)`);
+if (readme !== readmeBruto) fs.writeFileSync(arquivoReadme, readme);
+console.log(`${Object.keys(arquivos).length} SVGs em assets/readme/ (testes=${NUMEROS.testes}, migracoes=${NUMEROS.migracoes}, workflows=${NUMEROS.workflows}, skills=${NUMEROS.skills})`);

@@ -126,6 +126,25 @@ public class ContaController {
         return ResponseEntity.ok(contaService.listarLancamentos(contaId, UsuarioLogado.de(jwt)));
     }
 
+    // Contas de um cliente escolhido pelo id: so ADMIN (regra na ConfiguracaoSeguranca e de novo no service).
+    // O cliente comum continua no GET /contas, que tira o cliente do token: id de cliente na URL de uma rota de
+    // cliente abriria a porta para pedir as contas de outra pessoa (motivo do descarte no contrato 2.6).
+    @GetMapping("/clientes/{clienteId}/contas")
+    public ResponseEntity<?> listarDoCliente(
+            @PathVariable UUID clienteId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        log.debug("Listagem de contas do cliente {} (page={}, size={})", clienteId, page, size);
+        UsuarioLogado usuario = UsuarioLogado.de(jwt);
+        if (Paginacao.querPagina(page, size)) {
+            return ResponseEntity.ok(PaginaResponse.de(
+                    contaService.listarDoClientePaginado(clienteId, Paginacao.criar(page, size), usuario)));
+        }
+        return ResponseEntity.ok(contaService.listarDoCliente(clienteId, usuario));
+    }
+
     // Contas do usuario logado (ou todas, para o ADMIN), em lista ou paginadas.
     @GetMapping("/contas")
     public ResponseEntity<?> listar(

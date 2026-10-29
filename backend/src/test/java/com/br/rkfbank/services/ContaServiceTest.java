@@ -19,6 +19,7 @@ import com.br.rkfbank.dto.request.conta.TransferenciaRequestDto;
 import com.br.rkfbank.dto.response.conta.ContaResponseDto;
 import com.br.rkfbank.dto.response.conta.LancamentoResponseDto;
 import com.br.rkfbank.entities.Cliente;
+import com.br.rkfbank.exceptions.ClienteNaoEncontradoException;
 import com.br.rkfbank.entities.Conta;
 import com.br.rkfbank.entities.Lancamento;
 import com.br.rkfbank.entities.enums.PerfilEnum;
@@ -416,6 +417,44 @@ class ContaServiceTest {
         when(contaRepository.findAll(PageRequest.of(0, 10))).thenReturn(new PageImpl<>(List.of(conta)));
 
         assertEquals(1, contaService.listarPaginado(PageRequest.of(0, 10), ADMIN).getTotalElements());
+    }
+
+    @Test
+    void adminListaAsContasDeUmClientePeloId() {
+        when(clienteService.buscar(DONO_ID)).thenReturn(novaConta(UUID.randomUUID(), BigDecimal.ONE, true).getCliente());
+        when(contaRepository.findByClienteId(DONO_ID)).thenReturn(List.of(novaConta(UUID.randomUUID(), BigDecimal.TEN, true)));
+
+        List<ContaResponseDto> contas = contaService.listarDoCliente(DONO_ID, ADMIN);
+
+        assertEquals(1, contas.size());
+    }
+
+    @Test
+    void adminListaAsContasDeUmClientePaginado() {
+        when(clienteService.buscar(DONO_ID)).thenReturn(novaConta(UUID.randomUUID(), BigDecimal.ONE, true).getCliente());
+        when(contaRepository.findByClienteId(DONO_ID, PageRequest.of(0, 10)))
+                .thenReturn(new PageImpl<>(List.of(novaConta(UUID.randomUUID(), BigDecimal.TEN, true))));
+
+        assertEquals(1, contaService.listarDoClientePaginado(DONO_ID, PageRequest.of(0, 10), ADMIN).getTotalElements());
+    }
+
+    @Test
+    void clienteNaoListaContasPeloIdNemAsProprias() {
+        // 403 antes do 404: quem nao e ADMIN nao descobre se o id de cliente existe (nem consulta o banco).
+        assertThrows(AcessoNegadoException.class, () -> contaService.listarDoCliente(DONO_ID, DONO));
+        assertThrows(AcessoNegadoException.class,
+                () -> contaService.listarDoClientePaginado(OUTRO_CLIENTE.clienteId(), PageRequest.of(0, 10), DONO));
+
+        verifyNoInteractions(clienteService, contaRepository);
+    }
+
+    @Test
+    void adminRecebe404QuandoOClienteNaoExiste() {
+        UUID inexistente = UUID.randomUUID();
+        when(clienteService.buscar(inexistente)).thenThrow(new ClienteNaoEncontradoException());
+
+        assertThrows(ClienteNaoEncontradoException.class, () -> contaService.listarDoCliente(inexistente, ADMIN));
+        verifyNoInteractions(contaRepository);
     }
 
     private Conta novaConta(UUID id, BigDecimal saldo, boolean ativa) {

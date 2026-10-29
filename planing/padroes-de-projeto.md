@@ -54,7 +54,7 @@ portfólio. Padrão "porque é bonito" fica de fora.
 
 | # | Padrão | Problema que resolve hoje | Esforço | Valor no portfólio | Quando |
 |:-:|---|---|:-:|:-:|---|
-| 1 | **Modelo de domínio rico** (*Tell, don't ask*) | a regra de saldo mora no `ContaService` (`getSaldo` + `setSaldo` em cada movimentação: 5 `setSaldo` no service); a `Conta` é só um saco de dados (*modelo anêmico*) | 🟢 baixo | ⭐⭐⭐ | **antes do MVP** (31/10): pouco código, menos bug |
+| 1 | ✅ **Modelo de domínio rico** (*Tell, don't ask*) — **feito em 27/10 com TDD** (`ContaTest`; `Conta.depositar`, `sacar`, `transferirPara`) | a regra de saldo mora no `ContaService` (`getSaldo` + `setSaldo` em cada movimentação: 5 `setSaldo` no service); a `Conta` é só um saco de dados (*modelo anêmico*) | 🟢 baixo | ⭐⭐⭐ | **antes do MVP** (31/10): pouco código, menos bug |
 | 2 | **Value Object `Dinheiro`** | `BigDecimal` solto: escala 2, arredondamento e "maior que zero" repetidos | 🟡 médio | ⭐⭐⭐ | depois do 1 |
 | 3 | **Ports & Adapters no CEP** + **Decorator** de cache e reserva | ViaCEP fora = cadastro fora (`503`); CEP consultado de novo a cada cadastro | 🟡 médio | ⭐⭐⭐ | logo depois do MVP |
 | 4 | **Mapper** dedicado | conversão entidade → DTO espalhada (`toResponse`, `paraContaResponse`, `paraResponse`) | 🟢 baixo | ⭐⭐ | quando os services crescerem (hoje os `paraResponse` são poucos e locais) |

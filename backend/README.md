@@ -199,7 +199,10 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 42 verifica�
 | `CpfValidoValidatorTest` | algoritmo de CPF | unitário puro |
 | `ViaCepClientTest` | integração com ViaCEP (sucesso, CEP inexistente, falha) | unitário com mock |
 | `ClienteServiceTest` / `ContaServiceTest` | regras de negócio | Mockito (`@ExtendWith(MockitoExtension.class)`) |
-| `ClienteControllerTest` / `ContaControllerTest` | JSON de entrada e saída, Bean Validation, formato de erro com `codigo`, `401`/`403` das regras de rota, header de repetição da idempotência | `@WebMvcTest` + MockMvc (base `ControllerWebMvcBase`, services mockados) |
+| `ClienteControllerTest` / `ContaControllerTest` | JSON de entrada e saída, Bean Validation, formato de erro com `codigo`, `401`/`403` das regras de rota, header de repetição da idempotência, `GET /clientes/{id}/contas` só para o ADMIN | `@WebMvcTest` + MockMvc (base `ControllerWebMvcBase`, services mockados) |
+| `ContaTest` | regras de saldo na própria `Conta` (depositar, sacar com a borda do saldo exato, transferir tudo-ou-nada), escritas com TDD antes do código | JUnit puro (`@Nested`, parametrizado) |
+| `IdentidadeEntidadesTest` / `ImutabilidadeRespostasTest` | `equals`/`hashCode` das 7 entidades (sem id, mesmo id, `HashSet` depois do persist) e records com lista imutáveis (`List.copyOf`) | JUnit puro (parametrizado) |
+| `ThreadsVirtuaisTest` | o executor da aplicação roda as tarefas em thread virtual (`spring.threads.virtual.enabled`) | `@SpringBootTest` |
 | `TratadorGlobalDeErrosTest` | exceção → status + corpo de erro | unitário |
 | `FiltroLogRequisicaoTest` | `X-Request-Id` reaproveitado, gerado e saneado | unitário |
 | `EntitiesAndEnumsTest` | getters/setters, enums, `@PrePersist` | unitário |
@@ -392,4 +395,5 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 | Fellipe e Renan não aparecem | API no perfil `visitante`/`test` ou `FLYWAY_LOCATIONS` sem `db/seed/equipe` | suba sem perfil (MySQL) ou com `equipe` |
 | `mvnw: Permission denied` (Linux/macOS) | arquivo sem permissão de execução | `chmod +x mvnw` |
 | Testes de repositório falham com `The database has been closed` | H2 2.4.x (o que o Boot traz) quebra o `CHECK ... IN (...)` das colunas de enum | mantenha `<h2.version>2.5.252</h2.version>` no `pom.xml` |
+| No IntelliJ, imports de `io.swagger`, `org.springdoc` ou `net.javacrumbs.shedlock` ficam vermelhos, mas `./mvnw` compila e os testes passam | IntelliJ antigo (ex.: Community 2024.3) não importa o projeto com o **Maven 3.10** do wrapper: o log da IDE (`Help → Show Log`) mostra `Unable to create injector ... ArtifactHandlerManager` e ela fica com a lista antiga de bibliotecas | atualize o IntelliJ (2025.3 ou mais novo) **ou** Settings → Build Tools → Maven → Maven home path = **Bundled (Maven 3)** → 🔄 Reload All Maven Projects. O `mvnw`, o CI e o Docker continuam no 3.10 |
 | `Unknown data type: "DATETIME"` ao subir com H2 | URL do H2 sem `MODE=MySQL` (o H2 2.5 só aceita `DATETIME` nesse modo) | acrescente `;MODE=MySQL` à URL (`jdbc:h2:mem:nome;MODE=MySQL`) |

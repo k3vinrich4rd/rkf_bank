@@ -333,6 +333,15 @@ const PASTAS = [
         auth: "token_admin", depois: status(200),
         descricao: "A mesma rota do cliente, mas o ADMIN recebe as contas de todo mundo.",
       }),
+      req("Contas do cliente novo pelo id (só ADMIN)", "GET", "/clientes/{{ _.novo_cliente_id }}/contas", {
+        auth: "token_admin",
+        depois: status(200) + '\ninsomnia.test("só contas do cliente novo", () => insomnia.expect(insomnia.response.json().every((c) => c.clienteId === insomnia.environment.get("novo_cliente_id"))).to.equal(true));',
+        descricao: "Contrato 3.2: suporte e conciliação partem de um cliente. Só o ADMIN; o cliente usa `GET /contas`.",
+      }),
+      req("Cliente tentando listar contas pelo id → 403", "GET", "/clientes/{{ _.novo_cliente_id }}/contas", {
+        auth: "token_novo", depois: status(403),
+        descricao: "Mesmo com o **próprio** id: cliente comum lista as dele em `GET /contas` (o dono vem do token).",
+      }),
       req("Listar usuários (guarda o id do cliente novo)", "GET", "/admin/usuarios", {
         auth: "token_admin",
         depois: [
