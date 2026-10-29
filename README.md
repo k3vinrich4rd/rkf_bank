@@ -17,6 +17,7 @@
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![Testes](https://img.shields.io/badge/testes-356_✔-22C55E)](#-qualidade-e-testes)
+[![Skills de IA](https://img.shields.io/badge/🤖_skills_de_IA-11-7C3AED?logo=claude&logoColor=white)](#-skills-de-ia-do-time)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
 <a href="#-conheça-o-rkf-bank"><img src="assets/readme/botoes/abrir-conta.svg" alt="🏦 Conheça o banco" height="46"/></a>
@@ -31,10 +32,11 @@
 <br/>
 <a href="#-aventura-sua-primeira-semana-no-rkf-bank"><img src="assets/readme/botoes/aventura.svg" alt="🎮 Aventura" height="46"/></a>
 <a href="#-feito-em-osasco"><img src="assets/readme/botoes/osasco.svg" alt="📍 Osasco" height="46"/></a>
+<a href="#-skills-de-ia-do-time"><img src="assets/readme/botoes/skills.svg" alt="🤖 Skills de IA" height="46"/></a>
 
 [![🔬 Laboratório de arquitetura](https://img.shields.io/badge/🔬_Laboratório-o_que_já_está_no_código_e_o_que_está_em_estudo-7C3AED?style=for-the-badge)](#-laboratório-de-arquitetura)
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 356 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 356 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI, 11 skills de IA do time e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -113,7 +115,8 @@
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
 | Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **387 testes** (356 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, **TDD** (domínio rico em `Conta`), CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
-| Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [roadmap](#-roadmap) |
+| IA no processo? | **11 skills de IA do time** (Claude Code) que repetem o processo do time: implementar explicando, revisar migração, conferir contrato, varrer CVEs, testar ponta a ponta e entregar |
+| Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [skills](#-skills-de-ia-do-time) · [roadmap](#-roadmap) |
 
 </details>
 
@@ -147,6 +150,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 4. Antes do PR: `scripts/validar.sh backend` (ou `frontend` / `tudo`).
 5. **Fellipe:** o roteiro de aceite completo, com os acessos da equipe, está no guia privado da equipe (fora do repositório); a conferência automática é `node scripts/rodar-colecao-insomnia.mjs` com a coleção da equipe (121 requisições, inclusive o ADMIN). A coleção pública tem só o fluxo do cliente (83): o perfil `visitante` não tem ADMIN de propósito.
 6. Recados entre o time: [planing/recados.md](planing/recados.md).
+7. Com o Claude Code, use as [skills do time](#-skills-de-ia-do-time): `/implementar-feature`, `/revisar-migracao`, `/testar-e2e`, `/entregar`...
 
 </details>
 
@@ -328,6 +332,9 @@ xychart-beta
 | `/conta` | saldo e atalhos |
 | `/conta/depositar` · `/conta/sacar` · `/conta/transferir` | movimentações |
 | `/conta/extrato` | extrato |
+| `/conta/senha` | trocar a própria senha |
+| `/conta/meus-dados` | meus dados (LGPD): ver, corrigir e encerrar o cadastro |
+| `/termos` · `/privacidade` | Termos de Uso e Política de Privacidade |
 
 </details>
 
@@ -341,7 +348,7 @@ stateDiagram-v2
     Ativa --> Ativa: depósito / saque / transferência
     Ativa --> Conflito: duas operações ao mesmo tempo
     Conflito --> Ativa: 409, cliente tenta de novo
-    Ativa --> Inativa: encerrar (🔮 futuro)
+    Ativa --> Inativa: titular encerra o cadastro (LGPD, saldo zero)
     Inativa --> [*]
     note right of Ativa
         só conta ativa movimenta
@@ -917,6 +924,10 @@ timeline
     V6 : idempotência : o dinheiro nunca sai duas vezes
     V7 : usuário ativo : desativar alguém vale na hora
     V8 : versão da senha : trocar a senha derruba os tokens antigos
+    V9 e V10 : LGPD : encerramento do cadastro e aceite dos termos
+    V11 e V12 : rotinas e login : ShedLock e limite de tentativas
+    V13 e V14 : regras : tipos de lançamento e senha temporária
+    V15 : refresh token : sessão que se renova sozinha
     a cada subida : callback afterMigrate : contas da equipe ou de visitante, sem duplicar
 ```
 
@@ -929,7 +940,7 @@ sequenceDiagram
     participant H as Hibernate
     API->>F: subir
     F->>DB: o que já rodou? (flyway_schema_history)
-    F->>DB: aplica só as versões que faltam (V1…V8)
+    F->>DB: aplica só as versões que faltam (V1…V15)
     F->>DB: afterMigrate: contas prontas, só o que falta
     API->>H: ddl-auto=validate
     H->>DB: as entidades batem com as tabelas?
@@ -980,12 +991,16 @@ erDiagram
     tb_cliente ||--o{ tb_conta : "possui"
     tb_cliente ||--o| tb_usuario : "entra com"
     tb_conta ||..o{ tb_lancamento : "origem ou destino"
+    tb_usuario ||--o{ tb_idempotencia : "uma operação por chave"
+    tb_usuario ||--o{ tb_refresh_token : "sessões"
     tb_cliente {
         BINARY16 id PK
         string nome_completo
         string cpf UK
         string email UK "minúsculas (V2)"
         string telefone
+        string termos_versao "aceite (V10)"
+        datetime encerrado_em "LGPD (V9)"
     }
     tb_endereco {
         BINARY16 id PK
@@ -1009,6 +1024,23 @@ erDiagram
         string senha_hash "BCrypt (60)"
         string perfil "CLIENTE | ADMIN"
         BINARY16 cliente_id UK
+        bit ativo "desativar vale na hora (V7)"
+        int versao_credencial "troca de senha (V8)"
+        bit deve_trocar_senha "senha temporária (V14)"
+    }
+    tb_idempotencia {
+        BINARY16 id PK
+        BINARY16 usuario_id FK
+        string chave "UK com usuario_id (V6)"
+        string operacao "DEPOSITO | SAQUE | TRANSFERENCIA"
+        string hash_requisicao
+    }
+    tb_refresh_token {
+        BINARY16 id PK
+        BINARY16 usuario_id FK
+        string hash_token UK "só o hash (V15)"
+        datetime expira_em "7 dias"
+        datetime revogado_em
     }
     tb_lancamento {
         BINARY16 id PK
@@ -1029,11 +1061,11 @@ erDiagram
 | Pacote | Responsabilidade |
 |---|---|
 | [`config`](backend/src/main/java/com/br/rkfbank/config) | segurança (filter chain, JWT, erros 401/403), CORS, filtro de log, criação do admin |
-| [`controllers`](backend/src/main/java/com/br/rkfbank/controllers) | HTTP: `AuthController`, `ClienteController`, `ContaController` |
+| [`controllers`](backend/src/main/java/com/br/rkfbank/controllers) | HTTP: `AuthController`, `ClienteController`, `ContaController`, `TitularController` (LGPD), `UsuarioController`, `TermosController`, `AdminUsuarioController` e `AdminConciliacaoController` |
 | [`services`](backend/src/main/java/com/br/rkfbank/services) | regras de negócio, transações, login e token |
 | [`security`](backend/src/main/java/com/br/rkfbank/security) | `UsuarioLogado`, montado a partir do JWT |
 | [`repositories`](backend/src/main/java/com/br/rkfbank/repositories) | Spring Data JPA |
-| [`entities`](backend/src/main/java/com/br/rkfbank/entities) | `Cliente`, `Endereco`, `Conta`, `Lancamento`, `Usuario` |
+| [`entities`](backend/src/main/java/com/br/rkfbank/entities) | `Cliente`, `Endereco`, `Conta` (domínio rico), `Lancamento`, `Usuario`, `RegistroIdempotencia`, `RefreshToken` |
 | [`dto`](backend/src/main/java/com/br/rkfbank/dto) | entrada e saída da API (`record`) |
 | [`clients/viacep`](backend/src/main/java/com/br/rkfbank/clients/viacep) | integração com o ViaCEP |
 | [`validation`](backend/src/main/java/com/br/rkfbank/validation) | `@CpfValido` |
@@ -1411,6 +1443,92 @@ Cada requisição ganha um `X-Request-Id` que aparece em todas as linhas, até n
 
 <img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
+## 🤖 Skills de IA do time
+
+> O RKF Bank também tem **skills**: comandos do [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) que
+> repetem o processo do time, do planejamento à entrega. Cada uma mora em [`.claude/skills/<nome>/SKILL.md`](.claude/skills),
+> lê o [CLAUDE.md](CLAUDE.md) e segue as mesmas regras de quem programa: português, testes 100% verdadeiros, LGPD e
+> **script determinístico antes de IA** (as skills chamam `scripts/validar.sh`, `smoke-e2e.mjs`, `varrer-cves.js`...).
+
+```mermaid
+flowchart LR
+    S["💡 /sugerir-evolucao<br/>o que vale fazer agora"] --> I["🛠️ /implementar-feature<br/>/nova-tela"]
+    I --> R{"🔍 revisar<br/>/revisar-migracao<br/>/verificar-contrato"}
+    R --> T["🧪 /testar-e2e<br/>/varrer-vulnerabilidades"]
+    T --> E["🚀 /entregar<br/>feature → develop<br/>+ PR develop → main aberto"]
+    E --> N["📝 /notas-de-versao<br/>reunião semanal:<br/>Kevin e Renan mergeiam na main"]
+    X["📖 /explicar-codigo"] -. "a qualquer momento" .-> I
+    M["💬 /recado"] -. "entre Kevin, Renan e Fellipe" .-> E
+    classDef plan fill:#3b0764,stroke:#a855f7,color:#fff
+    classDef build fill:#1e3a8a,stroke:#3b82f6,color:#fff
+    classDef check fill:#14532d,stroke:#22c55e,color:#fff
+    class S,N plan
+    class I,E build
+    class R,T check
+```
+
+<table>
+  <tr>
+    <td align="center" width="33%"><h3>🛠️</h3><code>/implementar-feature &lt;n&gt;</code><br/><sub>implementa a feature <code>n</code> do <a href="planing/checklist-features.md">checklist</a> explicando cada conceito enquanto faz</sub></td>
+    <td align="center" width="33%"><h3>🖼️</h3><code>/nova-tela &lt;nome&gt;</code><br/><sub>tela no padrão do frontend: página + screen + hook, rota e camada <code>lib/api</code> (área do Renan)</sub></td>
+    <td align="center" width="33%"><h3>📖</h3><code>/explicar-codigo &lt;alvo&gt;</code><br/><sub>explica um arquivo, fluxo ou conceito do projeto, sem alterar nada</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><h3>🗄️</h3><code>/revisar-migracao</code><br/><sub>revisa o <code>V&lt;n&gt;__*.sql</code>: migração já aplicada, operação destrutiva, MySQL × H2 e entidades</sub></td>
+    <td align="center"><h3>📜</h3><code>/verificar-contrato</code><br/><sub>compara backend, <a href="backend/README_CONTRATO_API.md">contrato</a> e <code>frontend/lib/api/types.ts</code> e aponta divergências</sub></td>
+    <td align="center"><h3>🧪</h3><code>/testar-e2e</code><br/><sub>sobe a API no MySQL do Docker e roda o fluxo real, do cadastro ao extrato</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><h3>🛡️</h3><code>/varrer-vulnerabilidades</code><br/><sub>CVEs conhecidas no Maven e no pnpm (OSV.dev) e a correção mínima segura</sub></td>
+    <td align="center"><h3>🚀</h3><code>/entregar</code><br/><sub>Git Flow do time: <code>develop</code> atualizada → branch → <code>git pull</code> da <code>develop</code> e conflitos → PR e merge na <code>develop</code> → PR <code>develop → main</code> aberto</sub></td>
+    <td align="center"><h3>📝</h3><code>/notas-de-versao</code><br/><sub>o que vai da <code>develop</code> para a <code>main</code>, com resumo para o PO e sugestão de versão</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><h3>💡</h3><code>/sugerir-evolucao [área]</code><br/><sub>próximas evoluções com mais valor de portfólio (<a href="planing/padroes-de-projeto.md">padrões de projeto</a>, arquitetura, segurança)</sub></td>
+    <td align="center"><h3>💬</h3><code>/recado</code><br/><sub>escreve, responde ou lista os <a href="planing/recados.md">recados do time</a></sub></td>
+    <td align="center"><h3>⚙️</h3><a href="CLAUDE.md"><code>CLAUDE.md</code></a><br/><sub>o contexto que toda skill lê: camadas, regras do dinheiro, LGPD, Git e armadilhas conhecidas</sub></td>
+  </tr>
+</table>
+
+<details>
+<summary><b>🎯 Qual skill eu uso? (clique na sua situação)</b></summary>
+<br/>
+
+<details><summary>🆕 Vou começar a próxima feature do checklist</summary>
+
+`/implementar-feature <n>`. Antes, se não sabe qual pegar, `/sugerir-evolucao` prioriza pelo MVP e pela régua Júnior → Pleno.
+
+</details>
+<details><summary>🗄️ Mudei uma entidade e criei a <code>V16__...sql</code></summary>
+
+`/revisar-migracao` antes do commit: ela barra a edição de uma migração já mergeada (o checksum mudaria e a API não subiria) e o SQL que roda no MySQL mas quebra no H2.
+
+</details>
+<details><summary>🔌 Mudei uma rota ou um DTO</summary>
+
+`/verificar-contrato` compara as três fontes (código, contrato e tipos do frontend). Depois, `/testar-e2e` prova o fluxo de verdade.
+
+</details>
+<details><summary>🚨 O GitHub avisou de uma vulnerabilidade</summary>
+
+`/varrer-vulnerabilidades`: mostra o risco de cada CVE e propõe a menor versão que corrige, sem pular de versão à toa.
+
+</details>
+<details><summary>✅ Terminei e quero subir</summary>
+
+`/entregar`: traz a `develop` para a sua branch (`git pull`) e resolve os conflitos, valida o lado que mudou, organiza os commits, abre o PR para a `develop`, espera o CI, mergeia e deixa o PR `develop → main` aberto. O merge na `main` é do Kevin e do Renan, na reunião semanal, com `/notas-de-versao`.
+
+</details>
+<details><summary>🤔 Não entendi como o <code>@Version</code> protege o saldo</summary>
+
+`/explicar-codigo Conta` (ou o nome de qualquer classe, fluxo ou conceito): explica o porquê e o como, com o código real, sem mexer em nada.
+
+</details>
+
+</details>
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
 ## 🧭 Roadmap
 
 ```mermaid
@@ -1620,9 +1738,10 @@ gitGraph
 ```
 
 - **Branches:** `main` é o que vai ao ar, `develop` é a integração; toda tarefa sai da `origin/develop` atualizada.
+- **Git Flow de cada mudança:** atualizar a `develop` → criar a branch → `git pull origin develop` na branch e resolver conflitos → PR para a `develop` → PR `develop → main` aberto, que **só o Kevin e o Renan mergeiam**.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/pt-br) em português, validados por hook.
 - **PRs:** revisão do outro dev + CI verde. **Contrato primeiro:** mudou rota, muda o [contrato](backend/README_CONTRATO_API.md) no mesmo PR.
-- **IA no time:** o [CLAUDE.md](CLAUDE.md) e as skills em [`.claude/skills/`](.claude/skills) (`/implementar-feature`, `/entregar`, `/revisar-migracao`, `/testar-e2e`...) dão a qualquer agente o mesmo contexto e as mesmas regras do time.
+- **IA no time:** o [CLAUDE.md](CLAUDE.md) e as [skills de IA do time](#-skills-de-ia-do-time) (`/implementar-feature`, `/entregar`, `/revisar-migracao`, `/testar-e2e`...) dão a qualquer agente o mesmo contexto e as mesmas regras do time.
 
 Passo a passo completo: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -1654,7 +1773,7 @@ Qualquer script que rode na página (um XSS, uma dependência comprometida) cons
 <summary><b>Por que Flyway em vez de deixar o Hibernate criar as tabelas?</b></summary>
 <br/>
 
-Com `ddl-auto=update` o Hibernate "adivinha" o schema, não remove nem renomeia nada e não deixa histórico. Com Flyway, cada mudança é um SQL versionado (`V1__` a `V8__`), revisado no PR e igual em todo ambiente; o Hibernate só **valida**. Migração aplicada nunca se edita: o checksum muda e a API não sobe.
+Com `ddl-auto=update` o Hibernate "adivinha" o schema, não remove nem renomeia nada e não deixa histórico. Com Flyway, cada mudança é um SQL versionado (`V1__` a `V15__`), revisado no PR e igual em todo ambiente; o Hibernate só **valida**. Migração aplicada nunca se edita: o checksum muda e a API não sobe.
 
 </details>
 
@@ -1759,6 +1878,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 |---|---|---|
 | Time | [CONTRIBUTING.md](CONTRIBUTING.md) | branches, commits, PRs e revisão |
 | Time e IA | [CLAUDE.md](CLAUDE.md) | regras do projeto para pessoas e agentes de IA |
+| Time e IA | [🤖 Skills de IA do time](#-skills-de-ia-do-time) · [`.claude/skills/`](.claude/skills) | os comandos do Claude Code que repetem o processo do time, do planejamento à entrega |
 | Todos | [🗺️ Atlas de fluxos](FLUXOS.md) | como cada parte se conecta: contexto, telas, árvore da transferência, containers, componentes, rastreabilidade tela → tabela, sessão e fluxo do time |
 | API | [Contrato da API](backend/README_CONTRATO_API.md) | rotas, autenticação, JSON, regras e erros |
 | Segurança | [Spring Security + OAuth2 + JWT](backend/README_SEGURANCA.md) | como o login, o token, os filtros, a autorização e o cookie do front funcionam, e por que é assim |
@@ -1768,6 +1888,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | Deploy | [Publicar o RKF Bank](backend/README_DEPLOY.md) · [Dockerfile](Dockerfile) | onde publicar (grátis × sempre ligado), imagem Docker, perfil `prod`, variáveis e o que conferir; responsáveis: Kevin e Renan |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
 | Planejamento | [planing/](planing/README.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e padrões |
+| Planejamento | [Estudos de arquitetura](planing/estudos-arquitetura.md) | o que já está no código e o que está em estudo (Outbox, DLQ, OAuth2/OIDC, AWS), com plano e exemplo |
 
 <br/>
 

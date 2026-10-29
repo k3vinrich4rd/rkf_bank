@@ -56,6 +56,9 @@ class LimitadorTentativasLoginTest {
 
     @BeforeEach
     void setUp() {
+        // O H2 do perfil test (jdbc:h2:mem:testdb) e o mesmo dos @SpringBootTest: se o SegurancaIntegracaoTest rodar
+        // antes, os logins errados dele ficam aqui. Comeca da tabela vazia; o @DataJpaTest desfaz no fim do teste.
+        jdbcTemplate.update("DELETE FROM tb_tentativa_login");
         limitador = new LimitadorTentativasLogin(jdbcTemplate, relogio);
     }
 

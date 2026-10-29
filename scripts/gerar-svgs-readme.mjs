@@ -28,6 +28,9 @@ const NUMEROS = {
   migracoes: fs.readdirSync(path.join(RAIZ, 'backend/src/main/resources/db/migration')).filter((f) => /^V\d+__.*\.sql$/.test(f)).length,
   status: 9, // 400, 401, 403, 404, 409, 422, 503 + 201/204 de sucesso
   workflows: fs.readdirSync(path.join(RAIZ, '.github/workflows')).filter((f) => f.endsWith('.yml')).length,
+  // Skills do time em .claude/skills/<nome>/SKILL.md (as mesmas da seção "Skills de IA do time" do README).
+  skills: fs.readdirSync(path.join(RAIZ, '.claude/skills'), { withFileTypes: true })
+    .filter((e) => e.isDirectory() && fs.existsSync(path.join(RAIZ, '.claude/skills', e.name, 'SKILL.md'))).length,
   time: 3,
 };
 
@@ -240,6 +243,7 @@ const BOTOES = {
   time: ['👥 Time', {}],
   osasco: ['📍 Osasco', { cor: CIANO }],
   aventura: ['🎮 Aventura', { destaque: true }],
+  skills: ['🤖 Skills de IA', {}],
   'trilha-recrutador': ['🧑‍💼 Sou recrutador(a)', { sub: 'tenho 1 minuto: o que esse projeto prova?' }],
   'trilha-dev': ['👩‍💻 Sou dev', { sub: 'quero ver código, testes e decisões' }],
   'trilha-cliente': ['💳 Quero ser cliente', { sub: 'o que o RKF Bank faz por mim?', destaque: true }],
@@ -255,6 +259,7 @@ function numeros() {
     [NUMEROS.migracoes, 'migrações Flyway', CIANO],
     [15, 'minutos de vida do JWT', AZUL],
     [NUMEROS.workflows, 'workflows de CI', CIANO],
+    [NUMEROS.skills, 'skills de IA do time', AZUL],
     [NUMEROS.time, 'pessoas de Osasco', VERDE],
   ];
   const w = 1200 / itens.length;
@@ -735,8 +740,10 @@ const readme = readmeBruto
   .replace(/badge\/testes-\d+_/, `badge/testes-${NUMEROS.testes}_`)
   .replace(/RKF Bank em números: \d+ testes da API, \d+ rotas REST, \d+ migrações Flyway/,
     `RKF Bank em números: ${NUMEROS.testes} testes da API, ${NUMEROS.rotas} rotas REST, ${NUMEROS.migracoes} migrações Flyway`)
+  .replace(/\d+ skills de IA do time/g, `${NUMEROS.skills} skills de IA do time`)
+  .replace(/badge\/🤖_skills_de_IA-\d+/, `badge/🤖_skills_de_IA-${NUMEROS.skills}`)
   .replace(/Terminal: \d+ testes, 0 falhas/, `Terminal: ${NUMEROS.testes} testes, 0 falhas`)
   .replace(/\*\*\d+ testes\*\* \(\d+ na API e (\d+) no site\)/,
     (_, site) => `**${NUMEROS.testes + Number(site)} testes** (${NUMEROS.testes} na API e ${site} no site)`);
 if (readme !== readmeBruto) fs.writeFileSync(arquivoReadme, readme);
-console.log(`${Object.keys(arquivos).length} SVGs em assets/readme/ (testes=${NUMEROS.testes}, migracoes=${NUMEROS.migracoes}, workflows=${NUMEROS.workflows})`);
+console.log(`${Object.keys(arquivos).length} SVGs em assets/readme/ (testes=${NUMEROS.testes}, migracoes=${NUMEROS.migracoes}, workflows=${NUMEROS.workflows}, skills=${NUMEROS.skills})`);

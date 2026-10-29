@@ -87,9 +87,9 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 > Nunca use `git reset`, `revert`, `rebase` ou `push --force` sem pedido explícito.
 
 - `feature/*`, `fix/*`, `chore/*`, `docs/*` → Pull Request para a `develop`. Nunca commit direto em `main` ou `develop`.
-- 📅 **Fluxo de entrega:** o `/entregar` atualiza a branch com a `develop`, abre o PR para a `develop`, espera o CI e
-  **mergeia na `develop`**, deixando o checkout nela. A `main` só recebe o que o Kevin e o Renan aprovarem na **reunião
-  semanal** (fim da semana), com `/notas-de-versao`; nunca abra PR para a `main` sem esse pedido.
+- 📅 **Fluxo de entrega (Git Flow do time):** atualizar a `develop` (`git pull`) → criar a branch dela → `git pull origin develop`
+  na branch e resolver os conflitos → PR para a `develop`, CI verde e merge → PR `develop → main` **aberto** (o `/entregar`
+  abre ou atualiza). **O merge na `main` é só do Kevin e do Renan**, na reunião semanal, com `/notas-de-versao`: nunca mergeie nela.
 - 🌱 **Branch nova nasce sempre da `origin/develop` atualizada** (`git fetch` + `git switch -c <branch> origin/develop`).
   Nunca empilhe uma branch em outra que ainda não foi mergeada: se a feature depende de algo fora da `develop`
   (confira com `git merge-base --is-ancestor <commit> origin/develop`), **pare e espere o merge**. "Vou mergear" ou
@@ -104,7 +104,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 | Skill | Para quê |
 |---|---|
 | `/implementar-feature <n>` | implementa a feature `n` do `planing/checklist-features.md` explicando cada conceito na prática |
-| `/entregar` | atualiza com a `develop`, valida, atualiza a documentação, faz commits semânticos, push, PR para a `develop`, espera o CI e mergeia na `develop` |
+| `/entregar` | Git Flow do time: `develop` atualizada → branch → `git pull` da `develop` e conflitos → valida, documenta, commits semânticos → PR e merge na `develop` com CI verde → PR `develop → main` aberto (sem merge) |
 | `/verificar-contrato` | compara controllers/DTOs do backend, o contrato da API e os tipos do frontend, e aponta divergências |
 | `/varrer-vulnerabilidades` | roda a varredura de CVEs e propõe a correção mínima |
 | `/testar-e2e` | sobe o fluxo real (cadastro → extrato) contra a API e interpreta o resultado |
