@@ -150,6 +150,11 @@ Data: 29/10
 Decisão: `Conta.cliente` (`@ManyToOne`) e `Usuario.cliente` (`@OneToOne`) passam a `FetchType.LAZY`. As listas que mostram o associado buscam junto com `@EntityGraph` (o `JOIN FETCH` do Spring Data): `ClienteRepository.findAll` (com `endereco`) e `UsuarioRepository.findAllByOrderByPerfilAscLoginAsc` (com `cliente`). `Cliente.endereco` continua EAGER (toda resposta de cliente mostra o endereço).
 Por quê: no EAGER padrão dos para-um, cada linha de uma lista disparava mais uma consulta (N+1). Medido no `ConsultasSqlIntegracaoTest`: `GET /contas` do ADMIN ia de 7 consultas (5 contas) para 17 (15 contas); `GET /clientes` e `GET /admin/usuarios`, igual. Agora o número é o mesmo com 5 ou 15 linhas. A regra de dono e a resposta só leem `getCliente().getId()`, que o proxy LAZY já sabe sem ir ao banco. Nenhuma rota, payload ou status mudou (smoke 42/42, coleções 83/83 e 121/121).
 
+## MVP concluído, sem deploy: projeto de portfólio
+Data: 29/10
+Decisão: o MVP está **concluído** com a release do PR #76 na `main`. Não haverá fase de deploy: o RKF Bank é um **projeto de portfólio**, para devs e recrutadores rodarem e avaliarem na própria máquina (`VISITANTES.md`: perfil `visitante`, 1 comando, sem Docker e sem `.env`). A imagem Docker e o perfil `prod` continuam no projeto e testados no CI (`backend-docker.yml`), como prova de engenharia.
+Por quê: publicar exigiria banco gerenciado, segredos, custo e manutenção contínua, e não acrescenta nada ao que o projeto quer mostrar (regra de negócio, segurança, testes e processo de time). Rodar localmente deixa qualquer pessoa testar tudo, inclusive os erros, sem depender de um servidor no ar.
+
 ---
 
 ## Ainda falta decidir
@@ -157,5 +162,5 @@ Por quê: no EAGER padrão dos para-um, cada linha de uma lista disparava mais u
 - [x] **Acesso à conta sem login:** resolvido com o login (ver "Login com CPF + senha e JWT").
 - [ ] **Dinheiro:** a API manda o valor em reais (`50.00`) ou em centavos (`5000`)? Hoje a API usa reais e o frontend converte para centavos.
 - [x] **Login:** feito (feature 2 do checklist).
-- [ ] **Onde publicar:** onde o site, a API e o banco vão ficar no ar?
+- [x] **Onde publicar:** em lugar nenhum: o projeto é de portfólio e roda localmente (ver "MVP concluído, sem deploy").
 - [ ] **Arquitetura alvo:** monólito modular por funcionalidade (`cliente`, `conta`, `auth`, `pix`) a partir do PR do Pix? Proposta e motivos em [README_IMPLEMENTACAO.md, seção 8](../backend/README_IMPLEMENTACAO.md#8-revisão-de-arquitetura-20102026).

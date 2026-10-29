@@ -176,7 +176,7 @@ function banner() {
   <g transform="translate(64 0)">
     <rect x="0" y="62" width="196" height="30" rx="15" fill="${AZUL}" fill-opacity=".12" stroke="${AZUL}" stroke-opacity=".5" class="entra"/>
     <circle cx="18" cy="77" r="4" fill="${VERDE}" class="pulso"/>
-    <text x="32" y="82" class="entra" style="font: 600 13px ${SANS}" fill="${TEXTO}">MVP em construção · 31/10</text>
+    <text x="32" y="82" class="entra" style="font: 600 13px ${SANS}" fill="${TEXTO}">MVP concluído · 29/10</text>
     <text x="0" y="158" class="entra" style="font: 800 64px ${SANS}; letter-spacing: 10px; animation-delay:.15s" fill="${TEXTO}">RKF</text>
     <text x="196" y="158" class="entra" style="font: 300 40px ${SANS}; animation-delay:.25s" fill="url(#marca)">Banco Digital</text>
     <text x="2" y="200" class="entra" style="font: 600 20px ${SANS}; animation-delay:.4s" fill="${CIANO}">Confiança. Tecnologia. Liberdade.</text>
@@ -685,7 +685,7 @@ function divisor() {
 }
 
 function chamada() {
-  return `${cabecalho(1200, 200, 'Mais que um banco, um parceiro para o seu amanhã. Acompanhe o RKF Bank até o lançamento do MVP em 31/10.')}
+  return `${cabecalho(1200, 200, 'Mais que um banco, um parceiro para o seu amanhã. MVP concluído: rode o RKF Bank na sua máquina em 1 comando.')}
   <defs>${marca}
     <radialGradient id="g1" cx=".15" cy=".3" r=".7"><stop offset="0" stop-color="${AZUL}" stop-opacity=".45"/><stop offset="1" stop-color="${AZUL}" stop-opacity="0"/></radialGradient>
     <radialGradient id="g2" cx=".9" cy=".8" r=".6"><stop offset="0" stop-color="${CIANO}" stop-opacity=".3"/><stop offset="1" stop-color="${CIANO}" stop-opacity="0"/></radialGradient>
@@ -701,11 +701,11 @@ function chamada() {
   <rect width="1200" height="200" rx="18" fill="url(#g1)"/><rect width="1200" height="200" rx="18" fill="url(#g2)"/>
   <g transform="translate(46 38) scale(.62)">${cartao(0, 0, 300, 'VOCÊ AQUI', '0001')}</g>
   <text x="280" y="86" class="entra" style="font: 800 32px ${SANS}; animation-delay:.15s" fill="#fff">Mais que um banco, um parceiro para o seu amanhã.</text>
-  <text x="282" y="122" class="entra" style="font: 400 16px ${SANS}; animation-delay:.35s" fill="${APAGADO}">Acompanhe o RKF Bank até o lançamento do MVP em 31/10/2026 ⭐</text>
+  <text x="282" y="122" class="entra" style="font: 400 16px ${SANS}; animation-delay:.35s" fill="${APAGADO}">MVP concluído em 29/10/2026. Rode na sua máquina em 1 comando, sem Docker ⭐</text>
   <g transform="translate(900 136)">
     <rect width="250" height="44" rx="22" fill="none" stroke="${CIANO}" stroke-width="2" class="onda"/>
     <rect width="250" height="44" rx="22" fill="url(#marca)"/>
-    <text x="125" y="28" text-anchor="middle" style="font: 700 15px ${SANS}" fill="#fff">Ver o roadmap  ›</text>
+    <text x="125" y="28" text-anchor="middle" style="font: 700 15px ${SANS}" fill="#fff">Rodar na sua máquina  ›</text>
   </g>
 </svg>
 `;

@@ -14,7 +14,7 @@ Features do backend em **ordem de prioridade**. Para cada uma o ciclo é o mesmo
 | 2 | [Spring Security + JWT](#2-spring-security--jwt) | débito mais grave: qualquer pessoa movimentava qualquer conta | ✅ |
 | 3 | [Testcontainers](#3-testcontainers--testes-com-mysql-real) | testa migrações, segurança e concorrência contra o MySQL de verdade | ✅ |
 | 4 | [Swagger / OpenAPI](#4-swagger--openapi) | documentação viva da API, já com o login no botão *Authorize* | ✅ |
-| 5 | [Deploy na AWS](#5-deploy-na-aws---futuro) 🔮 | **futuro**: ainda não sabemos como fazer | 🔮 |
+| 5 | [Deploy na AWS](#5-deploy-na-aws---futuro) | **fora do escopo**: o RKF Bank é portfólio e roda localmente (29/10) | ⛔ |
 | 6 | [Mensageria](#6-mensageria---futuro) 🔮 | **futuro**: ainda não sabemos como fazer | 🔮 |
 
 Legenda: ⬜ não começou · 🎬 estudando · 🛠️ implementando · ✅ mergeado · 🔮 futuro (só pesquisa, sem plano de implementação)
@@ -22,7 +22,8 @@ Legenda: ⬜ não começou · 🎬 estudando · 🛠️ implementando · ✅ mer
 > 🔮 **Features 1 a 4:** têm plano de implementação e entram na fila agora.
 > **Features 5 e 6:** são **para o futuro**. Ainda não temos ideia de como fazer, então elas não têm passo a passo, só perguntas a responder e o que estudar. O plano de implementação só será escrito quando as features 1 a 4 estiverem prontas e o estudo tiver respondido as perguntas.
 
-> ⚠️ O MVP vence em **31/10/2026** e o item "Colocar no ar" do roadmap continua valendo. Ele pode ser resolvido de um jeito mais simples que a AWS (decisão em aberto em `decisoes.md`) sem esperar a feature 5.
+> ✅ **MVP concluído em 29/10/2026** (PR #76 na `main`). **Sem deploy:** o RKF Bank é um projeto de portfólio, para devs e
+> recrutadores rodarem na própria máquina. A feature 5 fica só como estudo de AWS (decisão em `decisoes.md`).
 
 > 🧭 **Ordem revisada em 20/10/2026** (11 dias para o MVP): **3. Testcontainers** continua a próxima (automatiza a validação
 > no MySQL que hoje é manual e protege o deploy). Depois dela vêm os **bloqueios do lançamento**, antes do Swagger:
@@ -32,7 +33,7 @@ Legenda: ⬜ não começou · 🎬 estudando · 🛠️ implementando · ✅ mer
 
 > ✅ **Atualizado em 23/10/2026:** features 1 a 4 prontas (PR #60). Também saíram os bloqueios de produto do lançamento:
 > `GET /contas/{contaId}`, aceite LGPD versionado (`/termos`, telas de Termos e Privacidade) e *refresh token*.
-> O que falta para o MVP é **colocar no ar** e o teste do Fellipe: análise completa em
+> Em 29/10 o MVP foi concluído sem a etapa de publicação (decisão: projeto de portfólio). Análise em
 > [analise-mvp.md](analise-mvp.md).
 
 ---

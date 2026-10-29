@@ -1,5 +1,8 @@
 # Análise do MVP — o que falta até 31/10/2026
 
+> ✅ **Encerrada em 29/10/2026:** o MVP foi concluído com a release do PR #76 na `main`, **sem deploy** (o projeto é de
+> portfólio e roda localmente; decisão em [decisoes.md](decisoes.md)). O texto abaixo fica como histórico.
+
 ## ⏱️ Revisão de 26/10/2026 (5 dias para o prazo)
 
 **O produto continua pronto; o lançamento continua parado nas mesmas decisões.** Desde 23/10 andou tudo o que era
