@@ -15,7 +15,7 @@ Modo **somente leitura**: não edite arquivos. O objetivo é a pessoa entender o
 
 ## Como achar o alvo (barato)
 - Arquivo ou classe: `Glob` pelo nome e leia só ele.
-- Fluxo ("como funciona a transferência"): comece pelo controller (`Grep "@PostMapping" backend/src/main/java/com/br/rkfbank/controllers`), siga para o service e o repository. No frontend: `app/<rota>/page.tsx` → `components/<tela>/<tela>-screen.tsx` → `use-*.ts` → `lib/api`.
+- Fluxo ("como funciona a transferência"): comece pelo controller (`Grep "@PostMapping" backend/src/main/java/com/br/rkfbank`; cada modulo, como `contas/`, tem o controller, o service e o repository dele), siga para o service e o repository. No frontend: `app/<rota>/page.tsx` → `components/<tela>/<tela>-screen.tsx` → `use-*.ts` → `lib/api`.
 - Conceito ("@Transactional", "X-Request-Id"): `Grep` pelo termo e escolha os 2 ou 3 usos mais representativos.
 - Leia só o necessário. Não abra o projeto inteiro.
 

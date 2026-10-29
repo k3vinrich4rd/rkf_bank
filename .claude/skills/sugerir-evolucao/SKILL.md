@@ -19,9 +19,9 @@ escolher **poucas** evoluções que resolvam problema real **e** mostrem maturid
    - `planing/decisoes.md` (não sugira o que o time já decidiu não fazer).
 3. Medições rápidas, sem ler o projeto inteiro:
    - setters de estado sensível fora da entidade: `grep -rn "setSaldo\|setAtiva" backend/src/main/java --include=*Service.java`;
-   - conversões entidade → DTO espalhadas: `grep -rn "Response(\|paraResponse\|toResponse" backend/src/main/java/com/br/rkfbank/services`;
-   - integrações externas sem porta: `ls backend/src/main/java/com/br/rkfbank/clients`;
-   - tamanho dos services: `wc -l backend/src/main/java/com/br/rkfbank/services/*.java`;
+   - conversões entidade → DTO espalhadas: `grep -rn "Response(\|paraResponse\|toResponse" backend/src/main/java/com/br/rkfbank --include=*Service.java`;
+   - integrações externas sem porta: `grep -rln "RestClient" backend/src/main/java/com/br/rkfbank` (o ViaCEP ja esta atras da porta `clientes/ConsultaCep`);
+   - tamanho dos services: `find backend/src/main/java/com/br/rkfbank -name "*Service.java" | xargs wc -l`;
    - testes: `scripts/validar.sh backend` (número de testes e cobertura do JaCoCo).
 4. Se o pedido citou uma área (`seguranca`, `dominio`, `integracoes`, `testes`, `frontend`), foque nela.
 

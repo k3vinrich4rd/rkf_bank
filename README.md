@@ -13,10 +13,10 @@
 [![Java](https://img.shields.io/badge/Java-25_LTS-0A0F1C?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/25/)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-0A0F1C?logo=springboot&logoColor=6DB33F)](https://spring.io/projects/spring-boot)
 [![Spring Security](https://img.shields.io/badge/Spring_Security-JWT-0A0F1C?logo=springsecurity&logoColor=6DB33F)](https://docs.spring.io/spring-security/reference/)
-[![Flyway](https://img.shields.io/badge/Flyway-V1→V15_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
+[![Flyway](https://img.shields.io/badge/Flyway-V1→V16_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-356_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-391_✔-22C55E)](#-qualidade-e-testes)
 [![Skills de IA](https://img.shields.io/badge/🤖_skills_de_IA-11-7C3AED?logo=claude&logoColor=white)](#-skills-de-ia-do-time)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
@@ -36,7 +36,7 @@
 
 [![🔬 Laboratório de arquitetura](https://img.shields.io/badge/🔬_Laboratório-o_que_já_está_no_código_e_o_que_está_em_estudo-7C3AED?style=for-the-badge)](#-laboratório-de-arquitetura)
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 356 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI, 11 skills de IA do time e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 391 testes da API, 23 rotas REST, 16 migrações Flyway, JWT de 15 minutos, 6 workflows de CI, 11 skills de IA do time e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -113,7 +113,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **387 testes** (356 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, **TDD** (domínio rico em `Conta`), CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **422 testes** (391 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, **TDD** (domínio rico em `Conta`), CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | IA no processo? | **11 skills de IA do time** (Claude Code) que repetem o processo do time: implementar explicando, revisar migração, conferir contrato, varrer CVEs, testar ponta a ponta e entregar |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [skills](#-skills-de-ia-do-time) · [roadmap](#-roadmap) |
@@ -128,13 +128,13 @@ Sugestão de leitura, do mais simples ao mais interessante:
 
 | Arquivo | Por que olhar |
 |---|---|
-| [`ContaService.java`](backend/src/main/java/com/br/rkfbank/services/ContaService.java) | transferência atômica, regra de dono (404 → 403 → 422) e validação de saldo |
-| [`Conta.java`](backend/src/main/java/com/br/rkfbank/entities/Conta.java) | `@Version` para lock otimista |
-| [`ConfiguracaoSeguranca.java`](backend/src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java) | `SecurityFilterChain`, JWT HS256 com algoritmo fixo, BCrypt |
-| [`AutenticacaoService.java`](backend/src/main/java/com/br/rkfbank/services/AutenticacaoService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
-| [`db/migration/`](backend/src/main/resources/db/migration) | `V1` a `V15`: as tabelas (endereço, cliente, conta, lançamento, usuário) e cada evolução numa versão nova (idempotência, encerramento LGPD, aceite dos termos, limitador de login, senha temporária, refresh token) |
+| [`ContaService.java`](backend/src/main/java/com/br/rkfbank/contas/ContaService.java) | transferência atômica, regra de dono (404 → 403 → 422) e validação de saldo |
+| [`Conta.java`](backend/src/main/java/com/br/rkfbank/contas/Conta.java) | `@Version` para lock otimista |
+| [`ConfiguracaoSeguranca.java`](backend/src/main/java/com/br/rkfbank/autenticacao/ConfiguracaoSeguranca.java) | `SecurityFilterChain`, JWT HS256 com algoritmo fixo, BCrypt |
+| [`AutenticacaoService.java`](backend/src/main/java/com/br/rkfbank/autenticacao/AutenticacaoService.java) | login sem enumeração de CPF (mesma resposta e mesmo tempo) |
+| [`db/migration/`](backend/src/main/resources/db/migration) | `V1` a `V16`: as tabelas (endereço, cliente, conta, lançamento, usuário) e cada evolução numa versão nova (idempotência, encerramento LGPD, aceite dos termos, limitador de login, senha temporária, refresh token) |
 | [`db/seed/`](backend/src/main/resources/db/seed) | callbacks `afterMigrate`: `equipe/` (Fellipe e Renan, login só pelo `.env`) e `visitante/` (Ana e Bruno, contas públicas) |
-| [`FiltroLogRequisicao.java`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) | `X-Request-Id` em todas as linhas de log, com proteção contra log forjado |
+| [`FiltroLogRequisicao.java`](backend/src/main/java/com/br/rkfbank/compartilhado/config/FiltroLogRequisicao.java) | `X-Request-Id` em todas as linhas de log, com proteção contra log forjado |
 | [`SegurancaIntegracaoTest.java`](backend/src/test/java/com/br/rkfbank/SegurancaIntegracaoTest.java) | ataques ao token (`alg: none`, payload adulterado) |
 | [`planing/decisoes.md`](planing/decisoes.md) | por que cada escolha foi feita |
 
@@ -722,7 +722,7 @@ O `valor` é sempre positivo: se a conta da tela é o `contaDestinoId`, é entra
 ```
 
 **Decida pelo `status` e pelo `codigo`; o `message` é só para exibir.** Código e mensagem moram juntos no enum
-[`CodigoErroEnum`](backend/src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java) (a tabela completa está no
+[`CodigoErroEnum`](backend/src/main/java/com/br/rkfbank/compartilhado/erros/CodigoErroEnum.java) (a tabela completa está no
 [contrato](backend/README_CONTRATO_API.md#6-erros)).
 
 | Status | Quando | Alguns `codigo` |
@@ -819,42 +819,80 @@ flowchart LR
 </div>
 
 <details open>
-<summary><b>🩺 Como o RKF Bank está construído hoje</b> (diagnóstico de 29/10/2026)</summary>
+<summary><b>🩺 Como o RKF Bank está construído hoje: monólito modular</b></summary>
 <br/>
 
 | | O que é | No RKF Bank |
 |:-:|---|---|
-| 🧱 | **Monólito:** uma aplicação só, publicada inteira | 99 classes Java, 23 rotas, um banco MySQL e uma imagem Docker: tudo vai ao ar junto |
-| 🍰 | **Em camadas:** cada camada só chama a de baixo | `ContaController` → `ContaService` → `ContaRepository`, com as pastas separadas por tipo técnico (`controllers/`, `services/`...): o chamado *package by layer* |
+| 🧱 | **Monólito modular:** uma aplicação só, publicada inteira, mas dividida em módulos por assunto | `clientes`, `contas`, `autenticacao`, `titular` (LGPD) e `compartilhado`; 23 rotas, um banco MySQL e uma imagem Docker |
+| 🍰 | **Camadas dentro de cada módulo:** cada uma só chama a de baixo | `contas/ContaController` → `ContaService` → `ContaRepository`: o controller, o service, o repository, as entidades e os DTOs de um assunto moram juntos (*package by feature*) |
+| 🔌 | **Portas e adaptadores nas bordas** (hexagonal só onde há tecnologia de fora) | `clientes/ConsultaCep` (adaptador `ViaCepConsultaCep`) e `contas/comprovante/NotificadorDeMovimentacao` (adaptador `NotificadorNoLog`) |
+| 🚧 | **Fronteiras verificadas por teste** | [`ArquiteturaModulosTest`](backend/src/test/java/com/br/rkfbank/ArquiteturaModulosTest.java) (ArchUnit): o compartilhado não conhece os módulos, só o adaptador conhece o ViaCEP, controller não fala com repository e o banco de cada módulo é só dele |
 | 🛡️ | **BFF na frente** (*Backend for Frontend*) | o Next.js guarda o token no cookie `httpOnly` e repassa as chamadas para a API |
 | 🧵 | **Thread:** o "trabalhador" que executa o código, uma instrução depois da outra | cada requisição roda numa **thread virtual** (Java 21+): quando espera o banco ou o ViaCEP, libera a vaga para outra requisição |
-| ⏱️ | **Síncrono × assíncrono:** quem pede espera a resposta × pede e segue | a API é síncrona via HTTP; as partes assíncronas são as rotinas agendadas (anonimização às 03h, limpeza às 04h) |
+| ⏱️ | **Síncrono × assíncrono:** quem pede espera a resposta × pede e segue | a API responde de forma síncrona (a transferência devolve `204` na hora); o **comprovante** sai de forma assíncrona pelo **Outbox** (até 2 s depois), e as rotinas agendadas também (anonimização às 03h, limpeza às 04h) |
+
+```mermaid
+flowchart LR
+    subgraph API["API Spring Boot: 1 deploy, 1 banco"]
+        direction LR
+        CL["📦 clientes<br/>cadastro"] --> CEP{{"porta ConsultaCep"}}
+        CO["📦 contas<br/>dinheiro e extrato"] --> OB[("tb_outbox<br/>mesma transação")]
+        AU["📦 autenticacao<br/>login, JWT, admin"]
+        TI["📦 titular<br/>LGPD"]
+        CP["📦 compartilhado<br/>erros, web, config"]
+        CL -. "credencial" .-> AU
+        TI -. "encerrar e anonimizar" .-> CO
+        PUB["⏱️ PublicadorOutbox<br/>a cada 2 s"] --> OB
+        PUB --> NOT{{"porta NotificadorDeMovimentacao"}}
+    end
+    CEP --> VIA[["ViaCEP"]]
+    NOT --> LOG["📝 comprovante no log<br/>(e-mail no futuro)"]
+```
 
 <details>
-<summary>🧩 <b>15 design patterns já usados</b> (clique)</summary>
+<summary>📦 <b>O que mora em cada módulo</b> (clique)</summary>
+<br/>
+
+| Módulo | O que tem | Onde |
+|---|---|---|
+| **clientes** | cadastro com CEP, `Cliente`, `Endereco`, porta `ConsultaCep` e o adaptador do ViaCEP | [`clientes/`](backend/src/main/java/com/br/rkfbank/clientes) |
+| **contas** | abertura, depósito, saque, transferência, extrato, idempotência, conciliação e o comprovante (Outbox) | [`contas/`](backend/src/main/java/com/br/rkfbank/contas) |
+| **autenticacao** | login, JWT, refresh token, limite de tentativas, credencial do cadastro, troca de senha e gestão de usuários pelo ADMIN | [`autenticacao/`](backend/src/main/java/com/br/rkfbank/autenticacao) |
+| **titular** | LGPD: meus dados, correção, encerramento, termos e a rotina de anonimização | [`titular/`](backend/src/main/java/com/br/rkfbank/titular) |
+| **compartilhado** | `config` (CORS, OpenAPI, log, rotinas), `erros` (exceções e `TratadorGlobalDeErros`), `web` (JSON de erro e de página) e `validacao` (`@CpfValido`) | [`compartilhado/`](backend/src/main/java/com/br/rkfbank/compartilhado) |
+
+**Antes (até 29/10/2026)** as pastas eram por camada (`controllers/`, `services/`, `repositories/`...): cada assunto
+novo espalhava arquivos por cinco pastas e nada impedia um módulo de mexer no banco de outro. A mudança moveu as
+classes sem mudar nenhuma regra: os 356 testes que já existiam continuaram verdes.
+
+</details>
+
+<details>
+<summary>🧩 <b>Design patterns usados</b> (clique)</summary>
 <br/>
 
 | Padrão | Onde está |
 |---|---|
-| **Camadas**, **DTO**, **Repository**, **Injeção de dependência** | `controllers` → `services` → `repositories`; `dto/` com `record`; construtores dos services |
+| **Monólito modular** e **Camadas** | um módulo por assunto, e dentro dele controller → service → repository |
+| **Ports & Adapters** (hexagonal nas bordas) | `ConsultaCep` → `ViaCepConsultaCep` · `NotificadorDeMovimentacao` → `NotificadorNoLog` |
+| **Transactional Outbox** | `ComprovanteService` grava o evento na transação do dinheiro (`Propagation.MANDATORY`); `PublicadorOutbox` entrega depois |
+| **Inversão de dependência** | `LimpezaPeriodica`: a rotina das 04h (compartilhado) chama cada módulo sem conhecer nenhum |
+| **DTO**, **Repository**, **Injeção de dependência** | `dto/` com `record` em cada módulo; Spring Data; construtores dos services |
 | **Proxy** | é como o `@Transactional` funciona por baixo: o Spring põe um objeto na frente do service que abre e fecha a transação |
 | **Singleton** | todo `@Service` e `@Component`: uma instância para a aplicação inteira |
 | **Chain of Responsibility** | a sequência de filtros: `FiltroLogRequisicao` → Spring Security → controller |
-| **Adapter** | `ViaCepClient` (JSON do ViaCEP → `ViaCepResponseDto`) e `ConversorTokenUsuario` (JWT → usuário logado) |
+| **Adapter** | `ViaCepConsultaCep` (ViaCEP → `EnderecoDoCep`) e `ConversorTokenUsuario` (JWT → usuário logado) |
 | **Execute Around** | `IdempotenciaService.executarUmaVez`: o "antes e depois" da chave num lugar, a movimentação no meio |
 | **Exception Translation** | `TratadorGlobalDeErros` + `CodigoErroEnum`: toda exceção vira o mesmo JSON de erro |
 | **Static Factory** e **Builder** | `PaginaResponse.de(page)` · `JwtClaimsSet.builder()` para montar o token JWT |
 | **Domínio rico** | `Conta.sacar`, `depositar` e `transferirPara`: a regra do saldo mora na própria conta (feito com TDD) |
 | **Lock otimista** | `@Version` na `Conta`: duas operações ao mesmo tempo não sobrescrevem o saldo (`409`) |
-| **Idempotent Receiver** | `Idempotency-Key` + `tb_idempotencia`: repetir o pedido não move o dinheiro de novo |
+| **Idempotent Receiver** | `Idempotency-Key` + `tb_idempotencia`: repetir o pedido não move o dinheiro nem gera outro comprovante |
 
 Catálogo completo, com o que **não** usar e por quê: [planing/padroes-de-projeto.md](planing/padroes-de-projeto.md).
 
 </details>
-
-**Próximo passo da arquitetura:** monólito modular com portas só nas bordas (pastas por assunto, porta `ConsultaCep`
-para o ViaCEP, fronteiras verificadas por teste e comprovante assíncrono por Outbox). Plano em
-[planing/estudos-arquitetura.md](planing/estudos-arquitetura.md).
 
 </details>
 
@@ -864,18 +902,18 @@ para o ViaCEP, fronteiras verificadas por teste e comprovante assíncrono por Ou
 
 | # | Camada | Papel | Por que importa | No código |
 |:-:|---|---|---|---|
-| 1 | **Filtros** | dão um `X-Request-Id` a cada chamada e registram método, rota, status e tempo | rastrear uma requisição em todos os logs | [`FiltroLogRequisicao`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) |
-| 2 | **Segurança** | valida o JWT, confere no banco se o usuário ainda vale e barra `401`/`403` por perfil | ninguém chega ao controller sem identidade | [`ConfiguracaoSeguranca`](backend/src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java) · [`ConversorTokenUsuario`](backend/src/main/java/com/br/rkfbank/security/ConversorTokenUsuario.java) |
-| 3 | **Controllers** | traduzem HTTP ↔ Java: rota, `@Valid` no DTO, quem está logado (`UsuarioLogado`) e o status de sucesso | a camada web fica fina; regra nenhuma mora aqui | [`controllers/`](backend/src/main/java/com/br/rkfbank/controllers) |
-| 4 | **DTOs** (`record`) | o formato de entrada e saída da API, com as validações de formato | a entidade JPA nunca vaza; o contrato não muda quando o banco muda | [`dto/`](backend/src/main/java/com/br/rkfbank/dto) |
-| 5 | **Services** | a regra de negócio: dono da conta, saldo, conta ativa, idempotência, LGPD; abrem a transação (`@Transactional`) | tudo-ou-nada no dinheiro; testável sem HTTP | [`services/`](backend/src/main/java/com/br/rkfbank/services) |
+| 1 | **Filtros** | dão um `X-Request-Id` a cada chamada e registram método, rota, status e tempo | rastrear uma requisição em todos os logs | [`FiltroLogRequisicao`](backend/src/main/java/com/br/rkfbank/compartilhado/config/FiltroLogRequisicao.java) |
+| 2 | **Segurança** | valida o JWT, confere no banco se o usuário ainda vale e barra `401`/`403` por perfil | ninguém chega ao controller sem identidade | [`ConfiguracaoSeguranca`](backend/src/main/java/com/br/rkfbank/autenticacao/ConfiguracaoSeguranca.java) · [`ConversorTokenUsuario`](backend/src/main/java/com/br/rkfbank/autenticacao/ConversorTokenUsuario.java) |
+| 3 | **Controllers** | traduzem HTTP ↔ Java: rota, `@Valid` no DTO, quem está logado (`UsuarioLogado`) e o status de sucesso | a camada web fica fina; regra nenhuma mora aqui | um por módulo, ex.: [`contas/ContaController`](backend/src/main/java/com/br/rkfbank/contas/ContaController.java) |
+| 4 | **DTOs** (`record`) | o formato de entrada e saída da API, com as validações de formato | a entidade JPA nunca vaza; o contrato não muda quando o banco muda | `dto/` de cada módulo, ex.: [`contas/dto`](backend/src/main/java/com/br/rkfbank/contas/dto) |
+| 5 | **Services** | a regra de negócio: dono da conta, saldo, conta ativa, idempotência, LGPD; abrem a transação (`@Transactional`) | tudo-ou-nada no dinheiro; testável sem HTTP | um por módulo, ex.: [`contas/ContaService`](backend/src/main/java/com/br/rkfbank/contas/ContaService.java) |
 | 6 | **Mapeamento** | métodos `paraResponse`/`paraContaResponse` convertem entidade → DTO | só o que a tela usa sai da API (LGPD) | dentro de cada service |
-| 7 | **Repositories** | consultas ao banco pelo Spring Data JPA | o service pede "contas do cliente", não escreve SQL | [`repositories/`](backend/src/main/java/com/br/rkfbank/repositories) |
-| 8 | **Entities** | as tabelas como classes; `Conta` tem `@Version` (lock otimista) | duas operações na mesma conta não se sobrescrevem | [`entities/`](backend/src/main/java/com/br/rkfbank/entities) |
-| 9 | **Clients** | conversam com sistemas de fora (ViaCEP) com timeout | falha externa vira `503`, não `500` | [`ViaCepClient`](backend/src/main/java/com/br/rkfbank/clients/viacep/ViaCepClient.java) |
-| 10 | **Exceções + `CodigoErroEnum`** | o service lança `new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE)`; o enum guarda o código e a mensagem | um lugar só para o texto de cada erro; o front decide pelo `codigo` | [`exceptions/`](backend/src/main/java/com/br/rkfbank/exceptions) |
-| 11 | **Tratador de erros** | escolhe o status HTTP de cada exceção e monta o JSON padrão | todo erro sai no mesmo formato | [`TratadorGlobalDeErros`](backend/src/main/java/com/br/rkfbank/controllers/handlers/TratadorGlobalDeErros.java) |
-| 12 | **Flyway** | cria e evolui o schema (V1 a V15) e carrega as contas de teste | o banco de todo mundo é igual ao de produção | [`db/migration`](backend/src/main/resources/db/migration) |
+| 7 | **Repositories** | consultas ao banco pelo Spring Data JPA | o service pede "contas do cliente", não escreve SQL | um por módulo, ex.: [`contas/ContaRepository`](backend/src/main/java/com/br/rkfbank/contas/ContaRepository.java) |
+| 8 | **Entities** | as tabelas como classes; `Conta` tem `@Version` (lock otimista) | duas operações na mesma conta não se sobrescrevem | nos módulos, ex.: [`contas/Conta`](backend/src/main/java/com/br/rkfbank/contas/Conta.java) |
+| 9 | **Portas e adaptadores** | o módulo pede pela interface (`ConsultaCep`); o adaptador fala com o ViaCEP, com timeout | falha externa vira `503`, não `500`; trocar de provedor não mexe na regra | [`ViaCepClient`](backend/src/main/java/com/br/rkfbank/clientes/viacep/ViaCepClient.java) |
+| 10 | **Exceções + `CodigoErroEnum`** | o service lança `new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE)`; o enum guarda o código e a mensagem | um lugar só para o texto de cada erro; o front decide pelo `codigo` | [`compartilhado/erros`](backend/src/main/java/com/br/rkfbank/compartilhado/erros) |
+| 11 | **Tratador de erros** | escolhe o status HTTP de cada exceção e monta o JSON padrão | todo erro sai no mesmo formato | [`TratadorGlobalDeErros`](backend/src/main/java/com/br/rkfbank/compartilhado/erros/TratadorGlobalDeErros.java) |
+| 12 | **Flyway** | cria e evolui o schema (V1 a V16) e carrega as contas de teste | o banco de todo mundo é igual ao de produção | [`db/migration`](backend/src/main/resources/db/migration) |
 
 </details>
 
@@ -968,6 +1006,7 @@ timeline
     V11 e V12 : rotinas e login : ShedLock e limite de tentativas
     V13 e V14 : regras : tipos de lançamento e senha temporária
     V15 : refresh token : sessão que se renova sozinha
+    V16 : outbox : comprovante assíncrono, gravado na transação do dinheiro
     a cada subida : callback afterMigrate : contas da equipe ou de visitante, sem duplicar
 ```
 
@@ -980,7 +1019,7 @@ sequenceDiagram
     participant H as Hibernate
     API->>F: subir
     F->>DB: o que já rodou? (flyway_schema_history)
-    F->>DB: aplica só as versões que faltam (V1…V15)
+    F->>DB: aplica só as versões que faltam (V1…V16)
     F->>DB: afterMigrate: contas prontas, só o que falta
     API->>H: ddl-auto=validate
     H->>DB: as entidades batem com as tabelas?
@@ -1022,7 +1061,7 @@ sequenceDiagram
 </details>
 
 <details>
-<summary><b>🗃️ Modelo de dados (migrações V1 a V15)</b></summary>
+<summary><b>🗃️ Modelo de dados (migrações V1 a V16)</b></summary>
 <br/>
 
 ```mermaid
@@ -1033,6 +1072,7 @@ erDiagram
     tb_conta ||..o{ tb_lancamento : "origem ou destino"
     tb_usuario ||--o{ tb_idempotencia : "uma operação por chave"
     tb_usuario ||--o{ tb_refresh_token : "sessões"
+    tb_lancamento ||..o| tb_outbox : "comprovante (payload JSON)"
     tb_cliente {
         BINARY16 id PK
         string nome_completo
@@ -1090,26 +1130,28 @@ erDiagram
         BINARY16 conta_destino_id
         datetime data_hora
     }
+    tb_outbox {
+        BINARY16 id PK
+        string tipo "MovimentacaoRealizada"
+        string payload "JSON sem dado pessoal (V16)"
+        datetime publicado_em "nulo = pendente"
+        int tentativas "5 = desistiu (DLQ)"
+    }
 ```
 
 </details>
 
 <details>
-<summary><b>📦 Pacotes do backend</b></summary>
+<summary><b>📦 Módulos do backend</b></summary>
 <br/>
 
-| Pacote | Responsabilidade |
+| Módulo | Responsabilidade |
 |---|---|
-| [`config`](backend/src/main/java/com/br/rkfbank/config) | segurança (filter chain, JWT, erros 401/403), CORS, filtro de log, criação do admin |
-| [`controllers`](backend/src/main/java/com/br/rkfbank/controllers) | HTTP: `AuthController`, `ClienteController`, `ContaController`, `TitularController` (LGPD), `UsuarioController`, `TermosController`, `AdminUsuarioController` e `AdminConciliacaoController` |
-| [`services`](backend/src/main/java/com/br/rkfbank/services) | regras de negócio, transações, login e token |
-| [`security`](backend/src/main/java/com/br/rkfbank/security) | `UsuarioLogado`, montado a partir do JWT |
-| [`repositories`](backend/src/main/java/com/br/rkfbank/repositories) | Spring Data JPA |
-| [`entities`](backend/src/main/java/com/br/rkfbank/entities) | `Cliente`, `Endereco`, `Conta` (domínio rico), `Lancamento`, `Usuario`, `RegistroIdempotencia`, `RefreshToken` |
-| [`dto`](backend/src/main/java/com/br/rkfbank/dto) | entrada e saída da API (`record`) |
-| [`clients/viacep`](backend/src/main/java/com/br/rkfbank/clients/viacep) | integração com o ViaCEP |
-| [`validation`](backend/src/main/java/com/br/rkfbank/validation) | `@CpfValido` |
-| [`exceptions`](backend/src/main/java/com/br/rkfbank/exceptions) | exceções de negócio que viram status HTTP |
+| [`clientes`](backend/src/main/java/com/br/rkfbank/clientes) | cadastro, `Cliente`, `Endereco`, porta `ConsultaCep` e o adaptador do ViaCEP (`clientes/viacep`) |
+| [`contas`](backend/src/main/java/com/br/rkfbank/contas) | `Conta` (domínio rico), `Lancamento`, movimentações, extrato, idempotência, conciliação e o comprovante (`contas/comprovante`, Outbox) |
+| [`autenticacao`](backend/src/main/java/com/br/rkfbank/autenticacao) | segurança (filter chain, JWT, erros 401/403), `UsuarioLogado`, login, refresh token, credencial, admin e gestão de usuários |
+| [`titular`](backend/src/main/java/com/br/rkfbank/titular) | LGPD: `/clientes/me`, encerramento, termos e a anonimização das 03h |
+| [`compartilhado`](backend/src/main/java/com/br/rkfbank/compartilhado) | `config` (CORS, OpenAPI, log, rotinas), `erros` (exceções que viram status HTTP), `web` (JSON de erro e página), `validacao` (`@CpfValido`) |
 
 Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.md).
 
@@ -1144,9 +1186,10 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 flowchart LR
     subgraph JA["✅ No código"]
         A["equals/hashCode<br/>pelo id"] --- B["records<br/>imutáveis"] --- C["GET /clientes/{id}/contas<br/>só ADMIN"] --- D["threads<br/>virtuais"]
+        K["monólito modular<br/>+ ArchUnit"] --- L["porta<br/>ConsultaCep"] --- E["Outbox<br/>(comprovante)"]
     end
     subgraph EST["🔬 Em estudo para implementação"]
-        E["Outbox"] --> F["Pub/Sub + DLQ"]
+        F["Pub/Sub + DLQ<br/>(broker)"]
         G["OAuth2/OIDC<br/>Keycloak"] --> H["Gateway"]
         F --> I["Microsserviços<br/>Spring Cloud"]
         H --> I
@@ -1155,8 +1198,8 @@ flowchart LR
     JA --> EST
     classDef feito fill:#14532d,stroke:#22c55e,color:#fff
     classDef estudo fill:#3b0764,stroke:#a855f7,color:#fff
-    class A,B,C,D feito
-    class E,F,G,H,I,J estudo
+    class A,B,C,D,K,L,E feito
+    class F,G,H,I,J estudo
 ```
 
 <details>
@@ -1205,11 +1248,13 @@ que ainda não temos. Primeiro passo viável: **circuit breaker** (Resilience4j)
 vez de esperar o timeout. Depois: Gateway e Config Server quando houver 2+ serviços.
 
 </details>
-<details><summary>📨 Mensageria + Transactional Outbox: e se o broker cair no meio da transferência?</summary>
+<details><summary>📨 Transactional Outbox (✅ no código): e se o comprovante falhar no meio da transferência?</summary>
 
-Publicar direto no broker pode perder o evento (o banco gravou, o broker não) ou mandar comprovante de algo que deu
-*rollback*. Com **Outbox**, o evento vai para a `tb_outbox` **na mesma transação** do dinheiro, e um publicador agendado
-(com o ShedLock que já usamos) envia depois.
+Mandar o comprovante dentro da transferência deixaria o dinheiro refém do e-mail, e publicar direto num broker pode perder
+o evento ou avisar algo que deu *rollback*. Com **Outbox**, o evento vai para a `tb_outbox` (V16) **na mesma transação**
+do dinheiro (`ComprovanteService`, com `Propagation.MANDATORY`), e o `PublicadorOutbox` (a cada 2 s, ShedLock) entrega
+depois pela porta `NotificadorDeMovimentacao`. Falhou 5 vezes, o evento para de ser tentado e fica no banco como DLQ.
+Prova: `ComprovanteIntegracaoTest` e `PublicadorOutboxTest`. Falta só trocar o adaptador do log por um broker.
 
 </details>
 <details><summary>☠️ Pub/Sub + DLQ: e a mensagem que sempre falha?</summary>
@@ -1288,7 +1333,7 @@ O Spring **lê o `.env` da raiz sozinho** (desde 20/10/2026): basta rodar da rai
 ./mvnw spring-boot:run        # PowerShell: .\mvnw.cmd spring-boot:run
 ```
 
-As tabelas nascem pelo **Flyway** (`V1` a `V15`) e, a cada subida, o callback `afterMigrate` garante as contas da
+As tabelas nascem pelo **Flyway** (`V1` a `V16`) e, a cada subida, o callback `afterMigrate` garante as contas da
 equipe (Fellipe = origem, Renan = destino). O login delas vem da `EQUIPE_SENHA` do `.env`: os acessos ficam no guia
 privado da equipe, fora do repositório. As migrações foram reorganizadas em 20/10/2026: se a API recusar com
 *Migration checksum mismatch* ou *applied migration not resolved locally*, rode
@@ -1352,7 +1397,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 356 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 391 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1595,7 +1640,7 @@ gantt
 
 - [x] Cadastro com ViaCEP, abertura de conta, depósito, saque, transferência e extrato
 - [x] Logs rastreáveis, CI, CodeQL e Dependabot
-- [x] Banco versionado com Flyway (V1 a V15), contas da equipe (Fellipe e Renan) e perfil público de visitante
+- [x] Banco versionado com Flyway (V1 a V16), contas da equipe (Fellipe e Renan) e perfil público de visitante
 - [x] Idempotência nas movimentações, número de conta gerado pelo banco, limite de tentativas no login e health check
 - [x] Login com Spring Security + JWT, perfis e regra de dono
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
@@ -1634,7 +1679,7 @@ gantt
 | Tema | Primeiro passo viável | Gatilho |
 |---|---|---|
 | [Spring Cloud e microsserviços](planing/estudos-arquitetura.md#5-spring-cloud-e-microsserviços-) | circuit breaker (Resilience4j) no ViaCEP | 2º time ou parte com carga diferente |
-| [Mensageria + Transactional Outbox](planing/estudos-arquitetura.md#6-mensageria-e-transactional-outbox-) | `tb_outbox` na transação do dinheiro + publicador com ShedLock | comprovante e notificação |
+| [Mensageria + Transactional Outbox](planing/estudos-arquitetura.md#6-mensageria-e-transactional-outbox-) | ✅ `tb_outbox` + publicador com ShedLock (comprovante no log); falta o broker | e-mail ou push do comprovante |
 | [Pub/Sub + DLQ](planing/estudos-arquitetura.md#7-pubsub-e-dead-letter-queue-dlq-) | exchange `topic` com DLQ e 3 tentativas | depende do Outbox |
 | [AWS](planing/estudos-arquitetura.md#8-serviços-aws-) | ECS Fargate + RDS + Secrets Manager com a imagem atual | deploy depois do MVP |
 | [OAuth2 + OIDC](planing/estudos-arquitetura.md#9-oauth2-e-oidc-com-provedor-externo-) | Keycloak emitindo o token; a API já é Resource Server | login social, MFA ou 2º sistema |

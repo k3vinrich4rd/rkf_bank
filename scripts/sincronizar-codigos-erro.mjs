@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), "..");
-const ENUM = join(RAIZ, "backend/src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java");
+const ENUM = join(RAIZ, "backend/src/main/java/com/br/rkfbank/compartilhado/erros/CodigoErroEnum.java");
 const TIPOS = join(RAIZ, "frontend/lib/api/types.ts");
 
 const codigos = [...readFileSync(ENUM, "utf8").matchAll(/^\s+([A-Z_]+)\("/gm)].map((m) => m[1]);

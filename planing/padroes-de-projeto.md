@@ -56,9 +56,9 @@ portfólio. Padrão "porque é bonito" fica de fora.
 |:-:|---|---|:-:|:-:|---|
 | 1 | ✅ **Modelo de domínio rico** (*Tell, don't ask*) — **feito em 27/10 com TDD** (`ContaTest`; `Conta.depositar`, `sacar`, `transferirPara`) | a regra de saldo mora no `ContaService` (`getSaldo` + `setSaldo` em cada movimentação: 5 `setSaldo` no service); a `Conta` é só um saco de dados (*modelo anêmico*) | 🟢 baixo | ⭐⭐⭐ | **antes do MVP** (31/10): pouco código, menos bug |
 | 2 | **Value Object `Dinheiro`** | `BigDecimal` solto: escala 2, arredondamento e "maior que zero" repetidos | 🟡 médio | ⭐⭐⭐ | depois do 1 |
-| 3 | **Ports & Adapters no CEP** + **Decorator** de cache e reserva | ViaCEP fora = cadastro fora (`503`); CEP consultado de novo a cada cadastro | 🟡 médio | ⭐⭐⭐ | logo depois do MVP |
+| 3 | 🟡 **Ports & Adapters no CEP** (✅ porta `ConsultaCep` + `ViaCepConsultaCep`, 29/10) + **Decorator** de cache e reserva (falta) | ViaCEP fora = cadastro fora (`503`); CEP consultado de novo a cada cadastro | 🟡 médio | ⭐⭐⭐ | logo depois do MVP |
 | 4 | **Mapper** dedicado | conversão entidade → DTO espalhada (`toResponse`, `paraContaResponse`, `paraResponse`) | 🟢 baixo | ⭐⭐ | quando os services crescerem (hoje os `paraResponse` são poucos e locais) |
-| 5 | **Domain Events** (*Observer*) + **Outbox** | nada avisa "transferência feita" (comprovante, notificação, auditoria) | 🔴 alto | ⭐⭐⭐⭐ | feature 6 (mensageria) |
+| 5 | 🟡 **Domain Events** (*Observer*) + **Outbox** (✅ Outbox do comprovante, 29/10; falta o broker) | nada avisa "transferência feita" (comprovante, notificação, auditoria) | 🔴 alto | ⭐⭐⭐⭐ | feature 6 (mensageria) |
 | 6 | **Test Data Builder** | testes montam `Cliente`/`Conta` campo a campo; ruído esconde o que o teste prova | 🟢 baixo | ⭐⭐ | qualquer hora (só testes) |
 | 7 | **Specification** | — (ainda não há busca com filtros) | — | ⭐ | só quando o extrato ganhar filtro |
 

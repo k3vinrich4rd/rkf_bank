@@ -145,6 +145,11 @@ Data: 27/10
 Decisão: Spring Cloud/microsserviços, Mensageria com Outbox, Pub/Sub com DLQ, AWS e OAuth2/OIDC com provedor externo ficam **em estudo para implementação**, com plano em [estudos-arquitetura.md](estudos-arquitetura.md). Nenhuma dependência nova antes do MVP de 31/10.
 Por quê: o MVP está em testes finais; essas peças resolvem problemas de escala e de vários serviços que o RKF Bank ainda não tem. O plano deixa pronto o "como" para quando houver o "porquê".
 
+## Monólito modular com portas nas bordas
+Data: 29/10 (branch `refactor/monolito-modular`, ainda fora da `develop`)
+Decisão: as pastas deixam de ser por camada e passam a ser por assunto: `clientes`, `contas`, `autenticacao`, `titular` e `compartilhado`. Tecnologia de fora fica atrás de uma porta (`ConsultaCep` para o ViaCEP, `NotificadorDeMovimentacao` para o comprovante). As fronteiras viram teste com **ArchUnit** (`ArquiteturaModulosTest`), e o comprovante sai por **Transactional Outbox** (V16).
+Por quê: cada assunto novo (Pix, cartão) espalhava arquivos por cinco pastas e nada impedia um módulo de usar o banco de outro. A troca de pastas não mudou nenhuma regra (os 356 testes seguiram verdes). **ArchUnit, e não Spring Modulith:** o Modulith exige módulos sem ciclo, e hoje `clientes ↔ contas` e `clientes ↔ autenticacao` se referenciam pelas entidades JPA (`Conta.cliente`, `Usuario.cliente`). O ArchUnit verifica as regras que valem já, e o ciclo fica como débito para quando houver eventos de domínio entre os módulos. **Outbox antes de broker:** o evento nasce na transação do dinheiro e o adaptador do MVP escreve o comprovante no log; e-mail ou RabbitMQ entram depois como outro adaptador.
+
 ---
 
 ## Ainda falta decidir
@@ -153,4 +158,4 @@ Por quê: o MVP está em testes finais; essas peças resolvem problemas de escal
 - [ ] **Dinheiro:** a API manda o valor em reais (`50.00`) ou em centavos (`5000`)? Hoje a API usa reais e o frontend converte para centavos.
 - [x] **Login:** feito (feature 2 do checklist).
 - [ ] **Onde publicar:** onde o site, a API e o banco vão ficar no ar?
-- [ ] **Arquitetura alvo:** monólito modular por funcionalidade (`cliente`, `conta`, `auth`, `pix`) a partir do PR do Pix? Proposta e motivos em [README_IMPLEMENTACAO.md, seção 8](../backend/README_IMPLEMENTACAO.md#8-revisão-de-arquitetura-20102026).
+- [x] **Arquitetura alvo:** monólito modular por assunto (ver "Monólito modular com portas nas bordas"). Proposta original em [README_IMPLEMENTACAO.md, seção 8](../backend/README_IMPLEMENTACAO.md#8-revisão-de-arquitetura-20102026).

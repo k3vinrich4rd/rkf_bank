@@ -169,7 +169,9 @@ resilience4j.circuitbreaker.instances.viacep.wait-duration-in-open-state=30s
 
 ## 6. Mensageria e Transactional Outbox 🔬
 
-> **Status: em estudo para implementação** (feature 6 do [checklist](checklist-features.md)).
+> **Status: Outbox no código** (branch `refactor/monolito-modular`, 29/10): `tb_outbox` (V16), `ComprovanteService`
+> (`Propagation.MANDATORY`), `PublicadorOutbox` a cada 2 s com ShedLock, desistência em 5 tentativas e o adaptador
+> `NotificadorNoLog`. **Falta a mensageria:** trocar o adaptador do log por um broker (feature 6 do [checklist](checklist-features.md)).
 
 **Problema que resolveria:** comprovante por e-mail e notificação depois da transferência. Publicar o evento direto
 no broker dentro do `transferir()` cria dois erros possíveis: o banco grava e o evento se perde (broker fora), ou o

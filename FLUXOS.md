@@ -130,10 +130,10 @@ O [`proxy.ts`](frontend/proxy.ts) lê o cookie, troca por `Authorization: Bearer
 <summary>3️⃣ <b>A borda do Spring.</b> O que acontece antes de qualquer controller?</summary>
 <br/>
 
-- [`FiltroLogRequisicao`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) dá um `X-Request-Id` e
+- [`FiltroLogRequisicao`](backend/src/main/java/com/br/rkfbank/compartilhado/config/FiltroLogRequisicao.java) dá um `X-Request-Id` e
   vai registrar método, rota, status e tempo.
 - O Spring Security confere a assinatura e a validade do JWT; o
-  [`ConversorTokenUsuario`](backend/src/main/java/com/br/rkfbank/security/ConversorTokenUsuario.java) confere no banco
+  [`ConversorTokenUsuario`](backend/src/main/java/com/br/rkfbank/autenticacao/ConversorTokenUsuario.java) confere no banco
   se o usuário ainda existe, está ativo, tem o mesmo perfil e a mesma versão de senha.
 - Falhou? `401` com `codigo` `TOKEN_INVALIDO` ou `ACESSO_ALTERADO`, e a tela manda para o login.
 
@@ -141,7 +141,7 @@ O [`proxy.ts`](frontend/proxy.ts) lê o cookie, troca por `Authorization: Bearer
 <summary>4️⃣ <b>O controller.</b> Ele decide se tem saldo?</summary>
 <br/>
 
-**Não.** O [`ContaController`](backend/src/main/java/com/br/rkfbank/controllers/ContaController.java) só traduz HTTP:
+**Não.** O [`ContaController`](backend/src/main/java/com/br/rkfbank/contas/ContaController.java) só traduz HTTP:
 o `@Valid` confere o formato do `TransferenciaRequestDto` (`400` `CAMPOS_INVALIDOS` com a lista de `campos`), ele lê
 quem está logado (`UsuarioLogado`) e passa tudo para o `IdempotenciaService`.
 
@@ -149,7 +149,7 @@ quem está logado (`UsuarioLogado`) e passa tudo para o `IdempotenciaService`.
 <summary>5️⃣ <b>A idempotência.</b> E se a rede caiu e a pessoa clicou de novo?</summary>
 <br/>
 
-O [`IdempotenciaService`](backend/src/main/java/com/br/rkfbank/services/IdempotenciaService.java) procura a chave:
+O [`IdempotenciaService`](backend/src/main/java/com/br/rkfbank/contas/IdempotenciaService.java) procura a chave:
 mesma chave e mesmo corpo → `204` com `Idempotency-Replayed: true` e **nada se move de novo**; mesma chave com outro
 corpo → `422` `IDEMPOTENCIA_CHAVE_REUSADA`; chave nova → segue.
 
@@ -157,10 +157,10 @@ corpo → `422` `IDEMPOTENCIA_CHAVE_REUSADA`; chave nova → segue.
 <summary>6️⃣ <b>A regra de negócio.</b> Em que ordem o service pergunta?</summary>
 <br/>
 
-No [`ContaService.transferir`](backend/src/main/java/com/br/rkfbank/services/ContaService.java): mesma conta? (`422`
+No [`ContaService.transferir`](backend/src/main/java/com/br/rkfbank/contas/ContaService.java): mesma conta? (`422`
 `MESMA_CONTA`) → a origem é sua? (`403` `CONTA_DE_OUTRO_CLIENTE`) → as duas existem e estão ativas? (`404`/`422`) →
 tem saldo? (`422` `SALDO_INSUFICIENTE`). Cada recusa é uma exceção com um
-[`CodigoErroEnum`](backend/src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java), que já traz a mensagem.
+[`CodigoErroEnum`](backend/src/main/java/com/br/rkfbank/compartilhado/erros/CodigoErroEnum.java), que já traz a mensagem.
 
 <details>
 <summary>7️⃣ <b>O banco.</b> Como o dinheiro não fica "no meio do caminho"?</summary>
@@ -394,16 +394,16 @@ Para achar rápido **onde mexer**. Clique no nome para abrir o arquivo; a últim
 
 | Tela | Hook | Rota | Controller | Service | Tabelas | Regra principal |
 |---|---|---|---|---|---|---|
-| `/cadastro` | [`use-cadastro-form`](frontend/components/cadastro/use-cadastro-form.ts) | `POST /clientes` | [`ClienteController`](backend/src/main/java/com/br/rkfbank/controllers/ClienteController.java) | [`ClienteService`](backend/src/main/java/com/br/rkfbank/services/ClienteService.java) + ViaCEP | `tb_endereco`, `tb_cliente`, `tb_usuario` | CPF/CEP higienizados; CPF e e-mail únicos (`409`), CEP existe (`422`) |
-| `/login` | [`use-login`](frontend/components/login/use-login.ts) | `POST /auth/login` | [`AuthController`](backend/src/main/java/com/br/rkfbank/controllers/AuthController.java) | [`AutenticacaoService`](backend/src/main/java/com/br/rkfbank/services/AutenticacaoService.java) | `tb_usuario` | mesma resposta para CPF inexistente e senha errada; 5 erros → `429` |
-| `/conta/abrir` | [`use-abrir-conta`](frontend/components/abrir-conta/use-abrir-conta.ts) | `POST /contas` | [`ContaController`](backend/src/main/java/com/br/rkfbank/controllers/ContaController.java) | [`ContaService.abrir`](backend/src/main/java/com/br/rkfbank/services/ContaService.java) | `tb_conta` | dono vem do token; agência `0001` e número com DV gerados |
+| `/cadastro` | [`use-cadastro-form`](frontend/components/cadastro/use-cadastro-form.ts) | `POST /clientes` | [`ClienteController`](backend/src/main/java/com/br/rkfbank/clientes/ClienteController.java) | [`ClienteService`](backend/src/main/java/com/br/rkfbank/clientes/ClienteService.java) + ViaCEP | `tb_endereco`, `tb_cliente`, `tb_usuario` | CPF/CEP higienizados; CPF e e-mail únicos (`409`), CEP existe (`422`) |
+| `/login` | [`use-login`](frontend/components/login/use-login.ts) | `POST /auth/login` | [`AuthController`](backend/src/main/java/com/br/rkfbank/autenticacao/AuthController.java) | [`AutenticacaoService`](backend/src/main/java/com/br/rkfbank/autenticacao/AutenticacaoService.java) | `tb_usuario` | mesma resposta para CPF inexistente e senha errada; 5 erros → `429` |
+| `/conta/abrir` | [`use-abrir-conta`](frontend/components/abrir-conta/use-abrir-conta.ts) | `POST /contas` | [`ContaController`](backend/src/main/java/com/br/rkfbank/contas/ContaController.java) | [`ContaService.abrir`](backend/src/main/java/com/br/rkfbank/contas/ContaService.java) | `tb_conta` | dono vem do token; agência `0001` e número com DV gerados |
 | `/conta` | [`use-conta`](frontend/components/conta/use-conta.ts) | `GET /contas` | `ContaController` | `ContaService.listarTodas` | `tb_conta` | cliente vê só as dele; admin vê todas (o front filtra pelo `clienteId`) |
-| `/conta/depositar` · `/sacar` | [`use-movimentacao`](frontend/components/movimentacao/use-movimentacao.ts) | `POST /contas/{id}/depositos` · `/saques` | `ContaController` | [`IdempotenciaService`](backend/src/main/java/com/br/rkfbank/services/IdempotenciaService.java) → `ContaService` | `tb_conta`, `tb_lancamento`, `tb_idempotencia` | dono (`403`), ativa (`422`), saldo (`422`), uma vez por chave |
+| `/conta/depositar` · `/sacar` | [`use-movimentacao`](frontend/components/movimentacao/use-movimentacao.ts) | `POST /contas/{id}/depositos` · `/saques` | `ContaController` | [`IdempotenciaService`](backend/src/main/java/com/br/rkfbank/contas/IdempotenciaService.java) → `ContaService` | `tb_conta`, `tb_lancamento`, `tb_idempotencia` | dono (`403`), ativa (`422`), saldo (`422`), uma vez por chave |
 | `/conta/transferir` | `use-movimentacao` | `POST /transferencias` | `ContaController` | `IdempotenciaService` → `ContaService.transferir` | idem | [siga a requisição](#-3-siga-a-requisição-um-passo-de-cada-vez) |
 | `/conta/extrato` | [`use-extrato`](frontend/components/extrato/use-extrato.ts) | `GET /contas/{id}/lancamentos` | `ContaController` | `ContaService.listarLancamentos` | `tb_lancamento` | dono (`403`); mais novo primeiro |
-| `/conta/senha` | [`use-trocar-senha`](frontend/components/trocar-senha/use-trocar-senha.ts) | `PATCH /usuarios/me/senha` | [`UsuarioController`](backend/src/main/java/com/br/rkfbank/controllers/UsuarioController.java) | `AutenticacaoService.trocarSenha` | `tb_usuario` | pede a atual (`SENHA_ATUAL_INCORRETA`); derruba todos os tokens |
-| `/conta/meus-dados` | [`use-meus-dados`](frontend/components/meus-dados/use-meus-dados.ts) · [`use-encerrar-cadastro`](frontend/components/meus-dados/use-encerrar-cadastro.ts) | `GET`/`PATCH /clientes/me` · `POST /clientes/me/encerramento` | [`TitularController`](backend/src/main/java/com/br/rkfbank/controllers/TitularController.java) | [`TitularService`](backend/src/main/java/com/br/rkfbank/services/TitularService.java) | `tb_cliente`, `tb_endereco`, `tb_conta`, `tb_usuario` | só o próprio cadastro; encerrar exige senha e saldo zero |
-| — (admin) | — | `/admin/usuarios/**` | [`AdminUsuarioController`](backend/src/main/java/com/br/rkfbank/controllers/AdminUsuarioController.java) | [`GestaoUsuarioService`](backend/src/main/java/com/br/rkfbank/services/GestaoUsuarioService.java) | `tb_usuario` | ninguém mexe em si mesmo (`PROPRIO_ACESSO`) |
+| `/conta/senha` | [`use-trocar-senha`](frontend/components/trocar-senha/use-trocar-senha.ts) | `PATCH /usuarios/me/senha` | [`UsuarioController`](backend/src/main/java/com/br/rkfbank/autenticacao/UsuarioController.java) | `AutenticacaoService.trocarSenha` | `tb_usuario` | pede a atual (`SENHA_ATUAL_INCORRETA`); derruba todos os tokens |
+| `/conta/meus-dados` | [`use-meus-dados`](frontend/components/meus-dados/use-meus-dados.ts) · [`use-encerrar-cadastro`](frontend/components/meus-dados/use-encerrar-cadastro.ts) | `GET`/`PATCH /clientes/me` · `POST /clientes/me/encerramento` | [`TitularController`](backend/src/main/java/com/br/rkfbank/titular/TitularController.java) | [`TitularService`](backend/src/main/java/com/br/rkfbank/titular/TitularService.java) | `tb_cliente`, `tb_endereco`, `tb_conta`, `tb_usuario` | só o próprio cadastro; encerrar exige senha e saldo zero |
+| — (admin) | — | `/admin/usuarios/**` | [`AdminUsuarioController`](backend/src/main/java/com/br/rkfbank/autenticacao/AdminUsuarioController.java) | [`GestaoUsuarioService`](backend/src/main/java/com/br/rkfbank/autenticacao/GestaoUsuarioService.java) | `tb_usuario` | ninguém mexe em si mesmo (`PROPRIO_ACESSO`) |
 
 ---
 

@@ -93,7 +93,7 @@ sequenceDiagram
 
 ### 4.1 Controller — fino, só HTTP
 
-[`ClienteController.java`](src/main/java/com/br/rkfbank/controllers/ClienteController.java)
+[`ClienteController.java`](src/main/java/com/br/rkfbank/clientes/ClienteController.java)
 
 ```java
 @PostMapping
@@ -108,7 +108,7 @@ public ResponseEntity<ClienteResponseDto> cadastrar(@Valid @RequestBody Cadastro
 
 ### 4.2 DTOs — `record` com validação
 
-[`CadastroClienteRequestDto.java`](src/main/java/com/br/rkfbank/dto/request/cliente/CadastroClienteRequestDto.java)
+[`CadastroClienteRequestDto.java`](src/main/java/com/br/rkfbank/clientes/dto/request/CadastroClienteRequestDto.java)
 
 ```java
 public record CadastroClienteRequestDto(
@@ -125,7 +125,7 @@ mudança no banco quebraria o frontend. O DTO é o contrato; a entidade é detal
 
 ### 4.3 Service — onde mora a regra
 
-[`ContaService.java`](src/main/java/com/br/rkfbank/services/ContaService.java)
+[`ContaService.java`](src/main/java/com/br/rkfbank/contas/ContaService.java)
 
 ```java
 @Transactional
@@ -160,7 +160,7 @@ Pontos de atenção que valem estudo:
 
 ### 4.4 Repository — Spring Data deriva a query pelo nome
 
-[`LancamentoRepository.java`](src/main/java/com/br/rkfbank/repositories/LancamentoRepository.java)
+[`LancamentoRepository.java`](src/main/java/com/br/rkfbank/contas/LancamentoRepository.java)
 
 ```java
 List<Lancamento> findByContaOrigemIdOrContaDestinoIdOrderByDataHoraDesc(UUID contaOrigemId, UUID contaDestinoId);
@@ -182,7 +182,7 @@ assim, reordenar ou adicionar valores não corrompe dados antigos.
 
 ### 4.6 Integração ViaCEP
 
-[`ViaCepClient.java`](src/main/java/com/br/rkfbank/clients/viacep/ViaCepClient.java)
+[`ViaCepClient.java`](src/main/java/com/br/rkfbank/clientes/viacep/ViaCepClient.java)
 
 | Situação | O que acontece | Status final |
 |---|---|---|
@@ -196,9 +196,9 @@ uma API de terceiros derrube a nossa.
 
 ### 4.7 Tratamento de erros centralizado
 
-[`TratadorGlobalDeErros.java`](src/main/java/com/br/rkfbank/controllers/handlers/TratadorGlobalDeErros.java)
+[`TratadorGlobalDeErros.java`](src/main/java/com/br/rkfbank/compartilhado/erros/TratadorGlobalDeErros.java)
 (`@RestControllerAdvice`) transforma exceções em `ErroResponse`. Ele só escolhe o **status**: o `codigo` e a `message`
-vêm do [`CodigoErroEnum`](src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java) que a exceção carrega, então
+vêm do [`CodigoErroEnum`](src/main/java/com/br/rkfbank/compartilhado/erros/CodigoErroEnum.java) que a exceção carrega, então
 nenhuma frase de erro é escrita em service ou controller.
 
 | Exceção | Status | Quando usar ao criar código novo |
@@ -222,8 +222,8 @@ nenhuma frase de erro é escrita em service ou controller.
 
 ### 4.8 Validação customizada `@CpfValido`
 
-- Anotação: [`validation/CpfValido.java`](src/main/java/com/br/rkfbank/validation/CpfValido.java)
-- Lógica: [`validation/CpfValidoValidator.java`](src/main/java/com/br/rkfbank/validation/CpfValidoValidator.java)
+- Anotação: [`validation/CpfValido.java`](src/main/java/com/br/rkfbank/compartilhado/validacao/CpfValido.java)
+- Lógica: [`validation/CpfValidoValidator.java`](src/main/java/com/br/rkfbank/compartilhado/validacao/CpfValidoValidator.java)
   — remove máscara, exige 11 dígitos, rejeita todos iguais (`111.111.111-11`) e confere os dois dígitos verificadores.
 - Valor vazio retorna `true` de propósito: quem cuida de "obrigatório" é o `@NotBlank`. Cada anotação, uma responsabilidade.
 

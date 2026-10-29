@@ -11,7 +11,7 @@ on:
     paths:
       - "frontend/**"
       # O tipo CodigoErro do front e o CodigoErroEnum do back andam juntos (CodigoErroEnumTest).
-      - "backend/src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java"
+      - "backend/src/main/java/com/br/rkfbank/compartilhado/erros/CodigoErroEnum.java"
       - ".github/workflows/frontend-ci.yml"
   workflow_dispatch:
 

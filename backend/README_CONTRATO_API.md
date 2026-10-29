@@ -632,9 +632,9 @@ Todo erro **tratado** volta assim:
 | `campos` | erros por campo (nome igual ao do JSON, para o front marcar o input). Vem `[]` fora da validação |
 
 No backend, código e mensagem moram juntos no enum
-[`CodigoErroEnum`](src/main/java/com/br/rkfbank/exceptions/CodigoErroEnum.java): o service lança a exceção com o
+[`CodigoErroEnum`](src/main/java/com/br/rkfbank/compartilhado/erros/CodigoErroEnum.java): o service lança a exceção com o
 código (`new RegraNegocioException(CodigoErroEnum.SALDO_INSUFICIENTE)`) e o
-[`TratadorGlobalDeErros`](src/main/java/com/br/rkfbank/controllers/handlers/TratadorGlobalDeErros.java) só escolhe o
+[`TratadorGlobalDeErros`](src/main/java/com/br/rkfbank/compartilhado/erros/TratadorGlobalDeErros.java) só escolhe o
 status. No front, o tipo `CodigoErro` de [`lib/api/types.ts`](../frontend/lib/api/types.ts) espelha o enum e o
 `ApiError` traz `codigo`.
 

@@ -25,7 +25,7 @@ Modo **revisão**: aponte problemas e sugira a correção; só edite se o usuár
 | 4 | `NOT NULL` adicionado em tabela com dados sem `DEFAULT` ou sem `UPDATE` antes? Falha em produção, passa no banco vazio do teste. | 🔴 |
 | 5 | Compatível com MySQL 8.4 **e** com o H2 dos testes (modo MySQL)? Evitar sintaxe exclusiva de um dos dois; se for inevitável, apontar. | 🟡 |
 | 6 | Dinheiro em `DECIMAL(19,2)`; UUID no mesmo tipo das tabelas existentes; nomes de constraint no padrão `uk_<tabela>_<coluna>`, `fk_<tabela>_<referencia>`. | 🟡 |
-| 7 | A migração bate com as entidades JPA (`backend/src/main/java/com/br/rkfbank/entities`)? Coluna, tipo, tamanho e nulabilidade. Com `ddl-auto=validate`, divergência derruba a aplicação na subida. | 🔴 |
+| 7 | A migração bate com as entidades JPA (classes `@Entity` nos modulos: `backend/src/main/java/com/br/rkfbank/<clientes|contas|autenticacao>/`)? Coluna, tipo, tamanho e nulabilidade. Com `ddl-auto=validate`, divergência derruba a aplicação na subida. | 🔴 |
 | 8 | Migração de **dados** (ex.: e-mail em minúsculas) é idempotente e não depende da ordem das linhas? | 🟡 |
 | 9 | Índices para colunas usadas em busca (`WHERE`, `JOIN`, `ORDER BY` do extrato)? | 🟢 |
 | 10 | Mudou tabela/coluna usada pelo `db/seed`? O seed foi ajustado no mesmo PR e continua **idempotente** (`INSERT ... SELECT ... WHERE NOT EXISTS` pelo id e pela chave natural) e sem senha real? O seed da **equipe** não pode ter `tb_usuario` (login vem do `.env`); só o de **visitante** tem hash, e da senha pública `Visitante@2026`. | 🔴 |

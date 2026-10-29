@@ -15,8 +15,8 @@ Este arquivo vale para o projeto inteiro; o frontend tem regras próprias em [fr
 
 | Pasta | O que tem |
 |---|---|
-| `backend/src/main/java/com/br/rkfbank` | API Spring Boot 4.1 / Java 25: `controllers` → `services` → `repositories`, `dto`, `entities`, `exceptions`, `clients/viacep`, `config`, `validation` |
-| `backend/src/test/java/...` | JUnit 5 + Mockito (services, controllers) e `@DataJpaTest` (repositories) |
+| `backend/src/main/java/com/br/rkfbank` | API Spring Boot 4.1 / Java 25, **monólito modular**: um pacote por assunto (`clientes`, `contas`, `autenticacao`, `titular`) com controller → service → repository, entidades e `dto/` de cada um, e o `compartilhado` (`config`, `erros`, `web`, `validacao`) |
+| `backend/src/test/java/...` | JUnit 5 + Mockito (services, controllers), `@DataJpaTest` (repositories) e o `ArquiteturaModulosTest` (ArchUnit: as fronteiras dos módulos) |
 | `backend/*.md` | contrato da API, arquitetura, segurança (`README_SEGURANCA.md`), roteiro e checklist E2E |
 | `frontend/` | Next.js 16 + React 19 + TypeScript + Tailwind 4, pnpm (ver `frontend/CLAUDE.md`) |
 | `planing/` | roadmap, decisões, débitos técnicos, recados e o **checklist de features** |
@@ -54,18 +54,20 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 
 ## Regras do backend
 
-- Camadas: controller só conhece service; service tem a regra e o `@Transactional`; repository só acesso a dados.
+- **Módulos:** classe nova vai para o pacote do assunto dela (`contas/`, `clientes/`...). O `compartilhado` não conhece nenhum módulo, o repository de um módulo só é usado por ele (o `titular` é a exceção da LGPD) e tecnologia de fora fica atrás de uma porta (`clientes/ConsultaCep`, `contas/comprovante/NotificadorDeMovimentacao`). Quem confere é o `ArquiteturaModulosTest`: regra quebrada = build vermelho.
+- Camadas (dentro de cada módulo): controller só conhece service; service tem a regra e o `@Transactional`; repository só acesso a dados.
 - Entrada e saída por DTO `record`; nunca exponha a entidade JPA.
 - Erros: exceção de negócio → status pelo `TratadorGlobalDeErros` (`400`, `404`, `409`, `422`, `503`) no formato padrão (`timestamp`, `status`, `error`, `codigo`, `message`, `path`, `campos`). **Código e mensagem só no `CodigoErroEnum`**: o service lança `new RegraNegocioException(CodigoErroEnum.X)`, nunca escreve a frase. Código novo → contrato (seção 6) e `CodigoErro` em `frontend/lib/api/types.ts`; nunca renomeie um existente.
 - Dinheiro em `BigDecimal` com 2 casas; `Conta` tem `@Version` (lock otimista → `409`).
 - Logs com Log4j2 e `X-Request-Id`; nunca logar CPF completo, senha ou token.
 - **LGPD:** dado pessoal novo precisa de finalidade; response devolve só o que a tela usa; nada de dado pessoal em log, exceção, URL ou prompt de IA. Pendências em `planing/debitos-tecnicos.md`.
 - Mudou rota ou formato? Atualize `backend/README_CONTRATO_API.md` **e** avise o frontend (`frontend/lib/api/types.ts` espelha o contrato).
-- **Schema só por Flyway** (`backend/src/main/resources/db/migration`, `ddl-auto=validate`): mudou entidade → crie `V<n>__descricao.sql` (hoje a última é `V15`) que rode no MySQL e no H2. **Nunca edite uma migração já mergeada** (checksum). Revise com `/revisar-migracao`.
+- **Schema só por Flyway** (`backend/src/main/resources/db/migration`, `ddl-auto=validate`): mudou entidade → crie `V<n>__descricao.sql` (hoje a última é `V16`) que rode no MySQL e no H2. **Nunca edite uma migração já mergeada** (checksum). Revise com `/revisar-migracao`.
 - **Dados prontos** por callback `afterMigrate` do Flyway (roda a cada subida, idempotente): `db/seed/equipe` (Fellipe = origem, Renan = destino; perfis padrão e `equipe`) e `db/seed/visitante` (Ana e Bruno; só no perfil `visitante`). **Desligados no `test`** e em produção (`FLYWAY_LOCATIONS=classpath:db/migration`). Mudou tabela usada pelo seed → ajuste o seed no mesmo PR.
 - 🔒 **Repositório público: nenhuma senha real no Git.** Login das contas da equipe vem de `EQUIPE_SENHA` (`InicializadorAcessoEquipe`) e o admin de `ADMIN_CPF`/`ADMIN_SENHA` (`InicializadorAdmin`), só no `.env`. Acessos e roteiro completo da equipe ficam em `.equipe/GUIA_TESTES_EQUIPE.md`, **fora do Git** (`.gitignore`): nunca copie conteúdo de lá para README, PR, issue, recado ou commit. Doc pública usa só as contas de visitante.
 - **Perfil e acesso valem na hora:** o `ConversorTokenUsuario` confere `tb_usuario` (existe, `ativo`, mesmo perfil e mesma `versaoCredencial` do token) a cada requisição. Gestão de usuários só pelo ADMIN em `/admin/usuarios`; usuário nunca é apagado, é desativado.
 - **Perfil `prod`** (`application-prod.properties`, ligado pelo `Dockerfile`): só `db/migration` (sem seed), sem Swagger, segredos e banco só por variável (`DB_*`, `JWT_SEGREDO`, `CORS_ORIGENS`), sem login da equipe. Garantias em `PerfilProdIntegracaoTest`; CI da imagem em `backend-docker.yml` (publica no ghcr.io na `main`) e da aplicação inteira em `e2e.yml`. Mudou o prod? Teste com `.equipe/testes/PROD_E2E.md`.
+- **Comprovante por Outbox (V16):** depósito, saque e transferência gravam o evento na `tb_outbox` pelo `ComprovanteService.registrar` (`Propagation.MANDATORY`: só dentro da transação do dinheiro); o `PublicadorOutbox` entrega a cada 2 s. Nova rota que move dinheiro → registre o comprovante também. Evento sem dado pessoal.
 - **Movimentações exigem `Idempotency-Key`** (`IdempotenciaService`, mesma transação do dinheiro). Nova rota que move dinheiro → passe pelo `executarUmaVez`.
 
 ## Armadilhas conhecidas

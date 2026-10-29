@@ -36,11 +36,13 @@ const NUMEROS = {
 
 // Rotas canônicas dos controllers: em @XxxMapping({"nova", "antiga"}) conta uma só, e o método marcado como
 // OBSOLETA (mantido até o contrato 3.0) não entra. O /actuator/health não conta (é do Spring, não da API).
+// Os controllers moram nos modulos (clientes/, contas/, autenticacao/, titular/): procura em todas as pastas.
 function contarRotas() {
-  const pasta = path.join(RAIZ, 'backend/src/main/java/com/br/rkfbank/controllers');
+  const raiz = path.join(RAIZ, 'backend/src/main/java/com/br/rkfbank');
+  const controllers = fs.readdirSync(raiz, { recursive: true }).filter((n) => String(n).endsWith('Controller.java'));
   let total = 0;
-  for (const nome of fs.readdirSync(pasta).filter((n) => n.endsWith('Controller.java'))) {
-    const linhas = fs.readFileSync(path.join(pasta, nome), 'utf8').split(/\r?\n/);
+  for (const nome of controllers) {
+    const linhas = fs.readFileSync(path.join(raiz, String(nome)), 'utf8').split(/\r?\n/);
     linhas.forEach((linha, i) => {
       if (!/^\s+@(Get|Post|Put|Patch|Delete)Mapping\b/.test(linha)) return;
       if (!/OBSOLETA/.test(linhas.slice(Math.max(0, i - 3), i).join(' '))) total++;

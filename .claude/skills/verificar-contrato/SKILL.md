@@ -10,8 +10,8 @@ O contrato oficial é `backend/README_CONTRATO_API.md`. O backend implementa, o 
 ## Como verificar (barato)
 
 1. Liste as rotas reais com uma busca, sem abrir arquivo por arquivo:
-   `Grep "@(Get|Post|Put|Patch|Delete|Request)Mapping" backend/src/main/java/com/br/rkfbank/controllers`
-2. Leia os `record` de `backend/src/main/java/com/br/rkfbank/dto/**` (são curtos) e as anotações de validação.
+   `Grep "@(Get|Post|Put|Patch|Delete|Request)Mapping" backend/src/main/java/com/br/rkfbank` (controllers nos modulos)
+2. Leia os `record` de `backend/src/main/java/com/br/rkfbank/*/dto/**` (cada modulo tem `dto/request` e `dto/response`; o JSON de erro e de pagina fica em `compartilhado/web`) (são curtos) e as anotações de validação.
 3. Leia as seções 2 a 6 do contrato (tabela de endpoints, requests, responses, erros).
 4. Leia `frontend/lib/api/types.ts` e os caminhos usados em `frontend/lib/api/clientes.ts` e `contas.ts`.
 5. Procure `TODO(backend)` no frontend: são pedidos do Renan para o backend.

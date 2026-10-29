@@ -90,7 +90,7 @@ Arquivo: [`src/main/resources/application.properties`](src/main/resources/applic
 
 ### Segurança (Spring Security + JWT)
 
-Regras de rota em [`ConfiguracaoSeguranca`](src/main/java/com/br/rkfbank/config/ConfiguracaoSeguranca.java):
+Regras de rota em [`ConfiguracaoSeguranca`](src/main/java/com/br/rkfbank/autenticacao/ConfiguracaoSeguranca.java):
 públicas só `POST /clientes`, `POST /auth/login` e `GET /actuator/health`; `GET /clientes` e `/admin/**` só `ADMIN`; o resto exige
 token. A **regra de dono** (conta de outro cliente → `403`) fica no `ContaService`, porque depende do dado e não só do
 perfil. `401`/`403` barrados nos filtros saem no formato padrão pelo `TratadorErrosSeguranca`. Senha em BCrypt em
@@ -226,7 +226,7 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 42 verifica�
 | `SwaggerIntegracaoTest` | especificação OpenAPI pública com as rotas do contrato, rotas públicas sem cadeado, Swagger UI abrindo sem token | `@SpringBootTest` + MockMvc |
 | `ConversorTokenUsuarioTest` | token de usuário desativado, com perfil ou senha alterados; senha temporária; cache opcional | unitário com relógio manual |
 | `CodigoErroEnumTest` | todo código com mensagem própria e o tipo `CodigoErro` do frontend com exatamente os mesmos códigos | unitário (lê `frontend/lib/api/types.ts`) |
-| `mysql/MigracoesMySqlTest` | MySQL 8.4 de verdade: V1 a V15 em ordem e os tipos de produção (`DECIMAL`, `BINARY(16)`) | Testcontainers (`MySqlIntegracaoBase`) |
+| `mysql/MigracoesMySqlTest` | MySQL 8.4 de verdade: V1 a V16 em ordem e os tipos de produção (`DECIMAL`, `BINARY(16)`) | Testcontainers (`MySqlIntegracaoBase`) |
 | `mysql/FluxoBancarioMySqlTest` | do cadastro ao extrato no MySQL; saldo insuficiente não grava nada | Testcontainers + MockMvc |
 | `mysql/ConcorrenciaMySqlTest` | transferências simultâneas não criam nem somem dinheiro; cópia desatualizada perde para o lock otimista | Testcontainers, threads de verdade |
 
@@ -343,7 +343,8 @@ src/main/resources/db/
 │   ├── V12__criar_tabela_tentativa_login.sql (limitador de login contra força bruta)
 │   ├── V13__restringir_tipo_lancamento.sql (DEPOSITO, SAQUE e TRANSFERENCIA)
 │   ├── V14__adicionar_deve_trocar_senha_usuario.sql (senha temporária redefinida pelo ADMIN)
-│   └── V15__criar_tabela_refresh_token.sql (token de renovação de uso único)
+│   ├── V15__criar_tabela_refresh_token.sql (token de renovação de uso único)
+│   └── V16__criar_tabela_outbox.sql     (comprovante assíncrono: evento na transação do dinheiro)
 └── seed/                              ← dados prontos: só onde spring.flyway.locations incluir a pasta
     ├── equipe/afterMigrate__dados_equipe.sql         (Fellipe = origem, Renan = destino; sem senha)
     └── visitante/afterMigrate__dados_visitantes.sql  (Ana e Bruno Visitante; senha pública)
