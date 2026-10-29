@@ -6,10 +6,9 @@ import com.br.rkfbank.autenticacao.UsuarioRepository;
 import com.br.rkfbank.clientes.Cliente;
 import com.br.rkfbank.clientes.ClienteRepository;
 import com.br.rkfbank.clientes.ClienteService;
+import com.br.rkfbank.clientes.ConsultaCep;
 import com.br.rkfbank.clientes.Endereco;
 import com.br.rkfbank.clientes.dto.response.ClienteResponseDto;
-import com.br.rkfbank.clientes.viacep.ViaCepClient;
-import com.br.rkfbank.clientes.viacep.ViaCepResponseDto;
 import com.br.rkfbank.compartilhado.erros.CodigoErroEnum;
 import com.br.rkfbank.compartilhado.erros.ConflitoException;
 import com.br.rkfbank.compartilhado.erros.RegraNegocioException;
@@ -51,20 +50,20 @@ public class TitularService {
     private final UsuarioRepository usuarioRepository;
     private final ContaRepository contaRepository;
     private final LancamentoRepository lancamentoRepository;
-    private final ViaCepClient viaCepClient;
+    private final ConsultaCep consultaCep;
     private final ClienteService clienteService;
     private final PasswordEncoder passwordEncoder;
     private final LgpdPropriedades lgpd;
 
     public TitularService(ClienteRepository clienteRepository, UsuarioRepository usuarioRepository,
                           ContaRepository contaRepository, LancamentoRepository lancamentoRepository,
-                          ViaCepClient viaCepClient, ClienteService clienteService,
+                          ConsultaCep consultaCep, ClienteService clienteService,
                           PasswordEncoder passwordEncoder, LgpdPropriedades lgpd) {
         this.clienteRepository = clienteRepository;
         this.usuarioRepository = usuarioRepository;
         this.contaRepository = contaRepository;
         this.lancamentoRepository = lancamentoRepository;
-        this.viaCepClient = viaCepClient;
+        this.consultaCep = consultaCep;
         this.clienteService = clienteService;
         this.passwordEncoder = passwordEncoder;
         this.lgpd = lgpd;
@@ -130,16 +129,8 @@ public class TitularService {
             if (request.numero() == null) {
                 throw new RequisicaoInvalidaException("numero", "numero é obrigatório quando o cep muda");
             }
-            ViaCepResponseDto viaCep = viaCepClient.buscarPorCep(request.cep().replaceAll("\\D", ""));
-            String cep = viaCep.cep() != null && viaCep.cep().matches("\\d{8}")
-                    ? viaCep.cep().replaceAll("(\\d{5})(\\d{3})", "$1-$2")
-                    : viaCep.cep();
-            endereco.setCep(cep);
-            endereco.setLogradouro(viaCep.logradouro());
-            endereco.setBairro(viaCep.bairro());
-            endereco.setCidade(viaCep.localidade());
-            endereco.setUf(viaCep.uf());
-            endereco.setIbge(viaCep.ibge());
+            // Porta ConsultaCep: mesmo endereco oficial (e mesmo 422/503) do cadastro.
+            consultaCep.buscar(request.cep().replaceAll("\\D", "")).aplicarEm(endereco);
             corrigidos.add("cep");
         }
         if (request.numero() != null) {

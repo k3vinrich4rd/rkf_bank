@@ -6,8 +6,6 @@ import com.br.rkfbank.autenticacao.UsuarioRepository;
 import com.br.rkfbank.clientes.dto.request.CadastroClienteRequestDto;
 import com.br.rkfbank.clientes.dto.response.ClienteResponseDto;
 import com.br.rkfbank.clientes.dto.response.EnderecoResponseDto;
-import com.br.rkfbank.clientes.viacep.ViaCepClient;
-import com.br.rkfbank.clientes.viacep.ViaCepResponseDto;
 import com.br.rkfbank.compartilhado.config.LogSeguro;
 import com.br.rkfbank.compartilhado.erros.ClienteNaoEncontradoException;
 import com.br.rkfbank.compartilhado.erros.CodigoErroEnum;
@@ -41,20 +39,20 @@ public class ClienteService {
     public static final int MAX_BYTES_SENHA = 72;
 
     private final ClienteRepository clienteRepository;
-    private final ViaCepClient viaCepClient;
+    private final ConsultaCep consultaCep;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final TermosDeUso termosDeUso;
 
     public ClienteService(
             ClienteRepository clienteRepository,
-            ViaCepClient viaCepClient,
+            ConsultaCep consultaCep,
             UsuarioRepository usuarioRepository,
             PasswordEncoder passwordEncoder,
             TermosDeUso termosDeUso
     ) {
         this.clienteRepository = clienteRepository;
-        this.viaCepClient = viaCepClient;
+        this.consultaCep = consultaCep;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.termosDeUso = termosDeUso;
@@ -99,11 +97,11 @@ public class ClienteService {
         // Normaliza o CEP para manter somente dígitos antes de chamar o ViaCEP.
         String cep = request.cep().replaceAll("\\D", "");
 
-        // Camada de integração externa: resolve dados oficiais do endereço.
-        ViaCepResponseDto viaCep = viaCepClient.buscarPorCep(cep);
+        // Porta ConsultaCep: resolve os dados oficiais do endereço (em produção, o adaptador do ViaCEP).
+        EnderecoDoCep enderecoDoCep = consultaCep.buscar(cep);
 
         // Montagem da entidade de domínio com dados da request + resposta do ViaCEP.
-        Cliente cliente = montarCliente(request, viaCep);
+        Cliente cliente = montarCliente(request, enderecoDoCep);
 
         // Altera o CPF da entidade para salvar a versão puramente numérica no banco de dados.
         cliente.setCpf(cpfSanitizado);
@@ -134,7 +132,7 @@ public class ClienteService {
             throw new ConflitoException(CodigoErroEnum.CADASTRO_DUPLICADO);
         }
 
-        log.info("Cliente {} cadastrado (cidade={}/{})", salvo.getId(), viaCep.localidade(), viaCep.uf());
+        log.info("Cliente {} cadastrado (cidade={}/{})", salvo.getId(), enderecoDoCep.cidade(), enderecoDoCep.uf());
         return paraResponse(salvo);
     }
 
@@ -173,19 +171,10 @@ public class ClienteService {
         return pagina;
     }
 
-    private static Cliente montarCliente(CadastroClienteRequestDto request, ViaCepResponseDto viaCep) {
+    private static Cliente montarCliente(CadastroClienteRequestDto request, EnderecoDoCep enderecoDoCep) {
         Endereco endereco = new Endereco();
-        // Garante que o CEP salvo no banco de dados esteja com hífen conforme o padrão do ViaCEP/README
-        String cepComHifen = viaCep.cep() != null && !viaCep.cep().contains("-") && viaCep.cep().length() == 8
-                ? viaCep.cep().replaceAll("(\\d{5})(\\d{3})", "$1-$2")
-                : viaCep.cep();
-
-        endereco.setCep(cepComHifen);
-        endereco.setLogradouro(viaCep.logradouro());
-        endereco.setBairro(viaCep.bairro());
-        endereco.setCidade(viaCep.localidade());
-        endereco.setUf(viaCep.uf());
-        endereco.setIbge(viaCep.ibge());
+        // CEP com hífen (padrão do README) e nomes do RKF Bank: o adaptador da porta já entrega assim.
+        enderecoDoCep.aplicarEm(endereco);
         endereco.setNumero(request.numero());
         endereco.setComplemento(request.complemento());
 

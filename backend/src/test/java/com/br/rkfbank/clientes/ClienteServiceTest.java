@@ -15,8 +15,6 @@ import com.br.rkfbank.autenticacao.Usuario;
 import com.br.rkfbank.autenticacao.UsuarioRepository;
 import com.br.rkfbank.clientes.dto.request.CadastroClienteRequestDto;
 import com.br.rkfbank.clientes.dto.response.ClienteResponseDto;
-import com.br.rkfbank.clientes.viacep.ViaCepClient;
-import com.br.rkfbank.clientes.viacep.ViaCepResponseDto;
 import com.br.rkfbank.compartilhado.erros.ClienteNaoEncontradoException;
 import com.br.rkfbank.compartilhado.erros.CodigoErroEnum;
 import com.br.rkfbank.compartilhado.erros.ConflitoException;
@@ -45,7 +43,7 @@ class ClienteServiceTest {
     private ClienteRepository clienteRepository;
 
     @Mock
-    private ViaCepClient viaCepClient;
+    private ConsultaCep consultaCep;
 
     @Mock
     private UsuarioRepository usuarioRepository;
@@ -67,8 +65,8 @@ class ClienteServiceTest {
         );
         when(clienteRepository.existsByCpf("52998224725")).thenReturn(false);
         when(clienteRepository.existsByEmail("joao@email.com")).thenReturn(false);
-        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
-                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
+        when(consultaCep.buscar("01001000")).thenReturn(new EnderecoDoCep(
+                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308"
         ));
         when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(passwordEncoder.encode("senha-forte-1")).thenReturn("$2a$10$hash-gerado-pelo-bcrypt");
@@ -85,7 +83,7 @@ class ClienteServiceTest {
     }
 
     @Test
-    void deveRecusarSenhaComMaisDe72BytesAntesDeChamarOViaCep() {
+    void deveRecusarSenhaComMaisDe72BytesAntesDeConsultarOCep() {
         // 40 caracteres "ç" cabem no @Size(max = 72), mas ocupam 80 bytes em UTF-8.
         String senhaComAcentos = "ç".repeat(40);
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
@@ -99,7 +97,7 @@ class ClienteServiceTest {
 
         assertEquals("senha", ex.getCampo());
         // usuarioRepository so foi consultado (CPF ja e login de alguem?); nada foi gravado nem cifrado.
-        verifyNoInteractions(viaCepClient, passwordEncoder);
+        verifyNoInteractions(consultaCep, passwordEncoder);
         verify(usuarioRepository, never()).saveAndFlush(any());
     }
 
@@ -114,7 +112,7 @@ class ClienteServiceTest {
         ConflitoException ex = assertThrows(ConflitoException.class, () -> clienteService.cadastrar(request));
 
         assertEquals(CodigoErroEnum.CPF_JA_CADASTRADO, ex.getCodigo());
-        verifyNoInteractions(viaCepClient, passwordEncoder);
+        verifyNoInteractions(consultaCep, passwordEncoder);
     }
 
     @Test
@@ -130,7 +128,7 @@ class ClienteServiceTest {
     }
 
     @Test
-    void deveCadastrarClienteComEnderecoViaCep() {
+    void deveCadastrarClienteComEnderecoDoCep() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
                 "Joao Silva",
                 "52998224725",
@@ -144,14 +142,13 @@ class ClienteServiceTest {
 
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(false);
-        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
+        when(consultaCep.buscar("01001000")).thenReturn(new EnderecoDoCep(
                 "01001-000",
                 "Praca da Se",
                 "Se",
                 "Sao Paulo",
                 "SP",
-                "3550308",
-                false
+                "3550308"
         ));
 
         when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> {
@@ -198,8 +195,8 @@ class ClienteServiceTest {
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail("joao.silva@email.com")).thenReturn(false);
-        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
-                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
+        when(consultaCep.buscar("01001000")).thenReturn(new EnderecoDoCep(
+                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308"
         ));
         when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -289,7 +286,7 @@ class ClienteServiceTest {
     }
 
     @Test
-    void deveNormalizarCepAntesDeConsultarViaCep() {
+    void deveNormalizarCepAntesDeConsultarAPorta() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
                 "Joao Silva",
                 "52998224725",
@@ -303,14 +300,14 @@ class ClienteServiceTest {
 
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(false);
-        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
-                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
+        when(consultaCep.buscar("01001000")).thenReturn(new EnderecoDoCep(
+                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308"
         ));
         when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         clienteService.cadastrar(request);
 
-        verify(viaCepClient).buscarPorCep("01001000");
+        verify(consultaCep).buscar("01001000");
     }
 
     @Test
@@ -320,8 +317,8 @@ class ClienteServiceTest {
         );
         when(clienteRepository.existsByCpf(request.cpf())).thenReturn(false);
         when(clienteRepository.existsByEmail(request.email())).thenReturn(false);
-        when(viaCepClient.buscarPorCep("01001000")).thenReturn(new ViaCepResponseDto(
-                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308", false
+        when(consultaCep.buscar("01001000")).thenReturn(new EnderecoDoCep(
+                "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308"
         ));
         when(clienteRepository.saveAndFlush(any(Cliente.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate CPF"));
