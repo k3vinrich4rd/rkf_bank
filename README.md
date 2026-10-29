@@ -137,6 +137,7 @@ Sugestão de leitura, do mais simples ao mais interessante:
 | [`FiltroLogRequisicao.java`](backend/src/main/java/com/br/rkfbank/config/FiltroLogRequisicao.java) | `X-Request-Id` em todas as linhas de log, com proteção contra log forjado |
 | [`SegurancaIntegracaoTest.java`](backend/src/test/java/com/br/rkfbank/SegurancaIntegracaoTest.java) | ataques ao token (`alg: none`, payload adulterado) |
 | [`planing/decisoes.md`](planing/decisoes.md) | por que cada escolha foi feita |
+| [🏷️ Anotações do projeto](#️-anotações-o-que-cada-uma-faz-e-por-que-está-aqui) | cada `@` do código com o que faz e por que está ali |
 
 </details>
 
@@ -1135,6 +1136,172 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 
 <img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
+## 🏷️ Anotações: o que cada uma faz e por que está aqui
+
+> **Anotação** é a etiqueta com `@` em cima de uma classe, método, campo ou parâmetro (`@Service`, `@Transactional`...).
+> Sozinha ela não executa nada: é uma informação que o Java guarda e que o **Spring**, o **Hibernate**, o **Bean Validation**
+> ou o **JUnit** leem para agir no lugar do código que a gente teria que escrever. O RKF Bank usa **66 anotações no
+> código** e **29 nos testes**; abaixo, cada uma com um exemplo real. 👇 Clique em cada grupo.
+
+```mermaid
+flowchart LR
+    REQ(["📨 Requisição"]) --> W["🌐 Web<br/>@RestController · @PostMapping<br/>@RequestBody · @Valid"]
+    W --> V["✅ Validação<br/>@NotBlank · @Size · @CpfValido"]
+    W --> S["🔐 Segurança<br/>@AuthenticationPrincipal"]
+    W --> SV["🧠 Service<br/>@Service · @Transactional"]
+    SV --> R["🗄️ Repository<br/>@Query · @EntityGraph · @Modifying"]
+    R --> E["🧱 Entidade<br/>@Entity · @Column · @ManyToOne · @Version"]
+    SV -. erro .-> EH["🚨 @RestControllerAdvice<br/>@ExceptionHandler"]
+    CFG["⚙️ Config<br/>@Configuration · @Bean · @ConfigurationProperties"] -.-> SV
+    AG["⏰ Rotinas<br/>@Scheduled · @SchedulerLock"] --> SV
+```
+
+<details>
+<summary><b>🌱 Spring: componentes e configuração</b> (13)</summary>
+<br/>
+
+| Anotação | O que faz | Por que usamos | Onde (exemplo) |
+|---|---|---|---|
+| `@SpringBootApplication` | liga a auto-configuração e procura componentes a partir do pacote dela | um ponto de partida só para a API | `RkfbankApplication` |
+| `@Service` | registra a classe como componente de **regra de negócio** | o Spring cria uma instância e injeta onde precisa (sem `new`) | `ContaService`, `ClienteService` |
+| `@Component` | registra um componente genérico (nem service, nem controller) | filtros, conversores e rotinas também são injetados | `FiltroLogRequisicao`, `ViaCepClient`, `RotinaAnonimizacao` |
+| `@Configuration` | classe que **monta** objetos para o Spring | configuração em Java, revisada no PR, em vez de XML | `ConfiguracaoSeguranca`, `ConfiguracaoCors`, `ConfiguracaoRotinas` |
+| `@Bean` | o retorno do método vira um componente do Spring | objetos de bibliotecas que não têm `@Component`: `PasswordEncoder`, `JwtDecoder`, `SecurityFilterChain` | `ConfiguracaoSeguranca` |
+| `@Value` | injeta uma propriedade do `application.properties`/`.env` | timeout e URL do ViaCEP, origens do CORS, cache do usuário sem valor fixo no código | `ViaCepClient(@Value("${viacep.timeout-ms}") int timeoutMs)` |
+| `@ConfigurationProperties` | junta um grupo de propriedades num `record` tipado | segredos e prazos do JWT, admin e LGPD validados num lugar só | `JwtPropriedades`, `AdminPropriedades`, `LgpdPropriedades` |
+| `@ConstructorBinding` | diz qual construtor recebe as propriedades | o `JwtPropriedades` tem mais de um construtor | `JwtPropriedades` |
+| `@EnableConfigurationProperties` | ativa as classes de `@ConfigurationProperties` | sem ela, o Spring não preencheria os `record` de propriedades | `ConfiguracaoSeguranca`, `RotinaAnonimizacao` |
+| `@Autowired` | marca o construtor que o Spring deve usar | a classe tem um construtor extra (com `Clock`) só para os testes | `ConversorTokenUsuario`, `LimitadorTentativasLogin` |
+| `@Order` | define a ordem entre componentes do mesmo tipo | o filtro de log roda **antes** de tudo (`HIGHEST_PRECEDENCE`); a cadeia do console do H2 vem antes da cadeia da API | `FiltroLogRequisicao`, `ConfiguracaoConsoleH2` |
+| `@ConditionalOnBooleanProperty` | só cria a configuração se a propriedade for `true` | o console do H2 existe só nos perfis com H2; em produção, nem a rota existe | `ConfiguracaoConsoleH2` |
+| `@Override` | avisa o compilador que o método substitui outro da interface ou da classe-mãe | erro de digitação no nome vira erro de compilação, e não um método novo esquecido | `CpfValidoValidator.isValid`, `equals`/`hashCode` das entidades |
+
+</details>
+
+<details>
+<summary><b>🌐 Web: rotas e HTTP</b> (12)</summary>
+<br/>
+
+| Anotação | O que faz | Por que usamos | Onde (exemplo) |
+|---|---|---|---|
+| `@RestController` | controller cuja resposta vira **JSON** direto | a API só fala JSON; nenhuma tela é gerada no servidor | `ContaController`, `ClienteController` |
+| `@RequestMapping` | prefixo comum das rotas da classe | todas as rotas de um assunto no mesmo lugar | `@RequestMapping("/admin/usuarios")` no `AdminUsuarioController` |
+| `@GetMapping` · `@PostMapping` · `@PatchMapping` | liga um método a um verbo HTTP e a uma rota | REST: a ação está no verbo (`POST /transferencias`), nunca no nome da rota | `ContaController.transferir` |
+| `@PathVariable` | lê um pedaço da URL | identificar o recurso: `/contas/{contaId}/lancamentos` | `ContaController.extrato` |
+| `@RequestParam` | lê um parâmetro da query string | paginação opcional: `?page=0&size=10` | `ClienteController.listar` |
+| `@RequestBody` | transforma o JSON do corpo num DTO | a entrada chega tipada (`TransferenciaRequestDto`), nunca como `Map` | todos os `POST`/`PATCH` |
+| `@RequestHeader` | lê um cabeçalho HTTP | o `Idempotency-Key` obrigatório das movimentações | `ContaController.depositar` |
+| `@RestControllerAdvice` | classe que trata exceções de **todos** os controllers | todo erro sai no mesmo JSON (`timestamp`, `status`, `codigo`, `message`...) | `TratadorGlobalDeErros` |
+| `@ExceptionHandler` | método que trata um tipo de exceção | cada exceção de negócio vira o status certo (`404`, `409`, `422`, `503`) | `TratadorGlobalDeErros` (12 métodos) |
+| `@ResponseStatus` | fixa o status HTTP da resposta do método | o handler de `ContaNaoEncontradaException` sempre responde `404` | `TratadorGlobalDeErros` |
+| `@JsonIgnoreProperties(ignoreUnknown = true)` | o Jackson ignora campos do JSON que o record não tem | o ViaCEP manda campos a mais (`ddd`, `siafi`...) e pode criar outros sem quebrar o cadastro | `ViaCepResponseDto` |
+
+</details>
+
+<details>
+<summary><b>✅ Validação da entrada (Bean Validation)</b> (14)</summary>
+<br/>
+
+| Anotação | O que faz | Por que usamos | Onde (exemplo) |
+|---|---|---|---|
+| `@Valid` | manda validar o objeto antes de entrar no método | dado inválido para na porta com `400` e uma mensagem **por campo**, sem chegar no service | `transferir(@Valid @RequestBody TransferenciaRequestDto request)` |
+| `@NotBlank` | texto obrigatório e não vazio | nome, CPF, e-mail e senha no cadastro | `CadastroClienteRequestDto` |
+| `@NotNull` | valor obrigatório (para não-texto) | valor e contas da transferência | `TransferenciaRequestDto` |
+| `@Size` | tamanho mínimo e máximo do texto | senha de 8 a 72 caracteres (o BCrypt lê até 72 bytes) | `CadastroClienteRequestDto.senha` |
+| `@Email` | formato de e-mail | e-mail inválido nem chega ao banco | `CadastroClienteRequestDto.email` |
+| `@Pattern` | o texto tem que bater com uma expressão regular | CEP e telefone na correção de dados (`PATCH /clientes/me`) | `AtualizarClienteRequestDto` |
+| `@DecimalMin` | valor mínimo de um número decimal | não existe depósito de R$ 0,00 nem negativo (`0.01`) | `DepositoRequestDto.valor` |
+| `@Digits` | casas inteiras e decimais permitidas | dinheiro com **no máximo 2 casas** (`10.555` é recusado) | `DepositoRequestDto.valor` |
+| `@AssertTrue` | o booleano tem que ser `true` | LGPD: sem aceitar os termos, não há cadastro | `CadastroClienteRequestDto.aceiteTermos` |
+| `@CpfValido` (**nossa**) | confere os dígitos verificadores do CPF | `111.111.111-11` passa num `@Pattern`, mas não é CPF | `CadastroClienteRequestDto.cpf` |
+| `@Constraint` | diz que a anotação é uma regra de validação e quem a executa | é o que transforma o `@CpfValido` numa validação de verdade (`CpfValidoValidator`) | `CpfValido` |
+| `@Target` · `@Retention` · `@Documented` | onde a anotação pode ir, até quando ela existe (`RUNTIME`) e se aparece no Javadoc | sem `RUNTIME`, o validador não enxergaria o `@CpfValido` com a API rodando | `CpfValido` |
+
+</details>
+
+<details>
+<summary><b>🧱 Banco: entidades JPA e Hibernate</b> (16)</summary>
+<br/>
+
+| Anotação | O que faz | Por que usamos | Onde (exemplo) |
+|---|---|---|---|
+| `@Entity` | a classe representa uma tabela | o Hibernate faz o SQL de salvar e buscar | `Conta`, `Cliente`, `Lancamento` |
+| `@Table` | nome da tabela e restrições | padrão `tb_` do time e as constraints únicas declaradas | `@Table(name = "tb_conta", uniqueConstraints = ...)` |
+| `@UniqueConstraint` | declara uma coluna (ou grupo) única | o `ddl-auto=validate` confere com o banco: CPF, e-mail, número da conta, `usuario_id + chave` | `Conta`, `Cliente`, `RegistroIdempotencia`, `Usuario` |
+| `@Id` | a chave primária | toda entidade tem um id | todas |
+| `@GeneratedValue(strategy = UUID)` | o id é gerado sozinho | UUID não revela quantos clientes existem nem permite chutar o próximo id | todas |
+| `@Column` | nome, tamanho, nulidade e precisão da coluna | `DECIMAL(19,2)` para dinheiro, `nullable = false` igual à migração | `Conta.saldo` |
+| `@Enumerated(EnumType.STRING)` | grava o enum como texto | `CORRENTE` no banco, e não `0`: reordenar o enum não corrompe os dados | `Conta.tipoContaEnum` |
+| `@JdbcTypeCode(SqlTypes.VARCHAR)` | força o tipo da coluna no Hibernate | o enum fica `VARCHAR` + `CHECK` no MySQL **e** no H2 (o H2 2.x usaria o tipo `ENUM` dele) | `Conta`, `Lancamento`, `Usuario` |
+| `@ManyToOne` | muitos-para-um (FK deste lado) | várias contas para um cliente; é daqui que sai a regra de dono | `Conta.cliente` (LAZY) |
+| `@OneToOne` | um-para-um | o cliente tem um endereço; o usuário tem (ou não) um cliente | `Cliente.endereco`, `Usuario.cliente` (LAZY) |
+| `@OneToMany(mappedBy)` | o lado inverso, que lista os "muitos" | navegar do cliente para as contas sem uma FK a mais | `Cliente.contas` |
+| `@JoinColumn` | nome da coluna da FK | igual ao da migração Flyway (`cliente_id`) | `Conta.cliente` |
+| `@Version` | **lock otimista**: versão da linha conferida no `UPDATE` | dois saques ao mesmo tempo: o segundo leva `409` em vez de sobrescrever o saldo | `Conta.versao` |
+| `@PrePersist` | roda um método logo antes do `INSERT` | data e hora do lançamento e do token preenchidas pela própria entidade | `Lancamento.aoSalvar()` |
+
+</details>
+
+<details>
+<summary><b>🗄️ Consultas e transação (Spring Data e Spring)</b> (5)</summary>
+<br/>
+
+| Anotação | O que faz | Por que usamos | Onde (exemplo) |
+|---|---|---|---|
+| `@Transactional` | abre a transação: ou tudo grava, ou nada | débito, crédito, lançamento e chave de idempotência juntos; `readOnly = true` nas leituras | `ContaService.transferir` (38 usos) |
+| `@Query` | escreve a consulta em **JPQL** | o que o nome do método não alcança: a conciliação soma o extrato e projeta direto em DTO | `ContaRepository.findDivergentesDoExtrato` |
+| `@Param` | liga o parâmetro do método ao `:nome` da JPQL | consulta parametrizada, nunca texto concatenado (sem *SQL injection*) | `LancamentoRepository.limparDescricoesEscritasPor` |
+| `@Modifying` | a `@Query` é `UPDATE` ou `DELETE` | limpezas em lote sem carregar entidade (LGPD, idempotência, tokens vencidos) | `IdempotenciaRepository.apagarCriadasAntesDe` |
+| `@EntityGraph` | busca o associado **junto** (o `JOIN FETCH` sem escrever JPQL) | as listas do ADMIN sem N+1 (medido no `ConsultasSqlIntegracaoTest`) | `ClienteRepository.findAll` (com `endereco`) |
+
+</details>
+
+<details>
+<summary><b>🔐 Segurança, rotinas e Swagger</b> (6)</summary>
+<br/>
+
+| Anotação | O que faz | Por que usamos | Onde (exemplo) |
+|---|---|---|---|
+| `@AuthenticationPrincipal` | entrega ao método quem está logado (montado do JWT) | o dono vem do **token assinado**, nunca da URL ou do corpo: base da regra de dono | `ContaController.depositar(..., @AuthenticationPrincipal UsuarioLogado usuario)` |
+| `@EnableScheduling` | liga as rotinas agendadas | anonimização LGPD e limpeza diária sem cron do sistema operacional | `ConfiguracaoRotinas` |
+| `@Scheduled` | roda o método num horário (cron) | `0 0 3 * * *`: anonimização às 03h; `0 0 4 * * *`: limpeza às 04h | `RotinaAnonimizacao`, `RotinaLimpezaDiaria` |
+| `@EnableSchedulerLock` · `@SchedulerLock` | trava a rotina na `tb_shedlock` (ShedLock) | com duas instâncias da API no ar, a rotina roda **uma vez só** | `ConfiguracaoRotinas`, `RotinaAnonimizacao` |
+| `@Tag` | agrupa as rotas no Swagger | "Contas", "Clientes", "Autenticação"... na tela do Swagger | todos os controllers |
+| `@SecurityRequirements` (vazio) | tira o cadeado do Swagger daquela rota | cadastro, login e termos são públicos e não pedem token | `AuthController`, `ClienteController.cadastrar`, `TermosController` |
+
+</details>
+
+<details>
+<summary><b>🧪 Testes: JUnit, Mockito e Spring Test</b> (29)</summary>
+<br/>
+
+| Anotação | O que faz | Por que usamos | Onde (exemplo) |
+|---|---|---|---|
+| `@Test` | marca um método de teste | 335 casos | todos os `*Test` |
+| `@ParameterizedTest` + `@CsvSource` · `@ValueSource` · `@MethodSource` | o mesmo teste com várias entradas | bordas do saldo (`99.99` e `100.00`), CPFs inválidos, as 7 entidades | `ContaTest`, `CpfValidoValidatorTest`, `IdentidadeEntidadesTest` |
+| `@Nested` | agrupa testes dentro da classe | `ContaTest` separado em `Depositar`, `Sacar` e `TransferirPara` (TDD) | `ContaTest` |
+| `@BeforeEach` | roda antes de cada teste | cada teste começa do zero (ex.: tabela de tentativas vazia) | `LimitadorTentativasLoginTest` |
+| `@ExtendWith(MockitoExtension.class)` | liga o Mockito no JUnit 5 | teste de service sem subir o Spring: milissegundos | `ContaServiceTest` |
+| `@Mock` · `@InjectMocks` · `@Spy` | cria dublês e injeta no objeto testado; `@Spy` usa o objeto real | isolar a regra do banco e do ViaCEP | `ClienteServiceTest` |
+| `@SpringBootTest` | sobe a aplicação inteira | integração de verdade: segurança, banco e transação | `SegurancaIntegracaoTest` |
+| `@AutoConfigureMockMvc` | `MockMvc` para chamar a API sem abrir porta | status, JSON e headers como o cliente vê | `ConciliacaoIntegracaoTest` |
+| `@WebMvcTest` | sobe só a camada web | controller com service mockado, rápido | `ClienteControllerTest`, `ContaControllerTest` |
+| `@DataJpaTest` | sobe só JPA e banco | consultas e constraints com as migrações do Flyway | `*RepositoryTest` |
+| `@ActiveProfiles("test")` | usa o `application-test.properties` | H2 em memória, sem `.env` e sem seed | quase todos |
+| `@TestPropertySource` | troca propriedades num teste | os testes de repository usam um H2 próprio (`jdbc:h2:mem:repositorios`), separado dos outros testes | `*RepositoryTest` |
+| `@DirtiesContext` | descarta o contexto do Spring depois | testes que mudam o estado (seed, saldos) não vazam para os outros | `ConciliacaoIntegracaoTest` |
+| `@MockitoBean` | troca um bean do Spring por um mock | o `UsuarioRepository` na base dos testes de controller | `ControllerWebMvcBase` |
+| `@Autowired` | injeta um bean no teste | `MockMvc`, `JdbcTemplate`, repositories | testes de integração |
+| `@Import` · `@TestConfiguration` · `@Bean` · `@Qualifier` | trazem configurações extras para o teste e escolhem qual bean usar | a cadeia de segurança real nos `@WebMvcTest`; o container do MySQL como bean; o executor de tarefas pelo nome | `ControllerWebMvcBase`, `MySqlIntegracaoBase`, `ThreadsVirtuaisTest` (`@Qualifier("applicationTaskExecutor")`) |
+| `@Testcontainers` · `@ServiceConnection` | sobe um MySQL 8.4 de verdade no Docker e liga o datasource | o que passa no H2 também passa no banco de produção | `MySqlIntegracaoBase` |
+| `@LocalServerPort` | a porta sorteada da API no teste | chamar a API por HTTP de verdade (o console do H2 não roda no `MockMvc`) | `ConsoleH2LigadoTest` |
+
+</details>
+
+Mais sobre as camadas e por que cada decisão foi tomada: [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.md) · [planing/decisoes.md](planing/decisoes.md).
+
+<img src="assets/readme/divisor.svg" width="100%" alt=""/>
+
 ## 🔬 Laboratório de arquitetura
 
 > O que já virou código, provado por teste, e o que está **em estudo para implementação**, com plano pronto.
@@ -1925,6 +2092,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | Segurança | [Spring Security + OAuth2 + JWT](backend/README_SEGURANCA.md) | como o login, o token, os filtros, a autorização e o cookie do front funcionam, e por que é assim |
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
+| Backend | [🏷️ Anotações](#️-anotações-o-que-cada-uma-faz-e-por-que-está-aqui) | as 66 anotações do código e as 29 dos testes: o que cada uma faz, por que usamos e onde estão |
 | Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou MySQL), ver o banco, permissões, payloads e roteiros; aceite do MVP pela coleção |
 | Deploy | [Publicar o RKF Bank](backend/README_DEPLOY.md) · [Dockerfile](Dockerfile) | onde publicar (grátis × sempre ligado), imagem Docker, perfil `prod`, variáveis e o que conferir; responsáveis: Kevin e Renan |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
