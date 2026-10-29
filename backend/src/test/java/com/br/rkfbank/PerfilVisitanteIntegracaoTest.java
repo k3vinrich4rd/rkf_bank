@@ -6,7 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.services.TokenService;
+import com.br.rkfbank.autenticacao.TokenService;
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -25,7 +26,6 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
 
 // O perfil visitante de verdade (application-visitante.properties), num H2 proprio. Prova as garantias do
 // VISITANTES.md: entram so a Ana e o Bruno, nenhuma conta da equipe nem admin existe, e nem o segredo de teste

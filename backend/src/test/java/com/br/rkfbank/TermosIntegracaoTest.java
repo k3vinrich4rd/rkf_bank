@@ -7,8 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.clients.viacep.ViaCepClient;
-import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
+import com.br.rkfbank.clientes.viacep.ViaCepClient;
+import com.br.rkfbank.clientes.viacep.ViaCepResponseDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

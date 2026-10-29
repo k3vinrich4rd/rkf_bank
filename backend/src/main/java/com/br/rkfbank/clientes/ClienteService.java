@@ -1,0 +1,252 @@
+package com.br.rkfbank.clientes;
+
+import com.br.rkfbank.autenticacao.PerfilEnum;
+import com.br.rkfbank.autenticacao.Usuario;
+import com.br.rkfbank.autenticacao.UsuarioRepository;
+import com.br.rkfbank.clientes.dto.request.CadastroClienteRequestDto;
+import com.br.rkfbank.clientes.dto.response.ClienteResponseDto;
+import com.br.rkfbank.clientes.dto.response.EnderecoResponseDto;
+import com.br.rkfbank.clientes.viacep.ViaCepClient;
+import com.br.rkfbank.clientes.viacep.ViaCepResponseDto;
+import com.br.rkfbank.compartilhado.config.LogSeguro;
+import com.br.rkfbank.compartilhado.erros.ClienteNaoEncontradoException;
+import com.br.rkfbank.compartilhado.erros.CodigoErroEnum;
+import com.br.rkfbank.compartilhado.erros.ConflitoException;
+import com.br.rkfbank.compartilhado.erros.RegraNegocioException;
+import com.br.rkfbank.compartilhado.erros.RequisicaoInvalidaException;
+import com.br.rkfbank.titular.TermosDeUso;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+
+// Cadastro de clientes. O cadastro cria tres coisas na MESMA transacao: endereco (do ViaCEP), cliente e a
+// credencial de login (Usuario com o hash BCrypt). Falhou qualquer uma, nenhuma fica no banco.
+@Service
+public class ClienteService {
+
+    private static final Logger log = LogManager.getLogger(ClienteService.class);
+
+    // Limite do BCrypt: o que passa de 72 bytes ele nao le (o Spring Security recusa com excecao).
+    public static final int MAX_BYTES_SENHA = 72;
+
+    private final ClienteRepository clienteRepository;
+    private final ViaCepClient viaCepClient;
+    private final UsuarioRepository usuarioRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final TermosDeUso termosDeUso;
+
+    public ClienteService(
+            ClienteRepository clienteRepository,
+            ViaCepClient viaCepClient,
+            UsuarioRepository usuarioRepository,
+            PasswordEncoder passwordEncoder,
+            TermosDeUso termosDeUso
+    ) {
+        this.clienteRepository = clienteRepository;
+        this.viaCepClient = viaCepClient;
+        this.usuarioRepository = usuarioRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.termosDeUso = termosDeUso;
+    }
+
+    // Ordem pensada: primeiro as checagens baratas e locais (CPF/e-mail repetidos, tamanho da senha), depois a
+    // chamada externa ao ViaCEP (lenta e sujeita a falha). Assim um cadastro que ja seria recusado nem gasta a chamada.
+    @Transactional
+    public ClienteResponseDto cadastrar(CadastroClienteRequestDto request) {
+        // Normaliza o CPF para manter somente dígitos antes das validações de banco.
+        String cpfSanitizado = request.cpf().replaceAll("\\D", "");
+
+        // Regra de unicidade de CPF antes de consultar qualquer serviço externo. O CPF tambem e o login, entao vale
+        // olhar tb_usuario: o ADMIN do .env tem login sem cadastro de cliente, e o mesmo CPF daria 500 la no insert.
+        // CPF e email ficam fora dos logs por serem dados pessoais.
+        if (clienteRepository.existsByCpf(cpfSanitizado) || usuarioRepository.existsByLogin(cpfSanitizado)) {
+            log.warn("Cadastro de cliente recusado: CPF ja cadastrado");
+            throw new ConflitoException(CodigoErroEnum.CPF_JA_CADASTRADO);
+        }
+
+        // Email guardado sempre em minúsculas e sem espaços nas pontas (a V2 do Flyway fez o mesmo com os já salvos).
+        // Assim a unicidade não depende da collation do banco: o MySQL ignora maiúsculas, o H2 dos testes não.
+        String emailNormalizado = request.email().trim().toLowerCase(Locale.ROOT);
+
+        // Regra de unicidade de email para evitar conflito de cadastro.
+        if (clienteRepository.existsByEmail(emailNormalizado)) {
+            log.warn("Cadastro de cliente recusado: email ja cadastrado");
+            throw new ConflitoException(CodigoErroEnum.EMAIL_JA_CADASTRADO);
+        }
+
+        // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Checado antes de chamar o ViaCEP.
+        garantirLimiteDoBcrypt("senha", request.senha());
+
+        // O aceite em si (aceiteTermos=true) ja foi exigido pelo @AssertTrue. Aqui so a versao: quem tem a pagina
+        // aberta desde antes de os termos mudarem aceitou um texto que nao vale mais.
+        String versaoVigente = termosDeUso.versaoVigente();
+        if (request.termosVersao() != null && !request.termosVersao().equals(versaoVigente)) {
+            log.warn("Cadastro de cliente recusado: termos na versao {} (vigente {})", LogSeguro.texto(request.termosVersao()), versaoVigente);
+            throw new RegraNegocioException(CodigoErroEnum.TERMOS_DESATUALIZADOS);
+        }
+
+        // Normaliza o CEP para manter somente dígitos antes de chamar o ViaCEP.
+        String cep = request.cep().replaceAll("\\D", "");
+
+        // Camada de integração externa: resolve dados oficiais do endereço.
+        ViaCepResponseDto viaCep = viaCepClient.buscarPorCep(cep);
+
+        // Montagem da entidade de domínio com dados da request + resposta do ViaCEP.
+        Cliente cliente = montarCliente(request, viaCep);
+
+        // Altera o CPF da entidade para salvar a versão puramente numérica no banco de dados.
+        cliente.setCpf(cpfSanitizado);
+        cliente.setEmail(emailNormalizado);
+        // LGPD: prova do consentimento (qual texto foi aceito e quando).
+        cliente.registrarAceiteDosTermos(versaoVigente, Instant.now());
+
+        // Normaliza o telefone para manter apenas dígitos antes de salvar no banco.
+        String telefoneSanitizado = request.telefone().replaceAll("\\D", "");
+        cliente.setTelefone(telefoneSanitizado);
+
+        // Persistência transacional: cliente/endereço e a credencial de acesso na mesma transacao (se uma falhar, a
+        // outra e desfeita). So o hash vai para o banco; a senha em texto termina aqui.
+        Cliente salvo;
+        try {
+            salvo = clienteRepository.saveAndFlush(cliente);
+
+            Usuario usuario = new Usuario();
+            usuario.setLogin(cpfSanitizado);
+            usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
+            usuario.setPerfil(PerfilEnum.CLIENTE);
+            usuario.setCliente(salvo);
+            usuarioRepository.saveAndFlush(usuario);
+        } catch (DataIntegrityViolationException ex) {
+            // Cadastro concorrente passou pelas checagens acima e esbarrou numa constraint unica do banco (CPF, e-mail
+            // ou login). A mensagem do driver traz o valor duplicado, por isso nao entra no log.
+            log.warn("Cadastro de cliente recusado: violacao de unicidade no banco");
+            throw new ConflitoException(CodigoErroEnum.CADASTRO_DUPLICADO);
+        }
+
+        log.info("Cliente {} cadastrado (cidade={}/{})", salvo.getId(), viaCep.localidade(), viaCep.uf());
+        return paraResponse(salvo);
+    }
+
+    // @Size conta caracteres; o BCrypt conta bytes (acento ocupa 2). Usado no cadastro e nas trocas de senha.
+    public static void garantirLimiteDoBcrypt(String campo, String senha) {
+        if (senha.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES_SENHA) {
+            throw new RequisicaoInvalidaException(campo, campo + " deve ter no máximo " + MAX_BYTES_SENHA + " bytes");
+        }
+    }
+
+    // Busca unica por id, reaproveitada por outros services, sempre com o mesmo 404.
+    public Cliente buscar(UUID id) {
+        // Busca centralizada para reutilizar a mesma exceção de 404 em outras camadas.
+        return clienteRepository.findById(id).orElseThrow(() -> {
+            log.warn("Cliente {} nao encontrado", id);
+            return new ClienteNaoEncontradoException();
+        });
+    }
+
+    // Lista completa (so ADMIN). Converte para DTO dentro da transacao, enquanto o endereco (lazy) ainda carrega.
+    @Transactional(readOnly = true)
+    public List<ClienteResponseDto> listarTodos() {
+        // Leitura sem paginação para telas simples.
+        List<ClienteResponseDto> clientes = clienteRepository.findAll().stream().map(this::paraResponse).toList();
+        log.debug("Listagem de clientes retornou {} registros", clientes.size());
+        return clientes;
+    }
+
+    // Pagina do banco: Page.map converte cada cliente mantendo total e numero da pagina.
+    @Transactional(readOnly = true)
+    public Page<ClienteResponseDto> listarPaginado(Pageable pageable) {
+        // Leitura paginada para reduzir payload em listas grandes.
+        Page<ClienteResponseDto> pagina = clienteRepository.findAll(pageable).map(this::paraResponse);
+        log.debug("Listagem paginada de clientes: pagina {} com {} de {} registros",
+                pageable.getPageNumber(), pagina.getNumberOfElements(), pagina.getTotalElements());
+        return pagina;
+    }
+
+    private static Cliente montarCliente(CadastroClienteRequestDto request, ViaCepResponseDto viaCep) {
+        Endereco endereco = new Endereco();
+        // Garante que o CEP salvo no banco de dados esteja com hífen conforme o padrão do ViaCEP/README
+        String cepComHifen = viaCep.cep() != null && !viaCep.cep().contains("-") && viaCep.cep().length() == 8
+                ? viaCep.cep().replaceAll("(\\d{5})(\\d{3})", "$1-$2")
+                : viaCep.cep();
+
+        endereco.setCep(cepComHifen);
+        endereco.setLogradouro(viaCep.logradouro());
+        endereco.setBairro(viaCep.bairro());
+        endereco.setCidade(viaCep.localidade());
+        endereco.setUf(viaCep.uf());
+        endereco.setIbge(viaCep.ibge());
+        endereco.setNumero(request.numero());
+        endereco.setComplemento(request.complemento());
+
+        Cliente cliente = new Cliente();
+        cliente.setNomeCompleto(request.nomeCompleto());
+        cliente.setCpf(request.cpf());
+        cliente.setEmail(request.email());
+        cliente.setTelefone(request.telefone());
+        cliente.setEndereco(endereco);
+        return cliente;
+    }
+
+    // Publico para o modulo titular: o TitularService devolve o cadastro no mesmo formato.
+    public ClienteResponseDto paraResponse(Cliente cliente) {
+        Endereco endereco = cliente.getEndereco();
+        EnderecoResponseDto enderecoResponse = new EnderecoResponseDto(
+                endereco.getCep(),
+                endereco.getLogradouro(),
+                endereco.getBairro(),
+                endereco.getCidade(),
+                endereco.getUf(),
+                endereco.getIbge(),
+                endereco.getNumero(),
+                endereco.getComplemento()
+        );
+
+        String cpfMascarado = mascararCpf(cliente.getCpf());
+        String telefoneFormatado = formatarTelefone(cliente);
+
+        return new ClienteResponseDto(
+                cliente.getId(),
+                cliente.getNomeCompleto(),
+                cpfMascarado,
+                cliente.getEmail(),
+                telefoneFormatado,
+                enderecoResponse,
+                cliente.getTermosVersao(),
+                cliente.getTermosAceitosEm()
+        );
+    }
+
+    // 12345678909 -> ***.456.789-** : da para a pessoa (e o ADMIN) reconhecer o cadastro sem expor o CPF inteiro.
+    // Mesmo formato da lista do ADMIN (GestaoUsuarioService), que reaproveita este metodo.
+    public static String mascararCpf(String cpf) {
+        if (cpf == null || cpf.length() != 11) {
+            return "***";
+        }
+        return "***." + cpf.substring(3, 6) + "." + cpf.substring(6, 9) + "-**";
+    }
+
+    private static String formatarTelefone(Cliente cliente) {
+        String tel = cliente.getTelefone();
+        if (tel != null) {
+            if (tel.length() == 11) {
+                // Celulares: (XX) XXXXX-XXXX
+                return tel.replaceAll("(\\d{2})(\\d{5})(\\d{4})", "($1) $2-$3");
+            } else if (tel.length() == 10) {
+                // Fixos: (XX) XXXX-XXXX
+                return tel.replaceAll("(\\d{2})(\\d{4})(\\d{4})", "($1) $2-$3");
+            }
+        }
+        return tel;
+    }
+}

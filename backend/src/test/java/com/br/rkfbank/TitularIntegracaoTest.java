@@ -12,14 +12,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.clients.viacep.ViaCepClient;
-import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
-import com.br.rkfbank.entities.Cliente;
-import com.br.rkfbank.entities.Usuario;
-import com.br.rkfbank.repositories.ClienteRepository;
-import com.br.rkfbank.repositories.LancamentoRepository;
-import com.br.rkfbank.repositories.UsuarioRepository;
-import com.br.rkfbank.services.TitularService;
+import com.br.rkfbank.autenticacao.Usuario;
+import com.br.rkfbank.autenticacao.UsuarioRepository;
+import com.br.rkfbank.clientes.Cliente;
+import com.br.rkfbank.clientes.ClienteRepository;
+import com.br.rkfbank.clientes.viacep.ViaCepClient;
+import com.br.rkfbank.clientes.viacep.ViaCepResponseDto;
+import com.br.rkfbank.contas.LancamentoRepository;
+import com.br.rkfbank.titular.TitularService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;

@@ -14,11 +14,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.clients.viacep.ViaCepClient;
-import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
-import com.br.rkfbank.entities.Usuario;
-import com.br.rkfbank.repositories.UsuarioRepository;
-import com.br.rkfbank.services.TokenService;
+import com.br.rkfbank.autenticacao.TokenService;
+import com.br.rkfbank.autenticacao.Usuario;
+import com.br.rkfbank.autenticacao.UsuarioRepository;
+import com.br.rkfbank.clientes.viacep.ViaCepClient;
+import com.br.rkfbank.clientes.viacep.ViaCepResponseDto;
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -44,7 +45,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
 
 // Cadeia de filtros de verdade (Spring inteiro + H2 + Flyway), com tokens reais emitidos pelo /auth/login.
 @SpringBootTest(properties = {

@@ -1,14 +1,14 @@
 package com.br.rkfbank;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-
-import static org.mockito.Mockito.times;
-
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
+import static org.mockito.Mockito.times;
+
 
 @SpringBootTest
 // Perfil test explicito: roda igual no IDE e no Maven (H2, sem seed, sem o .env de quem roda).

@@ -5,8 +5,8 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.clients.viacep.ViaCepClient;
-import com.br.rkfbank.clients.viacep.ViaCepResponseDto;
+import com.br.rkfbank.clientes.viacep.ViaCepClient;
+import com.br.rkfbank.clientes.viacep.ViaCepResponseDto;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.BeforeEach;

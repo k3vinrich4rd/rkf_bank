@@ -6,8 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
-import com.br.rkfbank.entities.Conta;
-import com.br.rkfbank.repositories.ContaRepository;
+import com.br.rkfbank.contas.Conta;
+import com.br.rkfbank.contas.ContaRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;

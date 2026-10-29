@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.br.rkfbank.services.IdempotenciaService;
+import com.br.rkfbank.contas.IdempotenciaService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
