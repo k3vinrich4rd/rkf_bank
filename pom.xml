@@ -24,6 +24,8 @@
 		<!-- springdoc 3.x e a linha para o Spring Boot 4 (a 2.x e do Boot 3). -->
 		<springdoc.version>3.1.1</springdoc.version>
 		<shedlock.version>7.10.1</shedlock.version>
+		<!-- ArchUnit 1.5 le classes do Java 25 (as fronteiras dos modulos viram teste: ArquiteturaModulosTest). -->
+		<archunit.version>1.5.1</archunit.version>
 	</properties>
 
 	<dependencies>
@@ -178,6 +180,15 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers-mysql</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- Monolito modular: as regras de quem pode depender de quem (modulos, camadas e a porta do CEP) viram
+		     teste. Quebrou a fronteira, o build fica vermelho. -->
+		<dependency>
+			<groupId>com.tngtech.archunit</groupId>
+			<artifactId>archunit-junit5</artifactId>
+			<version>${archunit.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

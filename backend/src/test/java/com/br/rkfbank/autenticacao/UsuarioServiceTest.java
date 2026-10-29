@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.br.rkfbank.clientes.Cliente;
-import com.br.rkfbank.clientes.ClienteRepository;
+import com.br.rkfbank.clientes.ClienteService;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,7 @@ class UsuarioServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @Mock
-    private ClienteRepository clienteRepository;
+    private ClienteService clienteService;
 
     private static final UUID FELLIPE = UUID.fromString("5eed0000-0000-4000-8000-000000000012");
     private static final String SENHA_EQUIPE = "senha-da-equipe-de-teste";
@@ -100,7 +100,7 @@ class UsuarioServiceTest {
     @Test
     void criaOLoginDaContaDaEquipeComOCpfDoCliente() {
         Cliente fellipe = cliente(FELLIPE, "12345678909");
-        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.of(fellipe));
+        when(clienteService.buscarSeExistir(FELLIPE)).thenReturn(Optional.of(fellipe));
         when(usuarioRepository.findByLogin("12345678909")).thenReturn(Optional.empty());
         when(passwordEncoder.encode(SENHA_EQUIPE)).thenReturn("$2a$10$hash-da-equipe");
 
@@ -118,7 +118,7 @@ class UsuarioServiceTest {
     void trocaOHashQuandoAEquipeSenhaMuda() {
         Cliente fellipe = cliente(FELLIPE, "12345678909");
         Usuario existente = usuarioDo(fellipe, "$2a$10$hash-antigo");
-        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.of(fellipe));
+        when(clienteService.buscarSeExistir(FELLIPE)).thenReturn(Optional.of(fellipe));
         when(usuarioRepository.findByLogin("12345678909")).thenReturn(Optional.of(existente));
         when(passwordEncoder.matches(SENHA_EQUIPE, "$2a$10$hash-antigo")).thenReturn(false);
         when(passwordEncoder.encode(SENHA_EQUIPE)).thenReturn("$2a$10$hash-novo");
@@ -132,7 +132,7 @@ class UsuarioServiceTest {
     void naoMexeQuandoASenhaJaConfere() {
         Cliente fellipe = cliente(FELLIPE, "12345678909");
         Usuario existente = usuarioDo(fellipe, "$2a$10$hash-atual");
-        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.of(fellipe));
+        when(clienteService.buscarSeExistir(FELLIPE)).thenReturn(Optional.of(fellipe));
         when(usuarioRepository.findByLogin("12345678909")).thenReturn(Optional.of(existente));
         when(passwordEncoder.matches(SENHA_EQUIPE, "$2a$10$hash-atual")).thenReturn(true);
 
@@ -146,7 +146,7 @@ class UsuarioServiceTest {
     void nuncaAssumeOLoginDeOutroCadastroComOMesmoCpf() {
         Cliente fellipe = cliente(FELLIPE, "12345678909");
         Usuario deOutro = usuarioDo(cliente(UUID.randomUUID(), "12345678909"), "$2a$10$hash-de-outro");
-        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.of(fellipe));
+        when(clienteService.buscarSeExistir(FELLIPE)).thenReturn(Optional.of(fellipe));
         when(usuarioRepository.findByLogin("12345678909")).thenReturn(Optional.of(deOutro));
 
         assertFalse(usuarioService.garantirAcessoDaEquipe(FELLIPE, SENHA_EQUIPE));
@@ -157,7 +157,7 @@ class UsuarioServiceTest {
 
     @Test
     void semOClienteDoSeedNaoCriaNada() {
-        when(clienteRepository.findById(FELLIPE)).thenReturn(Optional.empty());
+        when(clienteService.buscarSeExistir(FELLIPE)).thenReturn(Optional.empty());
 
         assertFalse(usuarioService.garantirAcessoDaEquipe(FELLIPE, SENHA_EQUIPE));
 
@@ -167,7 +167,7 @@ class UsuarioServiceTest {
     @Test
     void recusaEquipeSenhaCurta() {
         assertThrows(IllegalStateException.class, () -> usuarioService.garantirAcessoDaEquipe(FELLIPE, "curta-11b"));
-        verifyNoInteractions(clienteRepository, usuarioRepository);
+        verifyNoInteractions(clienteService, usuarioRepository);
     }
 
     private static Cliente cliente(UUID id, String cpf) {

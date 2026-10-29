@@ -1,6 +1,7 @@
 package com.br.rkfbank.contas;
 
 import com.br.rkfbank.autenticacao.UsuarioLogado;
+import com.br.rkfbank.compartilhado.config.LimpezaPeriodica;
 import com.br.rkfbank.compartilhado.erros.CodigoErroEnum;
 import com.br.rkfbank.compartilhado.erros.ConflitoException;
 import com.br.rkfbank.compartilhado.erros.RegraNegocioException;
@@ -22,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 // Garante que repetir uma movimentacao (rede caiu, clique duplo, retry) nao mexe no dinheiro duas vezes.
 // Envolve a chamada do ContaService na MESMA transacao: ou movimenta e grava a chave, ou nao faz nenhum dos dois.
 @Service
-public class IdempotenciaService {
+public class IdempotenciaService implements LimpezaPeriodica {
 
     public static final String HEADER = "Idempotency-Key";
     // Avisa quem chamou que a resposta e de uma repeticao (nada foi movimentado agora).
@@ -113,5 +114,12 @@ public class IdempotenciaService {
             // SHA-256 e obrigatorio em toda JVM; chegar aqui e defeito do ambiente.
             throw new IllegalStateException("SHA-256 indisponivel na JVM", ex);
         }
+    }
+
+    // LimpezaPeriodica (RotinaLimpezaDiaria, 04h): chaves com mais de 30 dias.
+    @Override
+    @Transactional
+    public void limparVencidos(Instant agora) {
+        apagarChavesAntigas(agora);
     }
 }

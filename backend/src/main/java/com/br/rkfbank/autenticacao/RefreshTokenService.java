@@ -1,5 +1,6 @@
 package com.br.rkfbank.autenticacao;
 
+import com.br.rkfbank.compartilhado.config.LimpezaPeriodica;
 import com.br.rkfbank.compartilhado.erros.SessaoExpiradaException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -23,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 // Rotacao: cada renovacao revoga o token usado e emite outro. Se um token JA revogado aparece de novo, alguem o
 // copiou (o dono legitimo ja recebeu o sucessor): todos os tokens daquele usuario caem e ele entra com a senha.
 @Service
-public class RefreshTokenService {
+public class RefreshTokenService implements LimpezaPeriodica {
 
     private static final Logger log = LogManager.getLogger(RefreshTokenService.class);
     private static final SecureRandom ALEATORIO = new SecureRandom();
@@ -96,5 +97,12 @@ public class RefreshTokenService {
     }
 
     public record Emitido(String valor, long expiraEmSegundos) {
+    }
+
+    // LimpezaPeriodica (RotinaLimpezaDiaria, 04h): tokens vencidos ha mais de 30 dias.
+    @Override
+    @Transactional
+    public void limparVencidos(Instant agora) {
+        apagarVencidos(agora);
     }
 }

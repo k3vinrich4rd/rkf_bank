@@ -5,14 +5,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.br.rkfbank.autenticacao.PerfilEnum;
-import com.br.rkfbank.autenticacao.Usuario;
-import com.br.rkfbank.autenticacao.UsuarioRepository;
+import com.br.rkfbank.autenticacao.CredencialService;
 import com.br.rkfbank.clientes.dto.request.CadastroClienteRequestDto;
 import com.br.rkfbank.clientes.dto.response.ClienteResponseDto;
 import com.br.rkfbank.compartilhado.erros.ClienteNaoEncontradoException;
@@ -33,7 +32,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,11 +43,9 @@ class ClienteServiceTest {
     @Mock
     private ConsultaCep consultaCep;
 
+    // A credencial (login + hash BCrypt) e do modulo autenticacao: aqui so importa que o cadastro pede uma.
     @Mock
-    private UsuarioRepository usuarioRepository;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
+    private CredencialService credencialService;
 
     // Objeto de verdade (nao mock): so guarda a versao vigente dos termos.
     @Spy
@@ -59,7 +55,7 @@ class ClienteServiceTest {
     private ClienteService clienteService;
 
     @Test
-    void deveCriarUsuarioClienteComSenhaEmHashAoCadastrar() {
+    void deveCriarACredencialDoClienteAoCadastrar() {
         CadastroClienteRequestDto request = new CadastroClienteRequestDto(
                 "Joao Silva", "529.982.247-25", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1", true, null
         );
@@ -69,17 +65,14 @@ class ClienteServiceTest {
                 "01001-000", "Praca da Se", "Se", "Sao Paulo", "SP", "3550308"
         ));
         when(clienteRepository.saveAndFlush(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(passwordEncoder.encode("senha-forte-1")).thenReturn("$2a$10$hash-gerado-pelo-bcrypt");
 
         clienteService.cadastrar(request);
 
-        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
-        verify(usuarioRepository).saveAndFlush(captor.capture());
-        Usuario usuario = captor.getValue();
-        assertEquals("52998224725", usuario.getLogin());
-        assertEquals("$2a$10$hash-gerado-pelo-bcrypt", usuario.getSenhaHash());
-        assertEquals(PerfilEnum.CLIENTE, usuario.getPerfil());
-        assertNotNull(usuario.getCliente());
+        // Login = CPF so com digitos; a senha vai em texto para o CredencialService, que grava so o hash.
+        ArgumentCaptor<Cliente> captor = ArgumentCaptor.forClass(Cliente.class);
+        verify(credencialService).criarParaCliente(captor.capture(), eq("52998224725"), eq("senha-forte-1"));
+        assertNotNull(captor.getValue());
+        assertEquals("52998224725", captor.getValue().getCpf());
     }
 
     @Test
@@ -96,9 +89,9 @@ class ClienteServiceTest {
                 () -> clienteService.cadastrar(request));
 
         assertEquals("senha", ex.getCampo());
-        // usuarioRepository so foi consultado (CPF ja e login de alguem?); nada foi gravado nem cifrado.
-        verifyNoInteractions(consultaCep, passwordEncoder);
-        verify(usuarioRepository, never()).saveAndFlush(any());
+        // a credencial so foi consultada (CPF ja e login de alguem?); nada foi gravado nem cifrado.
+        verifyNoInteractions(consultaCep);
+        verify(credencialService, never()).criarParaCliente(any(), any(), any());
     }
 
     @Test
@@ -107,12 +100,13 @@ class ClienteServiceTest {
                 "Joao Silva", "529.982.247-25", "joao@email.com", "11999998888", "01001000", "123", null, "senha-forte-1", true, null
         );
         when(clienteRepository.existsByCpf("52998224725")).thenReturn(false);
-        when(usuarioRepository.existsByLogin("52998224725")).thenReturn(true);
+        when(credencialService.loginEmUso("52998224725")).thenReturn(true);
 
         ConflitoException ex = assertThrows(ConflitoException.class, () -> clienteService.cadastrar(request));
 
         assertEquals(CodigoErroEnum.CPF_JA_CADASTRADO, ex.getCodigo());
-        verifyNoInteractions(consultaCep, passwordEncoder);
+        verifyNoInteractions(consultaCep);
+        verify(credencialService, never()).criarParaCliente(any(), any(), any());
     }
 
     @Test

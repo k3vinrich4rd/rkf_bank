@@ -1,7 +1,6 @@
 package com.br.rkfbank.autenticacao;
 
 import com.br.rkfbank.clientes.Cliente;
-import com.br.rkfbank.clientes.ClienteRepository;
 import com.br.rkfbank.clientes.ClienteService;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
@@ -21,13 +20,13 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ClienteRepository clienteRepository;
+    private final ClienteService clienteService;
 
     public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder,
-                          ClienteRepository clienteRepository) {
+                          ClienteService clienteService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
-        this.clienteRepository = clienteRepository;
+        this.clienteService = clienteService;
     }
 
     // Login da conta da equipe (seed): cria o usuario CLIENTE se faltar, ou troca o hash se EQUIPE_SENHA mudou.
@@ -38,7 +37,7 @@ public class UsuarioService {
         if (bytesSenha < 12 || bytesSenha > ClienteService.MAX_BYTES_SENHA) {
             throw new IllegalStateException("EQUIPE_SENHA deve ter entre 12 e " + ClienteService.MAX_BYTES_SENHA + " bytes");
         }
-        Optional<Cliente> cliente = clienteRepository.findById(clienteId);
+        Optional<Cliente> cliente = clienteService.buscarSeExistir(clienteId);
         if (cliente.isEmpty()) {
             log.debug("Cliente da equipe {} nao existe neste banco; login nao criado", clienteId);
             return false;

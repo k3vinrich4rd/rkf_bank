@@ -1,5 +1,6 @@
 package com.br.rkfbank.autenticacao;
 
+import com.br.rkfbank.compartilhado.config.LimpezaPeriodica;
 import com.br.rkfbank.compartilhado.erros.MuitasTentativasException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -28,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 // Cada metodo roda na SUA transacao (REQUIRES_NEW): o login e readOnly e, quando a senha esta errada, termina em
 // excecao; na mesma transacao, a falha que acabou de ser contada seria desfeita junto.
 @Component
-public class LimitadorTentativasLogin {
+public class LimitadorTentativasLogin implements LimpezaPeriodica {
 
     private static final Logger log = LogManager.getLogger(LimitadorTentativasLogin.class);
 
@@ -114,5 +115,12 @@ public class LimitadorTentativasLogin {
     }
 
     private record Janela(int falhas, Instant primeira) {
+    }
+
+    // LimpezaPeriodica (RotinaLimpezaDiaria, 04h): janelas que ja venceram (o relogio e o da classe).
+    @Override
+    @Transactional
+    public void limparVencidos(Instant agora) {
+        apagarJanelasVencidas();
     }
 }

@@ -1,8 +1,6 @@
 package com.br.rkfbank.clientes;
 
-import com.br.rkfbank.autenticacao.PerfilEnum;
-import com.br.rkfbank.autenticacao.Usuario;
-import com.br.rkfbank.autenticacao.UsuarioRepository;
+import com.br.rkfbank.autenticacao.CredencialService;
 import com.br.rkfbank.clientes.dto.request.CadastroClienteRequestDto;
 import com.br.rkfbank.clientes.dto.response.ClienteResponseDto;
 import com.br.rkfbank.clientes.dto.response.EnderecoResponseDto;
@@ -17,19 +15,20 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
-// Cadastro de clientes. O cadastro cria tres coisas na MESMA transacao: endereco (do ViaCEP), cliente e a
-// credencial de login (Usuario com o hash BCrypt). Falhou qualquer uma, nenhuma fica no banco.
+// Cadastro de clientes. O cadastro cria tres coisas na MESMA transacao: endereco (da porta ConsultaCep), cliente e a
+// credencial de login (Usuario com o hash BCrypt, criada pelo CredencialService do modulo autenticacao). Falhou
+// qualquer uma, nenhuma fica no banco.
 @Service
 public class ClienteService {
 
@@ -40,21 +39,18 @@ public class ClienteService {
 
     private final ClienteRepository clienteRepository;
     private final ConsultaCep consultaCep;
-    private final UsuarioRepository usuarioRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final CredencialService credencialService;
     private final TermosDeUso termosDeUso;
 
     public ClienteService(
             ClienteRepository clienteRepository,
             ConsultaCep consultaCep,
-            UsuarioRepository usuarioRepository,
-            PasswordEncoder passwordEncoder,
+            CredencialService credencialService,
             TermosDeUso termosDeUso
     ) {
         this.clienteRepository = clienteRepository;
         this.consultaCep = consultaCep;
-        this.usuarioRepository = usuarioRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.credencialService = credencialService;
         this.termosDeUso = termosDeUso;
     }
 
@@ -68,7 +64,7 @@ public class ClienteService {
         // Regra de unicidade de CPF antes de consultar qualquer serviço externo. O CPF tambem e o login, entao vale
         // olhar tb_usuario: o ADMIN do .env tem login sem cadastro de cliente, e o mesmo CPF daria 500 la no insert.
         // CPF e email ficam fora dos logs por serem dados pessoais.
-        if (clienteRepository.existsByCpf(cpfSanitizado) || usuarioRepository.existsByLogin(cpfSanitizado)) {
+        if (clienteRepository.existsByCpf(cpfSanitizado) || credencialService.loginEmUso(cpfSanitizado)) {
             log.warn("Cadastro de cliente recusado: CPF ja cadastrado");
             throw new ConflitoException(CodigoErroEnum.CPF_JA_CADASTRADO);
         }
@@ -119,12 +115,7 @@ public class ClienteService {
         try {
             salvo = clienteRepository.saveAndFlush(cliente);
 
-            Usuario usuario = new Usuario();
-            usuario.setLogin(cpfSanitizado);
-            usuario.setSenhaHash(passwordEncoder.encode(request.senha()));
-            usuario.setPerfil(PerfilEnum.CLIENTE);
-            usuario.setCliente(salvo);
-            usuarioRepository.saveAndFlush(usuario);
+            credencialService.criarParaCliente(salvo, cpfSanitizado, request.senha());
         } catch (DataIntegrityViolationException ex) {
             // Cadastro concorrente passou pelas checagens acima e esbarrou numa constraint unica do banco (CPF, e-mail
             // ou login). A mensagem do driver traz o valor duplicado, por isso nao entra no log.
@@ -141,6 +132,11 @@ public class ClienteService {
         if (senha.getBytes(StandardCharsets.UTF_8).length > MAX_BYTES_SENHA) {
             throw new RequisicaoInvalidaException(campo, campo + " deve ter no máximo " + MAX_BYTES_SENHA + " bytes");
         }
+    }
+
+    // Para quem precisa saber se o cliente existe sem gerar 404 (o login da equipe so nasce se o seed rodou).
+    public Optional<Cliente> buscarSeExistir(UUID id) {
+        return clienteRepository.findById(id);
     }
 
     // Busca unica por id, reaproveitada por outros services, sempre com o mesmo 404.
