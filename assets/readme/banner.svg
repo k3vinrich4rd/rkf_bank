@@ -27,7 +27,7 @@
   <g transform="translate(64 0)">
     <rect x="0" y="62" width="196" height="30" rx="15" fill="#3B82F6" fill-opacity=".12" stroke="#3B82F6" stroke-opacity=".5" class="entra"/>
     <circle cx="18" cy="77" r="4" fill="#22C55E" class="pulso"/>
-    <text x="32" y="82" class="entra" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">MVP em construção · 31/10</text>
+    <text x="32" y="82" class="entra" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">MVP concluído · 29/10</text>
     <text x="0" y="158" class="entra" style="font: 800 64px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; letter-spacing: 10px; animation-delay:.15s" fill="#F1F5F9">RKF</text>
     <text x="196" y="158" class="entra" style="font: 300 40px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:.25s" fill="url(#marca)">Banco Digital</text>
     <text x="2" y="200" class="entra" style="font: 600 20px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:.4s" fill="#06B6D4">Confiança. Tecnologia. Liberdade.</text>
