@@ -818,6 +818,46 @@ flowchart LR
   <img src="assets/readme/fluxo-transferencia.svg" width="100%" alt="Animação: uma transferência atravessa Next.js, Spring Security, controller, service e MySQL e volta com 204"/>
 </div>
 
+<details open>
+<summary><b>🩺 Como o RKF Bank está construído hoje</b> (diagnóstico de 29/10/2026)</summary>
+<br/>
+
+| | O que é | No RKF Bank |
+|:-:|---|---|
+| 🧱 | **Monólito:** uma aplicação só, publicada inteira | 99 classes Java, 23 rotas, um banco MySQL e uma imagem Docker: tudo vai ao ar junto |
+| 🍰 | **Em camadas:** cada camada só chama a de baixo | `ContaController` → `ContaService` → `ContaRepository`, com as pastas separadas por tipo técnico (`controllers/`, `services/`...): o chamado *package by layer* |
+| 🛡️ | **BFF na frente** (*Backend for Frontend*) | o Next.js guarda o token no cookie `httpOnly` e repassa as chamadas para a API |
+| 🧵 | **Thread:** o "trabalhador" que executa o código, uma instrução depois da outra | cada requisição roda numa **thread virtual** (Java 21+): quando espera o banco ou o ViaCEP, libera a vaga para outra requisição |
+| ⏱️ | **Síncrono × assíncrono:** quem pede espera a resposta × pede e segue | a API é síncrona via HTTP; as partes assíncronas são as rotinas agendadas (anonimização às 03h, limpeza às 04h) |
+
+<details>
+<summary>🧩 <b>15 design patterns já usados</b> (clique)</summary>
+<br/>
+
+| Padrão | Onde está |
+|---|---|
+| **Camadas**, **DTO**, **Repository**, **Injeção de dependência** | `controllers` → `services` → `repositories`; `dto/` com `record`; construtores dos services |
+| **Proxy** | é como o `@Transactional` funciona por baixo: o Spring põe um objeto na frente do service que abre e fecha a transação |
+| **Singleton** | todo `@Service` e `@Component`: uma instância para a aplicação inteira |
+| **Chain of Responsibility** | a sequência de filtros: `FiltroLogRequisicao` → Spring Security → controller |
+| **Adapter** | `ViaCepClient` (JSON do ViaCEP → `ViaCepResponseDto`) e `ConversorTokenUsuario` (JWT → usuário logado) |
+| **Execute Around** | `IdempotenciaService.executarUmaVez`: o "antes e depois" da chave num lugar, a movimentação no meio |
+| **Exception Translation** | `TratadorGlobalDeErros` + `CodigoErroEnum`: toda exceção vira o mesmo JSON de erro |
+| **Static Factory** e **Builder** | `PaginaResponse.de(page)` · `JwtClaimsSet.builder()` para montar o token JWT |
+| **Domínio rico** | `Conta.sacar`, `depositar` e `transferirPara`: a regra do saldo mora na própria conta (feito com TDD) |
+| **Lock otimista** | `@Version` na `Conta`: duas operações ao mesmo tempo não sobrescrevem o saldo (`409`) |
+| **Idempotent Receiver** | `Idempotency-Key` + `tb_idempotencia`: repetir o pedido não move o dinheiro de novo |
+
+Catálogo completo, com o que **não** usar e por quê: [planing/padroes-de-projeto.md](planing/padroes-de-projeto.md).
+
+</details>
+
+**Próximo passo da arquitetura:** monólito modular com portas só nas bordas (pastas por assunto, porta `ConsultaCep`
+para o ViaCEP, fronteiras verificadas por teste e comprovante assíncrono por Outbox). Plano em
+[planing/estudos-arquitetura.md](planing/estudos-arquitetura.md).
+
+</details>
+
 <details>
 <summary><b>🧩 Cada camada, ponto a ponto: o que faz, por que existe e onde está</b> (clique)</summary>
 <br/>
