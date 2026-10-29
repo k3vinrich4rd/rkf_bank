@@ -7,7 +7,8 @@
 [![Backend CodeQL](https://github.com/k3vinrich4rd/rkf_bank/actions/workflows/backend-codeql.yml/badge.svg?branch=develop)](https://github.com/k3vinrich4rd/rkf_bank/actions/workflows/backend-codeql.yml)
 [![Último commit](https://img.shields.io/github/last-commit/k3vinrich4rd/rkf_bank/develop?color=3B82F6&label=último%20commit)](https://github.com/k3vinrich4rd/rkf_bank/commits/develop)
 [![PRs fechados](https://img.shields.io/github/issues-pr-closed/k3vinrich4rd/rkf_bank?color=06B6D4&label=PRs%20fechados)](https://github.com/k3vinrich4rd/rkf_bank/pulls?q=is%3Apr+is%3Aclosed)
-[![Status](https://img.shields.io/badge/MVP-31%2F10%2F2026-3B82F6)](planing/roadmap.md)
+[![Status](https://img.shields.io/badge/MVP-conclu%C3%ADdo_29%2F10%2F2026-22C55E)](planing/roadmap.md)
+[![Portfólio](https://img.shields.io/badge/portf%C3%B3lio-roda_na_sua_m%C3%A1quina-3B82F6)](VISITANTES.md)
 [![Feito em Osasco](https://img.shields.io/badge/📍_feito_em-Osasco,_SP-06B6D4)](#-feito-em-osasco)
 
 [![Java](https://img.shields.io/badge/Java-25_LTS-0A0F1C?logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/25/)
@@ -78,10 +79,9 @@
 | Várias contas por cliente (`GET /contas/{id}` e seletor de conta) | ✅ | ✅ |
 | Política de privacidade e aceite dos termos (LGPD) | ✅ | ✅ |
 | Encarregados LGPD (Kevin e Renan) na Política de Privacidade | ✅ | ✅ |
-| Imagem Docker e perfil `prod` prontos para publicar | ✅ | — |
-| Publicação (colocar no ar), por Kevin e Renan | ⏳ | ⏳ |
+| Imagem Docker e perfil `prod` testados no CI (MySQL vazio, sem dados de teste) | ✅ | — |
 
-<sub>✅ pronto na <code>develop</code> · ⏳ a fazer antes do lançamento</sub>
+<sub>✅ pronto na <code>main</code> · MVP concluído em 29/10/2026. O RKF Bank é um <b>projeto de portfólio</b>: não fica publicado na internet; quem avalia roda na própria máquina em 1 comando (<a href="VISITANTES.md">perfil visitante</a>).</sub>
 
 <img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
@@ -111,7 +111,7 @@
 
 | Pergunta | Resposta rápida |
 |---|---|
-| O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
+| O que é? | banco digital full stack de portfólio, feito por um time de três; MVP concluído em 29/10/2026 e pronto para rodar na sua máquina |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
 | Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **391 testes** (360 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, **TDD** (domínio rico em `Conta`), CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
@@ -1750,15 +1750,15 @@ gantt
     Spring Security + JWT                :done,   f2, 2026-10-16, 2d
     Idempotência, gestão de usuários, Flyway V1 a V8 :done, f3, 2026-10-20, 1d
     Testcontainers, Swagger, LGPD e refresh :done, f4, 2026-10-21, 3d
+    TDD, threads virtuais e fim do N+1   :done,   f5, 2026-10-27, 3d
     section MVP
-    Deploy (Docker, perfil prod, banco)  :crit,   m4, 2026-10-24, 4d
-    Testes do Fellipe e correções         :        m3, after m4, 3d
+    MVP concluído (PR #76 na main)       :milestone, done, m4, 2026-10-29, 0d
     section Depois
     Pix, boleto e cartão (simulados)     :        p3, 2026-11-05, 20d
 ```
 
 <details open>
-<summary><b>🚀 MVP — até 31/10/2026</b></summary>
+<summary><b>🚀 MVP — concluído em 29/10/2026</b></summary>
 <br/>
 
 - [x] Cadastro com ViaCEP, abertura de conta, depósito, saque, transferência e extrato
@@ -1768,14 +1768,18 @@ gantt
 - [x] Login com Spring Security + JWT, perfis e regra de dono
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
 - [x] Gestão de usuários pelo ADMIN (promover, rebaixar, desativar) e troca de senha, valendo na hora
-- [x] Testes de integração com Testcontainers + MySQL real (protege o deploy)
+- [x] Testes de integração com Testcontainers + MySQL real (o que passa no H2 passa no banco de verdade)
 - [x] Backend: `GET /contas/{id}` (a lista por cliente virou `GET /contas`, do token)
 - [x] LGPD mínimo: política de privacidade e aceite dos termos versionado
 - [x] Sessão com *refresh token*, logout de verdade e Swagger UI
 - [x] LGPD: encarregados (Kevin e Renan) e canal de contato na Política de Privacidade
-- [ ] Fellipe testa tudo como primeiro cliente e os bugs são corrigidos
-- [x] Imagem Docker e perfil `prod` sem dados de teste, testados num MySQL vazio ([guia de publicação](backend/README_DEPLOY.md))
-- [ ] Colocar no ar (provedor e banco gerenciado) e atualizar este README com link e prints
+- [x] Roteiros de aceite prontos: [VISITANTES.md](VISITANTES.md) para quem avalia e o guia da equipe para o Fellipe (PO & QA)
+- [x] Imagem Docker e perfil `prod` sem dados de teste, testados num MySQL vazio pelo CI ([como a imagem é montada](backend/README_DEPLOY.md))
+- [x] Release na `main` (PR #76): TDD na `Conta`, threads virtuais, fim do N+1 e README com skills, diagnóstico e anotações
+
+> 🎯 **Sem fase de deploy, de propósito:** o RKF Bank é um projeto de **portfólio**, para devs e recrutadores rodarem e
+> avaliarem na própria máquina ([1 comando, sem Docker](VISITANTES.md)). A imagem Docker e o perfil `prod` continuam
+> testados no CI como prova de engenharia.
 
 </details>
 
@@ -1804,7 +1808,7 @@ gantt
 | [Spring Cloud e microsserviços](planing/estudos-arquitetura.md#5-spring-cloud-e-microsserviços-) | circuit breaker (Resilience4j) no ViaCEP | 2º time ou parte com carga diferente |
 | [Mensageria + Transactional Outbox](planing/estudos-arquitetura.md#6-mensageria-e-transactional-outbox-) | `tb_outbox` na transação do dinheiro + publicador com ShedLock | comprovante e notificação |
 | [Pub/Sub + DLQ](planing/estudos-arquitetura.md#7-pubsub-e-dead-letter-queue-dlq-) | exchange `topic` com DLQ e 3 tentativas | depende do Outbox |
-| [AWS](planing/estudos-arquitetura.md#8-serviços-aws-) | ECS Fargate + RDS + Secrets Manager com a imagem atual | deploy depois do MVP |
+| [AWS](planing/estudos-arquitetura.md#8-serviços-aws-) | ECS Fargate + RDS + Secrets Manager com a imagem atual | só se o projeto deixar de ser só portfólio |
 | [OAuth2 + OIDC](planing/estudos-arquitetura.md#9-oauth2-e-oidc-com-provedor-externo-) | Keycloak emitindo o token; a API já é Resource Server | login social, MFA ou 2º sistema |
 
 </details>
@@ -2094,7 +2098,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
 | Backend | [🏷️ Anotações](#️-anotações-o-que-cada-uma-faz-e-por-que-está-aqui) | as 66 anotações do código e as 29 dos testes: o que cada uma faz, por que usamos e onde estão |
 | Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou MySQL), ver o banco, permissões, payloads e roteiros; aceite do MVP pela coleção |
-| Deploy | [Publicar o RKF Bank](backend/README_DEPLOY.md) · [Dockerfile](Dockerfile) | onde publicar (grátis × sempre ligado), imagem Docker, perfil `prod`, variáveis e o que conferir; responsáveis: Kevin e Renan |
+| Docker e `prod` | [Imagem e perfil `prod`](backend/README_DEPLOY.md) · [Dockerfile](Dockerfile) | como a imagem é montada e testada no CI, perfil `prod` e variáveis (o projeto é de portfólio e não é publicado) |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
 | Planejamento | [planing/](planing/README.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e padrões |
 | Planejamento | [Estudos de arquitetura](planing/estudos-arquitetura.md) | o que já está no código e o que está em estudo (Outbox, DLQ, OAuth2/OIDC, AWS), com plano e exemplo |

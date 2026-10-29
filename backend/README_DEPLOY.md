@@ -1,5 +1,9 @@
 # 🚀 Publicar o RKF Bank (perfil `prod`)
 
+> ⛔ **O RKF Bank não é publicado.** Desde 29/10/2026 o projeto é de **portfólio** e roda na máquina de quem avalia
+> ([VISITANTES.md](../VISITANTES.md)). Este guia fica como **referência de engenharia**: mostra como a imagem Docker e o
+> perfil `prod` foram pensados e testados (o `backend-docker.yml` sobe a imagem num MySQL vazio a cada PR).
+
 | | |
 |---|---|
 | 🎯 **Para que serve** | colocar a API e o site na internet: onde publicar, a imagem Docker, as variáveis e o que conferir depois |
