@@ -7,6 +7,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -62,7 +63,9 @@ public class Conta {
 
     // Dono da conta. ManyToOne: um cliente pode ter varias contas (corrente e poupanca). optional = false e a FK
     // fk_conta_cliente garantem que nao existe conta sem cliente. E daqui que sai a regra de dono no ContaService.
-    @ManyToOne(optional = false)
+    // LAZY: a regra de dono e a resposta so leem conta.getCliente().getId(), que o proxy ja sabe sem ir ao banco.
+    // No EAGER padrao do @ManyToOne, cada conta de uma lista trazia o cliente (e o endereco) numa consulta a mais (N+1).
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id", nullable = false)
     private Cliente cliente;
 

@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="140" viewBox="0 0 1200 140" role="img" aria-label="356 testes automatizados, 23 rotas REST, 15 migrações Flyway, 15 minutos de vida do JWT, 6 workflows de CI, 11 skills de IA do time, 3 pessoas de Osasco">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="140" viewBox="0 0 1200 140" role="img" aria-label="360 testes automatizados, 23 rotas REST, 15 migrações Flyway, 15 minutos de vida do JWT, 6 workflows de CI, 11 skills de IA do time, 3 pessoas de Osasco">
   <!-- Gerado por scripts/gerar-svgs-readme.mjs. Não edite à mão. -->
   <style>
     .entra { opacity: 0; animation: entra .7s cubic-bezier(.2,.8,.2,1) forwards; }
@@ -10,7 +10,7 @@
   <g class="entra" style="animation-delay:0.10s">
     <rect x="8" y="8" width="155.42857142857142" height="124" rx="16" fill="#111827" stroke="#1E293B"/>
     <rect x="8" y="8" width="155.42857142857142" height="4" rx="2" fill="#22C55E"/>
-    <text x="85.71428571428571" y="78" text-anchor="middle" class="num" style="font: 800 44px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:0.30s" fill="#F1F5F9">356</text>
+    <text x="85.71428571428571" y="78" text-anchor="middle" class="num" style="font: 800 44px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif; animation-delay:0.30s" fill="#F1F5F9">360</text>
     <text x="85.71428571428571" y="110" text-anchor="middle" style="font: 500 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#94A3B8">testes automatizados</text>
   </g>
   <g class="entra" style="animation-delay:0.22s">

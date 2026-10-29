@@ -57,6 +57,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 - Camadas: controller só conhece service; service tem a regra e o `@Transactional`; repository só acesso a dados.
 - Entrada e saída por DTO `record`; nunca exponha a entidade JPA.
 - Erros: exceção de negócio → status pelo `TratadorGlobalDeErros` (`400`, `404`, `409`, `422`, `503`) no formato padrão (`timestamp`, `status`, `error`, `codigo`, `message`, `path`, `campos`). **Código e mensagem só no `CodigoErroEnum`**: o service lança `new RegraNegocioException(CodigoErroEnum.X)`, nunca escreve a frase. Código novo → contrato (seção 6) e `CodigoErro` em `frontend/lib/api/types.ts`; nunca renomeie um existente.
+- **Carregamento:** relacionamento para-um novo nasce `fetch = FetchType.LAZY`; lista que mostra o associado busca junto com `@EntityGraph` (ou `JOIN FETCH`, que não pagina para-muitos). O `ConsultasSqlIntegracaoTest` conta as consultas das listas do ADMIN: N+1 = teste vermelho.
 - Dinheiro em `BigDecimal` com 2 casas; `Conta` tem `@Version` (lock otimista → `409`).
 - Logs com Log4j2 e `X-Request-Id`; nunca logar CPF completo, senha ou token.
 - **LGPD:** dado pessoal novo precisa de finalidade; response devolve só o que a tela usa; nada de dado pessoal em log, exceção, URL ou prompt de IA. Pendências em `planing/debitos-tecnicos.md`.
