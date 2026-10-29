@@ -150,6 +150,11 @@ Data: 29/10 (branch `refactor/monolito-modular`, ainda fora da `develop`)
 Decisão: as pastas deixam de ser por camada e passam a ser por assunto: `clientes`, `contas`, `autenticacao`, `titular` e `compartilhado`. Tecnologia de fora fica atrás de uma porta (`ConsultaCep` para o ViaCEP, `NotificadorDeMovimentacao` para o comprovante). As fronteiras viram teste com **ArchUnit** (`ArquiteturaModulosTest`), e o comprovante sai por **Transactional Outbox** (V16).
 Por quê: cada assunto novo (Pix, cartão) espalhava arquivos por cinco pastas e nada impedia um módulo de usar o banco de outro. A troca de pastas não mudou nenhuma regra (os 356 testes seguiram verdes). **ArchUnit, e não Spring Modulith:** o Modulith exige módulos sem ciclo, e hoje `clientes ↔ contas` e `clientes ↔ autenticacao` se referenciam pelas entidades JPA (`Conta.cliente`, `Usuario.cliente`). O ArchUnit verifica as regras que valem já, e o ciclo fica como débito para quando houver eventos de domínio entre os módulos. **Outbox antes de broker:** o evento nasce na transação do dinheiro e o adaptador do MVP escreve o comprovante no log; e-mail ou RabbitMQ entram depois como outro adaptador.
 
+## Carregamento LAZY nos para-um e @EntityGraph nas listas
+Data: 29/10
+Decisão: `Conta.cliente` (`@ManyToOne`) e `Usuario.cliente` (`@OneToOne`) passam a `FetchType.LAZY`. As listas que mostram o associado buscam junto com `@EntityGraph` (o `JOIN FETCH` do Spring Data): `ClienteRepository.findAll` (com `endereco`) e `UsuarioRepository.findAllByOrderByPerfilAscLoginAsc` (com `cliente`). `Cliente.endereco` continua EAGER (toda resposta de cliente mostra o endereço).
+Por quê: no EAGER padrão dos para-um, cada linha de uma lista disparava mais uma consulta (N+1). Medido no `ConsultasSqlIntegracaoTest`: `GET /contas` do ADMIN ia de 7 consultas (5 contas) para 17 (15 contas); `GET /clientes` e `GET /admin/usuarios`, igual. Agora o número é o mesmo com 5 ou 15 linhas. A regra de dono e a resposta só leem `getCliente().getId()`, que o proxy LAZY já sabe sem ir ao banco. Nenhuma rota, payload ou status mudou (smoke 42/42, coleções 83/83 e 121/121).
+
 ---
 
 ## Ainda falta decidir

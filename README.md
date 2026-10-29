@@ -16,7 +16,7 @@
 [![Flyway](https://img.shields.io/badge/Flyway-V1→V16_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
 [![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-391_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-395_✔-22C55E)](#-qualidade-e-testes)
 [![Skills de IA](https://img.shields.io/badge/🤖_skills_de_IA-11-7C3AED?logo=claude&logoColor=white)](#-skills-de-ia-do-time)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
@@ -36,7 +36,7 @@
 
 [![🔬 Laboratório de arquitetura](https://img.shields.io/badge/🔬_Laboratório-o_que_já_está_no_código_e_o_que_está_em_estudo-7C3AED?style=for-the-badge)](#-laboratório-de-arquitetura)
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 391 testes da API, 23 rotas REST, 16 migrações Flyway, JWT de 15 minutos, 6 workflows de CI, 11 skills de IA do time e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 395 testes da API, 23 rotas REST, 16 migrações Flyway, JWT de 15 minutos, 6 workflows de CI, 11 skills de IA do time e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -113,7 +113,7 @@
 |---|---|
 | O que é? | banco digital full stack com prazo de MVP (31/10/2026), feito por um time de três |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **422 testes** (391 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, **TDD** (domínio rico em `Conta`), CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **426 testes** (395 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, **TDD** (domínio rico em `Conta`), CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | IA no processo? | **11 skills de IA do time** (Claude Code) que repetem o processo do time: implementar explicando, revisar migração, conferir contrato, varrer CVEs, testar ponta a ponta e entregar |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [skills](#-skills-de-ia-do-time) · [roadmap](#-roadmap) |
@@ -1397,7 +1397,7 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 391 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 395 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
@@ -1470,6 +1470,7 @@ puro, sem Spring, sem banco e sem mock: roda em milissegundos.
 | `ClienteControllerTest` / `ContaControllerTest` | status de cada rota e limites da paginação (inclui `GET /clientes/{id}/contas`: `200`, página, `403`, `401`) |
 | `RotasContratoIntegracaoTest` | as rotas do contrato com o seed real: ADMIN `200`, cliente inexistente `404`, Fellipe `403` |
 | `IdentidadeEntidadesTest` | `equals`/`hashCode` das 7 entidades: sem id, mesmo id e `HashSet` depois do persist |
+| `ConsultasSqlIntegracaoTest` | as listas do ADMIN (`/clientes`, `/contas`, `/admin/usuarios`) fazem o mesmo número de consultas com 5 ou 15 linhas: sem N+1 (LAZY + `@EntityGraph`) |
 | `ImutabilidadeRespostasTest` | records com lista não mudam depois de montados (`List.copyOf`) |
 | `ThreadsVirtuaisTest` | as tarefas da aplicação rodam em thread virtual (`spring.threads.virtual.enabled`) |
 | `TratadorGlobalDeErrosTest` | cada exceção no formato de erro |

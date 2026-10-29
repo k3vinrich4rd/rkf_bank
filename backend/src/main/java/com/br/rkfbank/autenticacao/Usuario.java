@@ -5,6 +5,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -55,7 +56,9 @@ public class Usuario {
     private boolean deveTrocarSenha;
 
     // Nulo para o ADMIN, que nao e cliente.
-    @OneToOne
+    // LAZY: a conferencia do token (toda requisicao) e o login so precisam do id do cliente, e o proxy ja o tem.
+    // A lista do ADMIN, que mostra o nome, busca o cliente junto pelo @EntityGraph do UsuarioRepository.
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cliente_id")
     private Cliente cliente;
 
