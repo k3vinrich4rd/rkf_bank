@@ -145,6 +145,11 @@ Data: 27/10
 Decisão: Spring Cloud/microsserviços, Mensageria com Outbox, Pub/Sub com DLQ, AWS e OAuth2/OIDC com provedor externo ficam **em estudo para implementação**, com plano em [estudos-arquitetura.md](estudos-arquitetura.md). Nenhuma dependência nova antes do MVP de 31/10.
 Por quê: o MVP está em testes finais; essas peças resolvem problemas de escala e de vários serviços que o RKF Bank ainda não tem. O plano deixa pronto o "como" para quando houver o "porquê".
 
+## Carregamento LAZY nos para-um e @EntityGraph nas listas
+Data: 29/10
+Decisão: `Conta.cliente` (`@ManyToOne`) e `Usuario.cliente` (`@OneToOne`) passam a `FetchType.LAZY`. As listas que mostram o associado buscam junto com `@EntityGraph` (o `JOIN FETCH` do Spring Data): `ClienteRepository.findAll` (com `endereco`) e `UsuarioRepository.findAllByOrderByPerfilAscLoginAsc` (com `cliente`). `Cliente.endereco` continua EAGER (toda resposta de cliente mostra o endereço).
+Por quê: no EAGER padrão dos para-um, cada linha de uma lista disparava mais uma consulta (N+1). Medido no `ConsultasSqlIntegracaoTest`: `GET /contas` do ADMIN ia de 7 consultas (5 contas) para 17 (15 contas); `GET /clientes` e `GET /admin/usuarios`, igual. Agora o número é o mesmo com 5 ou 15 linhas. A regra de dono e a resposta só leem `getCliente().getId()`, que o proxy LAZY já sabe sem ir ao banco. Nenhuma rota, payload ou status mudou (smoke 42/42, coleções 83/83 e 121/121).
+
 ---
 
 ## Ainda falta decidir
