@@ -9,6 +9,7 @@ import com.br.rkfbank.clientes.Endereco;
 import com.br.rkfbank.contas.Conta;
 import com.br.rkfbank.contas.Lancamento;
 import com.br.rkfbank.contas.RegistroIdempotencia;
+import com.br.rkfbank.contas.comprovante.EventoOutbox;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -30,7 +31,8 @@ class IdentidadeEntidadesTest {
                 Arguments.of("Lancamento", (Supplier<Object>) Lancamento::new),
                 Arguments.of("RefreshToken", (Supplier<Object>) () -> novaPorReflexao(RefreshToken.class)),
                 Arguments.of("RegistroIdempotencia", (Supplier<Object>) RegistroIdempotencia::new),
-                Arguments.of("Usuario", (Supplier<Object>) Usuario::new));
+                Arguments.of("Usuario", (Supplier<Object>) Usuario::new),
+                Arguments.of("EventoOutbox", (Supplier<Object>) () -> novaPorReflexao(EventoOutbox.class)));
     }
 
     @ParameterizedTest(name = "{0}: duas instancias novas (sem id) sao diferentes")
@@ -70,7 +72,7 @@ class IdentidadeEntidadesTest {
         return entidade;
     }
 
-    // O construtor vazio do RefreshToken e protected (so a JPA usa), e o teste nao esta no pacote dele.
+    // O construtor vazio do RefreshToken e do EventoOutbox e protected (so a JPA usa), e o teste nao esta no pacote deles.
     private static Object novaPorReflexao(Class<?> tipo) {
         try {
             var construtor = tipo.getDeclaredConstructor();

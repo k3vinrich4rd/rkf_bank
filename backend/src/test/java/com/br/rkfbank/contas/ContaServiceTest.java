@@ -22,6 +22,7 @@ import com.br.rkfbank.compartilhado.erros.CodigoErroEnum;
 import com.br.rkfbank.compartilhado.erros.ConflitoException;
 import com.br.rkfbank.compartilhado.erros.ContaNaoEncontradaException;
 import com.br.rkfbank.compartilhado.erros.RegraNegocioException;
+import com.br.rkfbank.contas.comprovante.ComprovanteService;
 import com.br.rkfbank.contas.dto.request.AberturaContaRequestDto;
 import com.br.rkfbank.contas.dto.request.DepositoRequestDto;
 import com.br.rkfbank.contas.dto.request.SaqueRequestDto;
@@ -54,6 +55,10 @@ class ContaServiceTest {
 
     @Mock
     private ClienteService clienteService;
+
+    // Outbox: cada movimentacao que deu certo pede o comprovante; a que foi recusada, nao.
+    @Mock
+    private ComprovanteService comprovanteService;
 
     @InjectMocks
     private ContaService contaService;
@@ -270,6 +275,7 @@ class ContaServiceTest {
 
         assertEquals(new BigDecimal("15.00"), conta.getSaldo());
         verify(lancamentoRepository).save(any(Lancamento.class));
+        verify(comprovanteService).registrar(any(Lancamento.class));
     }
 
     @Test
@@ -301,6 +307,7 @@ class ContaServiceTest {
 
         assertEquals(new BigDecimal("30.00"), conta.getSaldo());
         verify(lancamentoRepository).save(any(Lancamento.class));
+        verify(comprovanteService).registrar(any(Lancamento.class));
     }
 
     @Test
@@ -313,6 +320,7 @@ class ContaServiceTest {
                 () -> contaService.sacar(contaId, new SaqueRequestDto(new BigDecimal("15.00"), "Saque"), DONO));
 
         verify(lancamentoRepository, never()).save(any(Lancamento.class));
+        verifyNoInteractions(comprovanteService);
     }
 
     @Test
@@ -341,6 +349,7 @@ class ContaServiceTest {
         assertEquals(new BigDecimal("70.00"), origem.getSaldo());
         assertEquals(new BigDecimal("50.00"), destino.getSaldo());
         verify(lancamentoRepository).save(any(Lancamento.class));
+        verify(comprovanteService).registrar(any(Lancamento.class));
     }
 
     @Test
@@ -364,6 +373,7 @@ class ContaServiceTest {
 
         assertThrows(RegraNegocioException.class,
                 () -> contaService.transferir(new TransferenciaRequestDto(origemId, destinoId, new BigDecimal("30.00"), "x"), DONO));
+        verifyNoInteractions(comprovanteService);
     }
 
     @Test

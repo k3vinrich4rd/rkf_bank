@@ -8,6 +8,7 @@ import com.br.rkfbank.compartilhado.erros.CodigoErroEnum;
 import com.br.rkfbank.compartilhado.erros.ConflitoException;
 import com.br.rkfbank.compartilhado.erros.ContaNaoEncontradaException;
 import com.br.rkfbank.compartilhado.erros.RegraNegocioException;
+import com.br.rkfbank.contas.comprovante.ComprovanteService;
 import com.br.rkfbank.contas.dto.request.AberturaContaRequestDto;
 import com.br.rkfbank.contas.dto.request.DepositoRequestDto;
 import com.br.rkfbank.contas.dto.request.SaqueRequestDto;
@@ -44,15 +45,18 @@ public class ContaService {
     private final ContaRepository contaRepository;
     private final LancamentoRepository lancamentoRepository;
     private final ClienteService clienteService;
+    private final ComprovanteService comprovanteService;
 
     public ContaService(
             ContaRepository contaRepository,
             LancamentoRepository lancamentoRepository,
-            ClienteService clienteService
+            ClienteService clienteService,
+            ComprovanteService comprovanteService
     ) {
         this.contaRepository = contaRepository;
         this.lancamentoRepository = lancamentoRepository;
         this.clienteService = clienteService;
+        this.comprovanteService = comprovanteService;
     }
 
     // Abre conta no cadastro de quem esta logado: o cliente vem do token, entao nao ha "cadastro de outro" para
@@ -315,6 +319,8 @@ public class ContaService {
         lancamento.setContaDestinoId(destino);
         lancamento.setDescricao(descricao);
         lancamentoRepository.save(lancamento);
+        // Outbox: o comprovante entra na fila NA MESMA transacao do dinheiro e sai depois (PublicadorOutbox).
+        comprovanteService.registrar(lancamento);
     }
 
     private ContaResponseDto paraContaResponse(Conta conta) {

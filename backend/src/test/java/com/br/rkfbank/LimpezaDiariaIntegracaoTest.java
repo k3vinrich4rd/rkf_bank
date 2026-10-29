@@ -7,6 +7,7 @@ import com.br.rkfbank.autenticacao.RefreshTokenService;
 import com.br.rkfbank.compartilhado.config.LimpezaPeriodica;
 import com.br.rkfbank.compartilhado.config.RotinaLimpezaDiaria;
 import com.br.rkfbank.contas.IdempotenciaService;
+import com.br.rkfbank.contas.comprovante.PublicadorOutbox;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -18,8 +19,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
-// A limpeza diaria com o Spring de verdade: os tres modulos se registram como LimpezaPeriodica e cada limpeza abre a
-// propria transacao (os DELETE do Spring Data e do JdbcTemplate falhariam sem ela).
+// A limpeza diaria com o Spring de verdade: as quatro limpezas (idempotencia e outbox de contas, tentativas de login
+// e tokens de autenticacao) se registram como LimpezaPeriodica, e cada uma abre a propria transacao (os DELETE do
+// Spring Data e do JdbcTemplate falhariam sem ela).
 @SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:limpeza-diaria;MODE=MySQL")
 @ActiveProfiles("test")
 class LimpezaDiariaIntegracaoTest {
@@ -34,10 +36,11 @@ class LimpezaDiariaIntegracaoTest {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void osTresModulosEntramNaLimpeza() {
+    void todasAsLimpezasDosModulosEntramNaRotina() {
         assertThat(limpezas).extracting(limpeza -> AopUtils.getTargetClass(limpeza).getSimpleName())
                 .containsExactlyInAnyOrder(IdempotenciaService.class.getSimpleName(),
-                        LimitadorTentativasLogin.class.getSimpleName(), RefreshTokenService.class.getSimpleName());
+                        LimitadorTentativasLogin.class.getSimpleName(), RefreshTokenService.class.getSimpleName(),
+                        PublicadorOutbox.class.getSimpleName());
     }
 
     @Test
