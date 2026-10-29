@@ -1,6 +1,7 @@
 # Roadmap
 
-**Meta:** MVP no ar até **31/10/2026**.
+**MVP concluído em 29/10/2026** (PR #76 na `main`). O RKF Bank é um **projeto de portfólio**: roda na máquina de quem
+avalia (`VISITANTES.md`, 1 comando) e **não tem fase de deploy**. A imagem Docker e o perfil `prod` seguem testados no CI.
 
 Marque `[x]` quando o PR for aceito na `develop`.
 
@@ -17,7 +18,7 @@ O cliente consegue:
 
 - **Backend:** tudo do MVP pronto e testado (307 testes, 7 no MySQL real com Testcontainers), com refresh token, aceite LGPD, `GET /contas/{contaId}` e Swagger.
 - **Frontend:** todas as telas do MVP, renovação de sessão, aceite dos termos, seletor de conta e 31 testes (Vitest) com CI próprio.
-- **Antes de ir ao ar:** decidir onde publicar (proposta em `backend/README_DEPLOY.md`), e o teste do Fellipe. Encarregados LGPD: Kevin e Renan (26/10). Perfil `prod` e `Dockerfile` prontos (26/10). Análise completa em [analise-mvp.md](analise-mvp.md).
+- **Fechamento (29/10):** MVP na `main` (PR #76). Sem deploy: o projeto é de portfólio. Encarregados LGPD: Kevin e Renan (26/10). Perfil `prod` e `Dockerfile` testados no CI. Análise em [analise-mvp.md](analise-mvp.md).
 
 ---
 
@@ -45,16 +46,15 @@ O cliente consegue:
 - [x] Backend: extrato
 - [x] Frontend: telas de depósito, saque e transferência
 - [x] Frontend: tela de extrato
-- [ ] Decidir onde publicar o projeto
+- [x] ~~Decidir onde publicar o projeto~~ → sem deploy: projeto de portfólio (29/10)
 
 ## Semana 4 (26/10 a 31/10) — Testar e lançar
 
 - [x] LGPD mínimo: política de privacidade e aceite dos termos (V10, contrato 3.1)
 - [x] LGPD: encarregados Kevin e Renan, publicados na política (26/10)
-- [ ] Fellipe (idealizador e primeiro cliente) testa tudo (roteiros em `.equipe/testes/`: `BACKEND_E2E.md` e `FRONTEND_E2E.md`)
-- [ ] Corrigir bugs
-- [ ] Colocar no ar
-- [ ] Atualizar o README com link e prints
+- [x] Roteiros de aceite prontos para o Fellipe (`.equipe/testes/`: `BACKEND_E2E.md` e `FRONTEND_E2E.md`) e para quem avalia (`VISITANTES.md`)
+- [x] Release na `main` (PR #76) — MVP concluído (29/10)
+- [x] ~~Colocar no ar~~ → fora do escopo: o projeto é de portfólio e roda localmente
 
 ## Depois do MVP
 

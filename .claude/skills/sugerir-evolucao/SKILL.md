@@ -1,6 +1,6 @@
 ---
 name: sugerir-evolucao
-description: Analisa o RKF Bank e sugere as próximas evoluções com mais valor de portfólio para o time, sem implementar nada - padrões de projeto (catálogo em planing/padroes-de-projeto.md), arquitetura, qualidade, segurança e LGPD - priorizadas pelo MVP de 31/10/2026 e pela régua Junior → Pleno. Use quando pedirem "/sugerir-evolucao", "o que vale implementar agora", "que padrão cabe aqui", "como deixar o projeto mais forte para o portfólio" ou antes de planejar a próxima sprint.
+description: Analisa o RKF Bank e sugere as próximas evoluções com mais valor de portfólio para o time, sem implementar nada - padrões de projeto (catálogo em planing/padroes-de-projeto.md), arquitetura, qualidade, segurança e LGPD - priorizadas pelo valor de portfólio (o MVP foi concluído em 29/10/2026, sem deploy) e pela régua Junior → Pleno. Use quando pedirem "/sugerir-evolucao", "o que vale implementar agora", "que padrão cabe aqui", "como deixar o projeto mais forte para o portfólio" ou antes de planejar a próxima sprint.
 ---
 
 # /sugerir-evolucao [área opcional]
@@ -13,7 +13,7 @@ escolher **poucas** evoluções que resolvam problema real **e** mostrem maturid
 
 1. `git fetch` e trabalhe sobre a `origin/develop` (o que está mergeado é o que existe).
 2. Leia, nesta ordem e só o necessário:
-   - `planing/checklist-features.md` (o que já está planejado e a data do MVP);
+   - `planing/checklist-features.md` (o que já está planejado; o MVP foi concluído em 29/10, sem deploy);
    - `planing/padroes-de-projeto.md` (catálogo: padrões já usados, recomendados e os que **não** usar);
    - `planing/debitos-tecnicos.md` e `planing/decisoes.md`;
    - `planing/decisoes.md` (não sugira o que o time já decidiu não fazer).
@@ -40,7 +40,7 @@ o que é); nada de microsserviço, CQRS ou Saga enquanto o projeto for um monoli
 
 ## 3. Prioridade
 
-1. **Antes do MVP (31/10):** só o que reduz risco de bug no dinheiro ou bloqueia o deploy (regra no domínio, testes
+1. **Primeiro:** o que reduz risco de bug no dinheiro ou deixa o projeto mais fácil de avaliar por quem roda localmente (regra no domínio, testes
    que faltam, LGPD mínimo, segredos).
 2. **Logo depois do MVP:** o que melhora resiliência e mantém o código simples de mudar (portas nas integrações,
    value objects, mappers).
