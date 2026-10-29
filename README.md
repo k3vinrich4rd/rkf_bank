@@ -1844,7 +1844,7 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
       <br/>
       <img src="https://img.shields.io/badge/Idealizador-PO_%26_QA-E2C98A" alt="Idealizador, PO e QA"/>
       <p align="left"><sub><i>“Se não funciona para o cliente, não está pronto.”</i> Olha o banco pelos olhos de quem usa: transforma ideia em prioridade, prioridade em critério de aceite e só dá o ok quando o fluxo funciona de ponta a ponta.</sub></p>
-      <p align="left"><sub><b>No RKF Bank:</b> <b>idealizador</b> e <b>PO & QA</b>: define o que o produto precisa e é o <b>primeiro cliente</b> — a conta de origem que nasce pronta em todo ambiente é a dele. Valida o MVP pelo guia de testes antes do lançamento.</sub></p>
+      <p align="left"><sub><b>No RKF Bank:</b> <b>idealizador</b> e <b>PO & QA</b>: define o que o produto precisa e é o <b>primeiro cliente</b> — a conta de origem que nasce pronta em todo ambiente é a dele. Valida cada entrega pelo guia de testes da equipe antes de ela chegar à <code>main</code>.</sub></p>
       <img src="https://img.shields.io/badge/1º_cliente-conta_0001%2F100001-0A0F1C" alt="Primeiro cliente: agência 0001, conta 100001"/>
     </td>
     <td align="center" valign="top" width="33%">
@@ -2107,7 +2107,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 
 <div align="center">
 
-<a href="planing/roadmap.md"><img src="assets/readme/chamada.svg" width="100%" alt="Mais que um banco, um parceiro para o seu amanhã. Ver o roadmap."/></a>
+<a href="VISITANTES.md"><img src="assets/readme/chamada.svg" width="100%" alt="Mais que um banco, um parceiro para o seu amanhã. MVP concluído: rode o RKF Bank na sua máquina em 1 comando."/></a>
 
 <sub>📍 RKF Banco Digital — idealizado e feito em Osasco, SP, por Kevin Richard, Renan Barros e Fellipe Santana.</sub>
 <br/>
