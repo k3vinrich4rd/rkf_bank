@@ -11,12 +11,17 @@
 // insomnia.environment.get/set, insomnia.response.code/json()/headers.get, insomnia.test e insomnia.expect
 // (to.equal, to.include, to.be.ok, to.be.an, to.be.above). Sai com código 1 se algum teste falhar.
 
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
 
 const args = process.argv.slice(2);
 const opcao = (nome, padrao) => (args.includes(nome) ? args[args.indexOf(nome) + 1] : padrao);
-const ARQUIVO = opcao("--arquivo", "backend/insomnia/rkfbank.insomnia.json");
+// Caminho relativo vale a partir de onde você rodou; se não existir aí, vale a partir da raiz do projeto (assim roda de qualquer pasta, IntelliJ incluso).
+const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const noProjeto = (caminho) => (isAbsolute(caminho) || existsSync(caminho) ? caminho : resolve(RAIZ, caminho));
+const ARQUIVO = noProjeto(opcao("--arquivo", "backend/insomnia/rkfbank.insomnia.json"));
 const AMBIENTE = opcao("--ambiente", "visitante");
 const BASE_URL = opcao("--base-url", null);
 const PASTA = opcao("--pasta", null);
