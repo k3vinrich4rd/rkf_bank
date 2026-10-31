@@ -1,7 +1,8 @@
 // Roda a coleção do Insomnia pelo terminal, na ordem das pastas, contra a API no ar. Serve para conferir a coleção
 // depois de mudar o contrato (sem abrir o Insomnia) e para quem prefere o terminal.
 //
-//   node scripts/rodar-colecao-insomnia.mjs                                   → ambiente Visitante, coleção pública
+//   node scripts/rodar-colecao-insomnia.mjs   (com a pasta .equipe: coleção e ambiente da equipe; sem ela:)
+//   node scripts/rodar-colecao-insomnia.mjs --ambiente visitante              → ambiente Visitante, coleção pública
 //   node scripts/rodar-colecao-insomnia.mjs --ambiente equipe --arquivo .equipe/testes/rkfbank-equipe.insomnia.json
 //   ... --base-url http://localhost:8081    (outra porta)    ... --pasta 03   (só as pastas que começam com "03")
 //   ... --registrar saida.json   (grava cada pedido e resposta reais, com tokens cortados: base dos roteiros E2E)
@@ -21,8 +22,14 @@ const opcao = (nome, padrao) => (args.includes(nome) ? args[args.indexOf(nome) +
 // Caminho relativo vale a partir de onde você rodou; se não existir aí, vale a partir da raiz do projeto (assim roda de qualquer pasta, IntelliJ incluso).
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const noProjeto = (caminho) => (isAbsolute(caminho) || existsSync(caminho) ? caminho : resolve(RAIZ, caminho));
-const ARQUIVO = noProjeto(opcao("--arquivo", "backend/insomnia/rkfbank.insomnia.json"));
-const AMBIENTE = opcao("--ambiente", "visitante");
+// Sem --arquivo e sem --ambiente: quem tem a pasta .equipe (fora do Git) roda a coleção da equipe, que bate com o .env
+// da equipe; quem não tem (visitante) roda a coleção pública. Passar qualquer um dos dois desliga a escolha automática.
+const COLECAO_EQUIPE = resolve(RAIZ, ".equipe/testes/rkfbank-equipe.insomnia.json");
+const automatico = !args.includes("--arquivo") && !args.includes("--ambiente");
+const usarEquipe = automatico && existsSync(COLECAO_EQUIPE);
+const ARQUIVO = usarEquipe ? COLECAO_EQUIPE : noProjeto(opcao("--arquivo", "backend/insomnia/rkfbank.insomnia.json"));
+const AMBIENTE = usarEquipe ? "equipe" : opcao("--ambiente", "visitante");
+if (usarEquipe) console.log("ℹ️  Pasta .equipe encontrada: rodando a coleção e o ambiente da equipe (use --ambiente visitante para a pública).");
 const BASE_URL = opcao("--base-url", null);
 const PASTA = opcao("--pasta", null);
 
