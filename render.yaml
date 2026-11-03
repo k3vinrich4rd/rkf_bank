@@ -48,3 +48,6 @@ services:
         sync: false
       - key: ADMIN_SENHA
         sync: false
+      # Demo publica: Swagger so para leitura (sem "Try it out"). Tire ou ponha false para fechar (404).
+      - key: SWAGGER_ATIVO
+        value: "true"
