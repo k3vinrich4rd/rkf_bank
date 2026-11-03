@@ -1,0 +1,50 @@
+# Blueprint do Render (opcional): cria o Web Service da API do RKF Bank a partir do Dockerfile da raiz.
+# Formato: https://render.com/docs/blueprint-spec · passo a passo em backend/README_DEPLOY.md.
+#
+# Nenhum segredo mora aqui: toda variavel com "sync: false" e pedida no painel do Render na criacao do Blueprint
+# (o Render ignora "sync: false" nas sincronizacoes seguintes: variavel nova depois disso entra a mao no painel).
+services:
+  - type: web
+    name: rkfbank-api
+    runtime: docker
+    # Plano gratuito: 512 MB (a API usa ~370 MB no perfil prod) e hiberna apos 15 min sem uso; a primeira
+    # requisicao depois disso espera ~1 min. O site mostra "servidor acordando" nesse meio tempo.
+    plan: free
+    # O Dockerfile fica na raiz porque o pom.xml e o mvnw moram aqui (sourceDirectory=backend/src/main/java).
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    # Publico, so UP/DOWN (show-details=never): o Render so troca para a versao nova quando ela responde UP.
+    healthCheckPath: /actuator/health
+    # Mudanca so no site (frontend/) ou na documentacao nao reconstroi a API.
+    buildFilter:
+      paths:
+        - Dockerfile
+        - .dockerignore
+        - pom.xml
+        - .mvn/**
+        - backend/src/main/**
+    envVars:
+      # Nao e segredo: o Dockerfile ja liga o prod; fica explicito para ninguem trocar sem querer no painel.
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # Preencha REQUIRED (ou VERIFY_CA com o certificado do Aiven). Nao deixe vazio: vazio nao cai no padrao.
+      - key: DB_SSL_MODE
+        sync: false
+      - key: JWT_SEGREDO
+        sync: false
+      - key: CORS_ORIGENS
+        sync: false
+      - key: ADMIN_CPF
+        sync: false
+      - key: ADMIN_SENHA
+        sync: false
