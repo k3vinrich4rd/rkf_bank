@@ -81,7 +81,7 @@
 | Encarregados LGPD (Kevin e Renan) na Política de Privacidade | ✅ | ✅ |
 | Imagem Docker e perfil `prod` testados no CI (MySQL vazio, sem dados de teste) | ✅ | — |
 
-<sub>✅ pronto na <code>main</code> · MVP concluído em 29/10/2026. O RKF Bank é um <b>projeto de portfólio</b>: não fica publicado na internet; quem avalia roda na própria máquina em 1 comando (<a href="VISITANTES.md">perfil visitante</a>).</sub>
+<sub>✅ pronto na <code>main</code> · MVP concluído em 29/10/2026. O RKF Bank é um <b>projeto de portfólio</b>: quem avalia roda na própria máquina em 1 comando (<a href="VISITANTES.md">perfil visitante</a>) e, desde 03/11/2026, ele está preparado para publicar no Aiven + Render + Vercel (<a href="backend/README_DEPLOY.md">guia de deploy</a>; site: <code>&lt;URL_DO_FRONT_NA_VERCEL&gt;</code>, API: <code>&lt;URL_DO_BACKEND_NO_RENDER&gt;</code>).</sub>
 
 <img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
@@ -1777,9 +1777,17 @@ gantt
 - [x] Imagem Docker e perfil `prod` sem dados de teste, testados num MySQL vazio pelo CI ([como a imagem é montada](backend/README_DEPLOY.md))
 - [x] Release na `main` (PR #76): TDD na `Conta`, threads virtuais, fim do N+1 e README com skills, diagnóstico e anotações
 
-> 🎯 **Sem fase de deploy, de propósito:** o RKF Bank é um projeto de **portfólio**, para devs e recrutadores rodarem e
-> avaliarem na própria máquina ([1 comando, sem Docker](VISITANTES.md)). A imagem Docker e o perfil `prod` continuam
-> testados no CI como prova de engenharia.
+> 🎯 **Portfólio que roda local e, agora, pronto para publicar:** devs e recrutadores continuam avaliando na própria
+> máquina ([1 comando, sem Docker](VISITANTES.md)). Em 03/11/2026 o projeto foi preparado para deploy
+> ([guia](backend/README_DEPLOY.md)):
+>
+> | Peça | Onde | Decisão e por quê |
+> |---|---|---|
+> | 🗄️ Banco | **Aiven** for MySQL (Free) | `DB_SSL_MODE=REQUIRED` por padrão: o banco fica na internet pública, fora da rede do Render; `PREFERRED` aceitaria cair para conexão sem criptografia |
+> | ⚙️ API | **Render** (Docker, plano free, [`render.yaml`](render.yaml)) | `hibernate.jdbc.time_zone=UTC`: o horário gravado não depende do fuso da JVM nem do provedor; health check em `/actuator/health` |
+> | 🌐 Site | **Vercel** (`frontend`, variável `API_URL`) | BFF com prazo de 12 s por tentativa e aviso de "servidor acordando": o Render Free hiberna após 15 min e leva ~1 min para voltar |
+>
+> Endereços (espaço reservado até publicar): site `<URL_DO_FRONT_NA_VERCEL>` · API `<URL_DO_BACKEND_NO_RENDER>`.
 
 </details>
 
@@ -2098,7 +2106,7 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
 | Backend | [🏷️ Anotações](#️-anotações-o-que-cada-uma-faz-e-por-que-está-aqui) | as 66 anotações do código e as 29 dos testes: o que cada uma faz, por que usamos e onde estão |
 | Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou MySQL), ver o banco, permissões, payloads e roteiros; aceite do MVP pela coleção |
-| Docker e `prod` | [Imagem e perfil `prod`](backend/README_DEPLOY.md) · [Dockerfile](Dockerfile) | como a imagem é montada e testada no CI, perfil `prod` e variáveis (o projeto é de portfólio e não é publicado) |
+| Docker e `prod` | [Imagem e perfil `prod`](backend/README_DEPLOY.md) · [Dockerfile](Dockerfile) | deploy no Aiven (MySQL com SSL), Render (`render.yaml`, variáveis, hibernação) e Vercel (`API_URL`); imagem testada no CI |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
 | Planejamento | [planing/](planing/README.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e padrões |
 | Planejamento | [Estudos de arquitetura](planing/estudos-arquitetura.md) | o que já está no código e o que está em estudo (Outbox, DLQ, OAuth2/OIDC, AWS), com plano e exemplo |

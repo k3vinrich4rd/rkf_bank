@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BackendIndisponivelError } from "@/lib/api/backend";
 import { precisaRenovar, renovarSessao, revogarSessao } from "./renovar";
 
 const AGORA = new Date("2026-10-23T12:00:00Z");
@@ -42,10 +43,13 @@ describe("renovarSessao", () => {
     await expect(renovarSessao("revogado")).resolves.toBeNull();
   });
 
-  it("API fora do ar também devolve null, sem estourar", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
+  it("API sem resposta não é renovação recusada: rejeita com BackendIndisponivelError e não repete", async () => {
+    // O proxy.ts mantém a sessão nesse caso; repetir um token de uso único poderia parecer reuso para a API.
+    const fetch = vi.fn().mockRejectedValue(new TypeError("fetch failed"));
+    vi.stubGlobal("fetch", fetch);
 
-    await expect(renovarSessao("qualquer")).resolves.toBeNull();
+    await expect(renovarSessao("qualquer")).rejects.toBeInstanceOf(BackendIndisponivelError);
+    expect(fetch).toHaveBeenCalledOnce();
   });
 });
 

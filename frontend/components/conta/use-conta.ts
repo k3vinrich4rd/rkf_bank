@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { contasApi, isFalhaDeServidor, type ContaResponse } from "@/lib/api";
+import { contasApi, isFalhaDeServidor, mensagemDeFalhaDoServidor, type ContaResponse } from "@/lib/api";
 import type { TelaLogger } from "@/components/logs";
 
 /**
@@ -45,7 +45,7 @@ function guardarContaEscolhida(contaId: string) {
 
 function mensagemDeErro(error: unknown): string {
   return isFalhaDeServidor(error)
-    ? "Não foi possível conectar ao servidor. Tente novamente em instantes."
+    ? mensagemDeFalhaDoServidor(error)
     : "Não conseguimos carregar sua conta. Tente novamente.";
 }
 

@@ -1,4 +1,4 @@
-export { ApiError, apiRequest, isFalhaDeServidor } from "./client";
+export { ApiError, apiRequest, isFalhaDeServidor, mensagemDeFalhaDoServidor } from "./client";
 export { authApi } from "./auth";
 export { clientesApi } from "./clientes";
 export { contasApi } from "./contas";

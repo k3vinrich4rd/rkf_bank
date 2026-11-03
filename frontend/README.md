@@ -84,7 +84,7 @@ flowchart TB
     UI["components/ui/*<br/>(Button, Input, FormField)"]
     API["lib/api<br/>(clientesApi, contasApi)"]
     CLIENT["lib/api/client.ts<br/>(apiRequest: fetch + erros + logs)"]
-    PROXY["next.config.ts<br/>rewrite /api/* → API_URL"]
+    PROXY["app/api/[...caminho]/route.ts<br/>BFF /api/* → API_URL (prazo de 12 s, aviso de servidor acordando)"]
 
     PAGE --> SCREEN
     SCREEN --> HOOK
@@ -115,6 +115,13 @@ O navegador chama `http://localhost:3000/api/clientes`; o Next repassa para `htt
 - **Sem CORS:** para o navegador, é a mesma origem.
 - **URL do backend escondida:** `API_URL` não vai para o bundle do cliente.
 - **Troca de ambiente sem mudar código:** em produção, só muda `API_URL`.
+- **Prazo e aviso de "servidor acordando":** o repasse é o BFF [`app/api/[...caminho]`](app/api/[...caminho]/route.ts)
+  (e não mais um rewrite do `next.config.ts`), que usa [`lib/api/backend.ts`](lib/api/backend.ts): **12 s por
+  tentativa** (AbortController), nova tentativa após 2 s só em GET/HEAD, e 503 `SERVICO_INDISPONIVEL` com a mensagem
+  "O servidor está acordando..." quando a API não responde (prazo, conexão recusada ou 502/503/504 do provedor).
+  Por quê: no plano gratuito do Render a API hiberna após 15 min sem uso e leva ~1 min para subir; sem prazo a tela
+  ficava girando sem explicação. POST/PATCH/DELETE não repetem: uma tentativa que estourou o prazo pode ter chegado
+  à API. A renovação de sessão também não repete (token de uso único) e, sem resposta da API, **mantém** a sessão.
 
 ### Tratamento de erros da API
 
@@ -153,7 +160,8 @@ Demais:  navegador ─/api/contas (cookie vai sozinho)─► proxy.ts põe "Auth
 | Peça | Papel |
 |---|---|
 | [`app/api/auth/*`](app/api/auth) | `login` grava os cookies, `logout` apaga, `sessao` diz quem está logado |
-| [`proxy.ts`](proxy.ts) | põe o `Bearer` nas chamadas `/api/*` e manda `/conta/*` sem sessão para o login |
+| [`proxy.ts`](proxy.ts) | põe o `Bearer` nas chamadas `/api/*` e manda `/conta/*` sem sessão para o login; API hibernando na renovação → 503 "servidor acordando", sem derrubar a sessão |
+| [`app/api/[...caminho]`](app/api/[...caminho]/route.ts) | repassa as demais chamadas `/api/*` para a API com prazo (BFF) |
 | [`lib/api/auth.ts`](lib/api/auth.ts) | `authApi.login`, `authApi.sair`, `authApi.sessao` |
 | [`lib/api/client.ts`](lib/api/client.ts) | `401` em qualquer chamada → login com `?expirou=1&voltar=<tela atual>` |
 | [`lib/auth/cookies.ts`](lib/auth/cookies.ts) | nomes e opções dos cookies (`httpOnly`, `SameSite=Lax`, `Secure` em produção) |
@@ -184,6 +192,7 @@ frontend/
 │   ├── globals.css             # Tailwind 4 + tokens de cor da marca
 │   ├── page.tsx                # landing page
 │   ├── api/auth/              # Route Handlers do login, logout e sessão (cookies httpOnly)
+│   ├── api/[...caminho]/       # BFF: repassa o resto de /api/* para a API, com prazo e aviso de servidor acordando
 │   ├── cadastro/page.tsx
 │   ├── conta/                  # conta, abrir, depositar, sacar, transferir, extrato
 │   └── login/page.tsx
@@ -213,7 +222,7 @@ frontend/
 │   └── utils.ts                # cn() para juntar classes
 ├── types/index.ts              # tipos do front que não vêm da API (Cents)
 ├── proxy.ts                    # Bearer nas chamadas /api e proteção das telas /conta
-└── next.config.ts              # rewrite /api → backend
+└── next.config.ts              # configuração do Next (o repasse /api → backend é o BFF app/api/[...caminho])
 ```
 
 **Convenções de nomes**
@@ -281,7 +290,7 @@ automaticamente**. Guia completo: [lib/logger/README.md](lib/logger/README.md).
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
-| Cadastro mostra "Não foi possível conectar ao servidor" | backend não está rodando | suba o backend e teste `curl http://localhost:8080/clientes` |
+| Tela mostra "O servidor está acordando..." (ou "Não foi possível conectar ao servidor") | backend não está rodando (na sua máquina) ou hibernando (Render Free) | local: suba o backend e teste `curl http://localhost:8080/actuator/health`; Render: espere ~1 min e tente de novo |
 | Console mostra `[rkf][api:http] ... falhou sem resposta` | idem, ou `API_URL` errada | confira `.env.local` e **reinicie** o `pnpm dev` |
 | Mudei `.env.local` e nada mudou | variáveis são lidas na inicialização | reinicie o `pnpm dev` (e refaça o build em produção) |
 | "Tela aberta" aparece duas vezes no console | React StrictMode em desenvolvimento | normal; em produção aparece uma vez |

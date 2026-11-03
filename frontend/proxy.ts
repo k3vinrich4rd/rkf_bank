@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type { LoginResponse } from "@/lib/api";
+import { BackendIndisponivelError, HEADERS_SERVIDOR_ACORDANDO, corpoServidorAcordando } from "@/lib/api/backend";
 import {
   COOKIE_REFRESH,
   COOKIE_SESSAO,
@@ -18,9 +19,11 @@ import { ROUTES } from "@/lib/routes";
  * 0. **Renovação (contrato 3.1):** se o token de acesso venceu ou está para vencer e existe o de renovação, troca os
  *    dois na API (`POST /auth/refresh`) antes de seguir. A pessoa não percebe: nada de cair no login a cada 15 min.
  * 1. `/api/*` → lê o token do cookie `httpOnly` e envia para a API como `Authorization: Bearer`.
- *    O rewrite do `next.config.ts` repassa esse header ao backend; o navegador nunca vê o token.
+ *    O BFF `app/api/[...caminho]` repassa esse header ao backend; o navegador nunca vê o token.
  * 2. `/conta/*` sem sessão → manda para o login, voltando para a mesma tela depois.
  *    É uma checagem otimista: quem valida o token de verdade é a API (token vencido → 401 → login).
+ * 3. **API hibernando (Render Free):** se a renovação não teve resposta, a sessão fica como está. Chamada `/api` sem
+ *    token válido recebe 503 "servidor acordando"; tela `/conta` abre e as chamadas dela mostram o mesmo aviso.
  */
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -33,10 +36,22 @@ export async function proxy(request: NextRequest) {
   const refresh = request.cookies.get(COOKIE_REFRESH)?.value;
   let renovada: LoginResponse | null = null;
   let renovacaoRecusada = false;
+  let apiIndisponivel = false;
 
   if (refresh && precisaRenovar(token, lerSessao(request.cookies.get(COOKIE_SESSAO)?.value)?.expiraEm)) {
-    renovada = await renovarSessao(refresh);
-    if (renovada) {
+    try {
+      renovada = await renovarSessao(refresh);
+    } catch (error) {
+      if (!(error instanceof BackendIndisponivelError)) throw error;
+      apiIndisponivel = true;
+    }
+    if (apiIndisponivel) {
+      // Não é renovação recusada: os cookies ficam, e a próxima requisição tenta de novo.
+      if (!token && pathname.startsWith("/api/")) {
+        const corpo = corpoServidorAcordando(pathname.slice("/api".length));
+        return NextResponse.json(corpo, { status: 503, headers: HEADERS_SERVIDOR_ACORDANDO });
+      }
+    } else if (renovada) {
       token = renovada.token;
       // A requisição que segue (rota do Next ou API) já enxerga a sessão nova.
       request.cookies.set(COOKIE_TOKEN, renovada.token);
@@ -48,8 +63,8 @@ export async function proxy(request: NextRequest) {
 
   let resposta: NextResponse;
   if (renovada && pathname.startsWith("/api/") && pathname !== "/api/auth/sessao") {
-    // O rewrite externo do next.config.ts descarta o Set-Cookie do proxy: sem isto o navegador ficaria com o token
-    // de renovação antigo, já trocado, e a próxima renovação contaria como reuso (a API derruba a sessão inteira).
+    // O navegador precisa guardar o par novo antes de a chamada seguir: sem isto ele poderia ficar com o token de
+    // renovação antigo, já trocado, e a próxima renovação contaria como reuso (a API derruba a sessão inteira).
     // O 307 repete a mesma chamada (mesmo método e corpo) já com os cookies novos.
     resposta = NextResponse.redirect(request.nextUrl, 307);
   } else if (pathname === "/api/auth/sessao") {
@@ -61,7 +76,7 @@ export async function proxy(request: NextRequest) {
     headers.delete("authorization");
     if (token) headers.set("authorization", `Bearer ${token}`);
     resposta = NextResponse.next({ request: { headers } });
-  } else if (!token) {
+  } else if (!token && !apiIndisponivel) {
     const login = new URL(ROUTES.login, request.url);
     login.searchParams.set("voltar", `${pathname}${search}`);
     resposta = NextResponse.redirect(login);

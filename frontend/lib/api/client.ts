@@ -1,6 +1,7 @@
 import { env } from "@/lib/env";
 import { logHttp, type LogContext } from "@/lib/logger";
 import { ROUTES } from "@/lib/routes";
+import { MENSAGEM_SERVIDOR_ACORDANDO } from "./mensagens";
 import type { CodigoErro, ErroCampo, ErroResponse } from "./types";
 
 /**
@@ -42,7 +43,20 @@ export function isFalhaDeServidor(error: unknown): boolean {
   return !(error instanceof ApiError) || error.status >= 500;
 }
 
-type QueryValue =string | number | boolean | undefined;
+/** Mensagem genérica de falha do servidor, para quando não há uma mais específica. */
+export const MENSAGEM_FALHA_DE_SERVIDOR = "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+
+/**
+ * O que mostrar quando `isFalhaDeServidor(error)`: o 503 com código `SERVICO_INDISPONIVEL` já traz um texto pronto
+ * para a pessoa (o BFF avisa "servidor acordando" quando a API hiberna no Render; a API avisa quando o ViaCEP cai).
+ * Qualquer outra falha (500, rede do navegador caiu) fica com a mensagem genérica.
+ */
+export function mensagemDeFalhaDoServidor(error: unknown): string {
+  if (error instanceof ApiError && error.codigo === "SERVICO_INDISPONIVEL") return error.message;
+  return MENSAGEM_FALHA_DE_SERVIDOR;
+}
+
+type QueryValue = string | number | boolean | undefined;
 
 interface RequestOptions extends Omit<RequestInit, "body"> {
   /** Corpo serializado como JSON. */
@@ -66,6 +80,10 @@ async function toApiError(response: Response): Promise<ApiError> {
   const payload: unknown = await response.json().catch(() => null);
   if (isErroResponse(payload)) {
     return new ApiError(payload.status, payload.message, payload.campos ?? [], payload.codigo ?? null);
+  }
+  // 502/503/504 fora do formato padrão é do provedor (ex.: Vercel sem resposta a tempo): a API está acordando.
+  if ([502, 503, 504].includes(response.status)) {
+    return new ApiError(503, MENSAGEM_SERVIDOR_ACORDANDO, [], "SERVICO_INDISPONIVEL");
   }
   return new ApiError(response.status, response.statusText || "Erro inesperado");
 }

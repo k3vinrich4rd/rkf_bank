@@ -41,7 +41,7 @@ node scripts/gerar-colecao-insomnia.mjs  # regera a coleção do Insomnia (mudou
 node scripts/gerar-roteiro-e2e.mjs       # passos dos guias de teste a partir de uma execução real (--registrar); --passos gera a trilha curta (VISITANTES.md, .equipe/testes/BACKEND_E2E.md)
 node scripts/engenharia-reversa-jwt.mjs  # abre o JWT e tenta forjá-lo (alg none, payload adulterado...): todos têm que dar 401
 node scripts/e2e-site.mjs           # site (Next, porta 3000) + API visitante juntos: páginas, login pelo site e conta pelo proxy
-docker build -t rkfbank-api .       # imagem da API no perfil prod (testada no CI; o projeto é de portfólio e não é publicado)
+docker build -t rkfbank-api .       # imagem da API no perfil prod (testada no CI; deploy no Render: render.yaml e backend/README_DEPLOY.md)
 node scripts/varrer-cves.js         # vulnerabilidades conhecidas (OSV.dev) no Maven e no pnpm-lock
 node scripts/gerar-svgs-readme.mjs  # regera os SVGs animados do README (assets/readme/) com o número atual de testes e migrações
 scripts/instalar-hooks.sh           # ativa o hook que valida mensagens de commit
