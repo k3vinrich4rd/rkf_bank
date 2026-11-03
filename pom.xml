@@ -22,7 +22,7 @@
 		     closed" em todo insert). O 2.5.252 corrige; ele so aceita DATETIME com MODE=MySQL nas URLs do H2. -->
 		<h2.version>2.5.252</h2.version>
 		<!-- springdoc 3.x e a linha para o Spring Boot 4 (a 2.x e do Boot 3). -->
-		<springdoc.version>3.1.1</springdoc.version>
+		<springdoc.version>3.2.0</springdoc.version>
 		<shedlock.version>7.10.1</shedlock.version>
 	</properties>
 
@@ -199,7 +199,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>3.6.3</version>
+				<version>3.7.0</version>
 				<executions>
 					<execution>
 						<id>enforce-java-25</id>
@@ -241,7 +241,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.15</version>
+				<version>0.8.16</version>
 				<executions>
 					<execution>
 						<goals>
