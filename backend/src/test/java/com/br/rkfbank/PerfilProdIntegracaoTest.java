@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import jakarta.persistence.EntityManagerFactory;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,11 +43,21 @@ class PerfilProdIntegracaoTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
+
     @Test
     void bancoNasceSoComOSchemaSemNenhumDadoDeTeste() {
         assertEquals(0L, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tb_cliente", Long.class));
         assertEquals(0L, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tb_conta", Long.class));
         assertEquals(0L, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM tb_usuario", Long.class));
+    }
+
+    // O Hibernate de producao recebe o fuso UTC de verdade (nao so o arquivo): os Instant saem em UTC no banco,
+    // qualquer que seja o TZ da JVM no container.
+    @Test
+    void hibernateUsaUtcNasDatas() {
+        assertEquals("UTC", entityManagerFactory.getProperties().get("hibernate.jdbc.time_zone"));
     }
 
     @Test
