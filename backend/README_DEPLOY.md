@@ -176,3 +176,20 @@ O 503 da própria API (ViaCEP fora do ar) vem em JSON e passa como veio, com a m
   Suba `TERMOS_VERSAO` (frontend) **e** `LGPD_TERMOS_VERSAO` (variável da API) juntos.
 - Deixe claro na tela que é um **banco de demonstração** (dinheiro fictício), para ninguém digitar dado real além do necessário.
 - Alerta de custo ligado no provedor (caminho B) e backup do banco (o Aiven Free não promete backup de produção).
+
+## 8. Publicar uma versão nova (dia a dia)
+
+| Peça | Como publica | Se não publicar |
+|---|---|---|
+| 🌐 Site (Vercel) | **sozinha**, a cada merge na `main` (e cada PR ganha um link de prévia) | Vercel → Deployments → **Redeploy** |
+| ⚙️ API (Render) | o serviço foi criado pela URL pública do repositório, **sem o app do GitHub**: o merge na `main` **não** dispara deploy | Render → `rkfbank-api` → **Manual Deploy → Deploy latest commit**, ou `render deploys create srv-dbl3urrncjis73e1r3d0` |
+
+Para a API publicar sozinha: Render → *Account Settings* → *Git Providers* → **Connect GitHub** (dê acesso ao
+`rkf_bank`) e, no serviço, *Settings → Build & Deploy → Repository* → reconecte o repositório pelo GitHub.
+
+A API leva ~3 min para subir no plano grátis (`Started RkfbankApplication in ~170 s`). A primeira checagem de saúde
+pode dar `503` enquanto ela aquece; o Render tenta de novo. Se o deploy terminar em *Timed out* com
+`Started RkfbankApplication` no log, foi só demora: rode o **Manual Deploy** de novo. A versão anterior continua no ar
+enquanto isso.
+
+Depois de publicar, o roteiro da equipe `.equipe/testes/PRODUCAO_NO_AR_E2E.md` confere tudo em 1 comando.
