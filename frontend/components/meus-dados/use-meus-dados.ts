@@ -1,5 +1,5 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { ApiError, clientesApi, isFalhaDeServidor, type AtualizarClienteRequest, type ClienteResponse } from "@/lib/api";
+import { ApiError, clientesApi, isFalhaDeServidor, mensagemDeFalhaDoServidor, type AtualizarClienteRequest, type ClienteResponse } from "@/lib/api";
 import { useLogDeTela } from "@/components/logs";
 import { maskCep, maskTelefone, onlyDigits } from "@/lib/masks";
 
@@ -75,7 +75,7 @@ function errosDaApi(error: unknown): { campos: ErrosPorCampo; geral: string | nu
     return { campos: {}, geral: "Não conseguimos consultar o CEP agora. Tente de novo em instantes." };
   }
   if (!(error instanceof ApiError) || isFalhaDeServidor(error)) {
-    return { campos: {}, geral: "Não foi possível conectar ao servidor. Tente novamente em instantes." };
+    return { campos: {}, geral: mensagemDeFalhaDoServidor(error) };
   }
   switch (error.status) {
     case 400:
@@ -97,7 +97,7 @@ function mensagemDaBusca(error: unknown): string {
     return "Seu usuário não tem cadastro de cliente.";
   }
   return isFalhaDeServidor(error)
-    ? "Não foi possível conectar ao servidor. Tente novamente em instantes."
+    ? mensagemDeFalhaDoServidor(error)
     : "Não conseguimos carregar seus dados. Tente novamente.";
 }
 

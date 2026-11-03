@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, authApi, isFalhaDeServidor, type LoginRequest } from "@/lib/api";
+import { ApiError, authApi, isFalhaDeServidor, mensagemDeFalhaDoServidor, type LoginRequest } from "@/lib/api";
 import { useLogDeTela } from "@/components/logs";
 import { ROUTES } from "@/lib/routes";
 import { maskCpf, onlyDigits } from "@/lib/masks";
@@ -12,7 +12,7 @@ type ErrosPorCampo = Partial<Record<Campo, string>>;
 /** Traduz qualquer falha do login numa mensagem para o usuário. */
 function mensagemDeErro(error: unknown): string {
   if (!(error instanceof ApiError) || isFalhaDeServidor(error)) {
-    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+    return mensagemDeFalhaDoServidor(error);
   }
 
   switch (error.status) {

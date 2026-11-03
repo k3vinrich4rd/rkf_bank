@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
-import { ApiError, authApi, clientesApi, isFalhaDeServidor, type EncerramentoResponse } from "@/lib/api";
+import { ApiError, authApi, clientesApi, isFalhaDeServidor, mensagemDeFalhaDoServidor, type EncerramentoResponse } from "@/lib/api";
 import { useLogDeTela } from "@/components/logs";
 
 /**
@@ -53,7 +53,7 @@ export function useEncerrarCadastro() {
       } else {
         setErroGeral(
           isFalhaDeServidor(error)
-            ? "Não foi possível conectar ao servidor. Tente novamente em instantes."
+            ? mensagemDeFalhaDoServidor(error)
             : "Algo deu errado. Tente novamente.",
         );
       }
