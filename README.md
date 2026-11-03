@@ -1404,6 +1404,47 @@ e os testes com `jwt()` ficam iguais.
 
 <img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
+## ☁️ Em produção: como as três plataformas se ligam
+
+> ✅ **No ar desde 03/11/2026, custo R$ 0.** 🌐 [Site](https://rkfbank.vercel.app) · ⚙️ [API (health)](https://rkfbank-api-zncu.onrender.com/actuator/health) · 📖 [Swagger, só leitura](https://rkfbank-api-zncu.onrender.com/swagger-ui.html) · guia técnico: [README_DEPLOY.md](backend/README_DEPLOY.md)
+
+O RKF Bank foi dividido em três peças, e cada uma mora num provedor feito para ela:
+
+| Peça | Provedor | O que faz por nós | Quem escreveu o código |
+|---|---|---|---|
+| 🌐 **Site** (Next.js 16, pasta `frontend/`) | **Vercel** (Hobby) | constrói e serve as telas pelo mundo (CDN) e roda o servidor do Next, que é o **BFF**: guarda o token num cookie `httpOnly` e repassa cada chamada `/api/*` para a API | Renan |
+| ⚙️ **API** (Spring Boot 4.1, `Dockerfile` da raiz, perfil `prod`) | **Render** (Free) | constrói a imagem Docker, roda o container, dá HTTPS e um endereço público, confere a saúde em `/actuator/health` e reinicia se cair | Kevin |
+| 🗄️ **Banco** (MySQL 8.4) | **Aiven** (Free) | guarda contas, lançamentos e usuários com **SSL obrigatório** e backup; o Flyway cria as 15 tabelas na primeira subida da API | Flyway (V1–V15) |
+
+```mermaid
+flowchart LR
+    P["👤 Pessoa no navegador"] -->|"HTTPS · telas"| V["🌐 Vercel<br/>rkfbank.vercel.app<br/>Next.js + BFF"]
+    V -->|"/api/* no servidor<br/>Authorization: Bearer (do cookie)"| R["⚙️ Render<br/>rkfbank-api (Docker)<br/>Spring Boot · perfil prod"]
+    R -->|"JDBC + SSL REQUIRED<br/>pool de 5 conexões"| A[("🗄️ Aiven<br/>MySQL 8.4<br/>mysql-rkfbank")]
+    R -.->|"CEP"| C["📮 ViaCEP"]
+    G["🐙 GitHub · main"] -.->|"merge publica o site"| V
+    G -.->|"merge publica a API"| R
+```
+
+**O caminho de um clique em "transferir":**
+
+1. O navegador chama `POST /api/transferencias` no **próprio site** (mesma origem: sem CORS e sem token no JavaScript).
+2. O servidor do Next, na **Vercel**, lê o token do cookie `httpOnly` e repassa para a API com `Authorization: Bearer` e o `Idempotency-Key`. A variável `API_URL` diz para onde.
+3. A API no **Render** valida o JWT (assinado com `JWT_SEGREDO`), confere se a conta é do dono e debita e credita **na mesma transação**, com lock otimista.
+4. O **Aiven** grava os dois lançamentos e a chave de idempotência. Se o clique se repetir, a chave já existe e o dinheiro não sai de novo.
+
+**Como cada peça acha a outra (variáveis de ambiente, nunca no Git):**
+
+| Onde | Variável | Liga com |
+|---|---|---|
+| Vercel | `API_URL=https://rkfbank-api-zncu.onrender.com` | site → API |
+| Render | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SSL_MODE=REQUIRED` | API → banco |
+| Render | `CORS_ORIGENS=https://rkfbank.vercel.app` | só o site pode chamar a API direto do navegador |
+| Render | `JWT_SEGREDO`, `SWAGGER_ATIVO=true` | assinatura dos tokens · Swagger só leitura |
+
+> ⏳ **Plano grátis:** a API **dorme depois de 15 min** sem uso e leva ~1 min para acordar. O site mostra "servidor
+> acordando" enquanto isso. Nenhum dos três provedores tem cartão cadastrado: no limite, o serviço para, nunca cobra.
+
 ## 🚀 Rodando o projeto
 
 | Ferramenta | Versão |
