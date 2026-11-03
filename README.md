@@ -8,6 +8,7 @@
 [![Último commit](https://img.shields.io/github/last-commit/k3vinrich4rd/rkf_bank/develop?color=3B82F6&label=último%20commit)](https://github.com/k3vinrich4rd/rkf_bank/commits/develop)
 [![PRs fechados](https://img.shields.io/github/issues-pr-closed/k3vinrich4rd/rkf_bank?color=06B6D4&label=PRs%20fechados)](https://github.com/k3vinrich4rd/rkf_bank/pulls?q=is%3Apr+is%3Aclosed)
 [![Status](https://img.shields.io/badge/MVP-conclu%C3%ADdo_29%2F10%2F2026-22C55E)](planing/roadmap.md)
+[![Em produção](https://img.shields.io/badge/em_produ%C3%A7%C3%A3o-rkfbank.vercel.app-22C55E?logo=vercel&logoColor=white)](https://rkfbank.vercel.app)
 [![Portfólio](https://img.shields.io/badge/portf%C3%B3lio-roda_na_sua_m%C3%A1quina-3B82F6)](VISITANTES.md)
 [![Feito em Osasco](https://img.shields.io/badge/📍_feito_em-Osasco,_SP-06B6D4)](#-feito-em-osasco)
 
@@ -81,7 +82,7 @@
 | Encarregados LGPD (Kevin e Renan) na Política de Privacidade | ✅ | ✅ |
 | Imagem Docker e perfil `prod` testados no CI (MySQL vazio, sem dados de teste) | ✅ | — |
 
-<sub>✅ pronto na <code>main</code> · MVP concluído em 29/10/2026. O RKF Bank é um <b>projeto de portfólio</b>: quem avalia roda na própria máquina em 1 comando (<a href="VISITANTES.md">perfil visitante</a>) e, desde 03/11/2026, ele está preparado para publicar no Aiven + Render + Vercel (<a href="backend/README_DEPLOY.md">guia de deploy</a>; site: <code>&lt;URL_DO_FRONT_NA_VERCEL&gt;</code>, API: <code>&lt;URL_DO_BACKEND_NO_RENDER&gt;</code>).</sub>
+<sub>✅ pronto na <code>main</code> · MVP concluído em 29/10/2026. O RKF Bank é um <b>projeto de portfólio</b>: quem avalia roda na própria máquina em 1 comando (<a href="VISITANTES.md">perfil visitante</a>) e, desde 03/11/2026, está <b>em produção</b> no Aiven + Render + Vercel: <a href="https://rkfbank.vercel.app">site</a> · <a href="https://rkfbank-api-zncu.onrender.com/swagger-ui.html">API e Swagger</a> (<a href="backend/README_DEPLOY.md">guia de deploy</a>).</sub>
 
 <img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
@@ -616,7 +617,7 @@ todas as rotas a partir do código, com **exemplos prontos** (contas públicas d
 **Try it out** → **Execute**, cole o `token` no botão **Authorize** e teste qualquer rota por ali. Depósito, saque e
 transferência já vêm com o `Idempotency-Key` preenchido; cada rota mostra o status real (`201`, `204`) e todos os erros
 possíveis. Passo a passo em [VISITANTES.md](VISITANTES.md#-sem-insomnia-use-o-swagger-no-navegador). Em produção
-(perfil `prod`) o Swagger fica fechado.
+(perfil `prod`) o Swagger abre só para leitura, sem **Try it out**: [ver a API publicada](https://rkfbank-api-zncu.onrender.com/swagger-ui.html).
 
 <details>
 <summary><b>👤 <code>POST /clientes</code> — cadastrar</b></summary>
@@ -1787,7 +1788,7 @@ gantt
 > | ⚙️ API | **Render** (Docker, plano free, [`render.yaml`](render.yaml)) | `hibernate.jdbc.time_zone=UTC`: o horário gravado não depende do fuso da JVM nem do provedor; health check em `/actuator/health` |
 > | 🌐 Site | **Vercel** (`frontend`, variável `API_URL`) | BFF com prazo de 12 s por tentativa e aviso de "servidor acordando": o Render Free hiberna após 15 min e leva ~1 min para voltar |
 >
-> Endereços (espaço reservado até publicar): site `<URL_DO_FRONT_NA_VERCEL>` · API `<URL_DO_BACKEND_NO_RENDER>`.
+> ✅ **Em produção desde 03/11/2026:** site [rkfbank.vercel.app](https://rkfbank.vercel.app) · API [rkfbank-api-zncu.onrender.com](https://rkfbank-api-zncu.onrender.com/actuator/health) · [Swagger (só leitura)](https://rkfbank-api-zncu.onrender.com/swagger-ui.html).
 
 </details>
 

@@ -566,7 +566,7 @@ deixa você mandar o pedido ali mesmo, sem instalar nada. Os exemplos já vêm p
 
 Cada rota mostra embaixo **todas as respostas possíveis** (`204`, `400`, `401`, `403`...) com o formato do erro. O
 mesmo conteúdo em formato de máquina (OpenAPI, JSON) está em http://localhost:8080/v3/api-docs: é o que o Insomnia
-e o Postman importam. Na versão publicada do banco o Swagger fica **fechado** (`404`), de propósito.
+e o Postman importam. Na versão publicada (https://rkfbank-api-zncu.onrender.com/swagger-ui.html) o Swagger abre **só para leitura**: dá para ler todas as rotas, mas sem **Try it out** (para usar o banco no ar, use o site: https://rkfbank.vercel.app).
 
 ## Quer ir além? (opcional)
 
