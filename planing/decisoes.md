@@ -155,6 +155,11 @@ Data: 29/10
 Decisão: o MVP está **concluído** com a release do PR #76 na `main`. Não haverá fase de deploy: o RKF Bank é um **projeto de portfólio**, para devs e recrutadores rodarem e avaliarem na própria máquina (`VISITANTES.md`: perfil `visitante`, 1 comando, sem Docker e sem `.env`). A imagem Docker e o perfil `prod` continuam no projeto e testados no CI (`backend-docker.yml`), como prova de engenharia.
 Por quê: publicar exigiria banco gerenciado, segredos, custo e manutenção contínua, e não acrescenta nada ao que o projeto quer mostrar (regra de negócio, segurança, testes e processo de time). Rodar localmente deixa qualquer pessoa testar tudo, inclusive os erros, sem depender de um servidor no ar.
 
+## Preparo para deploy: Aiven + Render + Vercel
+Data: 03/11
+Decisão: o projeto fica **pronto para publicar** no caminho A do `backend/README_DEPLOY.md` (Aiven for MySQL Free, Render Free com `render.yaml`, Vercel Hobby), sem deixar de rodar local pelo `VISITANTES.md`. Junto: `DB_SSL_MODE` passa a `REQUIRED` por padrão no `prod`, o Hibernate grava as datas em UTC (`spring.jpa.properties.hibernate.jdbc.time_zone=UTC`) e o BFF do Next ganha prazo de 12 s por tentativa com aviso de "servidor acordando" (o repasse `/api/*` virou `app/api/[...caminho]`, no lugar do rewrite).
+Por quê: o banco fica fora da rede do Render (SSL não pode ser opcional); o fuso da JVM muda com o provedor (UTC no banco não); o plano Free hiberna e a primeira chamada espera ~1 min (a tela tem que explicar). Alternativa descartada: manter o rewrite do `next.config.ts`, que não deixa pôr prazo nem trocar a resposta.
+
 ---
 
 ## Ainda falta decidir
@@ -162,5 +167,5 @@ Por quê: publicar exigiria banco gerenciado, segredos, custo e manutenção con
 - [x] **Acesso à conta sem login:** resolvido com o login (ver "Login com CPF + senha e JWT").
 - [ ] **Dinheiro:** a API manda o valor em reais (`50.00`) ou em centavos (`5000`)? Hoje a API usa reais e o frontend converte para centavos.
 - [x] **Login:** feito (feature 2 do checklist).
-- [x] **Onde publicar:** em lugar nenhum: o projeto é de portfólio e roda localmente (ver "MVP concluído, sem deploy").
+- [x] **Onde publicar:** Aiven + Render + Vercel, caminho grátis (ver "Preparo para deploy: Aiven + Render + Vercel"); continua rodando local.
 - [ ] **Arquitetura alvo:** monólito modular por funcionalidade (`cliente`, `conta`, `auth`, `pix`) a partir do PR do Pix? Proposta e motivos em [README_IMPLEMENTACAO.md, seção 8](../backend/README_IMPLEMENTACAO.md#8-revisão-de-arquitetura-20102026).

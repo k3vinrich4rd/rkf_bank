@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { contasApi, isFalhaDeServidor, type LancamentoResponse, type Uuid } from "@/lib/api";
+import { contasApi, isFalhaDeServidor, mensagemDeFalhaDoServidor, type LancamentoResponse, type Uuid } from "@/lib/api";
 import { useConta } from "@/components/conta/use-conta";
 import { useLogDeTela } from "@/components/logs";
 
@@ -21,7 +21,7 @@ function chaveDaBusca(contaId: Uuid, tentativa: number) {
 
 function mensagemDeErro(error: unknown): string {
   return isFalhaDeServidor(error)
-    ? "Não foi possível conectar ao servidor. Tente novamente em instantes."
+    ? mensagemDeFalhaDoServidor(error)
     : "Não conseguimos carregar seu extrato. Tente novamente.";
 }
 

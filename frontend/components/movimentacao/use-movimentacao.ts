@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { ApiError, contasApi, isFalhaDeServidor, type ContaResponse, type Uuid } from "@/lib/api";
+import { ApiError, contasApi, isFalhaDeServidor, mensagemDeFalhaDoServidor, type ContaResponse, type Uuid } from "@/lib/api";
 import { useConta } from "@/components/conta/use-conta";
 import { useLogDeTela } from "@/components/logs";
 import { centsToDecimal, decimalToCents, formatCurrency } from "@/lib/format";
@@ -66,7 +66,7 @@ async function executar(tipo: TipoMovimentacao, contaId: Uuid, comprovante: Comp
 /** Traduz qualquer falha do envio numa mensagem para o usuário. */
 function mensagemDeErro(error: unknown): string {
   if (!(error instanceof ApiError) || isFalhaDeServidor(error)) {
-    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+    return mensagemDeFalhaDoServidor(error);
   }
 
   switch (error.status) {

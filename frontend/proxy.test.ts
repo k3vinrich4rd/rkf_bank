@@ -70,6 +70,26 @@ describe("proxy", () => {
     expect(resposta.cookies.get(COOKIE_TOKEN)?.value).toBe("");
   });
 
+  it("API hibernando na renovação: /api responde 503 'servidor acordando' e a sessão fica", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
+
+    const resposta = await proxy(requisicao("/api/contas", { [COOKIE_REFRESH]: "renovacao" }));
+
+    expect(resposta.status).toBe(503);
+    await expect(resposta.json()).resolves.toMatchObject({ codigo: "SERVICO_INDISPONIVEL", path: "/contas" });
+    // Nenhum cookie apagado: quando a API acordar, a mesma renovação vale.
+    expect(resposta.cookies.get(COOKIE_REFRESH)).toBeUndefined();
+  });
+
+  it("API hibernando na renovação: tela /conta abre (sem ir para o login) e as chamadas dela avisam", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
+
+    const resposta = await proxy(requisicao("/conta", { [COOKIE_REFRESH]: "renovacao" }));
+
+    expect(resposta.status).toBe(200);
+    expect(resposta.headers.get("location")).toBeNull();
+  });
+
   it("tela /conta sem sessão manda para o login guardando a volta", async () => {
     const resposta = await proxy(requisicao("/conta/extrato?pagina=2", {}));
 

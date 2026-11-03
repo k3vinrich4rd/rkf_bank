@@ -4,6 +4,7 @@ import {
   authApi,
   clientesApi,
   isFalhaDeServidor,
+  mensagemDeFalhaDoServidor,
   type CadastroClienteRequest,
   type ClienteResponse,
 } from "@/lib/api";
@@ -88,7 +89,7 @@ function mensagemDeErro(error: unknown): string {
     return "Não conseguimos consultar o seu CEP agora. Tente novamente em instantes.";
   }
   if (!(error instanceof ApiError) || isFalhaDeServidor(error)) {
-    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+    return mensagemDeFalhaDoServidor(error);
   }
 
   if (error.codigo === "TERMOS_DESATUALIZADOS") {

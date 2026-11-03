@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { ApiError, contasApi, isFalhaDeServidor, type ContaResponse, type TipoConta } from "@/lib/api";
+import { ApiError, contasApi, isFalhaDeServidor, mensagemDeFalhaDoServidor, type ContaResponse, type TipoConta } from "@/lib/api";
 import { useConta, type ContaState } from "@/components/conta/use-conta";
 import { useLogDeTela } from "@/components/logs";
 
@@ -16,7 +16,7 @@ export type EtapaAbrirConta = "carregando" | "erro-conta" | "ja-tem-conta" | "fo
 /** Traduz qualquer falha da abertura numa mensagem para o usuário. */
 function mensagemDeErro(error: unknown): string {
   if (isFalhaDeServidor(error)) {
-    return "Não foi possível conectar ao servidor. Tente novamente em instantes.";
+    return mensagemDeFalhaDoServidor(error);
   }
 
   // Perfil sem cliente (o ADMIN do `.env`): a API responde 422, não há cadastro em que abrir conta.

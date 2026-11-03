@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ApiError, authApi, isFalhaDeServidor } from "@/lib/api";
+import { ApiError, authApi, isFalhaDeServidor, mensagemDeFalhaDoServidor } from "@/lib/api";
 import { useLogDeTela } from "@/components/logs";
 import { ROUTES } from "@/lib/routes";
 
@@ -30,7 +30,7 @@ function validar(valores: Valores): ErrosPorCampo {
 /** Traduz a resposta da API em erro de campo ou mensagem geral. */
 function errosDaApi(error: unknown): { campos: ErrosPorCampo; geral: string | null } {
   if (!(error instanceof ApiError) || isFalhaDeServidor(error)) {
-    return { campos: {}, geral: "Não foi possível conectar ao servidor. Tente novamente em instantes." };
+    return { campos: {}, geral: mensagemDeFalhaDoServidor(error) };
   }
   switch (error.status) {
     case 400:
