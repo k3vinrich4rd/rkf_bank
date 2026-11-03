@@ -1,12 +1,12 @@
 # 🚀 Publicar o RKF Bank (perfil `prod`)
 
-> 🚀 **Pronto para publicar** (preparo de 03/11/2026): banco no **Aiven** (MySQL com SSL), API no **Render**
-> (Docker, `render.yaml` na raiz) e site na **Vercel**. As URLs abaixo ficam como espaço reservado até a publicação:
+> ✅ **Em produção desde 03/11/2026:** banco no **Aiven** (MySQL Free com SSL), API no **Render**
+> (Docker, plano free) e site na **Vercel** (Hobby). Custo: **R$ 0**, sem cartão em nenhum dos três.
 >
 > | | Endereço |
 > |---|---|
-> | 🌐 Site | `<URL_DO_FRONT_NA_VERCEL>` |
-> | ⚙️ API | `<URL_DO_BACKEND_NO_RENDER>` |
+> | 🌐 Site | [rkfbank.vercel.app](https://rkfbank.vercel.app) |
+> | ⚙️ API | [rkfbank-api-zncu.onrender.com/actuator/health](https://rkfbank-api-zncu.onrender.com/actuator/health) · Swagger (só leitura): [/swagger-ui.html](https://rkfbank-api-zncu.onrender.com/swagger-ui.html) |
 
 | | |
 |---|---|
@@ -53,9 +53,9 @@ A imagem é a mesma nos três: mudar de casa é trocar as variáveis. Medido em 
 |:-:|---|---|---|
 | 1 | **Aiven** | criar um serviço *MySQL* no plano Free; anotar host, porta, banco (`defaultdb` ou um criado para o projeto), usuário e senha da aba *Overview* | o serviço aparece como *Running* |
 | 2 | **Render** | *New → Blueprint*, escolher este repositório: o Render lê o [`render.yaml`](../render.yaml) e cria o Web Service `rkfbank-api` (Docker, plano free, health em `/actuator/health`) | o painel pede os valores das variáveis `sync: false` |
-| 3 | **Render** | preencher as variáveis da seção 4 (ainda sem `CORS_ORIGENS` definitivo, se o site não existir: use um valor provisório e troque no passo 5) | deploy *Live* e `<URL_DO_BACKEND_NO_RENDER>/actuator/health` → `UP` |
-| 4 | **Vercel** | *Add New → Project*, este repositório, **Root Directory `frontend`**, variável `API_URL=<URL_DO_BACKEND_NO_RENDER>` (seção 5) | o site abre em `<URL_DO_FRONT_NA_VERCEL>` |
-| 5 | **Render** | trocar `CORS_ORIGENS` para `<URL_DO_FRONT_NA_VERCEL>` e salvar (o Render reinicia a API) | preflight de outra origem → `403` |
+| 3 | **Render** | preencher as variáveis da seção 4 (ainda sem `CORS_ORIGENS` definitivo, se o site não existir: use um valor provisório e troque no passo 5) | deploy *Live* e `https://rkfbank-api-zncu.onrender.com/actuator/health` → `UP` |
+| 4 | **Vercel** | *Add New → Project*, este repositório, **Root Directory `frontend`**, variável `API_URL=https://rkfbank-api-zncu.onrender.com` (seção 5) | o site abre em `https://rkfbank.vercel.app` |
+| 5 | **Render** | trocar `CORS_ORIGENS` para `https://rkfbank.vercel.app` e salvar (o Render reinicia a API) | preflight de outra origem → `403` |
 | 6 | todos | rodar o checklist da seção 6 | todos os itens ✅ |
 
 ### 2.2 Aiven: banco com SSL
@@ -110,10 +110,11 @@ pelo `Dockerfile` do repositório.
 | `DB_USER` / `DB_PASSWORD` | ✅ | do painel do Aiven | login do banco |
 | `DB_SSL_MODE` | | `REQUIRED` (padrão) · `VERIFY_CA` · `VERIFY_IDENTITY` | SSL obrigatório (seção 2.2). No Render, **preencha** `REQUIRED`: variável vazia não cai no padrão |
 | `JWT_SEGREDO` | ✅ | gere com `openssl rand -base64 48` | assina os tokens; **nunca** o mesmo do `.env` de alguém |
-| `CORS_ORIGENS` | ✅ | `<URL_DO_FRONT_NA_VERCEL>` | domínio do site (sem barra no fim) |
+| `CORS_ORIGENS` | ✅ | `https://rkfbank.vercel.app` | domínio do site (sem barra no fim) |
 | `ADMIN_CPF` / `ADMIN_SENHA` | | CPF válido e senha forte | cria o primeiro ADMIN na primeira subida |
 | `JWT_EXPIRACAO` | | `15m` (padrão) | validade do token de acesso |
 | `PORT` | | o provedor define | porta HTTP |
+| `SWAGGER_ATIVO` | | `false` (padrão) · `true` na demo | abre o Swagger **só para leitura** (sem "Try it out"); sem ela, `/swagger-ui.html` dá `404` |
 
 Sem as obrigatórias, a API **não sobe** (de propósito: melhor parar do que rodar com segredo errado). Não
 existem `EQUIPE_SENHA` nem dados de teste em produção: o banco nasce vazio, só com o schema do Flyway. Nenhum valor
@@ -133,7 +134,7 @@ Health check do provedor: `GET /actuator/health` (público, responde só `UP`/`D
 |---|---|
 | Root Directory | `frontend` |
 | Framework | Next.js (detectado sozinho) |
-| Variável `API_URL` | `<URL_DO_BACKEND_NO_RENDER>` (sem barra no fim). Lida só no servidor do Next: não vai para o navegador |
+| Variável `API_URL` | `https://rkfbank-api-zncu.onrender.com` (sem barra no fim). Lida só no servidor do Next: não vai para o navegador |
 | Variável `NEXT_PUBLIC_LOG_LEVEL` | `warn` (opcional) |
 
 Em produção, o cookie de sessão sai com `secure` (só HTTPS), o que a Vercel já garante.
@@ -156,18 +157,18 @@ O 503 da própria API (ViaCEP fora do ar) vem em JSON e passa como veio, com a m
 
 ## 6. Depois de publicar, confira
 
-1. `<URL_DO_BACKEND_NO_RENDER>/actuator/health` → `UP` (a primeira chamada depois de hibernar leva ~1 min).
-2. `<URL_DO_BACKEND_NO_RENDER>/swagger-ui.html` → `404` (fechado em produção).
+1. `https://rkfbank-api-zncu.onrender.com/actuator/health` → `UP` (a primeira chamada depois de hibernar leva ~1 min).
+2. `https://rkfbank-api-zncu.onrender.com/swagger-ui.html` → abre só para leitura (com `SWAGGER_ATIVO=true`; sem a variável, `404`).
 3. Log da API no Render: `profile is active: "prod"` e o Flyway aplicando as migrações no banco vazio (prova de que
    a conexão com SSL `REQUIRED` funcionou).
 4. Preflight de origem estranha → `403`:
-   `curl -s -o /dev/null -w '%{http_code}' -X OPTIONS <URL_DO_BACKEND_NO_RENDER>/contas -H 'Origin: https://site-estranho.example' -H 'Access-Control-Request-Method: GET'`
-5. No site (`<URL_DO_FRONT_NA_VERCEL>`): cadastro (o CEP vira endereço pelo ViaCEP), login, abrir conta, depósito,
+   `curl -s -o /dev/null -w '%{http_code}' -X OPTIONS https://rkfbank-api-zncu.onrender.com/contas -H 'Origin: https://site-estranho.example' -H 'Access-Control-Request-Method: GET'`
+5. No site (`https://rkfbank.vercel.app`): cadastro (o CEP vira endereço pelo ViaCEP), login, abrir conta, depósito,
    saque e extrato. Com a API hibernando, a tela mostra o aviso de "servidor acordando" e funciona depois de ~1 min.
-6. `node scripts/smoke-e2e.mjs <URL_DO_BACKEND_NO_RENDER>`. ⚠️ Ele cria clientes de teste no banco de produção:
+6. `node scripts/smoke-e2e.mjs https://rkfbank-api-zncu.onrender.com`. ⚠️ Ele cria clientes de teste no banco de produção:
    rode antes de abrir para o público, ou não rode lá.
 7. Primeiro login do ADMIN funcionando; depois, troque a senha dele (`PATCH /usuarios/me/senha`).
-8. Troque os espaços reservados `<URL_DO_BACKEND_NO_RENDER>` e `<URL_DO_FRONT_NA_VERCEL>` deste guia e do README pelas URLs reais.
+8. ✅ URLs reais no guia e no README (03/11/2026).
 
 ## 7. Antes de abrir para o público
 
