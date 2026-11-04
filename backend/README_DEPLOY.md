@@ -182,10 +182,10 @@ O 503 da própria API (ViaCEP fora do ar) vem em JSON e passa como veio, com a m
 | Peça | Como publica | Se não publicar |
 |---|---|---|
 | 🌐 Site (Vercel) | **sozinha**, a cada merge na `main` (e cada PR ganha um link de prévia) | Vercel → Deployments → **Redeploy** |
-| ⚙️ API (Render) | o serviço foi criado pela URL pública do repositório, **sem o app do GitHub**: o merge na `main` **não** dispara deploy | Render → `rkfbank-api` → **Manual Deploy → Deploy latest commit**, ou `render deploys create srv-dbl3urrncjis73e1r3d0` |
+| ⚙️ API (Render) | **sozinha**, a cada merge na `main` (GitHub conectado ao Render em 03/11/2026, Auto-Deploy *On Commit*) | Render → `rkfbank-api` → **Manual Deploy → Deploy latest commit**, ou `render deploys create srv-dbl3urrncjis73e1r3d0` |
 
-Para a API publicar sozinha: Render → *Account Settings* → *Git Providers* → **Connect GitHub** (dê acesso ao
-`rkf_bank`) e, no serviço, *Settings → Build & Deploy → Repository* → reconecte o repositório pelo GitHub.
+Se um dia o deploy automático parar: Render → *Account Settings* → *Git Providers* → confira se o GitHub continua
+conectado com acesso ao `rkf_bank`.
 
 A API leva ~3 min para subir no plano grátis (`Started RkfbankApplication in ~170 s`). A primeira checagem de saúde
 pode dar `503` enquanto ela aquece; o Render tenta de novo. Se o deploy terminar em *Timed out* com
