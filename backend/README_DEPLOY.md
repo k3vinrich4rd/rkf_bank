@@ -193,3 +193,15 @@ pode dar `503` enquanto ela aquece; o Render tenta de novo. Se o deploy terminar
 enquanto isso.
 
 Depois de publicar, o roteiro da equipe `.equipe/testes/PRODUCAO_NO_AR_E2E.md` confere tudo em 1 comando.
+
+## 9. Checagem diária de integridade (2 min)
+
+| # | O que abrir | Esperado | Se não |
+|---|---|---|---|
+| 1 | https://rkfbank-api-zncu.onrender.com/actuator/health | `{"status":"UP"}` (a 1ª vez pode levar ~1 min: a API dorme no plano grátis) | Render → Logs: procure `ERROR` no fim |
+| 2 | https://rkfbank.vercel.app | a página do banco abre | Vercel → Deployments: o último está *Ready*? |
+| 3 | Render → Deploys | o último deploy é o commit atual da `main` e está *Live* | **Manual Deploy → Deploy latest commit** |
+| 4 | ADMIN: `GET /admin/conciliacao` | `[]` (nenhum saldo diferente do extrato) | **incidente**: pare e investigue antes de qualquer deploy |
+| 5 | e-mail | nenhum aviso do Render, da Vercel ou do Aiven | Aiven *powered off* → **Power on** no console |
+
+Uma vez por semana (ou depois de cada merge na `main`): `node .equipe/testes/prod-no-ar.mjs` (roteiro da equipe).
