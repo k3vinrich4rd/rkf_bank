@@ -44,6 +44,23 @@
 
 <img src="assets/readme/divisor.svg" width="100%" alt=""/>
 
+### 🔎 Revisão técnica em 2 minutos
+
+| Você quer ver... | Onde está |
+|---|---|
+| o sistema no ar | [rkfbank.vercel.app](https://rkfbank.vercel.app) · [Swagger (só leitura)](https://rkfbank-api-zncu.onrender.com/swagger-ui.html) |
+| a arquitetura | [🧱 Arquitetura](#-arquitetura) · [🔬 Laboratório de arquitetura](#-laboratório-de-arquitetura) |
+| por que cada escolha foi feita | [planing/decisoes.md](planing/decisoes.md) |
+| os testes e o CI | [🧪 Qualidade e testes](#-qualidade-e-testes) · CI e CodeQL nos badges acima |
+| como rodar | [🚀 Rodando o projeto](#-rodando-o-projeto) · [VISITANTES.md](VISITANTES.md) |
+| como está em produção | [☁️ Em produção](#️-em-produção-como-as-três-plataformas-se-ligam) |
+
+**Três decisões que mostram o raciocínio**
+1. **Movimentações idempotentes (`Idempotency-Key`)**: a chave é gravada na mesma transação do dinheiro; repetir a requisição não debita de novo.
+2. **Lock otimista (`@Version` na `Conta`)**: operações simultâneas não deixam o saldo errado.
+3. **Conta não se apaga**: o extrato sobrevive, e há teste de JPA provando isso.
+
+
 ## 🏦 Conheça o RKF Bank
 
 > **Mais que um banco, um parceiro para o seu amanhã.**
