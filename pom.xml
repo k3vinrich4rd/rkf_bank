@@ -23,7 +23,7 @@
 		<h2.version>2.5.252</h2.version>
 		<!-- springdoc 3.x e a linha para o Spring Boot 4 (a 2.x e do Boot 3). -->
 		<springdoc.version>3.2.0</springdoc.version>
-		<shedlock.version>7.10.1</shedlock.version>
+		<shedlock.version>7.11.0</shedlock.version>
 	</properties>
 
 	<dependencies>
