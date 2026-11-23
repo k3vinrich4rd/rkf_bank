@@ -231,7 +231,7 @@ sequenceDiagram
     participant I as IdempotenciaService
     participant S as ContaService
     participant R as ContaRepository
-    participant DB as MySQL
+    participant DB as PostgreSQL
 
     C->>I: executarUmaVez(usuário, chave, TRANSFERENCIA, assinatura)
     Note over I,DB: @Transactional começa aqui: tudo abaixo é tudo ou nada
@@ -281,7 +281,7 @@ flowchart LR
         API["API REST<br/>17 rotas · JWT · regras do banco"]:::nosso
     end
 
-    DB[("MySQL 8.4<br/>schema pelo Flyway")]:::dados
+    DB[("PostgreSQL 17<br/>schema pelo Flyway")]:::dados
     H2[("H2 em memória<br/>testes e perfis visitante/equipe")]:::dados
     VC["ViaCEP"]:::terceiro
 
@@ -422,7 +422,7 @@ sequenceDiagram
     participant RH as Next · /api/auth/login
     participant PX as Next · proxy.ts
     participant API as Spring · API
-    participant DB as MySQL
+    participant DB as PostgreSQL
 
     U->>RH: POST {cpf, senha}
     RH->>API: POST /auth/login
@@ -503,7 +503,7 @@ Tudo de uma vez pelo terminal: `node scripts/rodar-colecao-insomnia.mjs` (o rote
 flowchart TD
     Q{"O que eu quero?"} -->|"conhecer a API sem instalar nada<br/>além do JDK 25"| VIS["perfil visitante<br/>H2 · Ana e Bruno · segredo sorteado<br/>sem admin"]
     Q -->|"testar como admin<br/>ou com as contas da equipe"| EQ["perfil equipe<br/>H2 · Fellipe e Renan · admin do .env"]
-    Q -->|"desenvolver com o banco real"| PAD["perfil padrão<br/>MySQL 8.4 no Docker · .env completo"]
+    Q -->|"desenvolver com o banco real"| PAD["perfil padrão<br/>PostgreSQL 17 no Docker · .env completo"]
     Q -->|"rodar a suíte automática"| TST["perfil test<br/>scripts/validar.sh backend<br/>H2 · sem seeds"]
     VIS --> G1["VISITANTES.md"]
     EQ --> G2["backend/README_TESTES_E2E.md"]
@@ -517,7 +517,7 @@ flowchart TD
 ```bash
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante   # H2, sem Docker e sem .env
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe      # H2 + segredos do .env
-docker compose up -d && ./mvnw spring-boot:run                # MySQL real
+docker compose up -d && ./mvnw spring-boot:run                # PostgreSQL real
 scripts/validar.sh backend                                    # a suíte inteira
 ```
 

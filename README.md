@@ -16,9 +16,9 @@
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-0A0F1C?logo=springboot&logoColor=6DB33F)](https://spring.io/projects/spring-boot)
 [![Spring Security](https://img.shields.io/badge/Spring_Security-JWT-0A0F1C?logo=springsecurity&logoColor=6DB33F)](https://docs.spring.io/spring-security/reference/)
 [![Flyway](https://img.shields.io/badge/Flyway-V1→V15_%2B_seed-0A0F1C?logo=flyway&logoColor=CC0200)](backend/src/main/resources/db/migration)
-[![MySQL](https://img.shields.io/badge/MySQL-8.4-0A0F1C?logo=mysql&logoColor=white)](https://dev.mysql.com/doc/refman/8.4/en/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-0A0F1C?logo=postgresql&logoColor=white)](https://www.postgresql.org/docs/17/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-0A0F1C?logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![Testes](https://img.shields.io/badge/testes-360_✔-22C55E)](#-qualidade-e-testes)
+[![Testes](https://img.shields.io/badge/testes-368_✔-22C55E)](#-qualidade-e-testes)
 [![Skills de IA](https://img.shields.io/badge/🤖_skills_de_IA-11-7C3AED?logo=claude&logoColor=white)](#-skills-de-ia-do-time)
 
 <!-- Botões gerados por scripts/gerar-svgs-readme.mjs. Cada um leva a uma seção. -->
@@ -38,7 +38,7 @@
 
 [![🔬 Laboratório de arquitetura](https://img.shields.io/badge/🔬_Laboratório-o_que_já_está_no_código_e_o_que_está_em_estudo-7C3AED?style=for-the-badge)](#-laboratório-de-arquitetura)
 
-<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 360 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI, 11 skills de IA do time e 3 pessoas de Osasco"/>
+<img src="assets/readme/numeros.svg" width="100%" alt="RKF Bank em números: 368 testes da API, 23 rotas REST, 15 migrações Flyway, JWT de 15 minutos, 6 workflows de CI, 11 skills de IA do time e 3 pessoas de Osasco"/>
 
 </div>
 
@@ -97,7 +97,7 @@
 | Várias contas por cliente (`GET /contas/{id}` e seletor de conta) | ✅ | ✅ |
 | Política de privacidade e aceite dos termos (LGPD) | ✅ | ✅ |
 | Encarregados LGPD (Kevin e Renan) na Política de Privacidade | ✅ | ✅ |
-| Imagem Docker e perfil `prod` testados no CI (MySQL vazio, sem dados de teste) | ✅ | — |
+| Imagem Docker e perfil `prod` testados no CI (PostgreSQL vazio, sem dados de teste) | ✅ | — |
 
 <sub>✅ pronto na <code>main</code> · MVP concluído em 29/10/2026. O RKF Bank é um <b>projeto de portfólio</b>: quem avalia roda na própria máquina em 1 comando (<a href="VISITANTES.md">perfil visitante</a>) e, desde 03/11/2026, está <b>em produção</b> no Aiven + Render + Vercel: <a href="https://rkfbank.vercel.app">site</a> · <a href="https://rkfbank-api-zncu.onrender.com/swagger-ui.html">API e Swagger</a> (<a href="backend/README_DEPLOY.md">guia de deploy</a>).</sub>
 
@@ -131,7 +131,7 @@
 |---|---|
 | O que é? | banco digital full stack de portfólio, feito por um time de três; MVP concluído em 29/10/2026 e pronto para rodar na sua máquina |
 | Quem fez o quê? | os três são **idealizadores** do banco · **Kevin Richard**: idealizador e responsável pelo backend Java/Spring · **Renan Barros**: idealizador e responsável pelo frontend Next.js · **Fellipe Santana**: idealizador, PO & QA e primeiro cliente |
-| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **391 testes** (360 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, **TDD** (domínio rico em `Conta`), CI com CodeQL |
+| Nível técnico? | transação atômica, lock otimista, Flyway, Spring Security + JWT (OAuth2 Resource Server), BCrypt, regra de dono, logs rastreáveis, **399 testes** (368 na API e 31 no site), threads virtuais, `equals`/`hashCode` de entidade JPA, **TDD** (domínio rico em `Conta`), CI com CodeQL |
 | Processo? | Git Flow (`feature/*` → `develop` → `main`), PR revisado, Conventional Commits, decisões e débitos documentados |
 | IA no processo? | **11 skills de IA do time** (Claude Code) que repetem o processo do time: implementar explicando, revisar migração, conferir contrato, varrer CVEs, testar ponta a ponta e entregar |
 | Onde ver? | [segurança](#-segurança-e-lgpd) · [arquitetura](#-arquitetura) · [qualidade](#-qualidade-e-testes) · [skills](#-skills-de-ia-do-time) · [roadmap](#-roadmap) |
@@ -498,7 +498,7 @@ sequenceDiagram
     actor C as Cliente
     participant N as Next.js (BFF)
     participant A as API /auth/login
-    participant DB as MySQL (tb_usuario)
+    participant DB as PostgreSQL (tb_usuario)
     C->>N: CPF + senha
     N->>A: POST /auth/login
     A->>DB: busca o usuário pelo CPF
@@ -829,12 +829,12 @@ flowchart LR
         C -. erros .-> EH[TratadorGlobalDeErros<br/>status + CodigoErroEnum]
     end
 
-    R --> DB[(MySQL 8.4<br/>schema pelo Flyway)]
+    R --> DB[(PostgreSQL 17<br/>schema pelo Flyway)]
     V -->|HTTPS| VC[[viacep.com.br]]
 ```
 
 <div align="center">
-  <img src="assets/readme/fluxo-transferencia.svg" width="100%" alt="Animação: uma transferência atravessa Next.js, Spring Security, controller, service e MySQL e volta com 204"/>
+  <img src="assets/readme/fluxo-transferencia.svg" width="100%" alt="Animação: uma transferência atravessa Next.js, Spring Security, controller, service e PostgreSQL e volta com 204"/>
 </div>
 
 <details open>
@@ -843,7 +843,7 @@ flowchart LR
 
 | | O que é | No RKF Bank |
 |:-:|---|---|
-| 🧱 | **Monólito:** uma aplicação só, publicada inteira | 99 classes Java, 23 rotas, um banco MySQL e uma imagem Docker: tudo vai ao ar junto |
+| 🧱 | **Monólito:** uma aplicação só, publicada inteira | 99 classes Java, 23 rotas, um banco PostgreSQL e uma imagem Docker: tudo vai ao ar junto |
 | 🍰 | **Em camadas:** cada camada só chama a de baixo | `ContaController` → `ContaService` → `ContaRepository`, com as pastas separadas por tipo técnico (`controllers/`, `services/`...): o chamado *package by layer* |
 | 🛡️ | **BFF na frente** (*Backend for Frontend*) | o Next.js guarda o token no cookie `httpOnly` e repassa as chamadas para a API |
 | 🧵 | **Thread:** o "trabalhador" que executa o código, uma instrução depois da outra | cada requisição roda numa **thread virtual** (Java 21+): quando espera o banco ou o ViaCEP, libera a vaga para outra requisição |
@@ -911,7 +911,7 @@ sequenceDiagram
     participant I as IdempotenciaService
     participant S as ContaService
     participant R as ContaRepository
-    participant DB as MySQL
+    participant DB as PostgreSQL
     T->>F: POST /transferencias + Bearer + Idempotency-Key
     F->>F: X-Request-Id, JWT válido? usuário ativo?
     alt token ausente ou inválido
@@ -995,7 +995,7 @@ sequenceDiagram
     autonumber
     participant API as Spring Boot
     participant F as Flyway
-    participant DB as MySQL
+    participant DB as PostgreSQL
     participant H as Hibernate
     API->>F: subir
     F->>DB: o que já rodou? (flyway_schema_history)
@@ -1139,13 +1139,13 @@ Mais detalhes em [backend/README_IMPLEMENTACAO.md](backend/README_IMPLEMENTACAO.
 <br/>
 
 <div align="center">
-<img src="https://skillicons.dev/icons?i=java,spring,maven,mysql,docker,nextjs,react,ts,tailwind,githubactions&perline=10" alt="Stack do RKF Bank"/>
+<img src="https://skillicons.dev/icons?i=java,spring,maven,postgresql,docker,nextjs,react,ts,tailwind,githubactions&perline=10" alt="Stack do RKF Bank"/>
 </div>
 
 | Lado | Tecnologias |
 |---|---|
 | Backend | Java 25 · Spring Boot 4.1 · Spring Web MVC · Spring Data JPA (Hibernate 7) · Spring Security + OAuth2 Resource Server · Bean Validation · `RestClient` · Flyway · Log4j2 |
-| Banco | MySQL 8.4 (Docker Compose) · H2 2.5.252 (modo MySQL) nos testes · MySQL real com Testcontainers |
+| Banco | PostgreSQL 17 (Docker Compose) · H2 2.5.252 (modo PostgreSQL) nos testes · PostgreSQL real com Testcontainers |
 | Testes | JUnit 5 · Mockito · `@DataJpaTest` · `@SpringBootTest` · JaCoCo |
 | Frontend | Next.js 16 (App Router) · React 19 · TypeScript 6 · Tailwind CSS 4 · shadcn/ui · Lucide · pnpm 10 |
 | Esteira | GitHub Actions · CodeQL · Dependency Review · Dependabot · Conventional Commits |
@@ -1250,7 +1250,7 @@ flowchart LR
 | `@GeneratedValue(strategy = UUID)` | o id é gerado sozinho | UUID não revela quantos clientes existem nem permite chutar o próximo id | todas |
 | `@Column` | nome, tamanho, nulidade e precisão da coluna | `DECIMAL(19,2)` para dinheiro, `nullable = false` igual à migração | `Conta.saldo` |
 | `@Enumerated(EnumType.STRING)` | grava o enum como texto | `CORRENTE` no banco, e não `0`: reordenar o enum não corrompe os dados | `Conta.tipoContaEnum` |
-| `@JdbcTypeCode(SqlTypes.VARCHAR)` | força o tipo da coluna no Hibernate | o enum fica `VARCHAR` + `CHECK` no MySQL **e** no H2 (o H2 2.x usaria o tipo `ENUM` dele) | `Conta`, `Lancamento`, `Usuario` |
+| `@JdbcTypeCode(SqlTypes.VARCHAR)` | força o tipo da coluna no Hibernate | o enum fica `VARCHAR` + `CHECK` no PostgreSQL **e** no H2 (o H2 2.x usaria o tipo `ENUM` dele) | `Conta`, `Lancamento`, `Usuario` |
 | `@ManyToOne` | muitos-para-um (FK deste lado) | várias contas para um cliente; é daqui que sai a regra de dono | `Conta.cliente` (LAZY) |
 | `@OneToOne` | um-para-um | o cliente tem um endereço; o usuário tem (ou não) um cliente | `Cliente.endereco`, `Usuario.cliente` (LAZY) |
 | `@OneToMany(mappedBy)` | o lado inverso, que lista os "muitos" | navegar do cliente para as contas sem uma FK a mais | `Cliente.contas` |
@@ -1310,8 +1310,8 @@ flowchart LR
 | `@DirtiesContext` | descarta o contexto do Spring depois | testes que mudam o estado (seed, saldos) não vazam para os outros | `ConciliacaoIntegracaoTest` |
 | `@MockitoBean` | troca um bean do Spring por um mock | o `UsuarioRepository` na base dos testes de controller | `ControllerWebMvcBase` |
 | `@Autowired` | injeta um bean no teste | `MockMvc`, `JdbcTemplate`, repositories | testes de integração |
-| `@Import` · `@TestConfiguration` · `@Bean` · `@Qualifier` | trazem configurações extras para o teste e escolhem qual bean usar | a cadeia de segurança real nos `@WebMvcTest`; o container do MySQL como bean; o executor de tarefas pelo nome | `ControllerWebMvcBase`, `MySqlIntegracaoBase`, `ThreadsVirtuaisTest` (`@Qualifier("applicationTaskExecutor")`) |
-| `@Testcontainers` · `@ServiceConnection` | sobe um MySQL 8.4 de verdade no Docker e liga o datasource | o que passa no H2 também passa no banco de produção | `MySqlIntegracaoBase` |
+| `@Import` · `@TestConfiguration` · `@Bean` · `@Qualifier` | trazem configurações extras para o teste e escolhem qual bean usar | a cadeia de segurança real nos `@WebMvcTest`; o container do PostgreSQL como bean; o executor de tarefas pelo nome | `ControllerWebMvcBase`, `PostgresIntegracaoBase`, `ThreadsVirtuaisTest` (`@Qualifier("applicationTaskExecutor")`) |
+| `@Testcontainers` · `@ServiceConnection` | sobe um PostgreSQL 17 de verdade no Docker e liga o datasource | o que passa no H2 também passa no banco de produção | `PostgresIntegracaoBase` |
 | `@LocalServerPort` | a porta sorteada da API no teste | chamar a API por HTTP de verdade (o console do H2 não roda no `MockMvc`) | `ConsoleH2LigadoTest` |
 
 </details>
@@ -1405,7 +1405,7 @@ mensagem vai para a **Dead Letter Queue** e para de travar as outras; um alerta 
 </details>
 <details><summary>🟧 AWS: o que muda no código para subir?</summary>
 
-**Nada** no primeiro passo: a imagem Docker do perfil `prod` já existe. ECS Fargate roda a imagem, RDS guarda o MySQL e
+**Nada** no primeiro passo: a imagem Docker do perfil `prod` já existe. ECS Fargate roda a imagem, RDS guarda o PostgreSQL e
 o Secrets Manager guarda `JWT_SEGREDO` e `DB_*`. SNS + SQS (com DLQ nativa) entram junto com o Outbox.
 
 </details>
@@ -1431,13 +1431,13 @@ O RKF Bank foi dividido em três peças, e cada uma mora num provedor feito para
 |---|---|---|---|
 | 🌐 **Site** (Next.js 16, pasta `frontend/`) | **Vercel** (Hobby) | constrói e serve as telas pelo mundo (CDN) e roda o servidor do Next, que é o **BFF**: guarda o token num cookie `httpOnly` e repassa cada chamada `/api/*` para a API | Renan |
 | ⚙️ **API** (Spring Boot 4.1, `Dockerfile` da raiz, perfil `prod`) | **Render** (Free) | constrói a imagem Docker, roda o container, dá HTTPS e um endereço público, confere a saúde em `/actuator/health` e reinicia se cair | Kevin |
-| 🗄️ **Banco** (MySQL 8.4) | **Aiven** (Free) | guarda contas, lançamentos e usuários com **SSL obrigatório** e backup; o Flyway cria as 15 tabelas na primeira subida da API | Flyway (V1–V15) |
+| 🗄️ **Banco** (PostgreSQL 17) | **Aiven** (Free) | guarda contas, lançamentos e usuários com **SSL obrigatório** e backup; o Flyway cria as 15 tabelas na primeira subida da API | Flyway (V1–V15) |
 
 ```mermaid
 flowchart LR
     P["👤 Pessoa no navegador"] -->|"HTTPS · telas"| V["🌐 Vercel<br/>rkfbank.vercel.app<br/>Next.js + BFF"]
     V -->|"/api/* no servidor<br/>Authorization: Bearer (do cookie)"| R["⚙️ Render<br/>rkfbank-api (Docker)<br/>Spring Boot · perfil prod"]
-    R -->|"JDBC + SSL REQUIRED<br/>pool de 5 conexões"| A[("🗄️ Aiven<br/>MySQL 8.4<br/>mysql-rkfbank")]
+    R -->|"JDBC + SSL require<br/>pool de 5 conexões"| A[("🗄️ Aiven<br/>PostgreSQL 17<br/>postgres-rkfbank")]
     R -.->|"CEP"| C["📮 ViaCEP"]
     G["🐙 GitHub · main"] -.->|"merge publica o site"| V
     G -.->|"merge publica a API"| R
@@ -1455,7 +1455,7 @@ flowchart LR
 | Onde | Variável | Liga com |
 |---|---|---|
 | Vercel | `API_URL=https://rkfbank-api-zncu.onrender.com` | site → API |
-| Render | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SSL_MODE=REQUIRED` | API → banco |
+| Render | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SSL_MODE=require` | API → banco |
 | Render | `CORS_ORIGENS=https://rkfbank.vercel.app` | só o site pode chamar a API direto do navegador |
 | Render | `JWT_SEGREDO`, `SWAGGER_ATIVO=true` | assinatura dos tokens · Swagger só leitura |
 
@@ -1486,19 +1486,19 @@ Não existe admin nem conta da equipe nesse perfil. Guia de 15 minutos, 13 passo
 | **Ana Visitante (Origem)** | `246.813.579-28` | `Visitante@2026` | 0001 / 900001 · R$ 1.000,00 |
 | **Bruno Visitante (Destino)** | `975.318.642-82` | `Visitante@2026` | 0001 / 900002 · R$ 500,00 |
 
-Roteiro completo (H2, MySQL, Insomnia, permissões, caminho feliz, idempotência, 401/403/429, erros, Spring Security + OAuth2):
+Roteiro completo (H2, PostgreSQL, Insomnia, permissões, caminho feliz, idempotência, 401/403/429, erros, Spring Security + OAuth2):
 [como testar o projeto](backend/README_TESTES_E2E.md). Quando usar cada perfil:
 [backend/README.md → Perfis](backend/README.md#-perfis-qual-usar-e-quando).
 
 </details>
 
 <details open>
-<summary><b>1️⃣ Banco (MySQL no Docker)</b></summary>
+<summary><b>1️⃣ Banco (PostgreSQL no Docker)</b></summary>
 <br/>
 
 ```bash
 cp .env.example .env          # preencha senhas e gere o JWT_SEGREDO: openssl rand -base64 48
-docker compose up -d          # MySQL na porta 5441
+docker compose up -d          # PostgreSQL na porta 5441
 docker compose ps             # espere "healthy"
 ```
 
@@ -1528,10 +1528,10 @@ privado da equipe, fora do repositório. As migrações foram reorganizadas em 2
 
 | Quero... | Como |
 |---|---|
-| rodar pela IntelliJ | o projeto traz 3 configurações prontas (pasta `.run/`): **API · Visitante (H2)**, **API · Equipe (H2)** e **API · MySQL (Docker)** |
+| rodar pela IntelliJ | o projeto traz 3 configurações prontas (pasta `.run/`): **API · Visitante (H2)**, **API · Equipe (H2)** e **API · PostgreSQL (Docker)** |
 | testar sem copiar e colar | importe [`backend/insomnia/rkfbank.insomnia.yaml`](backend/insomnia/rkfbank.insomnia.yaml) (ou o `.json`, Insomnia 9) no Insomnia: 83 requisições do cliente em ordem, cada uma com uma explicação em palavras simples (a pasta 02 é o roteiro E2E completo), e o login guarda o token sozinho |
 | ver as tabelas no H2 | `http://localhost:8080/h2-console` · JDBC URL `jdbc:h2:mem:rkfbank-visitante` (ou `rkfbank-equipe`) · usuário `sa`, senha vazia |
-| ver as tabelas no MySQL | `localhost:5441` com o usuário do `.env` (IntelliJ *Database*, DBeaver) ou `docker exec` no container `rkfbank-mysql` |
+| ver as tabelas no PostgreSQL | `localhost:5441` com o usuário do `.env` (IntelliJ *Database*, DBeaver) ou `docker exec` no container `rkfbank-postgres` |
 | tornar alguém ADMIN | pelo `.env` (primeiro admin), pela API (`PATCH /admin/usuarios/{id}/perfil`) ou por SQL num banco local |
 
 Passo a passo de tudo isso, com as permissões de cada rota e todos os payloads:
@@ -1563,8 +1563,8 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 | `Rule 0: RequireJavaVersion failed` | JDK diferente do 25 | instale o JDK 25 e aponte o `JAVA_HOME` |
 | `JWT_SEGREDO ausente ou curto` | `.env` sem segredo, ou rodou fora da raiz | gere com `openssl rand -base64 48` e rode da raiz |
 | `Access denied for user` | rodou fora da raiz (o `.env` não foi achado) | rode da raiz do repositório |
-| `Communications link failure` | MySQL desligado ou subindo | `docker compose ps` e espere o `healthy` |
-| `Validate failed: Migration checksum mismatch` | MySQL de antes da reorganização de 20/10, ou uma migração aplicada foi editada | 1x por máquina: `docker compose down -v && docker compose up -d`; fora isso, nunca edite `V<n>__`, crie uma nova versão |
+| `Communications link failure` | PostgreSQL desligado ou subindo | `docker compose ps` e espere o `healthy` |
+| `Validate failed: Migration checksum mismatch` | PostgreSQL de antes da reorganização de 20/10, ou uma migração aplicada foi editada | 1x por máquina: `docker compose down -v && docker compose up -d`; fora isso, nunca edite `V<n>__`, crie uma nova versão |
 | Login da Ana dá `401` | a API não está no perfil `visitante` | suba com `-Dspring-boot.run.profiles=visitante` |
 | Toda movimentação dá `400` | faltou o header `Idempotency-Key` | gere um UUID por operação ([contrato](backend/README_CONTRATO_API.md#idempotência-idempotency-key)) |
 | Login dá `429` | 5 senhas erradas seguidas | espere 15 min ou reinicie a API |
@@ -1578,13 +1578,13 @@ Abra <http://localhost:3000> e entre em `/login` com uma conta de teste (visitan
 ## 🧪 Qualidade e testes
 
 <div align="center">
-  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 360 testes, 0 falhas, BUILD SUCCESS"/>
+  <img src="assets/readme/terminal.svg" width="100%" alt="Terminal: 368 testes, 0 falhas, BUILD SUCCESS"/>
 </div>
 
 ```bash
 scripts/validar.sh backend          # testes em H2, resumo curto (sem Docker)
 scripts/validar.sh frontend         # lint + typecheck + build
-scripts/testar-no-mysql.sh          # testes de integração contra o MySQL do Docker
+scripts/testar-no-postgres.sh          # testes de integração contra o PostgreSQL do Docker
 node scripts/smoke-e2e.mjs          # fluxo real contra a API no ar
 node scripts/rodar-colecao-insomnia.mjs  # a coleção do Insomnia inteira pelo terminal
 node scripts/engenharia-reversa-jwt.mjs  # tenta forjar o JWT: tudo tem que dar 401
@@ -1688,7 +1688,7 @@ flowchart LR
 | Backend CI | [`backend-ci.yml`](.github/workflows/backend-ci.yml) | compila, testa e publica relatórios |
 | Frontend CI | [`frontend-ci.yml`](.github/workflows/frontend-ci.yml) | lint, tipos, testes (Vitest) e build do site |
 | E2E (aplicação inteira) | [`e2e.yml`](.github/workflows/e2e.yml) | sobe a API e o build de produção do site juntos: coleção do Insomnia (83), smoke (42) e o site falando com a API pelo proxy |
-| Backend Docker | [`backend-docker.yml`](.github/workflows/backend-docker.yml) | constrói a imagem, roda no perfil `prod` (512 MB, MySQL vazio) com o smoke; na `main`, publica no ghcr.io |
+| Backend Docker | [`backend-docker.yml`](.github/workflows/backend-docker.yml) | constrói a imagem, roda no perfil `prod` (512 MB, PostgreSQL vazio) com o smoke; na `main`, publica no ghcr.io |
 | Backend CodeQL | [`backend-codeql.yml`](.github/workflows/backend-codeql.yml) | procura vulnerabilidades no código Java |
 | Dependency Review | [`backend-dependency-review.yml`](.github/workflows/backend-dependency-review.yml) | barra dependência vulnerável ou com licença AGPL |
 | Dependabot | [`dependabot.yml`](.github/dependabot.yml) | PRs de atualização para a `develop` |
@@ -1741,9 +1741,9 @@ flowchart LR
     <td align="center" width="33%"><h3>📖</h3><code>/explicar-codigo &lt;alvo&gt;</code><br/><sub>explica um arquivo, fluxo ou conceito do projeto, sem alterar nada</sub></td>
   </tr>
   <tr>
-    <td align="center"><h3>🗄️</h3><code>/revisar-migracao</code><br/><sub>revisa o <code>V&lt;n&gt;__*.sql</code>: migração já aplicada, operação destrutiva, MySQL × H2 e entidades</sub></td>
+    <td align="center"><h3>🗄️</h3><code>/revisar-migracao</code><br/><sub>revisa o <code>V&lt;n&gt;__*.sql</code>: migração já aplicada, operação destrutiva, PostgreSQL × H2 e entidades</sub></td>
     <td align="center"><h3>📜</h3><code>/verificar-contrato</code><br/><sub>compara backend, <a href="backend/README_CONTRATO_API.md">contrato</a> e <code>frontend/lib/api/types.ts</code> e aponta divergências</sub></td>
-    <td align="center"><h3>🧪</h3><code>/testar-e2e</code><br/><sub>sobe a API no MySQL do Docker e roda o fluxo real, do cadastro ao extrato</sub></td>
+    <td align="center"><h3>🧪</h3><code>/testar-e2e</code><br/><sub>sobe a API no PostgreSQL do Docker e roda o fluxo real, do cadastro ao extrato</sub></td>
   </tr>
   <tr>
     <td align="center"><h3>🛡️</h3><code>/varrer-vulnerabilidades</code><br/><sub>CVEs conhecidas no Maven e no pnpm (OSV.dev) e a correção mínima segura</sub></td>
@@ -1768,7 +1768,7 @@ flowchart LR
 </details>
 <details><summary>🗄️ Mudei uma entidade e criei a <code>V16__...sql</code></summary>
 
-`/revisar-migracao` antes do commit: ela barra a edição de uma migração já mergeada (o checksum mudaria e a API não subiria) e o SQL que roda no MySQL mas quebra no H2.
+`/revisar-migracao` antes do commit: ela barra a edição de uma migração já mergeada (o checksum mudaria e a API não subiria) e o SQL que roda no PostgreSQL mas quebra no H2.
 
 </details>
 <details><summary>🔌 Mudei uma rota ou um DTO</summary>
@@ -1827,13 +1827,13 @@ gantt
 - [x] Login com Spring Security + JWT, perfis e regra de dono
 - [x] Frontend: landing, cadastro, login, conta, movimentações e extrato
 - [x] Gestão de usuários pelo ADMIN (promover, rebaixar, desativar) e troca de senha, valendo na hora
-- [x] Testes de integração com Testcontainers + MySQL real (o que passa no H2 passa no banco de verdade)
+- [x] Testes de integração com Testcontainers + PostgreSQL real (o que passa no H2 passa no banco de verdade)
 - [x] Backend: `GET /contas/{id}` (a lista por cliente virou `GET /contas`, do token)
 - [x] LGPD mínimo: política de privacidade e aceite dos termos versionado
 - [x] Sessão com *refresh token*, logout de verdade e Swagger UI
 - [x] LGPD: encarregados (Kevin e Renan) e canal de contato na Política de Privacidade
 - [x] Roteiros de aceite prontos: [VISITANTES.md](VISITANTES.md) para quem avalia e o guia da equipe para o Fellipe (PO & QA)
-- [x] Imagem Docker e perfil `prod` sem dados de teste, testados num MySQL vazio pelo CI ([como a imagem é montada](backend/README_DEPLOY.md))
+- [x] Imagem Docker e perfil `prod` sem dados de teste, testados num PostgreSQL vazio pelo CI ([como a imagem é montada](backend/README_DEPLOY.md))
 - [x] Release na `main` (PR #76): TDD na `Conta`, threads virtuais, fim do N+1 e README com skills, diagnóstico e anotações
 
 > 🎯 **Portfólio que roda local e, agora, pronto para publicar:** devs e recrutadores continuam avaliando na própria
@@ -1842,7 +1842,7 @@ gantt
 >
 > | Peça | Onde | Decisão e por quê |
 > |---|---|---|
-> | 🗄️ Banco | **Aiven** for MySQL (Free) | `DB_SSL_MODE=REQUIRED` por padrão: o banco fica na internet pública, fora da rede do Render; `PREFERRED` aceitaria cair para conexão sem criptografia |
+> | 🗄️ Banco | **Aiven** for PostgreSQL (Free) | `DB_SSL_MODE=require` por padrão: o banco fica na internet pública, fora da rede do Render; `PREFERRED` aceitaria cair para conexão sem criptografia |
 > | ⚙️ API | **Render** (Docker, plano free, [`render.yaml`](render.yaml)) | `hibernate.jdbc.time_zone=UTC`: o horário gravado não depende do fuso da JVM nem do provedor; health check em `/actuator/health` |
 > | 🌐 Site | **Vercel** (`frontend`, variável `API_URL`) | BFF com prazo de 12 s por tentativa e aviso de "servidor acordando": o Render Free hiberna após 15 min e leva ~1 min para voltar |
 >
@@ -1854,7 +1854,7 @@ gantt
 <summary><b>🔭 Depois do MVP</b></summary>
 <br/>
 
-- [x] `MockMvc` nos controllers e teste de concorrência no MySQL real ([checklist](planing/checklist-features.md))
+- [x] `MockMvc` nos controllers e teste de concorrência no PostgreSQL real ([checklist](planing/checklist-features.md))
 - [x] Swagger UI com o botão *Authorize* (springdoc-openapi)
 - [x] Refresh token (2FA continua ideia futura)
 - [x] "Meus dados", editar perfil e encerrar conta (direitos do titular)
@@ -1901,7 +1901,7 @@ Planejamento detalhado: [planing/roadmap.md](planing/roadmap.md) · [checklist d
       <br/>
       <img src="https://img.shields.io/badge/Idealizador-Backend-3B82F6?logo=springboot&logoColor=white" alt="Idealizador e responsável pelo backend"/>
       <p align="left"><sub><i>“Conhecimento nunca é demais.”</i> Movido pela vontade de aprender e de acumular experiências, quer crescer como pessoa e como profissional de forma <b>honesta e constante</b>, com determinação, foco, persistência, ambição, espírito de time e empatia.</sub></p>
-      <p align="left"><sub><b>No RKF Bank:</b> <b>idealizador</b> e responsável pelo <b>backend</b>: API REST em Java e Spring Boot, MySQL com Flyway, Spring Security + JWT, ViaCEP, logs e testes. Objetivo: o dinheiro de cada cliente sempre certo e nenhum dado pessoal vazando.</sub></p>
+      <p align="left"><sub><b>No RKF Bank:</b> <b>idealizador</b> e responsável pelo <b>backend</b>: API REST em Java e Spring Boot, PostgreSQL com Flyway, Spring Security + JWT, ViaCEP, logs e testes. Objetivo: o dinheiro de cada cliente sempre certo e nenhum dado pessoal vazando.</sub></p>
       <a href="mailto:kevinrichardve@gmail.com"><img src="https://img.shields.io/badge/E--mail-kevinrichardve-3B82F6?logo=gmail&logoColor=white" alt="E-mail de Kevin"/></a>
       <a href="https://github.com/k3vinrich4rd"><img src="https://img.shields.io/badge/GitHub-k3vinrich4rd-181717?logo=github&logoColor=white" alt="GitHub de Kevin"/></a>
     </td>
@@ -2164,8 +2164,8 @@ Ainda não: é um projeto real de engenharia, com processo de time, mas sem auto
 | Backend | [backend/README.md](backend/README.md) | como rodar, testes, banco, Flyway e problemas comuns |
 | Backend | [Arquitetura e implementação](backend/README_IMPLEMENTACAO.md) | camadas e trechos reais |
 | Backend | [🏷️ Anotações](#️-anotações-o-que-cada-uma-faz-e-por-que-está-aqui) | as 66 anotações do código e as 29 dos testes: o que cada uma faz, por que usamos e onde estão |
-| Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou MySQL), ver o banco, permissões, payloads e roteiros; aceite do MVP pela coleção |
-| Docker e `prod` | [Imagem e perfil `prod`](backend/README_DEPLOY.md) · [Dockerfile](Dockerfile) | deploy no Aiven (MySQL com SSL), Render (`render.yaml`, variáveis, hibernação) e Vercel (`API_URL`); imagem testada no CI |
+| Backend | [Como testar o projeto](backend/README_TESTES_E2E.md) · [Coleção do Insomnia](backend/insomnia/rkfbank.insomnia.json) · [Visitantes](VISITANTES.md) | rodar (IDE, H2 ou PostgreSQL), ver o banco, permissões, payloads e roteiros; aceite do MVP pela coleção |
+| Docker e `prod` | [Imagem e perfil `prod`](backend/README_DEPLOY.md) · [Dockerfile](Dockerfile) | deploy no Aiven (PostgreSQL com SSL), Render (`render.yaml`, variáveis, hibernação) e Vercel (`API_URL`); imagem testada no CI |
 | Frontend | [frontend/README.md](frontend/README.md) · [Logs](frontend/lib/logger/README.md) | como rodar e logs com máscara |
 | Planejamento | [planing/](planing/README.md) · [Padrões de projeto](planing/padroes-de-projeto.md) | roadmap, decisões, checklist de features, débitos, recados e padrões |
 | Planejamento | [Estudos de arquitetura](planing/estudos-arquitetura.md) | o que já está no código e o que está em estudo (Outbox, DLQ, OAuth2/OIDC, AWS), com plano e exemplo |

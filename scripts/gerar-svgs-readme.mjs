@@ -182,7 +182,7 @@ function banner() {
     <text x="2" y="200" class="entra" style="font: 600 20px ${SANS}; animation-delay:.4s" fill="${CIANO}">Confiança. Tecnologia. Liberdade.</text>
     <text x="2" y="240" class="entra" style="font: 400 16px ${SANS}; animation-delay:.55s" fill="${APAGADO}">Conta digital sem mensalidade, transferência na hora</text>
     <text x="2" y="263" class="entra" style="font: 400 16px ${SANS}; animation-delay:.6s" fill="${APAGADO}">e extrato em tempo real. Feito em Osasco, SP. 🏙️</text>
-    ${[['☕ Java 25', 0], ['🍃 Spring Boot 4', 118], ['🔐 JWT', 272], ['🐬 MySQL', 352], ['⚛️ Next.js', 446]].map(([t, dx], k) => `
+    ${[['☕ Java 25', 0], ['🍃 Spring Boot 4', 118], ['🔐 JWT', 272], ['🐬 PostgreSQL', 352], ['⚛️ Next.js', 446]].map(([t, dx], k) => `
     <g class="entra" style="animation-delay:${(0.75 + k * 0.08).toFixed(2)}s">
       <rect x="${dx}" y="296" width="${t.length * 8.4 + 18}" height="30" rx="8" fill="${SUPERFICIE}" stroke="${BORDA}"/>
       <text x="${dx + 10}" y="316" style="font: 600 13px ${SANS}" fill="${TEXTO}">${t}</text>
@@ -369,7 +369,7 @@ function fluxo() {
     ['🛡️', 'Spring Security', 'JWT válido? senão 401'],
     ['🎯', 'ContaController', '@Valid no JSON → 400'],
     ['⚙️', 'ContaService', 'dono? 403 · saldo? 422'],
-    ['🗄️', 'MySQL', '@Transactional + @Version'],
+    ['🗄️', 'PostgreSQL', '@Transactional + @Version'],
   ];
   const w = 1200 / etapas.length;
   const caixas = etapas.map(([ic, t, s], i) => `
@@ -380,7 +380,7 @@ function fluxo() {
     <text x="${i * w + w / 2}" y="138" text-anchor="middle" style="font: 700 15px ${SANS}" fill="${TEXTO}">${t}</text>
     <text x="${i * w + w / 2}" y="160" text-anchor="middle" style="font: 400 12px ${SANS}" fill="${APAGADO}">${s}</text>
   </g>`).join('');
-  return `${cabecalho(1200, 250, 'Uma transferência passa pelo Next.js, pelo Spring Security, pelo controller, pelo service e pelo MySQL numa única transação, e volta com 204.')}
+  return `${cabecalho(1200, 250, 'Uma transferência passa pelo Next.js, pelo Spring Security, pelo controller, pelo service e pelo PostgreSQL numa única transação, e volta com 204.')}
   <defs>${marca}
     <radialGradient id="bola"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="${CIANO}"/><stop offset="1" stop-color="${CIANO}" stop-opacity="0"/></radialGradient>
   </defs>

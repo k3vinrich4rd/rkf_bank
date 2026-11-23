@@ -18,7 +18,7 @@ Data: 25/09
 Decisão: backend em Java + Spring Boot; frontend em Next.js + TypeScript.
 Por quê: é a stack que o time quer aprender e usar no mercado.
 
-## Banco de dados: MySQL
+## Banco de dados: MySQL (substituída em 23/11: ver "Migração do MySQL para PostgreSQL")
 Data: 02/10
 Decisão: usar MySQL 8.4 rodando no Docker (e não PostgreSQL, como pensado no começo).
 Por quê: foi o banco usado na implementação do backend. Trocar agora atrasaria o MVP.
@@ -159,6 +159,11 @@ Por quê: publicar exigiria banco gerenciado, segredos, custo e manutenção con
 Data: 03/11
 Decisão: o projeto fica **pronto para publicar** no caminho A do `backend/README_DEPLOY.md` (Aiven for MySQL Free, Render Free com `render.yaml`, Vercel Hobby), sem deixar de rodar local pelo `VISITANTES.md`. Junto: `DB_SSL_MODE` passa a `REQUIRED` por padrão no `prod`, o Hibernate grava as datas em UTC (`spring.jpa.properties.hibernate.jdbc.time_zone=UTC`) e o BFF do Next ganha prazo de 12 s por tentativa com aviso de "servidor acordando" (o repasse `/api/*` virou `app/api/[...caminho]`, no lugar do rewrite).
 Por quê: o banco fica fora da rede do Render (SSL não pode ser opcional); o fuso da JVM muda com o provedor (UTC no banco não); o plano Free hiberna e a primeira chamada espera ~1 min (a tela tem que explicar). Alternativa descartada: manter o rewrite do `next.config.ts`, que não deixa pôr prazo nem trocar a resposta.
+
+## Migração do MySQL para PostgreSQL (baseline novo, opção A)
+Data: 23/11
+Decisão: o banco do RKF Bank passa de MySQL 8.4 para **PostgreSQL 17**, e o destino em produção é o **Aiven for PostgreSQL (plano Free)**. Como o banco novo nasce vazio, as migrações **V1 a V15 foram reescritas em PostgreSQL no lugar** (opção **a: baseline novo**), mantendo os números e os nomes dos arquivos. Não criamos "V16 que converte tudo" (opção b). Tipos: `UUID` nativo (saiu o `BINARY(16)` e o `preferred_uuid_jdbc_type`), `BOOLEAN` (saiu o `BIT`), `NUMERIC(19,2)`, `TIMESTAMP(n) WITH TIME ZONE` (saiu o `DATETIME(n)`; o instante fica absoluto, sem depender do fuso da JVM). Seeds com `CAST('...' AS UUID)`. Testes: Testcontainers com `postgres:17` (pacote `postgres/`, mais um teste dos seeds e do limitador de login), H2 em `MODE=PostgreSQL` só como ciclo rápido. Variáveis de produção **iguais** (`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_SSL_MODE`); muda só o valor do SSL (`require`, minúsculo) e a porta padrão (5432). Local: `POSTGRES_*` no lugar de `MYSQL_*`. Os dados que valem a pena (clientes, usuários, contas e lançamentos) vão por `mysqldump` → `scripts/converter-dump-mysql-para-postgres.mjs` → `psql`; o passo a passo e o rollback estão em [`guia-corte-postgresql.md`](guia-corte-postgresql.md).
+Por quê: o Aiven MySQL Free é desligado e apagado em 21/12/2026 e o Kevin decidiu ir para PostgreSQL grátis (a Barbearia já usa o mesmo plano). Na opção (b) as 15 migrações MySQL teriam de continuar rodando no PostgreSQL, e não rodam (`BINARY(16)`, `BIT`, `DATETIME`, `X'..'` nos seeds): seria preciso reescrever o passado de qualquer jeito, só que escondido num ajuste de histórico. Não existe banco PostgreSQL com histórico a preservar, então o baseline é mais simples, legível e testado do zero (o Flyway cria V1..V15 no PostgreSQL vazio e o Hibernate valida). O histórico antigo continua no Git (`git log -- backend/src/main/resources/db/migration`). **Atenção:** a regra "nunca edite migração mergeada" vale só para o MySQL de produção atual, que será descartado; o PostgreSQL novo começa com os checksums novos, e a partir dele a regra volta a valer. Alternativa avaliada: **Neon** (PostgreSQL grátis, 0,5 GB, escala a zero): fica de plano B se o Aiven Free não puder ser criado na organização do Kevin; a aplicação só muda as variáveis `DB_*`. Cuidado do plano Free do Aiven: 1 GB de disco, 20 conexões (o pool de 5 cabe) e **um serviço Free de cada tipo por organização**.
 
 ---
 

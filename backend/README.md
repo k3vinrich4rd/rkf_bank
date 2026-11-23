@@ -6,7 +6,7 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 |---|---|
 | **Responsável** | Kevin ([@k3vinrich4rd](https://github.com/k3vinrich4rd)) |
 | **Stack** | Java 25 · Spring Boot 4.1 · Spring Web MVC · Spring Data JPA (Hibernate) · Jakarta Validation · RestClient |
-| **Banco** | MySQL 8.4 (Docker) — H2 em memória disponível para testes |
+| **Banco** | PostgreSQL 17 (Docker) — H2 em memória disponível para testes |
 | **Build** | Maven Wrapper (`pom.xml` na raiz do repositório) · JaCoCo para cobertura |
 | **Porta** | `8080` |
 
@@ -16,7 +16,7 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 |---|---|
 | [README_CONTRATO_API.md](README_CONTRATO_API.md) | **fonte da verdade** de rotas, payloads, regras e erros |
 | [README_IMPLEMENTACAO.md](README_IMPLEMENTACAO.md) | arquitetura, camadas, decisões internas e **como criar um endpoint** |
-| [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou MySQL), ver o banco (console do H2, MySQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
+| [README_TESTES_E2E.md](README_TESTES_E2E.md) | **como testar do zero**: rodar pela IDE ou terminal (H2 ou PostgreSQL), ver o banco (console do H2, PostgreSQL), Insomnia, permissões, como tornar alguém ADMIN, todos os payloads e os roteiros de teste |
 | [insomnia/rkfbank.insomnia.json](insomnia/rkfbank.insomnia.json) | coleção do Insomnia pública (83 requisições do cliente, sem o ADMIN; também em `.yaml` para o Insomnia 10+; a pasta 02 é o roteiro E2E completo e o login guarda o token sozinho); gerada por `scripts/gerar-colecao-insomnia.mjs` |
 | `.equipe/GUIA_TESTES_EQUIPE.md` (fora do Git) | guia **privado** da equipe (Kevin, Renan e Fellipe): acessos de teste do Fellipe, do Renan e do ADMIN; o roteiro da API fica em `.equipe/testes/BACKEND_E2E.md` |
 
@@ -29,17 +29,17 @@ API REST do RKF Bank: clientes, contas, movimentações e extrato.
 **Visitante, sem Docker e sem `.env`:** `./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante` — guia em
 [VISITANTES.md](../VISITANTES.md). Quando usar cada perfil: [Perfis](#-perfis-qual-usar-e-quando).
 
-**Equipe, com MySQL (o jeito do dia a dia):**
+**Equipe, com PostgreSQL (o jeito do dia a dia):**
 
 ```bash
 cp .env.example .env          # 1x por máquina: JWT_SEGREDO seu (openssl rand -base64 48); EQUIPE_SENHA e admin do guia privado
-docker compose up -d          # MySQL na porta 5441; espere "healthy" em: docker compose ps
+docker compose up -d          # PostgreSQL na porta 5441; espere "healthy" em: docker compose ps
 ./mvnw spring-boot:run        # Windows: .\mvnw.cmd spring-boot:run
 ```
 
 Desde 20/10/2026 o Spring **lê o `.env` sozinho** (`spring.config.import=optional:file:.env[.properties]`): não é
 mais preciso carregar as variáveis no terminal. Variável de ambiente de verdade continua valendo mais que o `.env`.
-Os scripts de shell que usam as variáveis (`scripts/testar-no-mysql.sh`, `docker exec ... mysql`) ainda carregam o
+Os scripts de shell que usam as variáveis (`scripts/testar-no-postgres.sh`, `docker exec ... psql`) ainda carregam o
 `.env` por conta própria.
 
 Conferindo: `curl -s http://localhost:8080/actuator/health` → `{"status":"UP",...}` e
@@ -54,12 +54,11 @@ usuário `sa`, senha vazia; [guia, 1.4](README_TESTES_E2E.md#14-ver-o-banco-por-
 
 | Variável | Padrão no `.env.example` | Usada por |
 |---|---|---|
-| `MYSQL_USER` | `usuario-do-banco` | Docker e Spring |
-| `MYSQL_PASSWORD` | `senha-do-banco` | Docker e Spring |
-| `MYSQL_DATABASE` | `rkfbank` | Docker e Spring |
-| `MYSQL_PORT` | `5441` | Docker (porta exposta) e Spring |
-| `MYSQL_ROOT_PASSWORD` | `senha-root-do-banco` | só Docker |
-| `MYSQL_VERSION` | `8.4` | só Docker |
+| `POSTGRES_USER` | `usuario-do-banco` | Docker e Spring |
+| `POSTGRES_PASSWORD` | `senha-do-banco` | Docker e Spring |
+| `POSTGRES_DB` | `rkfbank` | Docker e Spring |
+| `POSTGRES_PORT` | `5441` | Docker (porta exposta) e Spring |
+| `POSTGRES_VERSION` | `8.4` | só Docker |
 | `JWT_SEGREDO` | valor de exemplo: **troque** | Spring: assina e confere o JWT. **Obrigatório**, mínimo 32 bytes; sem ele a API não sobe |
 | `JWT_EXPIRACAO` | `15m` | Spring: validade do token (opcional) |
 | `ADMIN_CPF` / `ADMIN_SENHA` | vazios | Spring: criam o primeiro `ADMIN` na subida, se preenchidos (opcional) |
@@ -76,7 +75,7 @@ Arquivo: [`src/main/resources/application.properties`](src/main/resources/applic
 | Propriedade | Valor | Observação |
 |---|---|---|
 | `spring.jpa.hibernate.ddl-auto` | `validate` | quem cria e altera o schema é o **Flyway** ([Migrações](#-migrações-flyway)); o Hibernate só confere se as entidades batem com o banco e impede a subida se não baterem |
-| `spring.jpa.properties.hibernate.type.preferred_uuid_jdbc_type` | `BINARY` | UUID sempre como `BINARY(16)`: é o que o MySQL já usa e faz o H2 dos testes validar o mesmo schema |
+| (UUID) | `uuid` nativo | sem `preferred_uuid_jdbc_type`: PostgreSQL e H2 têm o tipo `uuid`, e a V1 cria as colunas como `UUID` |
 | `spring.jpa.show-sql` | `false` | o SQL sai pelo logger `org.hibernate.SQL` do `log4j2-spring.xml`, com o `requestId` da chamada |
 | `viacep.base-url` | `https://viacep.com.br/ws` | |
 | `viacep.timeout-ms` | `3000` | tempo máximo de conexão e de leitura do ViaCEP |
@@ -107,7 +106,7 @@ Movimentações exigem `Idempotency-Key` (`IdempotenciaService`, `tb_idempotenci
 
 *Profile* (perfil) é um **nome que liga um conjunto extra de configurações**. O Spring sempre lê o
 `application.properties`; com um perfil ativo, lê **também** o `application-<perfil>.properties` e, em cada chave
-repetida, **o do perfil ganha**. É assim que o mesmo código fala com o MySQL num caso e com o H2 em outro, sem `if`.
+repetida, **o do perfil ganha**. É assim que o mesmo código fala com o PostgreSQL num caso e com o H2 em outro, sem `if`.
 Ativa-se com `-Dspring-boot.run.profiles=<nome>` (Maven), `--spring.profiles.active=<nome>` (jar),
 `SPRING_PROFILES_ACTIVE=<nome>` (variável) ou *Active profiles* no IntelliJ.
 
@@ -115,12 +114,12 @@ Ativa-se com `-Dspring-boot.run.profiles=<nome>` (Maven), `--spring.profiles.act
 
 | Perfil | Para quem | Banco | Contas prontas | Segredos | Arquivo |
 |---|---|---|---|---|---|
-| **padrão** (nenhum) | equipe, dia a dia | MySQL (Docker), dados **ficam** | Fellipe e Renan (login com `EQUIPE_SENHA`) + admin do `.env` | todos do `.env`; sem `JWT_SEGREDO` não sobe | `application.properties` |
+| **padrão** (nenhum) | equipe, dia a dia | PostgreSQL (Docker), dados **ficam** | Fellipe e Renan (login com `EQUIPE_SENHA`) + admin do `.env` | todos do `.env`; sem `JWT_SEGREDO` não sobe | `application.properties` |
 | **`equipe`** | equipe, teste rápido sem Docker | H2 em memória, dados **somem** | iguais ao padrão | todos do `.env` | `application-equipe.properties` |
 | **`visitante`** | quem chega pelo GitHub | H2 em memória, dados **somem** | Ana e Bruno Visitante (senha pública) — **sem** equipe, **sem** admin | JWT sorteado a cada subida; `.env` ignorado para segredos | `application-visitante.properties` |
 | **`test`** | testes automatizados | H2 em memória, **vazio** | nenhuma (os testes criam as suas) | fixos de teste | `src/test/resources/application-test.properties` (fora do jar) |
 
-**Precisa de algum perfil?** Para o dia a dia da equipe, não: o padrão (MySQL) é o caminho. O `equipe` é atalho de
+**Precisa de algum perfil?** Para o dia a dia da equipe, não: o padrão (PostgreSQL) é o caminho. O `equipe` é atalho de
 quem está sem Docker; o `visitante` existe para o repositório público poder ser testado **sem expor nada da equipe**.
 
 ### Por que o visitante é seguro de publicar
@@ -140,9 +139,9 @@ subida a nova vale. Os acessos ficam no **guia privado da equipe**, em `.equipe/
 
 ### Os riscos que continuam
 
-- **H2 não é MySQL.** Os scripts rodam nos dois, mas há diferenças (ex.: `UNIQUE` de e-mail ignora maiúsculas no
-  MySQL e não no H2; o `ClienteService` normaliza). Passou no `equipe`/`visitante` **não** prova que passa no MySQL:
-  migração nova se valida com `scripts/testar-no-mysql.sh` ou subindo no MySQL.
+- **H2 não é PostgreSQL.** Os scripts rodam nos dois, mas há diferenças (ex.: `UNIQUE` de e-mail ignora maiúsculas no
+  PostgreSQL e não no H2; o `ClienteService` normaliza). Passou no `equipe`/`visitante` **não** prova que passa no PostgreSQL:
+  migração nova se valida com `scripts/testar-no-postgres.sh` ou subindo no PostgreSQL.
 - **Nunca ligue seed em produção:** lá, `FLYWAY_LOCATIONS=classpath:db/migration`.
 
 ## 🧪 Testes
@@ -150,27 +149,27 @@ subida a nova vale. Os acessos ficam no **guia privado da equipe**, em `.equipe/
 Três jeitos, do mais simples ao mais completo:
 
 ```bash
-# 1. Perfil "test": H2 em memória + os testes de mysql/ num MySQL 8.4 do Testcontainers (pulados sem Docker)
+# 1. Perfil "test": H2 em memória + os testes de postgres/ num PostgreSQL 17 do Testcontainers (pulados sem Docker)
 ./mvnw clean verify -Dspring.profiles.active=test     # PowerShell: .\mvnw.cmd clean verify "-Dspring.profiles.active=test"
 
-# 2. Com o MySQL do Docker já no ar e o .env carregado no terminal (ver "Como rodar")
+# 2. Com o PostgreSQL do Docker já no ar e o .env carregado no terminal (ver "Como rodar")
 ./mvnw clean verify
 
-# 3. Script: derruba e recria o MySQL (APAGA os dados) e roda os testes com o perfil "test"
+# 3. Script: derruba e recria o PostgreSQL (APAGA os dados) e roda os testes com o perfil "test"
 ./run-test.sh                      # todos
 ./run-test.sh ContaServiceTest     # uma classe
 ```
 
 Relatório de cobertura: abra `target/site/jacoco/index.html` no navegador.
 
-> O `run-test.sh` roda os testes com `-Dspring.profiles.active=test`, ou seja, **em H2**: o MySQL recriado fica
+> O `run-test.sh` roda os testes com `-Dspring.profiles.active=test`, ou seja, **em H2**: o PostgreSQL recriado fica
 > limpo para o teste manual E2E, mas os testes automatizados não o usam. Ele também fixa o `JAVA_HOME` no JDK 25 de `~/.jdks/ms-25.0.4`. Se o seu JDK 25 estiver em outro lugar,
 > ajuste a linha `export JAVA_HOME=...` antes de rodar.
 
 Atalhos que mostram só o resumo (o log completo fica em `.validar/`):
 
 ```bash
-scripts/validar.sh backend         # testes (H2 + MySQL do Testcontainers se houver Docker) + cobertura
+scripts/validar.sh backend         # testes (H2 + PostgreSQL do Testcontainers se houver Docker) + cobertura
 node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 42 verificações (cadastro com aceite → extrato, sessão e erros)
 ```
 
@@ -182,13 +181,13 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 42 verifica�
 | **entidade JPA ou estrutura do banco** | crie `db/migration/V<n>__descricao.sql` → `scripts/validar.sh backend` → `./run-test.sh` → suba a API → smoke | a API sobe num banco vazio (`Successfully applied N migrations`); `flyway_schema_history` com a versão nova; `/revisar-migracao` |
 | **consulta ou repository** | `scripts/validar.sh backend` | um `*RepositoryTest` (`@DataJpaTest`) cobrindo a consulta |
 | **rota, request ou response** | `scripts/validar.sh backend` → suba a API → smoke | [contrato da API](README_CONTRATO_API.md), [roteiro E2E](README_TESTES_E2E.md), `/verificar-contrato` e recado para o frontend |
-| **dependência** (`pom.xml`) | `scripts/validar.sh backend` → suba a API no MySQL → smoke → `node scripts/varrer-cves.js backend` | testes com mock não provam que a biblioteca nova funciona: a API precisa subir de verdade |
-| **configuração** (`application*.properties`) | `scripts/validar.sh backend` → suba a API no perfil padrão (MySQL) | a mudança vale nos dois perfis? (`test` usa H2) |
-| **segurança** (rotas públicas, perfis, regra de dono, JWT) | `scripts/validar.sh backend` → `scripts/testar-no-mysql.sh` → suba a API → smoke → `node scripts/engenharia-reversa-jwt.mjs` | `SegurancaIntegracaoTest` cobre o cenário novo; nenhum ataque do script de engenharia reversa passa; [guia, seção 18](README_TESTES_E2E.md#18-como-a-segurança-funciona-spring-security--oauth2--jwt) |
-| **qualquer coisa e quer provar no MySQL** (não só no H2) | `docker compose up -d` → `scripts/testar-no-mysql.sh` | a saída mostra `Database dialect: MySQLDialect`; não apaga dados |
+| **dependência** (`pom.xml`) | `scripts/validar.sh backend` → suba a API no PostgreSQL → smoke → `node scripts/varrer-cves.js backend` | testes com mock não provam que a biblioteca nova funciona: a API precisa subir de verdade |
+| **configuração** (`application*.properties`) | `scripts/validar.sh backend` → suba a API no perfil padrão (PostgreSQL) | a mudança vale nos dois perfis? (`test` usa H2) |
+| **segurança** (rotas públicas, perfis, regra de dono, JWT) | `scripts/validar.sh backend` → `scripts/testar-no-postgres.sh` → suba a API → smoke → `node scripts/engenharia-reversa-jwt.mjs` | `SegurancaIntegracaoTest` cobre o cenário novo; nenhum ataque do script de engenharia reversa passa; [guia, seção 18](README_TESTES_E2E.md#18-como-a-segurança-funciona-spring-security--oauth2--jwt) |
+| **qualquer coisa e quer provar no PostgreSQL** (não só no H2) | `docker compose up -d` → `scripts/testar-no-postgres.sh` | a saída mostra `Database dialect: PostgreSQLDialect`; não apaga dados |
 | **só documentação** | nada | links e comandos citados continuam funcionando |
 
-**Antes do PR que mexe em regra, rota ou banco:** `./run-test.sh` (**apaga o MySQL local**) → subir a API → `node scripts/smoke-e2e.mjs`
+**Antes do PR que mexe em regra, rota ou banco:** `./run-test.sh` (**apaga o PostgreSQL local**) → subir a API → `node scripts/smoke-e2e.mjs`
 → `node scripts/rodar-colecao-insomnia.mjs` → se mudou o comportamento visível, refazer os itens afetados do
 [roteiro E2E manual](README_TESTES_E2E.md).
 
@@ -216,7 +215,7 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 42 verifica�
 | `GestaoUsuarioServiceTest` | promover, rebaixar, desativar, redefinir senha, travas (não mexer em si mesmo, admin sem cadastro) | Mockito |
 | `LimitadorTentativasLoginTest` | 5 erros em 15 min → `429`, janela que expira, acerto zera o contador | unitário com relógio manual |
 | `RkfbankApplicationTests` | o contexto Spring sobe | `@SpringBootTest` |
-| `SegurancaIntegracaoTest` | cadeia de filtros de verdade: `401` (sem token, vencido, outra chave, `alg:none`, adulterado), login, BCrypt no banco, regra de dono `403`, perfil `ADMIN`, `429`, health check | `@SpringBootTest` + MockMvc (H2; MySQL com `testar-no-mysql.sh`) |
+| `SegurancaIntegracaoTest` | cadeia de filtros de verdade: `401` (sem token, vencido, outra chave, `alg:none`, adulterado), login, BCrypt no banco, regra de dono `403`, perfil `ADMIN`, `429`, health check | `@SpringBootTest` + MockMvc (H2; PostgreSQL com `testar-no-postgres.sh`) |
 | `DadosEquipeIntegracaoTest` | seed da equipe + `EQUIPE_SENHA`, idempotência de ponta a ponta, conciliação saldo × extrato, seed rodando duas vezes, versões do Flyway | `@SpringBootTest` + MockMvc (H2 próprio) |
 | `GestaoUsuariosIntegracaoTest` | promover, rebaixar, desativar e trocar/redefinir senha derrubando o token antigo na hora | `@SpringBootTest` + MockMvc (H2 novo por teste) |
 | `PerfilVisitanteIntegracaoTest` | perfil `visitante`: só Ana e Bruno, sem admin nem equipe, JWT sorteado (segredo do ambiente não vale) | `@SpringBootTest` + MockMvc (H2 próprio) |
@@ -226,23 +225,23 @@ node scripts/smoke-e2e.mjs         # com a API no ar: fluxo real em 42 verifica�
 | `SwaggerIntegracaoTest` | especificação OpenAPI pública com as rotas do contrato, rotas públicas sem cadeado, Swagger UI abrindo sem token | `@SpringBootTest` + MockMvc |
 | `ConversorTokenUsuarioTest` | token de usuário desativado, com perfil ou senha alterados; senha temporária; cache opcional | unitário com relógio manual |
 | `CodigoErroEnumTest` | todo código com mensagem própria e o tipo `CodigoErro` do frontend com exatamente os mesmos códigos | unitário (lê `frontend/lib/api/types.ts`) |
-| `mysql/MigracoesMySqlTest` | MySQL 8.4 de verdade: V1 a V15 em ordem e os tipos de produção (`DECIMAL`, `BINARY(16)`) | Testcontainers (`MySqlIntegracaoBase`) |
-| `mysql/FluxoBancarioMySqlTest` | do cadastro ao extrato no MySQL; saldo insuficiente não grava nada | Testcontainers + MockMvc |
-| `mysql/ConcorrenciaMySqlTest` | transferências simultâneas não criam nem somem dinheiro; cópia desatualizada perde para o lock otimista | Testcontainers, threads de verdade |
+| `postgres/MigracoesPostgresTest` | PostgreSQL 17 de verdade: V1 a V15 em ordem e os tipos de produção (`numeric(19,2)`, `uuid`, `timestamptz`) | Testcontainers (`PostgresIntegracaoBase`) |
+| `postgres/FluxoBancarioPostgresTest` | do cadastro ao extrato no PostgreSQL; saldo insuficiente não grava nada | Testcontainers + MockMvc |
+| `postgres/ConcorrenciaPostgresTest` | transferências simultâneas não criam nem somem dinheiro; cópia desatualizada perde para o lock otimista | Testcontainers, threads de verdade |
 
-> **H2 × MySQL: qual banco cada teste usa?**
+> **H2 × PostgreSQL: qual banco cada teste usa?**
 >
 > | Comando | `@SpringBootTest` | `@DataJpaTest` | Para quê |
 > |---|---|---|---|
-> | `scripts/validar.sh backend` | H2; os de `mysql/` num **MySQL 8.4 do Testcontainers** | H2 (modo MySQL) | dia a dia; sem Docker, os de `mysql/` são pulados |
-> | `./run-test.sh` | igual ao de cima (o script recria o MySQL local, mas roda com o perfil `test`) | H2 (modo MySQL) | garantir banco limpo para o teste manual |
-> | `scripts/testar-no-mysql.sh` | **MySQL** do Docker | (não roda) | provar consultas, tipos e migrações no banco real |
-> | API no ar + `smoke-e2e.mjs` | **MySQL** (perfil padrão) | — | fluxo real por HTTP |
+> | `scripts/validar.sh backend` | H2; os de `postgres/` num **PostgreSQL 17 do Testcontainers** | H2 (modo PostgreSQL) | dia a dia; sem Docker, os de `postgres/` são pulados |
+> | `./run-test.sh` | igual ao de cima (o script recria o PostgreSQL local, mas roda com o perfil `test`) | H2 (modo PostgreSQL) | garantir banco limpo para o teste manual |
+> | `scripts/testar-no-postgres.sh` | **PostgreSQL** do Docker | (não roda) | provar consultas, tipos e migrações no banco real |
+> | API no ar + `smoke-e2e.mjs` | **PostgreSQL** (perfil padrão) | — | fluxo real por HTTP |
 >
-> A maior parte dos testes continua em H2 (rápido e sem Docker), em `MODE=MySQL`. Diferença de dialeto, migração
-> e concorrência de verdade ficam com os testes de `mysql/` (Testcontainers, feature 3), que o CI sempre roda.
+> A maior parte dos testes continua em H2 (rápido e sem Docker), em `MODE=PostgreSQL`. Diferença de dialeto, migração
+> e concorrência de verdade ficam com os testes de `postgres/` (Testcontainers, feature 3), que o CI sempre roda.
 > `@DataJpaTest` usa o H2 do perfil `test` (`spring.test.database.replace=none`), não um embutido sem modo.
-> Com o perfil padrão (sem `-Dspring.profiles.active=test`), `RkfbankApplicationTests` precisa do MySQL e do `.env` carregado.
+> Com o perfil padrão (sem `-Dspring.profiles.active=test`), `RkfbankApplicationTests` precisa do PostgreSQL e do `.env` carregado.
 
 Teste manual ponta a ponta: [README_TESTES_E2E.md](README_TESTES_E2E.md) · conferência automática:
 `node scripts/rodar-colecao-insomnia.mjs` (a coleção inteira contra a API no ar).
@@ -262,15 +261,15 @@ erDiagram
     tb_conta ||..o{ tb_lancamento : "conta_origem_id / conta_destino_id (sem FK)"
 
     tb_cliente {
-        binary16 id PK
+        uuid id PK
         string nome_completo
         string cpf UK "11 dígitos, sem máscara"
         string email UK
         string telefone "só dígitos"
-        binary16 endereco_id FK
+        uuid endereco_id FK
     }
     tb_endereco {
-        binary16 id PK
+        uuid id PK
         string cep "com hífen"
         string logradouro
         string bairro
@@ -281,42 +280,42 @@ erDiagram
         string complemento "opcional"
     }
     tb_conta {
-        binary16 id PK
+        uuid id PK
         string numero_conta UK
         string agencia
         string tipo_conta_enum "CORRENTE | POUPANCA"
         decimal saldo "19,2"
         boolean ativa
         bigint versao "lock otimista"
-        binary16 cliente_id FK
+        uuid cliente_id FK
     }
     tb_lancamento {
-        binary16 id PK
+        uuid id PK
         string tipo_lancamento_enum
         decimal valor "19,2"
-        binary16 conta_origem_id "null no depósito"
-        binary16 conta_destino_id "null no saque"
+        uuid conta_origem_id "null no depósito"
+        uuid conta_destino_id "null no saque"
         string descricao
         timestamp data_hora
     }
 ```
 
-Os IDs são UUID na API, mas ficam como `binary(16)` no MySQL. Para ler no Workbench/DBeaver:
+Os IDs são `uuid` nativo no PostgreSQL (o `psql` e o DBeaver já mostram o texto). Basta:
 
 ```sql
-SELECT BIN_TO_UUID(id) AS id, nome_completo, cpf, email FROM tb_cliente;
+SELECT id, nome_completo, cpf, email FROM tb_cliente;
 
-SELECT BIN_TO_UUID(id) AS id, numero_conta, saldo, ativa FROM tb_conta;
+SELECT id, numero_conta, saldo, ativa FROM tb_conta;
 
-SELECT BIN_TO_UUID(id) AS id, tipo_lancamento_enum, valor,
-       BIN_TO_UUID(conta_origem_id)  AS origem,
-       BIN_TO_UUID(conta_destino_id) AS destino,
+SELECT id, tipo_lancamento_enum, valor,
+       conta_origem_id  AS origem,
+       conta_destino_id AS destino,
        data_hora
 FROM tb_lancamento
 ORDER BY data_hora DESC;
 
 -- buscar por um UUID específico
-SELECT * FROM tb_conta WHERE id = UUID_TO_BIN('407d727e-4e43-4c93-b01c-331cbaba42fb');
+SELECT * FROM tb_conta WHERE id = '407d727e-4e43-4c93-b01c-331cbaba42fb';
 ```
 
 Conexão: `localhost:5441`, usuário e senha do seu `.env`.
@@ -359,7 +358,7 @@ O seed **só insere o que falta**: saldo já movimentado nunca é resetado, e ap
 próxima subida. Começar do zero de verdade: `docker compose down -v && docker compose up -d`. Testes que garantem:
 `DadosEquipeIntegracaoTest` e `PerfilVisitanteIntegracaoTest`.
 
-**Criar uma migração nova:** `db/migration/V10__descricao_em_snake_case.sql` (dois sublinhados), SQL que rode no MySQL
+**Criar uma migração nova:** `db/migration/V10__descricao_em_snake_case.sql` (dois sublinhados), SQL que rode no PostgreSQL
 **e** no H2 dos testes, e `scripts/validar.sh backend`. Mudou uma tabela que o seed usa? Ajuste os
 `afterMigrate__*.sql` no mesmo PR (callback não tem checksum, pode ser editado). Com o Claude Code,
 `/revisar-migracao` confere antes do commit.
@@ -369,7 +368,7 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 
 > 🔁 **Reestruturação de 20/10/2026** ([decisão](../planing/decisoes.md)): os antigos `V1__schema_inicial`,
 > `V2__email_minusculo` e `V3__usuarios` viraram `V1`→`V5` (uma tabela por versão; a `V6` veio depois, com a idempotência), aproveitando que ainda não existe
-> banco de produção. **Uma vez por máquina**, recrie o MySQL local: `docker compose down -v && docker compose up -d`
+> banco de produção. **Uma vez por máquina**, recrie o PostgreSQL local: `docker compose down -v && docker compose up -d`
 > (apaga os dados locais; as contas do Fellipe e do Renan voltam sozinhas na subida).
 
 ---
@@ -378,22 +377,22 @@ próxima subida. Começar do zero de verdade: `docker compose down -v && docker 
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
-| `Access denied for user 'rkfbank'` | rodou fora da raiz (o `.env` não foi achado) ou `.env` sem `MYSQL_*` | rode da raiz; confira o `.env` |
+| `Access denied for user 'rkfbank'` | rodou fora da raiz (o `.env` não foi achado) ou `.env` sem `POSTGRES_*` | rode da raiz; confira o `.env` |
 | `Could not resolve placeholder 'JWT_SEGREDO'` ou `JWT_SEGREDO ausente ou curto` | `.env` sem `JWT_SEGREDO` (ou com menos de 32 bytes), ou não carregado | gere com `openssl rand -base64 48`, ponha no `.env` e rode da raiz |
 | Toda chamada devolve `401` | sem `Authorization: Bearer`, token vencido (15 min) ou `JWT_SEGREDO` trocado | faça login de novo |
 | Fellipe/Renan dão `401` | `EQUIPE_SENHA` vazia ou diferente da do guia privado (o log diz `0 de 2 contas com login`) | confira o `.env` e reinicie |
 | Toda movimentação dá `400` | faltou o header `Idempotency-Key` (contrato 2.1) | gere um UUID por operação |
 | Login dá `429` | 5 senhas erradas seguidas para o mesmo CPF | espere 15 min ou reinicie a API |
-| `Communications link failure` | MySQL não está no ar ou ainda subindo | `docker compose ps` — espere `healthy` |
+| `Communications link failure` | PostgreSQL não está no ar ou ainda subindo | `docker compose ps` — espere `healthy` |
 | `Rule 0 ... RequireJavaVersion failed` | JDK diferente de 25 | instale o JDK 25 e ajuste `JAVA_HOME` |
 | `Port 8080 was already in use` | outra instância rodando | feche a outra ou mate o processo da porta |
 | Cadastro devolve `503` | ViaCEP fora do ar ou sem internet | tente de novo; confira `https://viacep.com.br/ws/01001000/json/` |
 | Cadastro devolve `422 CEP não encontrado` | CEP não existe no ViaCEP | use um CEP real, ex.: `01001000` |
 | `Schema validation: missing column` / `wrong column type` | mudou a entidade sem criar migração | crie um `V<n>__...sql` com a alteração; o Hibernate não altera mais o banco |
-| `Found non-empty schema(s) ... but no schema history table` | MySQL local criado pelo Hibernate antes do Flyway | `docker compose down -v && docker compose up -d` uma vez (apaga os dados locais) |
+| `Found non-empty schema(s) ... but no schema history table` | PostgreSQL local criado pelo Hibernate antes do Flyway | `docker compose down -v && docker compose up -d` uma vez (apaga os dados locais) |
 | `Migration checksum mismatch` ou `Detected applied migration not resolved locally` | banco local de antes da reestruturação de 20/10, ou alguém editou uma migração já aplicada | primeira vez depois de 20/10: `docker compose down -v && docker compose up -d`; fora isso, desfaça a edição e crie um `V` novo |
-| Fellipe e Renan não aparecem | API no perfil `visitante`/`test` ou `FLYWAY_LOCATIONS` sem `db/seed/equipe` | suba sem perfil (MySQL) ou com `equipe` |
+| Fellipe e Renan não aparecem | API no perfil `visitante`/`test` ou `FLYWAY_LOCATIONS` sem `db/seed/equipe` | suba sem perfil (PostgreSQL) ou com `equipe` |
 | `mvnw: Permission denied` (Linux/macOS) | arquivo sem permissão de execução | `chmod +x mvnw` |
 | Testes de repositório falham com `The database has been closed` | H2 2.4.x (o que o Boot traz) quebra o `CHECK ... IN (...)` das colunas de enum | mantenha `<h2.version>2.5.252</h2.version>` no `pom.xml` |
 | No IntelliJ, imports de `io.swagger`, `org.springdoc` ou `net.javacrumbs.shedlock` ficam vermelhos, mas `./mvnw` compila e os testes passam | IntelliJ antigo (ex.: Community 2024.3) não importa o projeto com o **Maven 3.10** do wrapper: o log da IDE (`Help → Show Log`) mostra `Unable to create injector ... ArtifactHandlerManager` e ela fica com a lista antiga de bibliotecas | atualize o IntelliJ (2025.3 ou mais novo) **ou** Settings → Build Tools → Maven → Maven home path = **Bundled (Maven 3)** → 🔄 Reload All Maven Projects. O `mvnw`, o CI e o Docker continuam no 3.10 |
-| `Unknown data type: "DATETIME"` ao subir com H2 | URL do H2 sem `MODE=MySQL` (o H2 2.5 só aceita `DATETIME` nesse modo) | acrescente `;MODE=MySQL` à URL (`jdbc:h2:mem:nome;MODE=MySQL`) |
+| `Unknown data type: "DATETIME"` ao subir com H2 | URL do H2 sem `MODE=PostgreSQL` (o H2 2.5 exige o modo para os tipos do PostgreSQL) | acrescente `;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH` à URL |

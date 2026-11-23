@@ -16,7 +16,7 @@ O cliente consegue:
 
 ## Como estamos (23/10)
 
-- **Backend:** tudo do MVP pronto e testado (307 testes, 7 no MySQL real com Testcontainers), com refresh token, aceite LGPD, `GET /contas/{contaId}` e Swagger.
+- **Backend:** tudo do MVP pronto e testado (307 testes, 7 no PostgreSQL real com Testcontainers), com refresh token, aceite LGPD, `GET /contas/{contaId}` e Swagger.
 - **Frontend:** todas as telas do MVP, renovação de sessão, aceite dos termos, seletor de conta e 31 testes (Vitest) com CI próprio.
 - **Fechamento (29/10):** MVP na `main` (PR #76). Sem deploy: o projeto é de portfólio. Encarregados LGPD: Kevin e Renan (26/10). Perfil `prod` e `Dockerfile` testados no CI. Análise em [analise-mvp.md](analise-mvp.md).
 

@@ -1,6 +1,6 @@
 # 🚀 Publicar o RKF Bank (perfil `prod`)
 
-> ✅ **Em produção desde 03/11/2026:** banco no **Aiven** (MySQL Free com SSL), API no **Render**
+> ✅ **Em produção desde 03/11/2026:** banco no **Aiven** (era MySQL Free; **migração para PostgreSQL Free** pronta no código, corte em [`planing/guia-corte-postgresql.md`](../planing/guia-corte-postgresql.md), prazo 21/12/2026 por causa do desligamento do MySQL Free), API no **Render**
 > (Docker, plano free) e site na **Vercel** (Hobby). Custo: **R$ 0**, sem cartão em nenhum dos três.
 >
 > | | Endereço |
@@ -18,7 +18,7 @@
 ## 1. Como o RKF Bank fica publicado
 
 ```text
-navegador ──HTTPS──▶ site Next.js (Vercel) ──/api/* BFF, prazo 12 s──▶ API Docker, perfil prod (Render) ──SSL REQUIRED──▶ MySQL (Aiven)
+navegador ──HTTPS──▶ site Next.js (Vercel) ──/api/* BFF, prazo 12 s──▶ API Docker, perfil prod (Render) ──SSL require──▶ PostgreSQL (Aiven)
 ```
 
 O navegador só fala com o site. O site repassa `/api/*` para a API pelo servidor dele (`API_URL`), então o endereço
@@ -26,7 +26,7 @@ da API nunca aparece no navegador e o token fica num cookie `httpOnly`. Por que 
 
 | Decisão | Por quê |
 |---|---|
-| SSL `REQUIRED` no banco | o Aiven fica fora da rede do Render, na internet pública: sem SSL obrigatório, senha e dados poderiam trafegar sem criptografia (seção 2.2) |
+| SSL `require` no banco | o Aiven fica fora da rede do Render, na internet pública: sem SSL obrigatório, senha e dados poderiam trafegar sem criptografia (seção 2.2) |
 | Datas em UTC (`hibernate.jdbc.time_zone=UTC`) | o horário gravado não muda com o fuso da JVM nem com o provedor (seção 4) |
 | Prazo no BFF + aviso de "servidor acordando" | a API hiberna no Render Free e leva ~1 min para voltar: a tela explica em vez de girar (seção 5.1) |
 
@@ -37,9 +37,9 @@ antes de decidir.
 
 | Caminho | API | Banco | Site | Custo | Bom para | Cuidado |
 |---|---|---|---|:-:|---|---|
-| **A · Grátis** ✅ | Render, plano Free (Docker, 512 MB) | Aiven for MySQL, plano Free (1 GB) | Vercel Hobby | **R$ 0** | publicar sem cartão e mostrar no portfólio | a API **dorme** após 15 min sem uso e leva ~1 min para acordar; o Render avisa que o Free não é para produção |
-| **B · Sempre ligado** | Railway, plano Hobby | MySQL do próprio Railway (mesmo projeto, rede interna) | Vercel Hobby | ~US$ 5/mês | demo que responde na hora, API e banco no mesmo painel | cobrança por uso: configure o alerta de gasto |
-| **C · AWS** | App Runner ou ECS | RDS MySQL | Amplify ou Vercel | variável | aprender cloud (feature 5 do checklist) | precisa do estudo antes |
+| **A · Grátis** ✅ | Render, plano Free (Docker, 512 MB) | Aiven for PostgreSQL, plano Free (1 GB) | Vercel Hobby | **R$ 0** | publicar sem cartão e mostrar no portfólio | a API **dorme** após 15 min sem uso e leva ~1 min para acordar; o Render avisa que o Free não é para produção |
+| **B · Sempre ligado** | Railway, plano Hobby | PostgreSQL do próprio Railway (mesmo projeto, rede interna) | Vercel Hobby | ~US$ 5/mês | demo que responde na hora, API e banco no mesmo painel | cobrança por uso: configure o alerta de gasto |
+| **C · AWS** | App Runner ou ECS | RDS PostgreSQL | Amplify ou Vercel | variável | aprender cloud (feature 5 do checklist) | precisa do estudo antes |
 
 A imagem é a mesma nos três: mudar de casa é trocar as variáveis. Medido em 26/10, a API no perfil `prod` usa
 **~370 MB** dos 512 MB do container, por isso cabe no plano grátis.
@@ -51,7 +51,7 @@ A imagem é a mesma nos três: mudar de casa é trocar as variáveis. Medido em 
 
 | # | Onde | O que fazer | Pronto quando |
 |:-:|---|---|---|
-| 1 | **Aiven** | criar um serviço *MySQL* no plano Free; anotar host, porta, banco (`defaultdb` ou um criado para o projeto), usuário e senha da aba *Overview* | o serviço aparece como *Running* |
+| 1 | **Aiven** | criar um serviço *PostgreSQL* no plano **Free** (o painel abre no plano pago: troque para Free); anotar host, porta, banco (`defaultdb` ou um criado para o projeto), usuário e senha da aba *Overview* | o serviço aparece como *Running* |
 | 2 | **Render** | *New → Blueprint*, escolher este repositório: o Render lê o [`render.yaml`](../render.yaml) e cria o Web Service `rkfbank-api` (Docker, plano free, health em `/actuator/health`) | o painel pede os valores das variáveis `sync: false` |
 | 3 | **Render** | preencher as variáveis da seção 4 (ainda sem `CORS_ORIGENS` definitivo, se o site não existir: use um valor provisório e troque no passo 5) | deploy *Live* e `https://rkfbank-api-zncu.onrender.com/actuator/health` → `UP` |
 | 4 | **Vercel** | *Add New → Project*, este repositório, **Root Directory `frontend`**, variável `API_URL=https://rkfbank-api-zncu.onrender.com` (seção 5) | o site abre em `https://rkfbank.vercel.app` |
@@ -61,14 +61,17 @@ A imagem é a mesma nos três: mudar de casa é trocar as variáveis. Medido em 
 ### 2.2 Aiven: banco com SSL
 
 - O Aiven **exige SSL** em toda conexão e o banco fica na internet pública, fora da rede do Render.
-- A URL JDBC do perfil `prod` usa `sslMode=${DB_SSL_MODE:REQUIRED}` (parâmetro do MySQL Connector/J; os valores
-  válidos são `DISABLED`, `PREFERRED`, `REQUIRED`, `VERIFY_CA` e `VERIFY_IDENTITY`).
-- **Por que `REQUIRED` é o padrão (antes era `PREFERRED`):** com `PREFERRED` o driver aceita cair para uma conexão
+- A URL JDBC do perfil `prod` usa `sslmode=${DB_SSL_MODE:require}` (parâmetro do driver PostgreSQL; os valores
+  válidos são `disable`, `allow`, `prefer`, `require`, `verify-ca` e `verify-full`, em minúsculas).
+- **Por que `require` é o padrão:** com `prefer`/`allow` o driver aceita cair para uma conexão
   **sem** criptografia se o SSL falhar, e a senha do banco e os dados dos clientes passariam em texto puro pela
-  internet. `REQUIRED` recusa conectar sem SSL: melhor a API não subir do que subir exposta.
-- `REQUIRED` criptografa mas **não confere o certificado** do servidor. O próximo passo, se quiser fechar também o
-  risco de alguém se passar pelo banco, é `VERIFY_CA` com o certificado CA do Aiven (aba *Overview → CA certificate*)
-  num truststore dentro da imagem (`trustCertificateKeyStoreUrl`). Fica como evolução: exige mudar o `Dockerfile`.
+  internet. `require` recusa conectar sem SSL: melhor a API não subir do que subir exposta.
+- `require` criptografa mas **não confere o certificado** do servidor. O próximo passo, se quiser fechar também o
+  risco de alguém se passar pelo banco, é `verify-ca` com o certificado CA do Aiven (aba *Overview → CA certificate*)
+  num arquivo dentro da imagem (`sslrootcert`). Fica como evolução: exige mudar o `Dockerfile`.
+- **Limites do plano Free do Aiven PostgreSQL** (doc do Aiven, conferida em 23/11/2026): 1 CPU, 1 GB de RAM, 1 GB de disco,
+  `max_connections` = 20 e sem pool de conexões (o `DB_POOL` padrão de 5 cabe); o Aiven pode desligar o serviço sem
+  atividade (avisa antes; religa pelo painel) e permite **um serviço Free de cada tipo por organização**.
 - As tabelas do projeto têm chave primária (o Aiven liga `sql_require_primary_key`), e o Flyway cria o schema na
   primeira subida, com o banco vazio.
 
@@ -94,7 +97,7 @@ docker build -t rkfbank-api .                                   # na raiz: o Doc
 docker run -p 8080:8080 --env-file deploy.env rkfbank-api       # deploy.env fica FORA do Git (.gitignore)
 ```
 
-O GitHub Actions (`backend-docker.yml`) já constrói a imagem, sobe num container de 512 MB com um MySQL **vazio**,
+O GitHub Actions (`backend-docker.yml`) já constrói a imagem, sobe num container de 512 MB com um PostgreSQL **vazio**,
 confere o perfil `prod` e roda o smoke ponta a ponta. A cada push na `main`, ele também publica a imagem em
 `ghcr.io/k3vinrich4rd/rkfbank-api` (`:latest` e `:<commit>`): o provedor pode puxar a imagem pronta ou construir
 pelo `Dockerfile` do repositório.
@@ -104,11 +107,11 @@ pelo `Dockerfile` do repositório.
 | Variável | Obrigatória | Exemplo / formato | Para quê |
 |---|:-:|---|---|
 | `SPRING_PROFILES_ACTIVE` | | `prod` (já no `Dockerfile` e no `render.yaml`) | liga o perfil de produção |
-| `DB_HOST` | ✅ | `<HOST_DO_MYSQL_NO_AIVEN>` | endereço do MySQL (painel do Aiven) |
-| `DB_PORT` | ✅ no Aiven | `<PORTA_DO_MYSQL_NO_AIVEN>` | a do Aiven não é a `3306` padrão; veja no painel |
+| `DB_HOST` | ✅ | `<HOST_DO_POSTGRESQL_NO_AIVEN>` | endereço do PostgreSQL (painel do Aiven) |
+| `DB_PORT` | ✅ no Aiven | `<PORTA_DO_POSTGRESQL_NO_AIVEN>` | a do Aiven não é a `5432` padrão; veja no painel |
 | `DB_NAME` | ✅ | `<NOME_DO_BANCO>` | nome do banco (`defaultdb` no Aiven, ou um criado para o projeto) |
 | `DB_USER` / `DB_PASSWORD` | ✅ | do painel do Aiven | login do banco |
-| `DB_SSL_MODE` | | `REQUIRED` (padrão) · `VERIFY_CA` · `VERIFY_IDENTITY` | SSL obrigatório (seção 2.2). No Render, **preencha** `REQUIRED`: variável vazia não cai no padrão |
+| `DB_SSL_MODE` | | `require` (padrão) · `verify-ca` · `verify-full` | SSL obrigatório (seção 2.2). No Render, **preencha** `require` (minúsculo): variável vazia não cai no padrão |
 | `JWT_SEGREDO` | ✅ | gere com `openssl rand -base64 48` | assina os tokens; **nunca** o mesmo do `.env` de alguém |
 | `CORS_ORIGENS` | ✅ | `https://rkfbank.vercel.app` | domínio do site (sem barra no fim) |
 | `ADMIN_CPF` / `ADMIN_SENHA` | | CPF válido e senha forte | cria o primeiro ADMIN na primeira subida |
@@ -120,8 +123,7 @@ Sem as obrigatórias, a API **não sobe** (de propósito: melhor parar do que ro
 existem `EQUIPE_SENHA` nem dados de teste em produção: o banco nasce vazio, só com o schema do Flyway. Nenhum valor
 real vai para o Git: só o painel do provedor conhece os segredos.
 
-**Datas em UTC:** o perfil `prod` liga `spring.jpa.properties.hibernate.jdbc.time_zone=UTC` (além do
-`serverTimezone=UTC` da URL). Por quê: o `Dockerfile` usa `TZ=America/Sao_Paulo` e cada provedor pode usar outro
+**Datas em UTC:** o perfil `prod` liga `spring.jpa.properties.hibernate.jdbc.time_zone=UTC` (as colunas já são `timestamptz`, que guarda o instante absoluto). Por quê: o `Dockerfile` usa `TZ=America/Sao_Paulo` e cada provedor pode usar outro
 fuso; sem isso o Hibernate grava os `Instant` (lançamentos, tentativas de login, tokens de renovação) no fuso da
 JVM, e trocar de provedor ou de TZ deslocaria o extrato e as validades em horas. Com UTC no banco, o horário
 gravado não depende de onde a API roda; a tela converte para o fuso de quem vê.
@@ -160,7 +162,7 @@ O 503 da própria API (ViaCEP fora do ar) vem em JSON e passa como veio, com a m
 1. `https://rkfbank-api-zncu.onrender.com/actuator/health` → `UP` (a primeira chamada depois de hibernar leva ~1 min).
 2. `https://rkfbank-api-zncu.onrender.com/swagger-ui.html` → abre só para leitura (com `SWAGGER_ATIVO=true`; sem a variável, `404`).
 3. Log da API no Render: `profile is active: "prod"` e o Flyway aplicando as migrações no banco vazio (prova de que
-   a conexão com SSL `REQUIRED` funcionou).
+   a conexão com SSL `require` funcionou).
 4. Preflight de origem estranha → `403`:
    `curl -s -o /dev/null -w '%{http_code}' -X OPTIONS https://rkfbank-api-zncu.onrender.com/contas -H 'Origin: https://site-estranho.example' -H 'Access-Control-Request-Method: GET'`
 5. No site (`https://rkfbank.vercel.app`): cadastro (o CEP vira endereço pelo ViaCEP), login, abrir conta, depósito,
