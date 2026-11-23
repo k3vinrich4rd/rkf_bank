@@ -4,11 +4,11 @@
 -- cliente_id e opcional (nulo para o ADMIN). O UNIQUE garante no maximo um usuario por cliente.
 
 CREATE TABLE tb_usuario (
-    id          BINARY(16)  NOT NULL,
+    id          UUID NOT NULL,
     login       VARCHAR(11) NOT NULL,
     senha_hash  VARCHAR(60) NOT NULL,
     perfil      VARCHAR(20) NOT NULL,
-    cliente_id  BINARY(16),
+    cliente_id  UUID,
     CONSTRAINT pk_usuario PRIMARY KEY (id),
     CONSTRAINT uk_usuario_login UNIQUE (login),
     CONSTRAINT uk_usuario_cliente UNIQUE (cliente_id),

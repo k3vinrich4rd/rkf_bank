@@ -7,12 +7,12 @@
 -- O UNIQUE (usuario_id, chave) e a trava final: duas chamadas simultaneas com a mesma chave nao gravam as duas.
 
 CREATE TABLE tb_idempotencia (
-    id              BINARY(16)   NOT NULL,
-    usuario_id      BINARY(16)   NOT NULL,
+    id              UUID NOT NULL,
+    usuario_id      UUID NOT NULL,
     chave           VARCHAR(100) NOT NULL,
     operacao        VARCHAR(32)  NOT NULL,
     hash_requisicao VARCHAR(64)  NOT NULL,
-    criado_em       DATETIME(6)  NOT NULL,
+    criado_em       TIMESTAMP(6) WITH TIME ZONE NOT NULL,
     CONSTRAINT pk_idempotencia PRIMARY KEY (id),
     CONSTRAINT uk_idempotencia_usuario_chave UNIQUE (usuario_id, chave),
     CONSTRAINT fk_idempotencia_usuario FOREIGN KEY (usuario_id) REFERENCES tb_usuario (id),

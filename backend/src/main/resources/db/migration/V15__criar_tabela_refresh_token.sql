@@ -6,13 +6,13 @@
 -- revogado_em:       NULL = ainda vale (ate expira_em). Preenchido no logout, na rotacao e na deteccao de reuso.
 
 CREATE TABLE tb_refresh_token (
-    id                BINARY(16)  NOT NULL,
-    usuario_id        BINARY(16)  NOT NULL,
+    id                UUID NOT NULL,
+    usuario_id        UUID NOT NULL,
     hash_token        VARCHAR(64) NOT NULL,
     versao_credencial INT         NOT NULL,
-    criado_em         DATETIME(6) NOT NULL,
-    expira_em         DATETIME(6) NOT NULL,
-    revogado_em       DATETIME(6),
+    criado_em         TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    expira_em         TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    revogado_em       TIMESTAMP(6) WITH TIME ZONE,
     CONSTRAINT pk_refresh_token PRIMARY KEY (id),
     CONSTRAINT uk_refresh_token_hash UNIQUE (hash_token),
     CONSTRAINT fk_refresh_token_usuario FOREIGN KEY (usuario_id) REFERENCES tb_usuario (id)

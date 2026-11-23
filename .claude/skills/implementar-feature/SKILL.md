@@ -45,7 +45,7 @@ Depois de cada passo:
 
 ## Fechamento
 
-1. `scripts/validar.sh backend` (e `frontend` se mudou). Para mudanças que tocam o banco ou as rotas, rode também `./run-test.sh` (**avise que ele apaga o MySQL local**) e, com a API no ar, `node scripts/smoke-e2e.mjs`.
+1. `scripts/validar.sh backend` (e `frontend` se mudou). Para mudanças que tocam o banco ou as rotas, rode também `./run-test.sh` (**avise que ele apaga o PostgreSQL local**) e, com a API no ar, `node scripts/smoke-e2e.mjs`.
 2. Confira cada item de "✅ Pronto quando" e diga quais foram atendidos, com a evidência.
 3. Atualize a documentação afetada: `backend/README.md`, `backend/README_CONTRATO_API.md` (se mudou rota ou formato), `planing/debitos-tecnicos.md` (apague as linhas resolvidas), `planing/roadmap.md`.
 4. Escreva em "📝 Minhas anotações" da seção um **resumo conceitual** de 5 a 8 linhas, em primeira pessoa e em linguagem de entrevista ("Usei X porque..., o cuidado principal foi...").

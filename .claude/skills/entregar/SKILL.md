@@ -50,7 +50,7 @@ num PR aberto, gastando o mínimo de tokens.
 ## 3. Validar (script, não IA)
 - Backend mudou → `scripts/validar.sh backend`.
 - Frontend mudou → `scripts/validar.sh frontend`.
-- Mudou regra de negócio, rota ou banco → também `./run-test.sh` (**avise antes: apaga o MySQL local**).
+- Mudou regra de negócio, rota ou banco → também `./run-test.sh` (**avise antes: apaga o PostgreSQL local**).
 - Se falhar: mostre o resumo do script, explique a causa e corrija **só se for parte do trabalho atual** (ou se o PR não
   passa sem a correção, avisando). Nunca afrouxe teste.
 

@@ -1,4 +1,4 @@
-package com.br.rkfbank.mysql;
+package com.br.rkfbank.postgres;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -22,14 +22,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.mysql.MySQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.json.JsonMapper;
 
-// Base dos testes contra um MySQL 8.4 DE VERDADE (feature 3: Testcontainers), a mesma imagem do docker-compose.yml.
+// Base dos testes contra um PostgreSQL 17 DE VERDADE (feature 3: Testcontainers), a mesma imagem do docker-compose.yml.
 //
 // Por que existe: o resto da suite roda no H2, que e rapido mas nao e o banco de producao (o CHECK das colunas de enum,
-// o BINARY(16) dos UUIDs e o lock otimista se comportam diferente). Aqui as migracoes do Flyway rodam no MySQL e a API
+// o tipo uuid, o timestamptz e o lock otimista se comportam diferente). Aqui as migracoes do Flyway rodam no PostgreSQL e a API
 // inteira funciona em cima dele.
 //
 // Como funciona: o container e um @Bean com @ServiceConnection; o Spring Boot le a URL, o usuario e a senha dele e
@@ -39,23 +39,20 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Import(MySqlIntegracaoBase.ContainerMySql.class)
+@Import(PostgresIntegracaoBase.ContainerPostgres.class)
 @Testcontainers(disabledWithoutDocker = true)
-abstract class MySqlIntegracaoBase {
+abstract class PostgresIntegracaoBase {
 
     static final String SENHA = "senha-forte-1";
 
     @TestConfiguration(proxyBeanMethods = false)
-    static class ContainerMySql {
+    static class ContainerPostgres {
 
         @Bean
         @ServiceConnection
-        MySQLContainer mysql() {
-            // Sem TLS: banco descartavel, local, so do teste. Com TLS, o certificado que o MySQL gera na subida pode
-            // nascer "no futuro" quando o relogio da VM do Docker esta adiantado, e o driver recusa a conexao.
-            return new MySQLContainer(DockerImageName.parse("mysql:8.4"))
-                    .withUrlParam("useSSL", "false")
-                    .withUrlParam("allowPublicKeyRetrieval", "true");
+        PostgreSQLContainer postgres() {
+            // Sem TLS: banco descartavel, local, so do teste (o PostgreSQL do container nem liga o SSL por padrao).
+            return new PostgreSQLContainer(DockerImageName.parse("postgres:17"));
         }
     }
 
@@ -79,7 +76,7 @@ abstract class MySqlIntegracaoBase {
     String clienteNovoComToken() throws Exception {
         String cpf = cpfValidoAleatorio();
         mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON).content("""
-                        {"nomeCompleto":"Cliente MySQL","cpf":"%s","email":"%s@exemplo.test","telefone":"(11) 99999-8888",
+                        {"nomeCompleto":"Cliente PostgreSQL","cpf":"%s","email":"%s@exemplo.test","telefone":"(11) 99999-8888",
                          "cep":"06020-010","numero":"123","senha":"%s","aceiteTermos":true}""".formatted(cpf, cpf, SENHA)))
                 .andExpect(status().isCreated());
         return login(cpf);

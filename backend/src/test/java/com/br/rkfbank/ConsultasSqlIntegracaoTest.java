@@ -33,7 +33,7 @@ import tools.jackson.databind.json.JsonMapper;
 // fica constante. O Hibernate conta os comandos preparados (generate_statistics); a conferencia do token
 // (ConversorTokenUsuario) entra na conta, por isso o teste compara 5 clientes com 15 e exige o MESMO numero.
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:consultas-sql;MODE=MySQL",
+        "spring.datasource.url=jdbc:h2:mem:consultas-sql;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
         "spring.jpa.properties.hibernate.generate_statistics=true",
         "rkfbank.admin.cpf=" + ConsultasSqlIntegracaoTest.CPF_ADMIN,
         "rkfbank.admin.senha=" + ConsultasSqlIntegracaoTest.SENHA_ADMIN

@@ -11,7 +11,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 // Console web do H2 (http://localhost:8080/h2-console): uma tela para olhar as tabelas do banco em memoria enquanto
 // se testa a API. So existe nos perfis locais com H2 (visitante, equipe e test), que ligam spring.h2.console.enabled.
-// No perfil padrao (MySQL) a propriedade fica desligada, este @Configuration nem e criado e /h2-console cai na
+// No perfil padrao (PostgreSQL) a propriedade fica desligada, este @Configuration nem e criado e /h2-console cai na
 // cadeia principal (401 sem token, 404 com token): o console nunca vai para um ambiente de verdade.
 //
 // Por que uma SEGUNDA cadeia de filtros, e nao mais um permitAll na ConfiguracaoSeguranca: o console e uma aplicacao

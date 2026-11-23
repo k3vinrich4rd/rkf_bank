@@ -280,8 +280,8 @@ chave() { echo "Idempotency-Key: $(node -e 'console.log(crypto.randomUUID())')";
 ### 1.8 Rodar os testes automáticos
 
 Além dos testes "de fora" (a coleção), a API tem **307 testes automáticos** "de dentro", que conferem cada regra sem
-precisar da API no ar. Botão direito em `backend/src/test/java` → **Run 'All Tests'** (os 7 de `mysql/` sobem um
-MySQL de verdade com Testcontainers e são pulados sem Docker). Pelo terminal: `scripts/validar.sh backend`.
+precisar da API no ar. Botão direito em `backend/src/test/java` → **Run 'All Tests'** (os 7 de `postgres/` sobem um
+PostgreSQL de verdade com Testcontainers e são pulados sem Docker). Pelo terminal: `scripts/validar.sh backend`.
 
 ---
 
@@ -504,7 +504,7 @@ GET /termos
 
 💡 Entrar no banco, como no app: CPF e senha. A API devolve um "crachá" (o token) que as próximas requisições mostram para provar quem você é. O Insomnia guarda esse crachá sozinho.
 
-Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`...) e o de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de acesso vence (15 min no MySQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou renove pela pasta **09 · Sessão**.
+Cada login roda um script que salva no ambiente o token de acesso (`token_origem`, `token_destino`...) e o de renovação (`refresh_origem`...). As outras pastas já usam essas variáveis na aba **Auth → Bearer**. O token de acesso vence (15 min no PostgreSQL, 60 min no H2): deu `401 Token inválido ou expirado`? Mande o login de novo, ou renove pela pasta **09 · Sessão**.
 
 #### 01.01 · Login · cliente ORIGEM (Ana / Fellipe)
 
@@ -3460,7 +3460,7 @@ vem da requisição) e o `%enc{%m}{CRLF}` do `log4j2-spring.xml`.
 
 | Comando | O que confere |
 |---|---|
-| `scripts/validar.sh backend` | 307 testes (unitários, `@WebMvcTest`, integração em H2 e 7 no MySQL real com Testcontainers) + cobertura |
+| `scripts/validar.sh backend` | 307 testes (unitários, `@WebMvcTest`, integração em H2 e 7 no PostgreSQL real com Testcontainers) + cobertura |
 | `node scripts/rodar-colecao-insomnia.mjs` | a coleção inteira contra a API no ar (ambiente Visitante: `83/83`) |
 | `node scripts/smoke-e2e.mjs` | o fluxo resumido (cadastro → extrato + erros) contra a API no ar |
 
@@ -3591,7 +3591,7 @@ flowchart TB
     F4 --> F5
     F5["5 · Repository + JPA<br/>@Version (lock otimista)"] -->|"conflito simultâneo → 409"| X4(["❌"])
     F5 --> F6
-    F6[("6 · MySQL/H2 + Flyway<br/>UNIQUE, FK, CHECK")] -->|"06.06 · 07.21 → 409"| X5(["❌"])
+    F6[("6 · PostgreSQL/H2 + Flyway<br/>UNIQUE, FK, CHECK")] -->|"06.06 · 07.21 → 409"| X5(["❌"])
     F4 -.-> V["ViaCEP<br/>(client com timeout)"] -.->|"07.24 → 422 · fora → 503"| X6(["❌"])
     X1 & X2 & X3 & X4 & X5 & X6 --> EH["TratadorGlobalDeErros / TratadorErrosSeguranca<br/>mesmo formato de erro para tudo"]
     F6 --> OK(["✅ 2xx + DTO"])

@@ -22,7 +22,7 @@ flowchart TB
     CTRL --> SRV
     SRV --> REPO
     SRV --> CLI
-    REPO --> DB[(MySQL)]
+    REPO --> DB[(PostgreSQL)]
     CLI --> VIA[[ViaCEP]]
     SRV -. lança exceção .-> HND
     HND --> RESP([Resposta de erro padronizada])
@@ -177,7 +177,7 @@ Vira: `WHERE conta_origem_id = ? OR conta_destino_id = ? ORDER BY data_hora DESC
 | `Conta` | `saldo` `DECIMAL(19,2)`; `tipoContaEnum` salvo como texto; `@Version versao` |
 | `Lancamento` | guarda só os **IDs** das contas (sem FK); `dataHora` preenchida no `@PrePersist` |
 
-Enums são salvos como `VARCHAR` (`EnumType.STRING`), não como número nem `ENUM` nativo do MySQL —
+Enums são salvos como `VARCHAR` (`EnumType.STRING`), não como número nem `ENUM` nativo do PostgreSQL —
 assim, reordenar ou adicionar valores não corrompe dados antigos.
 
 ### 4.6 Integração ViaCEP
@@ -285,7 +285,7 @@ Os testes ficam em `backend/src/test/java/com/br/rkfbank/`, espelhando os pacote
 (use `ArgumentCaptor` para conferir o `Lancamento` gerado).
 
 **Próximo nível** (ver [débitos técnicos](../planing/debitos-tecnicos.md)): testes de controller com `MockMvc`
-(testam JSON e status de verdade) e testes de integração com Testcontainers (MySQL real).
+(testam JSON e status de verdade) e testes de integração com Testcontainers (PostgreSQL real).
 
 ---
 
@@ -360,7 +360,7 @@ flowchart LR
         PIX["pix (futuro)"] --> CONTA
         AUTH & CLI & CONTA & PIX --> COMP[compartilhado]
     end
-    API --> DB[(MySQL — um schema, tabelas por módulo)]
+    API --> DB[(PostgreSQL — um schema, tabelas por módulo)]
     CLI --> VIA[[ViaCEP]]
 ```
 

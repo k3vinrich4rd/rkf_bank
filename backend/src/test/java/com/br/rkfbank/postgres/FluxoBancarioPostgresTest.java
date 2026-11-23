@@ -1,4 +1,4 @@
-package com.br.rkfbank.mysql;
+package com.br.rkfbank.postgres;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -10,12 +10,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 
-// O roteiro E2E principal (pasta 02 da colecao do Insomnia) pelas rotas, gravando no MySQL 8.4 real:
+// O roteiro E2E principal (pasta 02 da colecao do Insomnia) pelas rotas, gravando no PostgreSQL 17 real:
 // cadastro com mascara -> login -> contas ORIGEM e DESTINO -> deposito, saque e transferencia -> saldos e extrato.
-class FluxoBancarioMySqlTest extends MySqlIntegracaoBase {
+class FluxoBancarioPostgresTest extends PostgresIntegracaoBase {
 
     @Test
-    void doCadastroAoExtratoNoMySql() throws Exception {
+    void doCadastroAoExtratoNoPostgres() throws Exception {
         String cpf = cpfValidoAleatorio();
         String cpfComMascara = cpf.substring(0, 3) + "." + cpf.substring(3, 6) + "." + cpf.substring(6, 9) + "-" + cpf.substring(9);
 
@@ -45,7 +45,7 @@ class FluxoBancarioMySqlTest extends MySqlIntegracaoBase {
         mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + token).header("Idempotency-Key", chave)
                         .contentType(MediaType.APPLICATION_JSON).content(transferencia))
                 .andExpect(status().isNoContent());
-        // A repeticao com a mesma chave nao move dinheiro de novo (a chave e UNIQUE no MySQL tambem).
+        // A repeticao com a mesma chave nao move dinheiro de novo (a chave e UNIQUE no PostgreSQL tambem).
         mockMvc.perform(post("/transferencias").header("Authorization", "Bearer " + token).header("Idempotency-Key", chave)
                         .contentType(MediaType.APPLICATION_JSON).content(transferencia))
                 .andExpect(status().isNoContent())
@@ -67,7 +67,7 @@ class FluxoBancarioMySqlTest extends MySqlIntegracaoBase {
     }
 
     @Test
-    void saldoInsuficienteNaoGravaNadaNoMySql() throws Exception {
+    void saldoInsuficienteNaoGravaNadaNoPostgres() throws Exception {
         String token = clienteNovoComToken();
         String conta = abrirConta(token, "CORRENTE");
         depositar(token, conta, "10.00");

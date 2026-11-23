@@ -18,11 +18,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-// O perfil prod de verdade (application-prod.properties), com o MySQL trocado por um H2 proprio so para o teste.
+// O perfil prod de verdade (application-prod.properties), com o PostgreSQL trocado por um H2 proprio so para o teste.
 // Prova as garantias do README_DEPLOY.md: nenhum dado de teste no banco, Swagger fechado, login da equipe nunca
 // criado (mesmo com EQUIPE_SENHA no ambiente) e CORS so para o dominio do site.
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:perfil-prod;MODE=MySQL;DB_CLOSE_DELAY=-1",
+        "spring.datasource.url=jdbc:h2:mem:perfil-prod;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",

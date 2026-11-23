@@ -10,7 +10,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-// Como no perfil padrao (MySQL): console desligado. A ConfiguracaoConsoleH2 nao e criada e o caminho do console
+// Como no perfil padrao (PostgreSQL): console desligado. A ConfiguracaoConsoleH2 nao e criada e o caminho do console
 // vira uma rota qualquer da API, que exige token.
 @SpringBootTest(properties = "spring.h2.console.enabled=false")
 @AutoConfigureMockMvc

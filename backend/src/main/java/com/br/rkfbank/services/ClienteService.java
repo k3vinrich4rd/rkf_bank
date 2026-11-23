@@ -78,7 +78,7 @@ public class ClienteService {
         }
 
         // Email guardado sempre em minúsculas e sem espaços nas pontas (a V2 do Flyway fez o mesmo com os já salvos).
-        // Assim a unicidade não depende da collation do banco: o MySQL ignora maiúsculas, o H2 dos testes não.
+        // Assim a unicidade não depende da collation do banco: o MySQL antigo ignorava maiúsculas; o PostgreSQL e o H2 não.
         String emailNormalizado = request.email().trim().toLowerCase(Locale.ROOT);
 
         // Regra de unicidade de email para evitar conflito de cadastro.

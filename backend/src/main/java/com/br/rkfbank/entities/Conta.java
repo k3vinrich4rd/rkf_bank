@@ -40,7 +40,7 @@ public class Conta {
     private String agencia;
 
     // Grava o NOME do enum ("CORRENTE") em VARCHAR, e nao a posicao (0, 1): incluir um tipo novo no meio do enum
-    // nao muda o significado das contas antigas. VARCHAR em vez do ENUM nativo do MySQL: o H2 dos testes e
+    // nao muda o significado das contas antigas. VARCHAR em vez do ENUM nativo do banco: o H2 dos testes e
     // outros bancos entendem, e um tipo novo nao exige ALTER TABLE (o CHECK da migracao e que limita os valores).
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.VARCHAR)

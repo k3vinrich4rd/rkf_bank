@@ -31,8 +31,8 @@ Este arquivo vale para o projeto inteiro; o frontend tem regras próprias em [fr
 scripts/validar.sh backend          # testes do backend em H2, resumo curto (não precisa de Docker)
 scripts/validar.sh frontend         # lint + typecheck + build do frontend
 scripts/validar.sh tudo             # os dois
-./run-test.sh                       # ⚠️ APAGA o MySQL local (docker compose down -v) e roda tudo com o perfil test
-scripts/testar-no-mysql.sh          # testes @SpringBootTest contra o MySQL do Docker (os outros scripts usam H2); não apaga dados
+./run-test.sh                       # ⚠️ APAGA o PostgreSQL local (docker compose down -v) e roda tudo com o perfil test
+scripts/testar-no-postgres.sh          # testes @SpringBootTest contra o PostgreSQL do Docker (os outros scripts usam H2); não apaga dados
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=visitante  # API pública sem Docker e sem .env (H2 + Ana e Bruno Visitante, JWT sorteado)
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=equipe     # equipe sem Docker (H2 + Fellipe e Renan; segredos do .env)
 node scripts/smoke-e2e.mjs          # fluxo real contra a API rodando em http://localhost:8080
@@ -62,7 +62,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 - Logs com Log4j2 e `X-Request-Id`; nunca logar CPF completo, senha ou token.
 - **LGPD:** dado pessoal novo precisa de finalidade; response devolve só o que a tela usa; nada de dado pessoal em log, exceção, URL ou prompt de IA. Pendências em `planing/debitos-tecnicos.md`.
 - Mudou rota ou formato? Atualize `backend/README_CONTRATO_API.md` **e** avise o frontend (`frontend/lib/api/types.ts` espelha o contrato).
-- **Schema só por Flyway** (`backend/src/main/resources/db/migration`, `ddl-auto=validate`): mudou entidade → crie `V<n>__descricao.sql` (hoje a última é `V15`) que rode no MySQL e no H2. **Nunca edite uma migração já mergeada** (checksum). Revise com `/revisar-migracao`.
+- **Schema só por Flyway** (`backend/src/main/resources/db/migration`, `ddl-auto=validate`): mudou entidade → crie `V<n>__descricao.sql` (hoje a última é `V15`) que rode no PostgreSQL e no H2 (modo PostgreSQL). O schema é um **baseline PostgreSQL** (V1 a V15 reescritas em nov/2026, ver `planing/decisoes.md`). **Nunca edite uma migração já mergeada** (checksum). Revise com `/revisar-migracao`.
 - **Dados prontos** por callback `afterMigrate` do Flyway (roda a cada subida, idempotente): `db/seed/equipe` (Fellipe = origem, Renan = destino; perfis padrão e `equipe`) e `db/seed/visitante` (Ana e Bruno; só no perfil `visitante`). **Desligados no `test`** e em produção (`FLYWAY_LOCATIONS=classpath:db/migration`). Mudou tabela usada pelo seed → ajuste o seed no mesmo PR.
 - 🔒 **Repositório público: nenhuma senha real no Git.** Login das contas da equipe vem de `EQUIPE_SENHA` (`InicializadorAcessoEquipe`) e o admin de `ADMIN_CPF`/`ADMIN_SENHA` (`InicializadorAdmin`), só no `.env`. Acessos e roteiro completo da equipe ficam em `.equipe/GUIA_TESTES_EQUIPE.md`, **fora do Git** (`.gitignore`): nunca copie conteúdo de lá para README, PR, issue, recado ou commit. Doc pública usa só as contas de visitante.
 - **Perfil e acesso valem na hora:** o `ConversorTokenUsuario` confere `tb_usuario` (existe, `ativo`, mesmo perfil e mesma `versaoCredencial` do token) a cada requisição. Gestão de usuários só pelo ADMIN em `/admin/usuarios`; usuário nunca é apagado, é desativado.
@@ -71,14 +71,14 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 
 ## Armadilhas conhecidas
 
-- H2 está fixado em **2.5.252** (o 2.4.240 que o Boot traz quebra o `CHECK ... IN` das colunas de enum); toda URL do H2 leva `MODE=MySQL` (o 2.5 só aceita `DATETIME` assim) e o perfil de teste tem `spring.test.database.replace=none`.
+- H2 está fixado em **2.5.252** (o 2.4.240 que o Boot traz quebra o `CHECK ... IN` das colunas de enum); toda URL do H2 leva `MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH` (imita o PostgreSQL; o H2 é só o ciclo rápido, o que vale é o PostgreSQL do Testcontainers) e o perfil de teste tem `spring.test.database.replace=none`.
 - `@DataJpaTest` troca o datasource por H2 embutido em qualquer perfil.
 - **IntelliJ antigo × Maven 3.10 do wrapper:** a IntelliJ Community 2024.3 não importa o projeto (`Unable to create injector ... ArtifactHandlerManager` no log da IDE) e marca em vermelho as dependências mais novas (springdoc, ShedLock), mesmo com o `mvnw` verde. Solução: IntelliJ 2025.3+ ou Maven home = **Bundled** nas configurações. Não troque o wrapper por causa disso.
 - Testes Spring têm `@ActiveProfiles("test")` e o `application-test.properties` fica em `src/test/resources` (fora do jar). O `pom.xml` aponta `RKFBANK_ENV` para um arquivo inexistente: o `.env` de quem roda não entra nos testes.
 - O Mockito é carregado como `-javaagent` no surefire (Java 21+); não remova o `argLine`.
 - Classe de teste precisa terminar em `Test`, `Tests` ou `TestCase`; senão o Surefire **ignora em silêncio**.
 - O Spring lê o `.env` sozinho (`spring.config.import`), **desde que rode da raiz**. Scripts de shell que usam as variáveis ainda carregam o `.env` por conta própria.
-- Flyway × H2: não use `spring.jpa.defer-datasource-initialization=true` (faz o JPA validar antes de o Flyway criar as tabelas); UUID está fixado como `BINARY` (`preferred_uuid_jdbc_type`); evite `BIT(n)` e `CAST(... AS BINARY)` sem tamanho, que o H2 trata diferente do MySQL.
+- Flyway × H2: não use `spring.jpa.defer-datasource-initialization=true` (faz o JPA validar antes de o Flyway criar as tabelas); UUID é o tipo nativo `uuid` (nada de `preferred_uuid_jdbc_type`); `Instant` é `timestamptz`; em seed use `CAST('...' AS UUID)` e `CAST('...+00' AS TIMESTAMP WITH TIME ZONE)`.
 
 ## Git
 
@@ -110,7 +110,7 @@ JDK **25** obrigatório (o `maven-enforcer-plugin` recusa outra versão).
 | `/varrer-vulnerabilidades` | roda a varredura de CVEs e propõe a correção mínima |
 | `/testar-e2e` | sobe o fluxo real (cadastro → extrato) contra a API e interpreta o resultado |
 | `/explicar-codigo <alvo>` | explica um código que já existe (arquivo, fluxo ou conceito), sem alterar nada |
-| `/revisar-migracao` | revisa migrações Flyway antes do commit (edição de migração aplicada, operação destrutiva, H2 × MySQL) |
+| `/revisar-migracao` | revisa migrações Flyway antes do commit (edição de migração aplicada, operação destrutiva, H2 × PostgreSQL) |
 | `/nova-tela <nome>` | cria uma tela no padrão do frontend (página + screen + hook); área do Renan |
 | `/recado` | escreve, responde ou lista recados em `planing/recados.md` |
 | `/notas-de-versao` | notas de versão entre `main` e `develop`, com resumo para o PO e sugestão de versão |

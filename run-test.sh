@@ -1,6 +1,6 @@
 #!/bin/bash
 # Executa os testes funcionais e E2E do RKF Bank com ambiente limpo.
-# Uso: ./run-test.sh [NomeDaClasse]  (APAGA os dados do MySQL local: docker compose down -v)
+# Uso: ./run-test.sh [NomeDaClasse]  (APAGA os dados do PostgreSQL local: docker compose down -v)
 # Exemplos:
 # ./run-test.sh # roda todos os testes
 # ./run-test.sh RkfbankApplicationTests # roda so essa classe de teste
@@ -13,14 +13,14 @@ TEST_CLASS="${1:-}"
 echo ">>> Derrubando ambiente anterior do banco..."
 docker compose down -v 2>/dev/null || true
 
-echo ">>> Subindo banco de dados limpo (MySQL)..."
+echo ">>> Subindo banco de dados limpo (PostgreSQL)..."
 docker compose up -d
 
-echo ">>> Aguardando rkfbank-mysql ficar healthy..."
-while [ "$(docker inspect --format='{{.State.Health.Status}}' rkfbank-mysql 2>/dev/null)" != "healthy" ]; do
+echo ">>> Aguardando rkfbank-postgres ficar healthy..."
+while [ "$(docker inspect --format='{{.State.Health.Status}}' rkfbank-postgres 2>/dev/null)" != "healthy" ]; do
   sleep 3
 done
-echo ">>> Banco MySQL healthy!"
+echo ">>> Banco PostgreSQL healthy!"
 
 # JDK 25 (mesmo exigido pelo maven-enforcer-plugin no pom.xml): o baixado pelo IntelliJ, se existir nesta maquina;
 # senao, o JAVA_HOME/java que ja estiver configurado.

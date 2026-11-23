@@ -47,8 +47,8 @@
       <text x="282" y="316" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🔐 JWT</text>
     </g>
     <g class="entra" style="animation-delay:0.99s">
-      <rect x="352" y="296" width="85.2" height="30" rx="8" fill="#111827" stroke="#1E293B"/>
-      <text x="362" y="316" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🐬 MySQL</text>
+      <rect x="352" y="296" width="127.2" height="30" rx="8" fill="#111827" stroke="#1E293B"/>
+      <text x="362" y="316" style="font: 600 13px 'Segoe UI', Inter, Ubuntu, 'Helvetica Neue', Arial, sans-serif" fill="#F1F5F9">🐬 PostgreSQL</text>
     </g>
     <g class="entra" style="animation-delay:1.07s">
       <rect x="446" y="296" width="102" height="30" rx="8" fill="#111827" stroke="#1E293B"/>

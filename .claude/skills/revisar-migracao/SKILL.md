@@ -1,6 +1,6 @@
 ---
 name: revisar-migracao
-description: Revisa migrações Flyway novas ou alteradas do RKF Bank (backend/src/main/resources/db/migration) antes do commit ou do PR - nome e versão, edição de migração já aplicada, operações destrutivas, compatibilidade MySQL x H2, constraints e coerência com as entidades JPA. Use quando o usuário pedir "/revisar-migracao", ao criar ou mudar um arquivo V__*.sql, ou antes de abrir PR que mexe no banco.
+description: Revisa migrações Flyway novas ou alteradas do RKF Bank (backend/src/main/resources/db/migration) antes do commit ou do PR - nome e versão, edição de migração já aplicada, operações destrutivas, compatibilidade PostgreSQL x H2, constraints e coerência com as entidades JPA. Use quando o usuário pedir "/revisar-migracao", ao criar ou mudar um arquivo V__*.sql, ou antes de abrir PR que mexe no banco.
 ---
 
 # /revisar-migracao
@@ -23,7 +23,7 @@ Modo **revisão**: aponte problemas e sugira a correção; só edite se o usuár
 | 2 | Nome no padrão `V<número>__<descricao_em_snake_case>.sql` (dois underlines), versão maior que a última e sem duplicar. | 🔴 |
 | 3 | Operação destrutiva (`DROP TABLE`, `DROP COLUMN`, `TRUNCATE`, `DELETE` sem `WHERE`, mudança de tipo que perde dado)? Exige justificativa no PR e plano para os dados existentes. | 🔴 |
 | 4 | `NOT NULL` adicionado em tabela com dados sem `DEFAULT` ou sem `UPDATE` antes? Falha em produção, passa no banco vazio do teste. | 🔴 |
-| 5 | Compatível com MySQL 8.4 **e** com o H2 dos testes (modo MySQL)? Evitar sintaxe exclusiva de um dos dois; se for inevitável, apontar. | 🟡 |
+| 5 | Compatível com PostgreSQL 17 **e** com o H2 dos testes (modo PostgreSQL)? Evitar sintaxe exclusiva de um dos dois; se for inevitável, apontar. | 🟡 |
 | 6 | Dinheiro em `DECIMAL(19,2)`; UUID no mesmo tipo das tabelas existentes; nomes de constraint no padrão `uk_<tabela>_<coluna>`, `fk_<tabela>_<referencia>`. | 🟡 |
 | 7 | A migração bate com as entidades JPA (`backend/src/main/java/com/br/rkfbank/entities`)? Coluna, tipo, tamanho e nulabilidade. Com `ddl-auto=validate`, divergência derruba a aplicação na subida. | 🔴 |
 | 8 | Migração de **dados** (ex.: e-mail em minúsculas) é idempotente e não depende da ordem das linhas? | 🟡 |
@@ -33,7 +33,7 @@ Modo **revisão**: aponte problemas e sugira a correção; só edite se o usuár
 
 ## 3. Validar de verdade
 - `scripts/validar.sh backend` (testes em H2 aplicam as migrações; o `DadosEquipeIntegracaoTest` aplica o `db/seed/equipe` e roda o `migrate` duas vezes para provar a idempotência; o `PerfilVisitanteIntegracaoTest` sobe o perfil `visitante`).
-- Se o usuário permitir apagar o MySQL local: `./run-test.sh`, depois subir a API e conferir `select version, description, success from flyway_schema_history;`.
+- Se o usuário permitir apagar o PostgreSQL local: `./run-test.sh`, depois subir a API e conferir `select version, description, success from flyway_schema_history;`.
 
 ## 4. Saída
 Tabela `arquivo | verificação | gravidade | o que fazer`, seguida de um veredito: **pronto para commitar quando você mandar** / **corrigir antes**. Esta skill nunca commita. Para cada item 🔴, explique o conceito em 2 linhas (por que aquilo quebra).

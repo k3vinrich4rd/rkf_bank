@@ -18,84 +18,84 @@
 -- Se alguem cadastrou o mesmo CPF pela API, o cliente da equipe e pulado, e os INSERTs seguintes (conta,
 -- lancamento) tambem, porque conferem se o "pai" com o id fixo existe. Nada quebra a subida.
 --
--- Onde roda: perfil padrao (MySQL) e perfil equipe (H2). NAO roda no visitante, no test nem em producao
+-- Onde roda: perfil padrao (PostgreSQL) e perfil equipe (H2). NAO roda no visitante, no test nem em producao
 -- (FLYWAY_LOCATIONS=classpath:db/migration).
 --
 -- Ids fixos (UUID "5eed..." = seed) para o guia da equipe usar os mesmos ids em qualquer maquina.
--- X'...' e o literal binario aceito pelo MySQL e pelo H2; o UUID vira os 16 bytes na ordem em que o Hibernate le.
+-- CAST('...' AS UUID) vale no PostgreSQL e no H2 (antes da migracao para PostgreSQL o id era BINARY(16) e o literal X'...').
 -- CPFs ficticios, validos pelos digitos verificadores e diferentes dos usados nos testes automatizados.
 -- Enderecos com CEP real de Osasco (o RKF Bank nasceu la); numero e telefone ficticios.
 
 -- ---------- Fellipe Santana: conta de ORIGEM ----------
 
 INSERT INTO tb_endereco (id, cep, logradouro, bairro, cidade, uf, ibge, numero, complemento)
-SELECT X'5eed0000000040008000000000000011', '06013-000', 'Rua Antônio Agu', 'Centro', 'Osasco', 'SP', '3534401', '1001', NULL
+SELECT CAST('5eed0000-0000-4000-8000-000000000011' AS UUID), '06013-000', 'Rua Antônio Agu', 'Centro', 'Osasco', 'SP', '3534401', '1001', NULL
 FROM (SELECT 1 AS um) unica
-WHERE NOT EXISTS (SELECT 1 FROM tb_endereco WHERE id = X'5eed0000000040008000000000000011')
+WHERE NOT EXISTS (SELECT 1 FROM tb_endereco WHERE id = CAST('5eed0000-0000-4000-8000-000000000011' AS UUID))
   AND NOT EXISTS (SELECT 1 FROM tb_cliente WHERE cpf = '12345678909');
 
 INSERT INTO tb_cliente (id, nome_completo, cpf, email, telefone, endereco_id)
-SELECT X'5eed0000000040008000000000000012', 'Fellipe Santana (Teste Origem)', '12345678909', 'fellipe.santana@rkfbank.test', '11987650001',
-       X'5eed0000000040008000000000000011'
+SELECT CAST('5eed0000-0000-4000-8000-000000000012' AS UUID), 'Fellipe Santana (Teste Origem)', '12345678909', 'fellipe.santana@rkfbank.test', '11987650001',
+       CAST('5eed0000-0000-4000-8000-000000000011' AS UUID)
 FROM (SELECT 1 AS um) unica
 WHERE NOT EXISTS (SELECT 1 FROM tb_cliente
-                  WHERE id = X'5eed0000000040008000000000000012' OR cpf = '12345678909' OR email = 'fellipe.santana@rkfbank.test')
-  AND EXISTS (SELECT 1 FROM tb_endereco WHERE id = X'5eed0000000040008000000000000011');
+                  WHERE id = CAST('5eed0000-0000-4000-8000-000000000012' AS UUID) OR cpf = '12345678909' OR email = 'fellipe.santana@rkfbank.test')
+  AND EXISTS (SELECT 1 FROM tb_endereco WHERE id = CAST('5eed0000-0000-4000-8000-000000000011' AS UUID));
 
 INSERT INTO tb_conta (id, numero_conta, agencia, tipo_conta_enum, saldo, ativa, versao, cliente_id)
-SELECT X'5eed0000000040008000000000000014', '100001', '0001', 'CORRENTE', 1000.00, TRUE, 0, X'5eed0000000040008000000000000012'
+SELECT CAST('5eed0000-0000-4000-8000-000000000014' AS UUID), '100001', '0001', 'CORRENTE', 1000.00, TRUE, 0, CAST('5eed0000-0000-4000-8000-000000000012' AS UUID)
 FROM (SELECT 1 AS um) unica
-WHERE NOT EXISTS (SELECT 1 FROM tb_conta WHERE id = X'5eed0000000040008000000000000014' OR numero_conta = '100001')
-  AND EXISTS (SELECT 1 FROM tb_cliente WHERE id = X'5eed0000000040008000000000000012');
+WHERE NOT EXISTS (SELECT 1 FROM tb_conta WHERE id = CAST('5eed0000-0000-4000-8000-000000000014' AS UUID) OR numero_conta = '100001')
+  AND EXISTS (SELECT 1 FROM tb_cliente WHERE id = CAST('5eed0000-0000-4000-8000-000000000012' AS UUID));
 
 -- O saldo inicial tem um lancamento que o explica: saldo e extrato sempre batem.
 INSERT INTO tb_lancamento (id, tipo_lancamento_enum, valor, conta_origem_id, conta_destino_id, descricao, data_hora)
-SELECT X'5eed0000000040008000000000000015', 'DEPOSITO', 1000.00, NULL, X'5eed0000000040008000000000000014',
-       'Aporte inicial do idealizador', '2026-09-25 09:00:00'
+SELECT CAST('5eed0000-0000-4000-8000-000000000015' AS UUID), 'DEPOSITO', 1000.00, NULL, CAST('5eed0000-0000-4000-8000-000000000014' AS UUID),
+       'Aporte inicial do idealizador', CAST('2026-09-25 09:00:00+00' AS TIMESTAMP WITH TIME ZONE)
 FROM (SELECT 1 AS um) unica
-WHERE NOT EXISTS (SELECT 1 FROM tb_lancamento WHERE id = X'5eed0000000040008000000000000015')
-  AND EXISTS (SELECT 1 FROM tb_conta WHERE id = X'5eed0000000040008000000000000014');
+WHERE NOT EXISTS (SELECT 1 FROM tb_lancamento WHERE id = CAST('5eed0000-0000-4000-8000-000000000015' AS UUID))
+  AND EXISTS (SELECT 1 FROM tb_conta WHERE id = CAST('5eed0000-0000-4000-8000-000000000014' AS UUID));
 
 -- ---------- Renan Barros: conta de DESTINO ----------
 
 INSERT INTO tb_endereco (id, cep, logradouro, bairro, cidade, uf, ibge, numero, complemento)
-SELECT X'5eed0000000040008000000000000021', '06020-010', 'Avenida dos Autonomistas', 'Vila Yara', 'Osasco', 'SP', '3534401', '1000', 'Apto 12'
+SELECT CAST('5eed0000-0000-4000-8000-000000000021' AS UUID), '06020-010', 'Avenida dos Autonomistas', 'Vila Yara', 'Osasco', 'SP', '3534401', '1000', 'Apto 12'
 FROM (SELECT 1 AS um) unica
-WHERE NOT EXISTS (SELECT 1 FROM tb_endereco WHERE id = X'5eed0000000040008000000000000021')
+WHERE NOT EXISTS (SELECT 1 FROM tb_endereco WHERE id = CAST('5eed0000-0000-4000-8000-000000000021' AS UUID))
   AND NOT EXISTS (SELECT 1 FROM tb_cliente WHERE cpf = '98765432100');
 
 INSERT INTO tb_cliente (id, nome_completo, cpf, email, telefone, endereco_id)
-SELECT X'5eed0000000040008000000000000022', 'Renan Barros (Teste Destino)', '98765432100', 'renan.barros@rkfbank.test', '11987650002',
-       X'5eed0000000040008000000000000021'
+SELECT CAST('5eed0000-0000-4000-8000-000000000022' AS UUID), 'Renan Barros (Teste Destino)', '98765432100', 'renan.barros@rkfbank.test', '11987650002',
+       CAST('5eed0000-0000-4000-8000-000000000021' AS UUID)
 FROM (SELECT 1 AS um) unica
 WHERE NOT EXISTS (SELECT 1 FROM tb_cliente
-                  WHERE id = X'5eed0000000040008000000000000022' OR cpf = '98765432100' OR email = 'renan.barros@rkfbank.test')
-  AND EXISTS (SELECT 1 FROM tb_endereco WHERE id = X'5eed0000000040008000000000000021');
+                  WHERE id = CAST('5eed0000-0000-4000-8000-000000000022' AS UUID) OR cpf = '98765432100' OR email = 'renan.barros@rkfbank.test')
+  AND EXISTS (SELECT 1 FROM tb_endereco WHERE id = CAST('5eed0000-0000-4000-8000-000000000021' AS UUID));
 
 INSERT INTO tb_conta (id, numero_conta, agencia, tipo_conta_enum, saldo, ativa, versao, cliente_id)
-SELECT X'5eed0000000040008000000000000024', '100002', '0001', 'CORRENTE', 500.00, TRUE, 0, X'5eed0000000040008000000000000022'
+SELECT CAST('5eed0000-0000-4000-8000-000000000024' AS UUID), '100002', '0001', 'CORRENTE', 500.00, TRUE, 0, CAST('5eed0000-0000-4000-8000-000000000022' AS UUID)
 FROM (SELECT 1 AS um) unica
-WHERE NOT EXISTS (SELECT 1 FROM tb_conta WHERE id = X'5eed0000000040008000000000000024' OR numero_conta = '100002')
-  AND EXISTS (SELECT 1 FROM tb_cliente WHERE id = X'5eed0000000040008000000000000022');
+WHERE NOT EXISTS (SELECT 1 FROM tb_conta WHERE id = CAST('5eed0000-0000-4000-8000-000000000024' AS UUID) OR numero_conta = '100002')
+  AND EXISTS (SELECT 1 FROM tb_cliente WHERE id = CAST('5eed0000-0000-4000-8000-000000000022' AS UUID));
 
 INSERT INTO tb_lancamento (id, tipo_lancamento_enum, valor, conta_origem_id, conta_destino_id, descricao, data_hora)
-SELECT X'5eed0000000040008000000000000025', 'DEPOSITO', 500.00, NULL, X'5eed0000000040008000000000000024',
-       'Aporte inicial do idealizador', '2026-09-25 09:00:00'
+SELECT CAST('5eed0000-0000-4000-8000-000000000025' AS UUID), 'DEPOSITO', 500.00, NULL, CAST('5eed0000-0000-4000-8000-000000000024' AS UUID),
+       'Aporte inicial do idealizador', CAST('2026-09-25 09:00:00+00' AS TIMESTAMP WITH TIME ZONE)
 FROM (SELECT 1 AS um) unica
-WHERE NOT EXISTS (SELECT 1 FROM tb_lancamento WHERE id = X'5eed0000000040008000000000000025')
-  AND EXISTS (SELECT 1 FROM tb_conta WHERE id = X'5eed0000000040008000000000000024');
+WHERE NOT EXISTS (SELECT 1 FROM tb_lancamento WHERE id = CAST('5eed0000-0000-4000-8000-000000000025' AS UUID))
+  AND EXISTS (SELECT 1 FROM tb_conta WHERE id = CAST('5eed0000-0000-4000-8000-000000000024' AS UUID));
 
 -- ---------- Nomes de teste em bancos criados antes de 22/10/2026 ----------
 
 -- Os INSERTs acima so criam o que falta; quem ja tinha o banco ficou com o nome antigo. Estes UPDATEs trocam so se o
 -- nome ainda for o antigo: rodar de novo nao muda nada (idempotente) e nao desfaz uma correcao feita pelo titular.
 UPDATE tb_cliente SET nome_completo = 'Fellipe Santana (Teste Origem)'
-WHERE id = X'5eed0000000040008000000000000012'
+WHERE id = CAST('5eed0000-0000-4000-8000-000000000012' AS UUID)
   AND nome_completo IN ('Felipe Santana', 'Felipe Santana (Teste Origem)');
 
 -- 23/10/2026: a grafia certa e Fellipe, com dois L (o e-mail de teste acompanha).
 UPDATE tb_cliente SET email = 'fellipe.santana@rkfbank.test'
-WHERE id = X'5eed0000000040008000000000000012' AND email = 'felipe.santana@rkfbank.test';
+WHERE id = CAST('5eed0000-0000-4000-8000-000000000012' AS UUID) AND email = 'felipe.santana@rkfbank.test';
 
 UPDATE tb_cliente SET nome_completo = 'Renan Barros (Teste Destino)'
-WHERE id = X'5eed0000000040008000000000000022' AND nome_completo = 'Renan Barros';
+WHERE id = CAST('5eed0000-0000-4000-8000-000000000022' AS UUID) AND nome_completo = 'Renan Barros';

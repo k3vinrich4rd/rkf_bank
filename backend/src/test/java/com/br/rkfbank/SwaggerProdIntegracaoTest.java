@@ -14,7 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 // A demo publica liga o Swagger com SWAGGER_ATIVO=true: o contrato fica legivel, mas so para leitura.
 // O PerfilProdIntegracaoTest continua provando que, sem a variavel, ele fica fechado.
 @SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:swagger-prod;MODE=MySQL;DB_CLOSE_DELAY=-1",
+        "spring.datasource.url=jdbc:h2:mem:swagger-prod;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",
