@@ -9,7 +9,7 @@
 CREATE TABLE tb_tentativa_login (
     chave_login    CHAR(64)    NOT NULL,
     falhas         INT         NOT NULL,
-    primeira_falha DATETIME(6) NOT NULL,
+    primeira_falha TIMESTAMP(6) WITH TIME ZONE NOT NULL,
     CONSTRAINT pk_tentativa_login PRIMARY KEY (chave_login)
 );
 

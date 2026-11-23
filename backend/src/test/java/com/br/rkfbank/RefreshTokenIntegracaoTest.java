@@ -20,7 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
 // Refresh token (V15): renovar sem senha, rotacao, deteccao de reuso, logout e queda na troca de senha.
 @SpringBootTest(properties = {
         "spring.flyway.locations=classpath:db/migration,classpath:db/seed/equipe",
-        "spring.datasource.url=jdbc:h2:mem:refresh-token;MODE=MySQL",
+        "spring.datasource.url=jdbc:h2:mem:refresh-token;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
         "rkfbank.equipe.senha=" + RefreshTokenIntegracaoTest.SENHA_EQUIPE
 })
 @AutoConfigureMockMvc

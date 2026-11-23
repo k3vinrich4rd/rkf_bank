@@ -1,23 +1,23 @@
 services:
   database:
-    image: mysql:${MYSQL_VERSION:-8.4}
-    container_name: rkfbank-mysql
+    image: postgres:${POSTGRES_VERSION:-17}
+    container_name: rkfbank-postgres
     restart: unless-stopped
     ports:
-      - "${MYSQL_PORT:-5441}:3306"
+      # 5441 no seu computador (fora da 5432 padrao, para nao colidir com um PostgreSQL instalado); 5432 dentro do container.
+      - "${POSTGRES_PORT:-5441}:5432"
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-senha-root-do-banco}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-rkfbank}
-      MYSQL_USER: ${MYSQL_USER:-usuario-do-banco}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-senha-do-banco}
+      POSTGRES_DB: ${POSTGRES_DB:-rkfbank}
+      POSTGRES_USER: ${POSTGRES_USER:-usuario-do-banco}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-senha-do-banco}
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${MYSQL_USER:-usuario-do-banco}", "-p${MYSQL_PASSWORD:-senha-do-banco}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-usuario-do-banco} -d ${POSTGRES_DB:-rkfbank}"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 10s
 
 volumes:
-  mysql-data:
+  postgres-data:

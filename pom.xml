@@ -19,7 +19,7 @@
 	<properties>
 		<java.version>25</java.version>
 		<!-- O Boot 4.1.2 traz o H2 2.4.240, que quebra CHECK ... IN (...) das colunas de enum ("The database has been
-		     closed" em todo insert). O 2.5.252 corrige; ele so aceita DATETIME com MODE=MySQL nas URLs do H2. -->
+		     closed" em todo insert). O 2.5.252 corrige; ele so aceita tipos de data/hora novos com MODE=PostgreSQL nas URLs do H2. -->
 		<h2.version>2.5.252</h2.version>
 		<!-- springdoc 3.x e a linha para o Spring Boot 4 (a 2.x e do Boot 3). -->
 		<springdoc.version>3.2.0</springdoc.version>
@@ -56,7 +56,7 @@
 		</dependency>
 
 		<!-- Flyway cria e evolui o schema por scripts versionados em backend/src/main/resources/db/migration.
-		     O modulo flyway-mysql e obrigatorio desde o Flyway 10 (cada banco virou um modulo separado). -->
+		     O modulo flyway-database-postgresql e obrigatorio desde o Flyway 10 (cada banco virou um modulo separado). -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-flyway</artifactId>
@@ -64,7 +64,7 @@
 
 		<dependency>
 			<groupId>org.flywaydb</groupId>
-			<artifactId>flyway-mysql</artifactId>
+			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
 		<dependency>
@@ -128,8 +128,8 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.mysql</groupId>
-			<artifactId>mysql-connector-j</artifactId>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
 
@@ -163,7 +163,7 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Testcontainers (feature 3): um MySQL 8.4 de verdade, em container, so durante os testes *MySqlTest.
+		<!-- Testcontainers (feature 3): um PostgreSQL 17 de verdade, em container, so durante os testes *PostgresTest.
 		     Versao vem do BOM do Spring Boot; @ServiceConnection liga o datasource sozinho. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -177,7 +177,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.testcontainers</groupId>
-			<artifactId>testcontainers-mysql</artifactId>
+			<artifactId>testcontainers-postgresql</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

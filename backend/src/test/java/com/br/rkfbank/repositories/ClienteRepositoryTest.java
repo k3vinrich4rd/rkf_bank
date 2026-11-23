@@ -25,7 +25,7 @@ import org.springframework.test.context.TestPropertySource;
 // Perfil test explicito: roda igual no IDE e no Maven (H2, sem seed, sem o .env de quem roda).
 @ActiveProfiles("test")
 // H2 proprio dos testes de repository (ver UsuarioRepositoryTest).
-@TestPropertySource(properties = "spring.datasource.url=jdbc:h2:mem:repositorios;MODE=MySQL")
+@TestPropertySource(properties = "spring.datasource.url=jdbc:h2:mem:repositorios;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH")
 class ClienteRepositoryTest {
 
     @Autowired

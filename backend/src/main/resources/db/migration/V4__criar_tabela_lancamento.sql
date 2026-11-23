@@ -1,14 +1,14 @@
 -- Lancamentos do extrato. Nunca sao alterados nem apagados: o extrato e o historico do dinheiro.
 
 CREATE TABLE tb_lancamento (
-    id                   BINARY(16)    NOT NULL,
+    id                   UUID NOT NULL,
     tipo_lancamento_enum VARCHAR(32)   NOT NULL,
-    valor                DECIMAL(19,2) NOT NULL,
+    valor                NUMERIC(19,2) NOT NULL,
     -- Sem FK de proposito: deposito nao tem origem e saque nao tem destino.
-    conta_origem_id      BINARY(16),
-    conta_destino_id     BINARY(16),
+    conta_origem_id      UUID,
+    conta_destino_id     UUID,
     descricao            VARCHAR(255),
-    data_hora            DATETIME(6)   NOT NULL,
+    data_hora            TIMESTAMP(6) WITH TIME ZONE NOT NULL,
     CONSTRAINT pk_lancamento PRIMARY KEY (id),
     CONSTRAINT ck_lancamento_tipo CHECK (tipo_lancamento_enum IN ('DEPOSITO', 'SAQUE', 'TRANSFERENCIA', 'CREDITO', 'DEBITO'))
 );

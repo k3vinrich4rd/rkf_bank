@@ -1,4 +1,4 @@
-package com.br.rkfbank.mysql;
+package com.br.rkfbank.postgres;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -21,9 +21,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
-// Concorrencia de verdade: varias transferencias da MESMA conta ao mesmo tempo, cada uma na sua transacao, no MySQL.
-// O H2 dos outros testes nao serve para isso (o isolamento e o lock de linha sao do MySQL/InnoDB).
-class ConcorrenciaMySqlTest extends MySqlIntegracaoBase {
+// Concorrencia de verdade: varias transferencias da MESMA conta ao mesmo tempo, cada uma na sua transacao, no PostgreSQL.
+// O H2 dos outros testes nao serve para isso (o isolamento e o lock de linha sao do PostgreSQL).
+class ConcorrenciaPostgresTest extends PostgresIntegracaoBase {
 
     private static final int THREADS = 8;
 

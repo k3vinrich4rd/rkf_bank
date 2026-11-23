@@ -1,7 +1,7 @@
 name: Backend Docker
 
 # A imagem que vai para a internet (Dockerfile da raiz, perfil prod), testada como no provedor: container com
-# 512 MB, banco MySQL VAZIO e segredos só por variável. Em PR, só constrói e testa; na main, também publica a
+# 512 MB, banco PostgreSQL VAZIO e segredos só por variável. Em PR, só constrói e testa; na main, também publica a
 # imagem no GitHub Container Registry (ghcr.io), pronta para o provedor puxar.
 
 on:
@@ -42,19 +42,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
-    # O MySQL do provedor, aqui como serviço do runner: sobe vazio, sem nenhum dado de teste.
+    # O PostgreSQL do provedor, aqui como serviço do runner: sobe vazio, sem nenhum dado de teste.
     services:
-      mysql:
-        image: mysql:8.4
+      postgres:
+        image: postgres:17
         env:
-          MYSQL_ROOT_PASSWORD: root-do-ci
-          MYSQL_DATABASE: rkfbank
-          MYSQL_USER: rkfbank
-          MYSQL_PASSWORD: senha-do-ci
+          POSTGRES_DB: rkfbank
+          POSTGRES_USER: rkfbank
+          POSTGRES_PASSWORD: senha-do-ci
         ports:
-          - "3306:3306"
+          - "5432:5432"
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -urkfbank -psenha-do-ci"
+          --health-cmd="pg_isready -U rkfbank -d rkfbank"
           --health-interval=5s --health-timeout=5s --health-retries=30
 
     steps:
@@ -68,7 +67,7 @@ jobs:
       - name: Subir o container (512 MB, perfil prod)
         run: |
           docker run -d --name api --network host -m 512m \
-            -e DB_HOST=127.0.0.1 -e DB_NAME=rkfbank -e DB_USER=rkfbank -e DB_PASSWORD=senha-do-ci \
+            -e DB_HOST=127.0.0.1 -e DB_SSL_MODE=disable -e DB_NAME=rkfbank -e DB_USER=rkfbank -e DB_PASSWORD=senha-do-ci \
             -e JWT_SEGREDO="$(openssl rand -base64 48)" -e CORS_ORIGENS=https://rkfbank.example \
             -e ADMIN_CPF=11144477735 -e ADMIN_SENHA=admin-do-ci-123 \
             rkfbank-api:ci

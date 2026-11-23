@@ -6,10 +6,10 @@
 --
 -- encerrado_em:   quando o titular encerrou (NULL = cliente ativo).
 -- anonimizado_em: quando a rotina anonimizou (NULL = dados ainda guardados).
--- Instant -> DATETIME(6), como nas outras tabelas. Colunas novas e opcionais: nao mexe em nenhum cliente existente.
+-- Instant -> TIMESTAMP(6) WITH TIME ZONE, como nas outras tabelas. Colunas novas e opcionais: nao mexe em nenhum cliente existente.
 
-ALTER TABLE tb_cliente ADD COLUMN encerrado_em DATETIME(6);
-ALTER TABLE tb_cliente ADD COLUMN anonimizado_em DATETIME(6);
+ALTER TABLE tb_cliente ADD COLUMN encerrado_em TIMESTAMP(6) WITH TIME ZONE;
+ALTER TABLE tb_cliente ADD COLUMN anonimizado_em TIMESTAMP(6) WITH TIME ZONE;
 
 -- A rotina procura "encerrados ha mais de 5 anos e ainda nao anonimizados" todo dia.
 CREATE INDEX idx_cliente_encerrado_em ON tb_cliente (encerrado_em);

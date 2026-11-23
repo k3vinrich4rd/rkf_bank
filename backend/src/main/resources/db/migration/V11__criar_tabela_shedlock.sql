@@ -9,8 +9,8 @@
 
 CREATE TABLE tb_shedlock (
     name       VARCHAR(64)  NOT NULL,
-    lock_until DATETIME(3)  NOT NULL,
-    locked_at  DATETIME(3)  NOT NULL,
+    lock_until TIMESTAMP(3) WITH TIME ZONE NOT NULL,
+    locked_at  TIMESTAMP(3) WITH TIME ZONE NOT NULL,
     locked_by  VARCHAR(255) NOT NULL,
     CONSTRAINT pk_shedlock PRIMARY KEY (name)
 );

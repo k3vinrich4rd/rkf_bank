@@ -39,7 +39,7 @@ import tools.jackson.databind.json.JsonMapper;
 // cadastro; a rotina anonimiza quando o prazo de retencao vence. DirtiesContext: cada teste com o banco do seed intacto.
 @SpringBootTest(properties = {
         "spring.flyway.locations=classpath:db/migration,classpath:db/seed/equipe",
-        "spring.datasource.url=jdbc:h2:mem:titular;MODE=MySQL",
+        "spring.datasource.url=jdbc:h2:mem:titular;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
         "rkfbank.equipe.senha=" + TitularIntegracaoTest.SENHA_EQUIPE,
         "rkfbank.admin.cpf=" + TitularIntegracaoTest.CPF_ADMIN,
         "rkfbank.admin.senha=" + TitularIntegracaoTest.SENHA_ADMIN

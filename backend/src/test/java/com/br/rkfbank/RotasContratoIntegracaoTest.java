@@ -21,7 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
 // Contrato 3.0: so as rotas canonicas existem; as do contrato 2.x respondem 404. Usa as contas do seed da equipe.
 @SpringBootTest(properties = {
         "spring.flyway.locations=classpath:db/migration,classpath:db/seed/equipe",
-        "spring.datasource.url=jdbc:h2:mem:rotas-contrato;MODE=MySQL",
+        "spring.datasource.url=jdbc:h2:mem:rotas-contrato;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH",
         "rkfbank.equipe.senha=" + RotasContratoIntegracaoTest.SENHA_EQUIPE,
         "rkfbank.admin.cpf=" + RotasContratoIntegracaoTest.CPF_ADMIN,
         "rkfbank.admin.senha=" + RotasContratoIntegracaoTest.SENHA_ADMIN

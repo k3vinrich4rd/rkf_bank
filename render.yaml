@@ -37,7 +37,7 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
-      # Preencha REQUIRED (ou VERIFY_CA com o certificado do Aiven). Nao deixe vazio: vazio nao cai no padrao.
+      # Preencha require, em minusculo (ou verify-ca com o certificado do Aiven). Nao deixe vazio: vazio nao cai no padrao.
       - key: DB_SSL_MODE
         sync: false
       - key: JWT_SEGREDO
